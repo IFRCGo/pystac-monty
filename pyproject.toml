@@ -32,6 +32,7 @@ dependencies = [
     "markdownify>=0.14.1",
     "pytz>=2021.1",
     "pandas>=2.2.0",
+    "shapely>=2.0.0",
 ]
 dynamic = ["version"]
 

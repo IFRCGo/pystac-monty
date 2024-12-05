@@ -72,21 +72,3 @@ class MontyTest(unittest.TestCase):
         event_item = Item.from_dict(json.loads(requests.get("https://github.com/IFRCGo/monty-stac-extension/raw/refs/heads/main/examples/reference-events/20241027T150000-ESP-HM-FLOOD-001-GCDB.json").text))
         event_item.validate(validator=self.validator)
         
-class GDACSTest(unittest.TestCase):
-    
-    def setUp(self) -> None:
-        super().setUp()
-        self.item = make_item()
-        self.validator = CustomValidator()
-        
-    @pytest.mark.vcr()
-    def test_transformer(self) -> None:
-        event_data = json.loads(requests.get("https://github.com/IFRCGo/monty-stac-extension/raw/refs/heads/main/model/sources/GDACS/1102983-1-geteventdata-source.json").text)
-        transformer = GDACSTransformer(event_data)
-        items = transformer.make_items()
-        self.assertTrue(len(items) > 0)
-        for item in items:
-            print(item.to_dict())
-            item.validate(validator=self.validator)
-            monty_item_ext = MontyExtension.ext(item)
-            self.assertTrue(monty_item_ext.is_source_event())

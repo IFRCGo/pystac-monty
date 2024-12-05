@@ -17,7 +17,7 @@ class Pairing:
             importlib.resources.close(self.impact_information_profile_data)
 
     def get_profiles(self) -> df.DataFrame:
-        if not self.impact_information_profile_data:
+        if self.impact_information_profile_data is None:
             with importlib.resources.open_binary('pystac_monty', self.impact_information_profile_path) as f:
                 self.impact_information_profile_data = df.read_csv(f)
         return self.impact_information_profile_data

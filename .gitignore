@@ -160,3 +160,4 @@ cython_debug/
 
 # asv environments
 .asv
+tests/data-files/temp/
