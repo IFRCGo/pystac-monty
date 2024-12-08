@@ -13,6 +13,7 @@ from pystac.extensions.base import ExtensionManagementMixin, PropertiesExtension
 from pystac.extensions.hooks import ExtensionHooks
 from pystac.utils import StringEnum, get_opt, get_required, map_opt
 
+from pystac_monty.hazard_profiles import HazardProfiles
 from pystac_monty.paring import Pairing
 
 __version__ = "0.1.0"
@@ -34,10 +35,10 @@ ITEM_IMPACT_DETAIL_PROP = PREFIX + "impact_detail"
 ITEM_EPISODE_NUMBER_PROP = PREFIX + "episode_number"
 
 # Hazard Detail properties
-HAZDET_CLUSTER_PROP = PREFIX + "cluster"
-HAZDET_MAX_VALUE_PROP = PREFIX + "max_value"
-HAZDET_MAX_UNIT_PROP = PREFIX + "max_unit"
-HAZDET_ESTIMATE_TYPE_PROP = PREFIX + "estimate_type"
+HAZDET_CLUSTER_PROP = "cluster"
+HAZDET_SEV_VALUE_PROP = "severity_value"
+HAZDET_SEV_UNIT_PROP = "severity_unit"
+HAZDET_ESTIMATE_TYPE_PROP = "estimate_type"
 
 # Link attributes
 LINK_ATTRS_OCCURRENCE_TYPE_PROP = "occ_type"
@@ -79,10 +80,19 @@ class HazardDetail(ABC):
     <monty#montyhazard_detail>` docs for details.
     """
 
-    properties: dict[str, Any]
+    properties: dict[str, Any] = {}
 
-    def __init__(self, properties: dict[str, Any]) -> None:
-        self.properties = properties
+    def __init__(
+        self,
+        cluster: str,
+        max_value: float = None,
+        max_unit: str = None,
+    ) -> None:
+        self.properties[HAZDET_CLUSTER_PROP] = cluster
+        if max_value:
+            self.properties[HAZDET_SEV_VALUE_PROP] = max_value
+        if max_unit:
+            self.properties[HAZDET_SEV_UNIT_PROP] = max_unit
 
     @property
     def cluster(self) -> str:
@@ -98,22 +108,22 @@ class HazardDetail(ABC):
         self.properties[HAZDET_CLUSTER_PROP] = v
 
     @property
-    def max_value(self) -> float:
+    def severity_value(self) -> float:
         """The maximum value of the hazard."""
-        return get_opt(self.properties.get(HAZDET_MAX_VALUE_PROP))
+        return get_opt(self.properties.get(HAZDET_SEV_VALUE_PROP))
 
-    @max_value.setter
-    def max_value(self, v: float) -> None:
-        self.properties[HAZDET_MAX_VALUE_PROP] = v
+    @severity_value.setter
+    def severity_value(self, v: float) -> None:
+        self.properties[HAZDET_SEV_VALUE_PROP] = v
 
     @property
-    def max_unit(self) -> str:
+    def severity_unit(self) -> str:
         """The unit of the maximum value of the hazard."""
-        return get_opt(self.properties.get(HAZDET_MAX_UNIT_PROP))
+        return get_opt(self.properties.get(HAZDET_SEV_UNIT_PROP))
 
-    @max_unit.setter
-    def max_unit(self, v: str) -> None:
-        self.properties[HAZDET_MAX_UNIT_PROP] = v
+    @severity_unit.setter
+    def severity_unit(self, v: str) -> None:
+        self.properties[HAZDET_SEV_UNIT_PROP] = v
 
     @property
     def estimate_type(self) -> MontyEstimateType:
@@ -227,8 +237,8 @@ class MontyExtension(
 
     @hazard_detail.setter
     def hazard_detail(self, v: HazardDetail | None) -> None:
-        self._set_property(ITEM_HAZARD_DETAIL_PROP, map_opt(v, lambda x: x.to_dict()))
-        
+        self._set_property(ITEM_HAZARD_DETAIL_PROP, map_opt(lambda x: x.to_dict(), v))
+
     @property
     def episode_number(self) -> int:
         """The episode number."""
@@ -238,8 +248,8 @@ class MontyExtension(
     def episode_number(self, v: int) -> None:
         self.properties[ITEM_EPISODE_NUMBER_PROP] = v
 
-    def compute_and_set_correlation_id(self) -> None:
-        correlation_id = self.pairing.generate_correlation_id(self.item)
+    def compute_and_set_correlation_id(self, hazard_profiles: HazardProfiles) -> None:
+        correlation_id = self.pairing.generate_correlation_id(self.item, hazard_profiles)
         self.correlation_id = correlation_id
 
     @classmethod
@@ -316,15 +326,15 @@ class ItemMontyExtension(MontyExtension[pystac.Item]):
     def is_source_event(self) -> bool:
         """Indicates if the item is a source event."""
         return (
-            MontyRoles.SOURCE in self.item.properties["roles"] and
-            MontyRoles.EVENT in self.item.properties["roles"]
+            MontyRoles.SOURCE in self.item.properties["roles"]
+            and MontyRoles.EVENT in self.item.properties["roles"]
         )
-        
+
     def is_source_hazard(self) -> bool:
         """Indicates if the item is a source hazard."""
         return (
-            MontyRoles.SOURCE in self.item.properties["roles"] and
-            MontyRoles.HAZARD in self.item.properties["roles"]
+            MontyRoles.SOURCE in self.item.properties["roles"]
+            and MontyRoles.HAZARD in self.item.properties["roles"]
         )
 
     def __repr__(self) -> str:

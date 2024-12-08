@@ -7,12 +7,13 @@ from typing import Any
 import pytz
 import requests
 from markdownify import markdownify as md
-from pystac import Asset, Collection, Item
+from pystac import Asset, Collection, Item, Link
 from shapely import simplify, to_geojson
 from shapely.geometry import shape
 from shapely.geometry.base import BaseGeometry
 
-from pystac_monty.extension import MontyExtension
+from pystac_monty.extension import HazardDetail, MontyExtension
+from pystac_monty.hazard_profiles import HazardProfiles
 from pystac_monty.sources.common import MontyDataSource
 
 # Constants
@@ -56,6 +57,7 @@ class GDACSTransformer:
     gdacs_hazards_collection_url = "https://github.com/IFRCGo/monty-stac-extension/raw/refs/heads/main/examples/gdacs-hazards/gdacs-hazards.json"
 
     data: list[GDACSDataSource] = []
+    hazard_profiles = HazardProfiles()
 
     def __init__(self, data: list[GDACSDataSource]) -> None:
         self.data = data
@@ -101,10 +103,7 @@ class GDACSTransformer:
         if "properties" not in gdacs_event.data:
             raise ValueError("event_data must contain properties")
         # check the datetime
-        if (
-            GDACS_EVENT_STARTDATETIME_PROPERTY
-            not in gdacs_event.data["properties"]
-        ):
+        if GDACS_EVENT_STARTDATETIME_PROPERTY not in gdacs_event.data["properties"]:
             raise ValueError("event_data must contain a 'fromdate' property")
 
         return gdacs_event
@@ -114,7 +113,7 @@ class GDACSTransformer:
         gdacs_geometry = next(
             (x for x in self.data if x.get_type() == GDACSDataSourceType.GEOMETRY), None
         )
-        
+
         if not gdacs_geometry:
             raise ValueError("no GDACS geometry data found")
 
@@ -169,7 +168,7 @@ class GDACSTransformer:
         monty.episode_number = episode_number
         monty.hazard_codes = [gdacs_event.data["properties"]["eventtype"]]
         monty.country_codes = [gdacs_event.data["properties"]["iso3"]]
-        monty.compute_and_set_correlation_id()
+        monty.compute_and_set_correlation_id(hazard_profiles=self.hazard_profiles)
 
         # assets
 
@@ -203,13 +202,8 @@ class GDACSTransformer:
 
         # links
 
-        item.links.append(
-            {
-                "rel": "via",
-                "href": gdacs_event.source_url,
-                "type": mimetypes.types_map[".json"],
-                "title": "GDACS Event Data",
-            }
+        item.add_link(
+            Link("via", gdacs_event.source_url, "application/json", "GDACS Event Data")
         )
 
         return item
@@ -242,4 +236,20 @@ class GDACSTransformer:
             item.geometry = json.loads(to_geojson(simplified_geometry))
             item.bbox = list(simplified_geometry.bounds)
 
+        # Monty extension fields
+
+        monty = MontyExtension.ext(item)
+        # hazard_detail
+        monty.hazard_detail = self.get_hazard_detail(item)
+
         return item
+
+    def get_hazard_detail(self, item: Item) -> HazardDetail:
+        # get the hazard detail from the event data
+        gdacs_event = self.check_and_get_event_data()
+        monty = MontyExtension.ext(item)
+        return HazardDetail(
+            cluster=self.hazard_profiles.get_cluster_code(monty.hazard_codes),
+            max_value=gdacs_event.data["properties"].get("episodealertscore", None),
+            max_unit="GDACS Flood Severity Score",
+        )
