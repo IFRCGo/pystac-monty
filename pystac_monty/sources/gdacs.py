@@ -12,7 +12,7 @@ from shapely import simplify, to_geojson
 from shapely.geometry import shape
 from shapely.geometry.base import BaseGeometry
 
-from pystac_monty.extension import HazardDetail, MontyExtension
+from pystac_monty.extension import HazardDetail, MontyEstimateType, MontyExtension
 from pystac_monty.hazard_profiles import HazardProfiles
 from pystac_monty.sources.common import MontyDataSource
 
@@ -250,6 +250,8 @@ class GDACSTransformer:
         monty = MontyExtension.ext(item)
         return HazardDetail(
             cluster=self.hazard_profiles.get_cluster_code(monty.hazard_codes),
-            max_value=gdacs_event.data["properties"].get("episodealertscore", None),
-            max_unit="GDACS Flood Severity Score",
+            severity_value=gdacs_event.data["properties"].get("episodealertscore", None),
+            severity_unit="GDACS Flood Severity Score",
+            severity_label=gdacs_event.data["properties"].get("episodealertlevel", None),
+            estimate_type=MontyEstimateType.PRIMARY,
         )

@@ -38,6 +38,7 @@ ITEM_EPISODE_NUMBER_PROP = PREFIX + "episode_number"
 HAZDET_CLUSTER_PROP = "cluster"
 HAZDET_SEV_VALUE_PROP = "severity_value"
 HAZDET_SEV_UNIT_PROP = "severity_unit"
+HAZDET_SEV_LABEL_PROP = "severity_label"
 HAZDET_ESTIMATE_TYPE_PROP = "estimate_type"
 
 # Link attributes
@@ -85,14 +86,20 @@ class HazardDetail(ABC):
     def __init__(
         self,
         cluster: str,
-        max_value: float = None,
-        max_unit: str = None,
+        severity_value: float = None,
+        severity_unit: str = None,
+        severity_label: str = None,
+        estimate_type: MontyEstimateType = None,
     ) -> None:
         self.properties[HAZDET_CLUSTER_PROP] = cluster
-        if max_value:
-            self.properties[HAZDET_SEV_VALUE_PROP] = max_value
-        if max_unit:
-            self.properties[HAZDET_SEV_UNIT_PROP] = max_unit
+        if severity_value:
+            self.severity_value = severity_value
+        if severity_unit:
+            self.severity_unit = severity_unit
+        if severity_label:
+            self.severity_label = severity_label
+        if estimate_type:
+            self.estimate_type = estimate_type
 
     @property
     def cluster(self) -> str:
@@ -124,6 +131,15 @@ class HazardDetail(ABC):
     @severity_unit.setter
     def severity_unit(self, v: str) -> None:
         self.properties[HAZDET_SEV_UNIT_PROP] = v
+        
+    @property
+    def severity_label(self) -> str:
+        """The label of the severity."""
+        return get_opt(self.properties.get(HAZDET_SEV_LABEL_PROP))
+    
+    @severity_label.setter
+    def severity_label(self, v: str) -> None:
+        self.properties[HAZDET_SEV_LABEL_PROP] = v
 
     @property
     def estimate_type(self) -> MontyEstimateType:
