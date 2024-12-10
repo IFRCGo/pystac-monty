@@ -89,6 +89,7 @@ dev-dependencies = [
     "mypy>=1.11.2",
     "orjson>=3.10.7",
     "packaging>=24.1",
+    "parameterized",
     "pre-commit>=4.0.1",
     "pytest>=8.3.3",
     "pytest-cov>=5.0.0",
