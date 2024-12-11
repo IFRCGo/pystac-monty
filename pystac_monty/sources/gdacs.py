@@ -34,10 +34,11 @@ STAC_EVENT_ID_PREFIX = "gdacs-event-"
 STAC_HAZARD_ID_PREFIX = "gdacs-hazard-"
 STAC_IMPACT_ID_PREFIX = "gdacs-impact-"
 
+
 class GDACSDataSourceType(Enum):
-    
     EVENT = "geteventdata"
     GEOMETRY = "getgeometry"
+
 
 @dataclass
 class GDACSDataSource(MontyDataSource):
@@ -296,12 +297,16 @@ class GDACSTransformer:
         if "sendai" in gdacs_event.data["properties"]:
             sendai = gdacs_event.data["properties"]["sendai"]
             for entry in sendai:
-                impact_item = self.make_impact_item_from_sendai_entry(entry)
+                impact_item = self.make_impact_item_from_sendai_entry(
+                    entry, gdacs_event
+                )
                 impact_items.append(impact_item)
 
         return impact_items
 
-    def make_impact_item_from_sendai_entry(self, entry: dict) -> Item:
+    def make_impact_item_from_sendai_entry(
+        self, entry: dict, gdacs_event: GDACSDataSource
+    ) -> Item:
         item = self.make_source_event_item()
         item.id = (
             item.id.replace(STAC_EVENT_ID_PREFIX, STAC_IMPACT_ID_PREFIX)
@@ -333,7 +338,17 @@ class GDACSTransformer:
         monty = MontyExtension.ext(item)
         # impact_detail
         monty.impact_detail = self.get_impact_detail(entry)
-        monty.country_codes = [entry["country"]]
+        country_code = next(
+            (
+                cc["iso3"]
+                for cc in gdacs_event.data["properties"]["affectedcountries"]
+                if cc["countryname"] == entry["country"]
+            ),
+            None,
+        )
+        monty.country_codes = [(
+            country_code if country_code else gdacs_event.data["properties"]["iso3"]
+        )]
 
         return item
 
@@ -345,7 +360,7 @@ class GDACSTransformer:
             type=self.get_impact_type_from_sendai_indicators(
                 entry["sendaitype"], entry["sendainame"]
             ),
-            value=entry["sendaivalue"],
+            value=int(entry["sendaivalue"]),
             unit="sendai",
             estimate_type=MontyEstimateType.PRIMARY,
         )
