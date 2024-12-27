@@ -4,8 +4,7 @@ from __future__ import annotations
 
 from abc import ABC
 from collections.abc import Mapping
-from datetime import datetime
-from typing import Any, Dict, Generic, Iterator, Literal, TypeVar, Union, cast
+from typing import Any, Generic, Iterator, Literal, TypeVar, Union, cast
 
 import pystac
 import pystac.extensions
@@ -13,16 +12,14 @@ import pystac.extensions.ext
 from pystac.extensions import item_assets
 from pystac.extensions.base import ExtensionManagementMixin, PropertiesExtension
 from pystac.extensions.hooks import ExtensionHooks
-from pystac.utils import StringEnum, get_opt, get_required, map_opt, str_to_datetime
+from pystac.utils import StringEnum, get_opt, get_required, map_opt
 
 from pystac_monty.hazard_profiles import HazardProfiles
 from pystac_monty.paring import Pairing
 
 __version__ = "0.1.0"
 
-T = TypeVar(
-    "T", pystac.Collection, pystac.Item, pystac.Asset, item_assets.AssetDefinition
-)
+T = TypeVar("T", pystac.Collection, pystac.Item, pystac.Asset, item_assets.AssetDefinition)
 
 SCHEMA_URI = "https://ifrcgo.github.io/monty/v0.1.0/schema.json"
 
@@ -158,8 +155,8 @@ class MontyImpactExposureCatgoryLabel(Mapping):
             MontyImpactExposureCategory.AID_CONTRIBUTIONS_NON_INFLATION_ADJUSTED: "Aid Contributions Non-Inflation-Adjusted",
             MontyImpactExposureCategory.AID_CONTRIBUTIONS_UNSPECIFIED: "Aid Contributions (Unspecified-Inflation-Adjustment)",
             MontyImpactExposureCategory.RECONSTRUCTION_COSTS_INFLATION_ADJUSTED: "Reconstruction Costs Inflation-Adjusted",
-            MontyImpactExposureCategory.RECONSTRUCTION_COSTS_NON_INFLATION_ADJUSTED: "Reconstruction Costs Non-Inflation-Adjusted",
-            MontyImpactExposureCategory.RECONSTRUCTION_COSTS_UNSPECIFIED: "Reconstruction Costs (Unspecified-Inflation-Adjustment)",
+            MontyImpactExposureCategory.RECONSTRUCTION_COSTS_NON_INFLATION_ADJUSTED: "Reconstruction Costs Non-Inflation-Adjusted",  # noqa: E501
+            MontyImpactExposureCategory.RECONSTRUCTION_COSTS_UNSPECIFIED: "Reconstruction Costs (Unspecified-Inflation-Adjustment)",  # noqa: E501
             MontyImpactExposureCategory.INSURED_COSTS_INFLATION_ADJUSTED: "Insured Costs Inflation-Adjusted",
             MontyImpactExposureCategory.INSURED_COSTS_NON_INFLATION_ADJUSTED: "Insured Costs Non-Inflation-Adjusted",
             MontyImpactExposureCategory.INSURED_COSTS_UNSPECIFIED: "Insured Costs (Unspecified-Inflation-Adjustment)",
@@ -173,11 +170,11 @@ class MontyImpactExposureCatgoryLabel(Mapping):
             MontyImpactExposureCategory.TOTAL_DIRECT_COSTS_NON_INFLATION_ADJUSTED: "Total Direct Costs Non-Inflation-Adjusted",
             MontyImpactExposureCategory.TOTAL_DIRECT_COSTS_UNSPECIFIED: "Total Direct Costs (Unspecified-Inflation-Adjustment)",
             MontyImpactExposureCategory.TOTAL_INDIRECT_COSTS_INFLATION_ADJUSTED: "Total Indirect Costs Inflation-Adjusted",
-            MontyImpactExposureCategory.TOTAL_INDIRECT_COSTS_NON_INFLATION_ADJUSTED: "Total Indirect Costs Non-Inflation-Adjusted",
-            MontyImpactExposureCategory.TOTAL_INDIRECT_COSTS_UNSPECIFIED: "Total Indirect Costs (Unspecified-Inflation-Adjustment)",
+            MontyImpactExposureCategory.TOTAL_INDIRECT_COSTS_NON_INFLATION_ADJUSTED: "Total Indirect Costs Non-Inflation-Adjusted",  # noqa: E501
+            MontyImpactExposureCategory.TOTAL_INDIRECT_COSTS_UNSPECIFIED: "Total Indirect Costs (Unspecified-Inflation-Adjustment)",  # noqa: E501
             MontyImpactExposureCategory.CATTLE: "Cattle",
             MontyImpactExposureCategory.ALERTSCORE: "Alertscore",
-            MontyImpactExposureCategory.IFRC_AID_CONTRIBUTIONS_UNSPECIFIED: "IFRC Aid Contributions (Unspecified-Inflation-Adjustment)",
+            MontyImpactExposureCategory.IFRC_AID_CONTRIBUTIONS_UNSPECIFIED: "IFRC Aid Contributions (Unspecified-Inflation-Adjustment)",  # noqa: E501
         }
 
     def __getitem__(self, key: MontyImpactExposureCategory) -> str:
@@ -245,7 +242,7 @@ class MontyImpactTypeLabel(Mapping):
             MontyImpactType.LOSS_COST: "Loss (Cost)",
             MontyImpactType.HOMELESS: "Homeless",
             MontyImpactType.INTERNALLY_DISPLACED_PERSONS: "Internally Displaced Persons (IDPs)",
-            MontyImpactType.REFUGEES_ASYLUM_SEEKERS_EXTERNALLY_DISPLACED_PERSONS: "Refugees, Asylum Seekers and Externally Displaced Persons",
+            MontyImpactType.REFUGEES_ASYLUM_SEEKERS_EXTERNALLY_DISPLACED_PERSONS: "Refugees, Asylum Seekers and Externally Displaced Persons",  # noqa: E501
             MontyImpactType.DISPLACED_PERSONS: "Displaced Persons (Internal & External)",
             MontyImpactType.ALERTSCORE: "Alertscore",
         }
@@ -340,9 +337,7 @@ class HazardDetail(ABC):
 
     @staticmethod
     def from_dict(d: dict[str, Any]) -> HazardDetail:
-        cluster: str = get_required(
-            d.get(HAZDET_CLUSTER_PROP), "hazard_detail", HAZDET_CLUSTER_PROP
-        )
+        cluster: str = get_required(d.get(HAZDET_CLUSTER_PROP), "hazard_detail", HAZDET_CLUSTER_PROP)
 
         return HazardDetail(cluster)
 
@@ -405,7 +400,7 @@ class ImpactDetail(ABC):
             ITEM_IMPACT_DETAIL_PROP,
             IMPDET_VALUE_PROP,
         )
-        
+
     @value.setter
     def value(self, v: float) -> None:
         self.properties[IMPDET_VALUE_PROP] = v
@@ -433,17 +428,12 @@ class ImpactDetail(ABC):
 
     @staticmethod
     def from_dict(d: dict[str, Any]) -> ImpactDetail:
-        category: str = get_required(
-            d.get(IMPDET_CATEGORY_PROP), "impact_detail", IMPDET_CATEGORY_PROP
-        )
-        type: str = get_required(
-            d.get(IMPDET_TYPE_PROP), "impact_detail", IMPDET_TYPE_PROP
-        )
-        value: float = get_required(
-            d.get(IMPDET_VALUE_PROP), "impact_detail", IMPDET_VALUE_PROP
-        )
+        category: str = get_required(d.get(IMPDET_CATEGORY_PROP), "impact_detail", IMPDET_CATEGORY_PROP)
+        type: str = get_required(d.get(IMPDET_TYPE_PROP), "impact_detail", IMPDET_TYPE_PROP)
+        value: float = get_required(d.get(IMPDET_VALUE_PROP), "impact_detail", IMPDET_VALUE_PROP)
 
         return ImpactDetail(category, type, value)
+
 
 class MontyExtension(
     Generic[T],
@@ -492,9 +482,7 @@ class MontyExtension(
     @property
     def correlation_id(self) -> str:
         """A unique correlation identifier for the event of the data."""
-        result = get_required(
-            self._get_property(ITEM_CORR_ID_PROP, str), self, ITEM_CORR_ID_PROP
-        )
+        result = get_required(self._get_property(ITEM_CORR_ID_PROP, str), self, ITEM_CORR_ID_PROP)
         return result
 
     @correlation_id.setter
@@ -529,23 +517,19 @@ class MontyExtension(
     @property
     def hazard_detail(self) -> HazardDetail | None:
         """The details of the hazard."""
-        result = map_opt(
-            self._get_property(ITEM_HAZARD_DETAIL_PROP, dict), HazardDetail
-        )
+        result = map_opt(self._get_property(ITEM_HAZARD_DETAIL_PROP, dict), HazardDetail)
         return result
 
     @hazard_detail.setter
     def hazard_detail(self, v: HazardDetail | None) -> None:
         self._set_property(ITEM_HAZARD_DETAIL_PROP, map_opt(lambda x: x.to_dict(), v))
-        
+
     @property
     def impact_detail(self) -> ImpactDetail | None:
         """The details of the impact."""
-        result = map_opt(
-            self._get_property(ITEM_IMPACT_DETAIL_PROP, dict), ImpactDetail
-        )
+        result = map_opt(self._get_property(ITEM_IMPACT_DETAIL_PROP, dict), ImpactDetail)
         return result
-    
+
     @impact_detail.setter
     def impact_detail(self, v: ImpactDetail | None) -> None:
         self._set_property(ITEM_IMPACT_DETAIL_PROP, map_opt(lambda x: x.to_dict(), v))
@@ -560,9 +544,7 @@ class MontyExtension(
         self.properties[ITEM_EPISODE_NUMBER_PROP] = v
 
     def compute_and_set_correlation_id(self, hazard_profiles: HazardProfiles) -> None:
-        correlation_id = self.pairing.generate_correlation_id(
-            self.item, hazard_profiles
-        )
+        correlation_id = self.pairing.generate_correlation_id(self.item, hazard_profiles)
         self.correlation_id = correlation_id
 
     @classmethod
@@ -595,9 +577,7 @@ class MontyExtension(
 
     @staticmethod
     def enable_extension() -> None:
-        pystac.extensions.ext.ItemExt.monty = property(
-            lambda self: MontyExtension.ext(self)
-        )
+        pystac.extensions.ext.ItemExt.monty = property(lambda self: MontyExtension.ext(self))
 
 
 class CollectionMontyExtension(MontyExtension[pystac.Collection]):
@@ -638,24 +618,15 @@ class ItemMontyExtension(MontyExtension[pystac.Item]):
 
     def is_source_event(self) -> bool:
         """Indicates if the item is a source event."""
-        return (
-            MontyRoles.SOURCE in self.item.properties["roles"]
-            and MontyRoles.EVENT in self.item.properties["roles"]
-        )
+        return MontyRoles.SOURCE in self.item.properties["roles"] and MontyRoles.EVENT in self.item.properties["roles"]
 
     def is_source_hazard(self) -> bool:
         """Indicates if the item is a source hazard."""
-        return (
-            MontyRoles.SOURCE in self.item.properties["roles"]
-            and MontyRoles.HAZARD in self.item.properties["roles"]
-        )
-        
+        return MontyRoles.SOURCE in self.item.properties["roles"] and MontyRoles.HAZARD in self.item.properties["roles"]
+
     def is_source_impact(self) -> bool:
         """Indicates if the item is a source impact."""
-        return (
-            MontyRoles.SOURCE in self.item.properties["roles"]
-            and MontyRoles.IMPACT in self.item.properties["roles"]
-        )
+        return MontyRoles.SOURCE in self.item.properties["roles"] and MontyRoles.IMPACT in self.item.properties["roles"]
 
     def __repr__(self) -> str:
         return f"<ItemMontyExtension Item id={self.item.id}>"

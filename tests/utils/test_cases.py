@@ -136,21 +136,15 @@ class TestCases:
 
     @staticmethod
     def case_1() -> Catalog:
-        return Catalog.from_file(
-            TestCases.get_path("data-files/catalogs/test-case-1/catalog.json")
-        )
+        return Catalog.from_file(TestCases.get_path("data-files/catalogs/test-case-1/catalog.json"))
 
     @staticmethod
     def case_2() -> Catalog:
-        return Catalog.from_file(
-            TestCases.get_path("data-files/catalogs/test-case-2/catalog.json")
-        )
+        return Catalog.from_file(TestCases.get_path("data-files/catalogs/test-case-2/catalog.json"))
 
     @staticmethod
     def case_3() -> Catalog:
-        root_cat = Catalog(
-            id="test3", description="test case 3 catalog", title="test case 3 title"
-        )
+        root_cat = Catalog(id="test3", description="test case 3 catalog", title="test case 3 title")
 
         image_item = Item(
             id="imagery-item",
@@ -160,9 +154,7 @@ class TestCases:
             properties={},
         )
 
-        image_item.add_asset(
-            "ortho", Asset(href="some/geotiff.tiff", media_type=MediaType.GEOTIFF)
-        )
+        image_item.add_asset("ortho", Asset(href="some/geotiff.tiff", media_type=MediaType.GEOTIFF))
 
         label_item = Item(
             id="label-items",
@@ -184,36 +176,24 @@ class TestCases:
         See: https://www.drivendata.org/competitions/60/building-segmentation-disaster\
 -resilience
         """
-        return Catalog.from_file(
-            TestCases.get_path("data-files/catalogs/test-case-4/catalog.json")
-        )
+        return Catalog.from_file(TestCases.get_path("data-files/catalogs/test-case-4/catalog.json"))
 
     @staticmethod
     def case_5() -> Catalog:
         """Based on a subset of https://cbers.stac.cloud/"""
-        return Catalog.from_file(
-            TestCases.get_path("data-files/catalogs/test-case-5/catalog.json")
-        )
+        return Catalog.from_file(TestCases.get_path("data-files/catalogs/test-case-5/catalog.json"))
 
     @staticmethod
     def case_6() -> Catalog:
         """Based on a subset of CBERS, contains a root and 4 empty children"""
-        return Catalog.from_file(
-            TestCases.get_path("data-files/catalogs/cbers-partial/catalog.json")
-        )
+        return Catalog.from_file(TestCases.get_path("data-files/catalogs/cbers-partial/catalog.json"))
 
     @staticmethod
     def case_7() -> Catalog:
         """Test case 4 as STAC version 0.8.1"""
-        return Catalog.from_file(
-            TestCases.get_path("data-files/catalogs/label_catalog-v0.8.1/catalog.json")
-        )
+        return Catalog.from_file(TestCases.get_path("data-files/catalogs/label_catalog-v0.8.1/catalog.json"))
 
     @staticmethod
     def case_8() -> Collection:
         """Planet disaster data example catalog, 1.0.0-beta.2"""
-        return Collection.from_file(
-            TestCases.get_path(
-                "data-files/catalogs/" "planet-example-v1.0.0-beta.2/collection.json"
-            )
-        )
+        return Collection.from_file(TestCases.get_path("data-files/catalogs/" "planet-example-v1.0.0-beta.2/collection.json"))

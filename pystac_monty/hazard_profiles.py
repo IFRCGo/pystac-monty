@@ -6,7 +6,7 @@ import pandas as df
 class HazardProfiles:
     impact_information_profile_path = "ImpactInformationProfiles.csv"
     impact_information_profile_data = None
-    
+
     # free impact_information_profile_data when the object is destroyed
     def __del__(self):
         if self.impact_information_profile_data:
@@ -16,7 +16,7 @@ class HazardProfiles:
 
     def get_profiles(self) -> df.DataFrame:
         if self.impact_information_profile_data is None:
-            with importlib.resources.open_binary('pystac_monty', self.impact_information_profile_path) as f:
+            with importlib.resources.open_binary("pystac_monty", self.impact_information_profile_path) as f:
                 self.impact_information_profile_data = df.read_csv(f)
         return self.impact_information_profile_data
 
@@ -28,7 +28,7 @@ class HazardProfiles:
         for c in codes:
             cluster_code = None
             try:
-                cluster_code = profiles.loc[profiles['name'] == c, "link_group"].values[-1]
+                cluster_code = profiles.loc[profiles["name"] == c, "link_group"].values[-1]
             except IndexError:
                 if not cluster_code and c.__len__() == 2:
                     cluster_code = c
@@ -38,5 +38,3 @@ class HazardProfiles:
             raise ValueError("No cluster code found for hazard code")
         # return the majority item cluster code in the list
         return max(set(cluster_codes), key=cluster_codes.count)
-
-   

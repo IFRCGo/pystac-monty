@@ -4,7 +4,6 @@ from pystac_monty.hazard_profiles import HazardProfiles
 
 
 class Pairing:
-    
     def generate_correlation_id(self, item: Item, hazard_profiles: HazardProfiles) -> str:
         # Get the necessary properties for creating the correlation id
         hazards = item.properties.get("monty:hazard_codes", [])

@@ -65,7 +65,7 @@ module = ["jinja2"]
 ignore_missing_imports = true
 
 [tool.ruff]
-line-length = 88
+line-length = 130
 lint.select = ["E", "F", "I"]
 
 [tool.pytest.ini_options]
@@ -77,6 +77,35 @@ exclude = ["tests*"]
 
 [tool.setuptools.dynamic]
 version = { attr = "pystac_monty.extension.__version__" }
+
+[tool.black]
+line-length = 130
+target-version = ['py39']
+include = '\.pyi?$'
+exclude = '''
+/(
+    \.git
+  | \.tox
+  | \.venv
+  | \.db
+  | _build
+  | buck-out
+  | build
+  | dist
+  | docs
+)/
+'''
+# NOTE: Update in .pre-commit-config.yaml as well
+extend-exclude = "^.*\\b(migrations)\\b.*$ (__pycache__|.+/+.+/+migrations/+.*)"
+
+[tool.isort]
+profile = "black"
+multi_line_output = 3
+# NOTE: Update in .pre-commit-config.yaml as well
+skip = [
+    "**/__pycache__",
+    ".venv/",
+]
 
 [tool.uv]
 dev-dependencies = [

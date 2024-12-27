@@ -16,5 +16,5 @@ def load_tests(loader, tests, pattern):
     test_cases = unittest.TestSuite()
     for p1, p2 in [(1, 2), (3, 4)]:
         print(p1, p2.test)
-        test_cases.addTest(GeneralTestCase('runTest', p1, p2))
+        test_cases.addTest(GeneralTestCase("runTest", p1, p2))
     return test_cases
