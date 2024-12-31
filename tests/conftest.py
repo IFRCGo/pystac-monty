@@ -6,7 +6,6 @@ from datetime import datetime
 from pathlib import Path
 
 import pytest
-
 from pystac import Asset, Catalog, Collection, Item, Link
 
 from .utils import ARBITRARY_BBOX, ARBITRARY_EXTENT, ARBITRARY_GEOM, TestCases

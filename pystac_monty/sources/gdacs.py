@@ -1,15 +1,14 @@
 import datetime
-from enum import Enum
 import json
 import mimetypes
 from dataclasses import dataclass
+from enum import Enum
 from typing import Any
 
 import pytz
 import requests
 from markdownify import markdownify as md
 from pystac import Asset, Collection, Item, Link
-from pystac.utils import StringEnum
 from shapely import simplify, to_geojson
 from shapely.geometry import shape
 from shapely.geometry.base import BaseGeometry
@@ -61,13 +60,19 @@ class GDACSTransformer:
     """
 
     gdacs_events_collection_id = "gdacs-events"
-    gdacs_events_collection_url = "https://github.com/IFRCGo/monty-stac-extension/raw/refs/heads/main/examples/gdacs-events/gdacs-events.json"
+    gdacs_events_collection_url = (
+        "https://github.com/IFRCGo/monty-stac-extension/raw/refs/heads/main/examples/gdacs-events/gdacs-events.json"
+    )
 
     gdacs_hazards_collection_id = "gdacs-hazards"
-    gdacs_hazards_collection_url = "https://github.com/IFRCGo/monty-stac-extension/raw/refs/heads/main/examples/gdacs-hazards/gdacs-hazards.json"
+    gdacs_hazards_collection_url = (
+        "https://github.com/IFRCGo/monty-stac-extension/raw/refs/heads/main/examples/gdacs-hazards/gdacs-hazards.json"
+    )
 
     gdacs_impacts_collection_id = "gdacs-impacts"
-    gdacs_impacts_collection_url = "https://github.com/IFRCGo/monty-stac-extension/raw/refs/heads/main/examples/gdacs-impacts/gdacs-impacts.json"
+    gdacs_impacts_collection_url = (
+        "https://github.com/IFRCGo/monty-stac-extension/raw/refs/heads/main/examples/gdacs-impacts/gdacs-impacts.json"
+    )
 
     data: list[GDACSDataSource] = []
     hazard_profiles = HazardProfiles()
@@ -109,9 +114,7 @@ class GDACSTransformer:
 
     def check_and_get_event_data(self) -> GDACSDataSource:
         # first check that the event data is present in the data
-        gdacs_event = next(
-            (x for x in self.data if x.get_type() == GDACSDataSourceType.EVENT), None
-        )
+        gdacs_event = next((x for x in self.data if x.get_type() == GDACSDataSourceType.EVENT), None)
 
         if not gdacs_event:
             raise ValueError("no GDACS event data found")
@@ -132,9 +135,7 @@ class GDACSTransformer:
 
     def check_and_get_geometry_data(self) -> GDACSDataSource:
         # first check that the geometry data is present in the data
-        gdacs_geometry = next(
-            (x for x in self.data if x.get_type() == GDACSDataSourceType.GEOMETRY), None
-        )
+        gdacs_geometry = next((x for x in self.data if x.get_type() == GDACSDataSourceType.GEOMETRY), None)
 
         if not gdacs_geometry:
             raise ValueError("no GDACS geometry data found")
@@ -163,9 +164,7 @@ class GDACSTransformer:
         else:
             description = gdacs_event.data["properties"]["description"]
 
-        startdate_str = gdacs_event.data["properties"][
-            GDACS_EVENT_STARTDATETIME_PROPERTY
-        ]
+        startdate_str = gdacs_event.data["properties"][GDACS_EVENT_STARTDATETIME_PROPERTY]
         startdate = pytz.utc.localize(datetime.datetime.fromisoformat(startdate_str))
         enddate_str = gdacs_event.data["properties"][GDACS_EVENT_ENDDATETIME_PROPERTY]
         enddate = pytz.utc.localize(datetime.datetime.fromisoformat(enddate_str))
@@ -191,30 +190,23 @@ class GDACSTransformer:
         monty.hazard_codes = [gdacs_event.data["properties"]["eventtype"]]
         cc = set([gdacs_event.data["properties"]["iso3"]])
         if "affectedcountries" in gdacs_event.data["properties"]:
-            cc.update(
-                [
-                    cc["iso3"]
-                    for cc in gdacs_event.data["properties"]["affectedcountries"]
-                ]
-            )
+            cc.update([cc["iso3"] for cc in gdacs_event.data["properties"]["affectedcountries"]])
         monty.country_codes = list(cc.union())
         monty.compute_and_set_correlation_id(hazard_profiles=self.hazard_profiles)
 
         # assets
 
-        ## icon
+        # icon
         item.add_asset(
             "icon",
             Asset(
                 href=gdacs_event.data["properties"]["icon"],
-                media_type=mimetypes.guess_type(gdacs_event.data["properties"]["icon"])[
-                    0
-                ],
+                media_type=mimetypes.guess_type(gdacs_event.data["properties"]["icon"])[0],
                 title="Icon",
             ),
         )
 
-        ## report
+        # report
         if "report" in gdacs_event.data["properties"]["url"]:
             item.add_asset(
                 "report",
@@ -232,9 +224,7 @@ class GDACSTransformer:
 
         # links
 
-        item.add_link(
-            Link("via", gdacs_event.source_url, "application/json", "GDACS Event Data")
-        )
+        item.add_link(Link("via", gdacs_event.source_url, "application/json", "GDACS Event Data"))
 
         return item
 
@@ -260,9 +250,7 @@ class GDACSTransformer:
 
         if hazard_geometry:
             # We often need to simplify the geometry using shapely
-            simplified_geometry = simplify(
-                hazard_geometry, tolerance=0.1, preserve_topology=True
-            )
+            simplified_geometry = simplify(hazard_geometry, tolerance=0.1, preserve_topology=True)
             item.geometry = json.loads(to_geojson(simplified_geometry))
             item.bbox = list(simplified_geometry.bounds)
 
@@ -279,13 +267,9 @@ class GDACSTransformer:
         monty = MontyExtension.ext(item)
         return HazardDetail(
             cluster=self.hazard_profiles.get_cluster_code(monty.hazard_codes),
-            severity_value=gdacs_event.data["properties"].get(
-                "episodealertscore", None
-            ),
+            severity_value=gdacs_event.data["properties"].get("episodealertscore", None),
             severity_unit="GDACS Flood Severity Score",
-            severity_label=gdacs_event.data["properties"].get(
-                "episodealertlevel", None
-            ),
+            severity_label=gdacs_event.data["properties"].get("episodealertlevel", None),
             estimate_type=MontyEstimateType.PRIMARY,
         )
 
@@ -297,16 +281,12 @@ class GDACSTransformer:
         if "sendai" in gdacs_event.data["properties"]:
             sendai = gdacs_event.data["properties"]["sendai"]
             for entry in sendai:
-                impact_item = self.make_impact_item_from_sendai_entry(
-                    entry, gdacs_event
-                )
+                impact_item = self.make_impact_item_from_sendai_entry(entry, gdacs_event)
                 impact_items.append(impact_item)
 
         return impact_items
 
-    def make_impact_item_from_sendai_entry(
-        self, entry: dict, gdacs_event: GDACSDataSource
-    ) -> Item:
+    def make_impact_item_from_sendai_entry(self, entry: dict, gdacs_event: GDACSDataSource) -> Item:
         item = self.make_source_event_item()
         item.id = (
             item.id.replace(STAC_EVENT_ID_PREFIX, STAC_IMPACT_ID_PREFIX)
@@ -324,51 +304,33 @@ class GDACSTransformer:
         # item.geometry = self.geolocate(entry["country"], entry["region"])
         item.set_collection(self.get_impact_collection())
         item.properties["roles"] = ["source", "impact"]
-        item.common_metadata.created = pytz.utc.localize(
-            datetime.datetime.fromisoformat(entry["dateinsert"].split(".")[0])
-        )
-        item.common_metadata.start_datetime = pytz.utc.localize(
-            datetime.datetime.fromisoformat(entry["onset_date"])
-        )
-        item.common_metadata.end_datetime = pytz.utc.localize(
-            datetime.datetime.fromisoformat(entry["expires_date"])
-        )
+        item.common_metadata.created = pytz.utc.localize(datetime.datetime.fromisoformat(entry["dateinsert"].split(".")[0]))
+        item.common_metadata.start_datetime = pytz.utc.localize(datetime.datetime.fromisoformat(entry["onset_date"]))
+        item.common_metadata.end_datetime = pytz.utc.localize(datetime.datetime.fromisoformat(entry["expires_date"]))
 
         # Monty extension fields
         monty = MontyExtension.ext(item)
         # impact_detail
         monty.impact_detail = self.get_impact_detail(entry)
         country_code = next(
-            (
-                cc["iso3"]
-                for cc in gdacs_event.data["properties"]["affectedcountries"]
-                if cc["countryname"] == entry["country"]
-            ),
+            (cc["iso3"] for cc in gdacs_event.data["properties"]["affectedcountries"] if cc["countryname"] == entry["country"]),
             None,
         )
-        monty.country_codes = [(
-            country_code if country_code else gdacs_event.data["properties"]["iso3"]
-        )]
+        monty.country_codes = [(country_code if country_code else gdacs_event.data["properties"]["iso3"])]
 
         return item
 
     def get_impact_detail(self, entry: dict) -> ImpactDetail:
         return ImpactDetail(
-            category=self.get_impact_category_from_sendai_indicators(
-                entry["sendaitype"], entry["sendainame"]
-            ),
-            type=self.get_impact_type_from_sendai_indicators(
-                entry["sendaitype"], entry["sendainame"]
-            ),
+            category=self.get_impact_category_from_sendai_indicators(entry["sendaitype"], entry["sendainame"]),
+            type=self.get_impact_type_from_sendai_indicators(entry["sendaitype"], entry["sendainame"]),
             value=int(entry["sendaivalue"]),
             unit="sendai",
             estimate_type=MontyEstimateType.PRIMARY,
         )
 
     @staticmethod
-    def get_impact_category_from_sendai_indicators(
-        sendaitype: str, sendainame: str
-    ) -> MontyImpactExposureCategory:
+    def get_impact_category_from_sendai_indicators(sendaitype: str, sendainame: str) -> MontyImpactExposureCategory:
         if sendaitype == "A":
             return GDACSTransformer.get_impact_category_from_sendai_a(sendainame)
         elif sendaitype == "B":
@@ -420,9 +382,7 @@ class GDACSTransformer:
             raise ValueError(f"Unknown sendai name {sendainame} for indicators D")
 
     @staticmethod
-    def get_impact_type_from_sendai_indicators(
-        sendaitype: str, sendainame: str
-    ) -> MontyImpactType:
+    def get_impact_type_from_sendai_indicators(sendaitype: str, sendainame: str) -> MontyImpactType:
         if sendaitype == "A":
             return GDACSTransformer.get_impact_type_from_sendai_a(sendainame)
         elif sendaitype == "B":
