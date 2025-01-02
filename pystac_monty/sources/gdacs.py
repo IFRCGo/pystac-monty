@@ -87,7 +87,7 @@ class GDACSTransformer:
         source_event_item = self.make_source_event_item()
         items.append(source_event_item)
 
-        """ 2. Create the hazard item """
+        # """ 2. Create the hazard item """
         hazard_event_item = self.make_hazard_event_item()
         items.append(hazard_event_item)
 
