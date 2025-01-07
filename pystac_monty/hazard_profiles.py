@@ -1,4 +1,4 @@
-import importlib
+import importlib.resources
 
 import pandas as df
 
@@ -16,7 +16,7 @@ class HazardProfiles:
 
     def get_profiles(self) -> df.DataFrame:
         if self.impact_information_profile_data is None:
-            with importlib.resources.open_binary("pystac_monty", self.impact_information_profile_path) as f:
+            with importlib.resources.files("pystac_monty").joinpath(self.impact_information_profile_path).open("rb") as f:
                 self.impact_information_profile_data = df.read_csv(f)
         return self.impact_information_profile_data
 
