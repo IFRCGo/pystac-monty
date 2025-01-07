@@ -15,5 +15,5 @@ glide_event_collection = {
         "monty:country_codes": [],
         "monty:hazard_codes": [],
     },
-    "links": [],
+    "links": [{"href": "glide-events.json", "rel": "self"}],
 }

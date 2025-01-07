@@ -21,54 +21,53 @@ class GlideTransformer:
     Transforms Glide event data into STAC Items
     """
 
-    def __init__(self, data: list[GlideDataSource]) -> None:
+    def __init__(self, data: GlideDataSource) -> None:
         self.data = data
 
     def make_items(self) -> list[Item]:
         items = []
 
         # validate data for glide transformation
-        glide_events = self.validate_glide_data()
+        glide_events = self.check_and_get_glide_events()
 
-        for obj in glide_events:
-            glide_data = obj.data.get("glideset")
-            if not glide_data == []:
-                for data in glide_data:
-                    glide_id = data.get("event") + "-" + data.get("number") + "-" + data.get("geocode")
-                    latitude = float(data.get("latitude"))
-                    longitude = float(data.get("longitude"))
-                    event_date = {"year": data.get("year"), "month": data.get("month"), "day": data.get("day")}
+        if not glide_events == []:
+            for data in glide_events:
+                glide_id = data.get("event") + "-" + data.get("number") + "-" + data.get("geocode")
+                latitude = float(data.get("latitude"))
+                longitude = float(data.get("longitude"))
+                event_date = {"year": data.get("year"), "month": data.get("month"), "day": data.get("day")}
 
-                    point = Point(longitude, latitude)
-                    geometry = mapping(point)
-                    bbox = [longitude, latitude, longitude, latitude]
+                point = Point(longitude, latitude)
+                geometry = mapping(point)
+                bbox = [longitude, latitude, longitude, latitude]
 
-                    item = Item(
-                        id=glide_id,
-                        geometry=geometry,
-                        bbox=bbox,
-                        datetime=self.make_date(event_date),
-                        properties={
-                            "title": data.get("title", ""),
-                            "description": data.get("comments", ""),
-                            "magnitude": data.get("magnitude", ""),
-                            "location": data.get("location", ""),
-                            "source": data.get("source", ""),
-                            "docid": data.get("docid", ""),
-                            "status": data.get("status", ""),
-                        },
-                    )
+                item = Item(
+                    id=glide_id,
+                    geometry=geometry,
+                    bbox=bbox,
+                    datetime=self.make_date(event_date),
+                    properties={
+                        "title": data.get("title", ""),
+                        "description": data.get("comments", ""),
+                        "magnitude": data.get("magnitude", ""),
+                        "source": data.get("source", ""),
+                        "docid": data.get("docid", ""),
+                        "status": data.get("status", ""),
+                    },
+                )
 
-                    item.set_collection(self.get_collection())
+                item.properties["keywords"] = [data.get("location", "")]
 
-                    MontyExtension.add_to(item)
-                    monty = MontyExtension.ext(item)
-                    monty.hazard_codes = data.get("event")
-                    monty.country_codes = data.get("geocode")
+                item.set_collection(self.get_collection())
 
-                    item.add_link(Link("via", obj.get_source_url(), "application/json", "Glide Event Data"))
+                MontyExtension.add_to(item)
+                monty = MontyExtension.ext(item)
+                monty.hazard_codes = data.get("event")
+                monty.country_codes = data.get("geocode")
 
-                    items.append(item)
+                item.add_link(Link("via", self.data.get_source_url(), "application/json", "Glide Event Data"))
+
+                items.append(item)
 
         return items
 
@@ -87,16 +86,14 @@ class GlideTransformer:
         data = glide_event_collection
         return Collection.from_dict(data)
 
-    def validate_glide_data(self) -> list[GlideDataSource]:
-        glide_data_list = []
-        for index, obj in enumerate(self.data):
-            glideset = obj.get_data()["glideset"]
-            if glideset == []:
-                raise ValueError(f"No Glide data found in object at index {index}")
-            for obj in glideset:
-                required_fields = ["latitude", "longitude", "event", "number", "geocode"]
-                missing_fields = [field for field in required_fields if field not in obj]
+    def check_and_get_glide_events(self) -> list[Any]:
+        glideset: list[Any] = self.data.get_data()["glideset"]
+        if glideset == []:
+            raise ValueError(f"No Glide data found in {self.data.get_source_url()}")
+        for obj in glideset:
+            required_fields = ["latitude", "longitude", "event", "number", "geocode"]
+            missing_fields = [field for field in required_fields if field not in obj]
 
-                if missing_fields:
-                    raise ValueError(f"Missing required fields {missing_fields} in object at index {index}")
-        return glide_data_list
+            if missing_fields:
+                raise ValueError(f"Missing required fields {missing_fields} in glide number {obj.get('number')}")
+        return glideset
