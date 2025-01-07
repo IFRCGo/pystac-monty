@@ -72,7 +72,7 @@ class GlideTransformer:
 
         return items
 
-    def make_date(self, data: dict):
+    def make_date(self, data: dict) -> datetime:
         year = data["year"]
         month = data["month"]
         day = data["day"]
