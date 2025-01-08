@@ -31,6 +31,14 @@ class GlideTransformer:
     def make_items(self) -> list[Item]:
         items = []
 
+        """ Create glide event items """
+        glide_events = self.make_event_items()
+        items.append(glide_events)
+
+        return items
+
+    def make_event_items(self) -> list[Item]:
+        event_items = []
         # validate data for glide transformation
         glide_events = self.check_and_get_glide_events()
 
@@ -69,9 +77,9 @@ class GlideTransformer:
 
                 item.add_link(Link("via", self.data.get_source_url(), "application/json", "Glide Event Data"))
 
-                items.append(item)
+                event_items.append(item)
 
-        return items
+            return event_items
 
     def make_date(self, data: dict) -> datetime:
         year = data["year"]
