@@ -2,10 +2,10 @@ import json
 from datetime import datetime
 from typing import Any
 
+import requests
 from pystac import Collection, Item, Link
 from shapely.geometry import Point, mapping
 
-from pystac_monty.collections.glide_events import glide_event_collection
 from pystac_monty.extension import MontyExtension
 from pystac_monty.sources.common import MontyDataSource
 
@@ -20,6 +20,10 @@ class GlideTransformer:
     """
     Transforms Glide event data into STAC Items
     """
+
+    glide_events_collection_url = (
+        "https://github.com/IFRCGo/monty-stac-extension/raw/refs/heads/main/examples/glide-events/glide-events.json"
+    )
 
     def __init__(self, data: GlideDataSource) -> None:
         self.data = data
@@ -56,9 +60,7 @@ class GlideTransformer:
                     },
                 )
 
-                item.properties["keywords"] = [data.get("location", "")]
-
-                item.set_collection(self.get_collection())
+                item.set_collection(self.get_event_collection())
 
                 MontyExtension.add_to(item)
                 monty = MontyExtension.ext(item)
@@ -82,9 +84,10 @@ class GlideTransformer:
         date = datetime.fromisoformat(formatted_date.replace("Z", "+00:00"))
         return date
 
-    def get_collection(self) -> Collection:
-        data = glide_event_collection
-        return Collection.from_dict(data)
+    def get_event_collection(self) -> Collection:
+        response = requests.get(self.glide_events_collection_url)
+        collection_dict = json.loads(response.text)
+        return Collection.from_dict(collection_dict)
 
     def check_and_get_glide_events(self) -> list[Any]:
         glideset: list[Any] = self.data.get_data()["glideset"]

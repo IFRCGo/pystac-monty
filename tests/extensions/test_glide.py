@@ -9,10 +9,7 @@ import requests
 from parameterized import parameterized
 
 from pystac_monty.extension import MontyExtension
-from pystac_monty.sources.glide import (
-    GlideDataSource,
-    GlideTransformer,
-)
+from pystac_monty.sources.glide import GlideDataSource, GlideTransformer
 from tests.conftest import get_data_file
 from tests.extensions.test_monty import CustomValidator
 
