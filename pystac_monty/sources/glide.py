@@ -7,6 +7,7 @@ from pystac import Collection, Item, Link
 from shapely.geometry import Point, mapping
 
 from pystac_monty.extension import MontyExtension
+from pystac_monty.hazard_profiles import HazardProfiles
 from pystac_monty.sources.common import MontyDataSource
 
 
@@ -21,6 +22,8 @@ class GlideTransformer:
     Transforms Glide event data into STAC Items
     """
 
+    hazard_profiles = HazardProfiles()
+
     glide_events_collection_url = (
         "https://github.com/IFRCGo/monty-stac-extension/raw/refs/heads/main/examples/glide-events/glide-events.json"
     )
@@ -33,7 +36,7 @@ class GlideTransformer:
 
         """ Create glide event items """
         glide_events = self.make_event_items()
-        items.append(glide_events)
+        items.extend(glide_events)
 
         return items
 
@@ -69,11 +72,18 @@ class GlideTransformer:
                 )
 
                 item.set_collection(self.get_event_collection())
+                item.properties["roles"] = ["source", "event"]
 
                 MontyExtension.add_to(item)
                 monty = MontyExtension.ext(item)
-                monty.hazard_codes = data.get("event")
-                monty.country_codes = data.get("geocode")
+                # Since there is no episode_number in glide data,
+                # we set it to 1 as it is required to create the correlation id
+                # in the method monty.compute_and_set_correlation_id(..)
+                monty.episode_number = 1
+                monty.hazard_codes = [data.get("event")]
+                monty.country_codes = [data.get("geocode")]
+
+                monty.compute_and_set_correlation_id(hazard_profiles=self.hazard_profiles)
 
                 item.add_link(Link("via", self.data.get_source_url(), "application/json", "Glide Event Data"))
 
