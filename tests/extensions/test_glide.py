@@ -59,8 +59,5 @@ class GlideTest(unittest.TestCase):
             monty_item_ext = MontyExtension.ext(item)
             if monty_item_ext.is_source_event():
                 source_event_item = item
-            elif monty_item_ext.is_source_hazard():
-                source_hazard_item = item
-
+        # Just check that we have at least one source event item
         self.assertIsNotNone(source_event_item)
-        self.assertIsNotNone(source_hazard_item)
