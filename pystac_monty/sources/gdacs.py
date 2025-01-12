@@ -87,7 +87,7 @@ class GDACSTransformer:
         source_event_item = self.make_source_event_item()
         items.append(source_event_item)
 
-        """ 2. Create the hazard item """
+        # """ 2. Create the hazard item """
         hazard_event_item = self.make_hazard_event_item()
         items.append(hazard_event_item)
 
@@ -367,7 +367,7 @@ class GDACSTransformer:
     def get_impact_category_from_sendai_c(
         sendainame: str,
     ) -> MontyImpactExposureCategory:
-        if sendainame == "houses damaged":
+        if sendainame == "houses damaged" or sendainame == "houses":
             return MontyImpactExposureCategory.BUILDINGS
         else:
             raise ValueError(f"Unknown sendai name {sendainame} for indicators C")
@@ -422,7 +422,7 @@ class GDACSTransformer:
 
     @staticmethod
     def get_impact_type_from_sendai_c(sendainame: str) -> MontyImpactType:
-        if sendainame == "houses damaged":
+        if sendainame == "houses damaged" or sendainame == "houses":
             return MontyImpactType.DAMAGED
         else:
             raise ValueError(f"Unknown sendai name {sendainame} for indicators C")
