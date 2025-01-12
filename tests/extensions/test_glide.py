@@ -49,7 +49,6 @@ class GlideTest(unittest.TestCase):
         items = transformer.make_items()
         self.assertTrue(len(items) > 0)
         source_event_item = None
-        source_hazard_item = None
         for item in items:
             # write pretty json in a temporary folder for manual inspection
             item_path = get_data_file(f"temp/glide/{item.id}.json")
