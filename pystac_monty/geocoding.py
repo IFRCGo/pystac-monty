@@ -1,7 +1,7 @@
 import json
 import zipfile
 from abc import ABC, abstractmethod
-from typing import Any, Dict, List, Optional, Union, Set, cast
+from typing import Any, Dict, List, Optional, Union, Set
 
 import fiona  # type: ignore
 from shapely.geometry import mapping, shape  # type: ignore
@@ -17,6 +17,7 @@ class MontyGeoCoder(ABC):
     def get_geometry_by_country_name(self, country_name: str) -> Optional[Dict[str, Any]]:
         pass
 
+GAUL2014_2015_GPCK_ZIP = "gaul2014_2015.gpkg"
 
 class GAULGeocoder(MontyGeoCoder):
     """
@@ -57,6 +58,7 @@ class GAULGeocoder(MontyGeoCoder):
                 return True
         except zipfile.BadZipFile:
             return False
+        return False
 
     def _find_gpkg_in_zip(self, zip_path: str) -> Optional[str]:
         """Find the first .gpkg file in a ZIP archive"""
@@ -89,7 +91,7 @@ class GAULGeocoder(MontyGeoCoder):
         cache_key = f"adm1_geom_{adm1_code}"
         cached_value = self._cache.get(cache_key)
         if cached_value is not None and isinstance(cached_value, dict):
-            return cast(Dict[str, Any], cached_value)
+            return cached_value
 
         if not self._path:
             return None
@@ -115,7 +117,7 @@ class GAULGeocoder(MontyGeoCoder):
         cache_key = f"adm0_geom_{adm0_code}"
         cached_value = self._cache.get(cache_key)
         if cached_value is not None and isinstance(cached_value, dict):
-            return cast(Dict[str, Any], cached_value)
+            return cached_value
 
         if not self._path:
             return None
@@ -231,4 +233,101 @@ class GAULGeocoder(MontyGeoCoder):
 
         except Exception as e:
             print(f"Error getting country geometry for {country_name}: {str(e)}")
+            return None
+
+
+class MockGeocoder(MontyGeoCoder):
+    """
+    Mock implementation of MontyGeoCoder for testing purposes.
+    Returns simplified test geometries without requiring GAUL data.
+    """
+
+    def __init__(self) -> None:
+        """Initialize mock geocoder with test geometries"""
+        # Test geometries for Spain and its admin units
+        self._test_geometries: Dict[str, Dict[str, Any]] = {
+            # Simplified polygon for Spain
+            "ESP": {
+                "geometry": {
+                    "type": "Polygon",
+                    "coordinates": [
+                        [
+                            [-9.0, 36.0],  # Southwest
+                            [-9.0, 44.0],  # Northwest
+                            [3.0, 44.0],   # Northeast
+                            [3.0, 36.0],   # Southeast
+                            [-9.0, 36.0]   # Close polygon
+                        ]
+                    ]
+                },
+                "bbox": [-9.0, 36.0, 3.0, 44.0]
+            },
+            # Test admin unit geometry
+            "admin1": {
+                "geometry": {
+                    "type": "Polygon",
+                    "coordinates": [
+                        [
+                            [-2.0, 40.0],
+                            [-2.0, 42.0],
+                            [0.0, 42.0],
+                            [0.0, 40.0],
+                            [-2.0, 40.0]
+                        ]
+                    ]
+                },
+                "bbox": [-2.0, 40.0, 0.0, 42.0]
+            }
+        }
+
+    def get_geometry_from_admin_units(self, admin_units: str) -> Optional[Dict[str, Any]]:
+        """
+        Get mock geometry for admin units.
+        Returns a simple test polygon for any valid admin unit JSON.
+
+        Args:
+            admin_units: JSON string containing admin unit information
+
+        Returns:
+            Dictionary containing geometry and bbox if found
+        """
+        if not admin_units:
+            return None
+
+        try:
+            admin_list = json.loads(admin_units) if isinstance(admin_units, str) else None
+            if not admin_list:
+                return None
+
+            # Return test geometry for any valid admin unit request
+            if isinstance(admin_list, list) and len(admin_list) > 0:
+                return self._test_geometries["admin1"]
+            return None
+
+        except Exception as e:
+            print(f"Error getting mock geometry from admin units: {str(e)}")
+            return None
+
+    def get_geometry_by_country_name(self, country_name: str) -> Optional[Dict[str, Any]]:
+        """
+        Get mock geometry for a country.
+        Returns a simple test polygon for Spain ("ESP").
+
+        Args:
+            country_name: Country name
+
+        Returns:
+            Dictionary containing geometry and bbox if found
+        """
+        if not country_name:
+            return None
+
+        try:
+            # Return test geometry for Spain
+            if country_name.lower() == "spain":
+                return self._test_geometries["ESP"]
+            return None
+
+        except Exception as e:
+            print(f"Error getting mock country geometry: {str(e)}")
             return None
