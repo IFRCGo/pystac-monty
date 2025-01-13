@@ -58,7 +58,7 @@ class EMDATTransformer:
 
     emdat_hazards_collection_id = "emdat-hazards"
     emdat_hazards_collection_url = (
-        "https://github.com/IFRCGo/monty-stac-extension/raw/refs/heads/main/examples/emdat-hazards/emdat-hazards.json"
+        "https://raw.githubusercontent.com/IFRCGo/monty-stac-extension/refs/heads/EMDAT/examples/emdat-hazards/emdat-hazards.json"
     )
 
     emdat_impacts_collection_id = "emdat-impacts"
@@ -88,8 +88,8 @@ class EMDATTransformer:
         items.extend(event_items)
 
         # Create hazard items
-        # hazard_items = self.make_hazard_event_items()
-        # items.extend(hazard_items)
+        hazard_items = self.make_hazard_event_items()
+        items.extend(hazard_items)
 
         # Create impact items
         # impact_items = self.make_impact_items()
@@ -157,7 +157,7 @@ class EMDATTransformer:
             end_datetime=end_date,
             properties={
                 "title": self._create_title_from_row(row),
-                "description": f"EM-DAT disaster event: {row.get('Event Name', '')}",
+                "description": self._create_description_from_row(row),
             },
         )
 
@@ -385,11 +385,50 @@ class EMDATTransformer:
         collection_dict = json.loads(response.text)
         return Collection.from_dict(collection_dict)
 
-    def _create_title_from_row(self, row: pd.Series) -> str:
+    def _create_title_from_row(self, row: pd.Series) -> str | None:
         """Create a descriptive title from row data when Event Name is missing"""
         if not pd.isna(row.get("Event Name")):
-            return row["Event Name"]
+            return str(row["Event Name"])
 
+        components = []
+
+        # Add disaster type
+        if not pd.isna(row.get("Disaster Type")):
+            components.append(row["Disaster Type"])
+            if not pd.isna(row.get("Disaster Subtype")) and row["Disaster Type"] != row["Disaster Subtype"]:
+                components.append(f"({row['Disaster Subtype']})")
+
+        # Add location info
+        locations = []
+        if not pd.isna(row.get("Country")):
+            locations.append(row["Country"])
+        if locations:
+            components.append("in")
+            components.append(", ".join(locations))
+
+        # Add date
+        date_str = None
+        if not pd.isna(row.get("Start Year")):
+            date_components = []
+            # Add month if available
+            if not pd.isna(row.get("Start Month")):
+                try:
+                    month_name = datetime(2000, int(row["Start Month"]), 1).strftime("%B")
+                    date_components.append(month_name)
+                except:
+                    pass
+            # Add year
+            date_components.append(str(int(row["Start Year"])))
+            if date_components:
+                date_str = " ".join(date_components)
+
+        if date_str:
+            components.extend(["of", date_str])
+
+        return " ".join(components) if components else None
+
+    def _create_description_from_row(self, row: pd.Series) -> str:
+        """Create a description from row data"""
         components = []
 
         # Add disaster type
@@ -428,28 +467,3 @@ class EMDATTransformer:
             components.extend(["of", date_str])
 
         return " ".join(components) if components else "Unnamed Event"
-
-        # Create geometry from lat/lon if available
-        # Try each geometry source in order of preference
-        geometry = None
-        bbox = None
-
-        # 1. Try admin units first if geocoder is available
-        if self.geocoder and not pd.isna(row.get("Admin Units")):
-            geom_data = self.geocoder.get_geometry_from_admin_units(row.get("Admin Units"))
-            if geom_data:
-                geometry = geom_data["geometry"]
-                bbox = geom_data["bbox"]
-
-        # 2. Fall back to lat/lon if available
-        if geometry is None and not pd.isna(row.get("Latitude")) and not pd.isna(row.get("Longitude")):
-            point = Point(float(row["Longitude"]), float(row["Latitude"]))
-            geometry = mapping(point)
-            bbox = [float(row["Longitude"]), float(row["Latitude"]), float(row["Longitude"]), float(row["Latitude"])]
-
-        # 3. Finally, try country geometry if geocoder is available
-        if geometry is None and self.geocoder and not pd.isna(row.get("ISO")):
-            geom_data = self.geocoder.get_country_geometry(row["ISO"])
-            if geom_data:
-                geometry = geom_data["geometry"]
-                bbox = geom_data["bbox"]

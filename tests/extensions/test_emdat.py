@@ -81,8 +81,8 @@ class EMDATTest(unittest.TestCase):
         for item in items:
             # Write pretty JSON in temporary folder for manual inspection
             item_path = get_data_file(f"temp/emdat/{item.id}.json")
-            with open(item_path, "w") as f:
-                json.dump(item.to_dict(), f, indent=2)
+            with open(item_path, "w", encoding="utf-8") as f:
+                json.dump(item.to_dict(), f, indent=2, ensure_ascii=False)
 
             # Validate item against schema
             item.validate(validator=self.validator)

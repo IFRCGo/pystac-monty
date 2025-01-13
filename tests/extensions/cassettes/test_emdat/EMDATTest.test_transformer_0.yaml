@@ -43,11 +43,11 @@ interactions:
       Cross-Origin-Resource-Policy:
       - cross-origin
       Date:
-      - Mon, 13 Jan 2025 20:09:19 GMT
+      - Mon, 13 Jan 2025 20:21:11 GMT
       ETag:
       - W/"dc6903b2705474012be20f3801b6b9cc379a5a44c5d1043e7d4673d97f18a9b9"
       Expires:
-      - Mon, 13 Jan 2025 20:14:19 GMT
+      - Mon, 13 Jan 2025 20:26:11 GMT
       Source-Age:
       - '0'
       Strict-Transport-Security:
@@ -57,21 +57,177 @@ interactions:
       Via:
       - 1.1 varnish
       X-Cache:
-      - MISS
+      - HIT
       X-Cache-Hits:
       - '0'
       X-Content-Type-Options:
       - nosniff
       X-Fastly-Request-ID:
-      - 601210d0381793c020bb06e8b696a8090fa54202
+      - 13dcbf3d29736cecfd5b9741ef0a400adeaa24f6
       X-Frame-Options:
       - deny
       X-GitHub-Request-Id:
       - 45AC:1A7171:389F274:3B1AFE3:678572ED
       X-Served-By:
-      - cache-mrs10555-MRS
+      - cache-mrs10535-MRS
       X-Timer:
-      - S1736798959.140969,VS0,VE224
+      - S1736799672.753284,VS0,VE193
+      X-XSS-Protection:
+      - 1; mode=block
+    status:
+      code: 200
+      message: OK
+- request:
+    body: null
+    headers:
+      Accept:
+      - '*/*'
+      Accept-Encoding:
+      - gzip, deflate
+      Connection:
+      - keep-alive
+      User-Agent:
+      - python-requests/2.32.3
+    method: GET
+    uri: https://raw.githubusercontent.com/IFRCGo/monty-stac-extension/refs/heads/EMDAT/examples/emdat-events/emdat-events.json
+  response:
+    body:
+      string: !!binary |
+        H4sIAAAAAAAAA3VSQW7CMBC88worp1YqTrgBp1alqnroqZxaocpxFuLWsSN7E0CIv3fjpCFQKkUQ
+        z6xndndyGDEWeRTyswbnlTXRnEUTnvAkuusp2CGYhvTEfhBMRI5Y+nkcq7WTG8s3CvMq5crGhTW4
+        j+uEk0rsZQ6F4F+ehOneKmjivoTG5tFqDRIb04CrrEGhyASOoQaDvsVRoQ4Xnl7Hi4cle7OVk8Ce
+        BiUZeOlUid0Az9qmQrOF8sIjuK6UrZ0tGOZ0tQC3ASP3v8xCoEiFB3bTetzyVlcrSZMH89eXZYs5
+        q2GwiNBpYJp1hdZOo5bO1iqjzfb1h/BLlBHFYKhO4I98gEglqyS4qINWfXHldKPxG8Z2u+VhfzyF
+        +CRJEahQJykbIfFeOsiopNU79t2GnJEKD900pUAldA8QlKZ2d9bc6Y2x8WSa3A3Ps7PjBTtL+sNq
+        NPw/dstEKErrzv2VoTzrgF3vIZrMptNxMqFnmSTz8LxHQ19Taf2f86hzp+DN95XQcgfry4+0/bpP
+        +UFYtQe9Hux3dPwByXURcWoDAAA=
+    headers:
+      Accept-Ranges:
+      - bytes
+      Access-Control-Allow-Origin:
+      - '*'
+      Cache-Control:
+      - max-age=300
+      Connection:
+      - keep-alive
+      Content-Encoding:
+      - gzip
+      Content-Length:
+      - '419'
+      Content-Security-Policy:
+      - default-src 'none'; style-src 'unsafe-inline'; sandbox
+      Content-Type:
+      - text/plain; charset=utf-8
+      Cross-Origin-Resource-Policy:
+      - cross-origin
+      Date:
+      - Mon, 13 Jan 2025 20:21:12 GMT
+      ETag:
+      - W/"dc6903b2705474012be20f3801b6b9cc379a5a44c5d1043e7d4673d97f18a9b9"
+      Expires:
+      - Mon, 13 Jan 2025 20:26:12 GMT
+      Source-Age:
+      - '0'
+      Strict-Transport-Security:
+      - max-age=31536000
+      Vary:
+      - Authorization,Accept-Encoding,Origin
+      Via:
+      - 1.1 varnish
+      X-Cache:
+      - HIT
+      X-Cache-Hits:
+      - '1'
+      X-Content-Type-Options:
+      - nosniff
+      X-Fastly-Request-ID:
+      - 2c99bf6e3b55996723e7e9a59dd292e5188696a3
+      X-Frame-Options:
+      - deny
+      X-GitHub-Request-Id:
+      - 45AC:1A7171:389F274:3B1AFE3:678572ED
+      X-Served-By:
+      - cache-mrs10573-MRS
+      X-Timer:
+      - S1736799672.133632,VS0,VE1
+      X-XSS-Protection:
+      - 1; mode=block
+    status:
+      code: 200
+      message: OK
+- request:
+    body: null
+    headers:
+      Accept:
+      - '*/*'
+      Accept-Encoding:
+      - gzip, deflate
+      Connection:
+      - keep-alive
+      User-Agent:
+      - python-requests/2.32.3
+    method: GET
+    uri: https://raw.githubusercontent.com/IFRCGo/monty-stac-extension/refs/heads/EMDAT/examples/emdat-hazards/emdat-hazards.json
+  response:
+    body:
+      string: !!binary |
+        H4sIAAAAAAAAA3VSy07DMBC89yusnECiTnprewLRCjhwoidQhRxn2xgcO7I3KaXqv7NxQprykKI2
+        nlnP7O7kMGIs8ijkaw3OK2uiOYsmPOFJdNVT8IFgGtIT+0IwETli6edxrDZObi3fKsyrlCsbF9bg
+        Pq4TTiqxlzkUgr95EqZ766CJ+xIam1urNUhsTAOusgaFIhM4zsWncJlvCVSow43l43hxs2JPtnIS
+        2P2wJgMvnSqxG+FO21RotlBeeATHljUY9GzjbMEwB7YswG3ByP03sxAoUuGBXbQml7zV1UrS7MH9
+        8WHVYs5qGK4i9BGoZmOhudO0pbO1ymi5/YVD+CXKiGIwVifwSz9ApJJVElzUQeu+uHK60fjOY7fb
+        8bBCnkJ8kqQUVKiTFI+QeC0dZFTS6h37bkPUSIWHbppSoBK6BwhKU/tx1tzpjbHxZJpcDc+zs+MP
+        dpb0h/Vo+H/slolQlNad+ytDgdYB+7uHaDKbTsfJhJ5VkszD8xwNfU2l9X/Oo86dkjfvf4SWO9j8
+        +k7bL/wUIIRde9CbwYJHxy/wP4PAbgMAAA==
+    headers:
+      Accept-Ranges:
+      - bytes
+      Access-Control-Allow-Origin:
+      - '*'
+      Cache-Control:
+      - max-age=300
+      Connection:
+      - keep-alive
+      Content-Encoding:
+      - gzip
+      Content-Length:
+      - '424'
+      Content-Security-Policy:
+      - default-src 'none'; style-src 'unsafe-inline'; sandbox
+      Content-Type:
+      - text/plain; charset=utf-8
+      Cross-Origin-Resource-Policy:
+      - cross-origin
+      Date:
+      - Mon, 13 Jan 2025 20:21:12 GMT
+      ETag:
+      - W/"f46f933f3f61257d5cd72719be76feaaa455572779ea90667b3865311b11b303"
+      Expires:
+      - Mon, 13 Jan 2025 20:26:12 GMT
+      Source-Age:
+      - '0'
+      Strict-Transport-Security:
+      - max-age=31536000
+      Vary:
+      - Authorization,Accept-Encoding,Origin
+      Via:
+      - 1.1 varnish
+      X-Cache:
+      - HIT
+      X-Cache-Hits:
+      - '0'
+      X-Content-Type-Options:
+      - nosniff
+      X-Fastly-Request-ID:
+      - 25964c833aa989b00bc385accede9fb13251d77a
+      X-Frame-Options:
+      - deny
+      X-GitHub-Request-Id:
+      - F798:1B1C0F:38A836B:3B24883:67857406
+      X-Served-By:
+      - cache-mrs10579-MRS
+      X-Timer:
+      - S1736799672.312980,VS0,VE147
       X-XSS-Protection:
       - 1; mode=block
     status:
@@ -132,11 +288,11 @@ interactions:
       Cross-Origin-Resource-Policy:
       - cross-origin
       Date:
-      - Mon, 13 Jan 2025 20:09:22 GMT
+      - Mon, 13 Jan 2025 20:21:14 GMT
       ETag:
       - W/"5f6e1f3230195359862218fdea20141106751a1f1764da100ee01a376ddd4589"
       Expires:
-      - Mon, 13 Jan 2025 20:14:22 GMT
+      - Mon, 13 Jan 2025 20:26:14 GMT
       Source-Age:
       - '0'
       Strict-Transport-Security:
@@ -146,21 +302,110 @@ interactions:
       Via:
       - 1.1 varnish
       X-Cache:
-      - MISS
+      - HIT
       X-Cache-Hits:
       - '0'
       X-Content-Type-Options:
       - nosniff
       X-Fastly-Request-ID:
-      - f50df70b3f3917285e76d02adcbae014bce23ac8
+      - d6ac01e65a98cd890ad3034324cbd96d5210ba92
       X-Frame-Options:
       - deny
       X-GitHub-Request-Id:
       - BE5A:19C89D:3A7E1C0:3CF9F3B:678572F1
       X-Served-By:
-      - cache-mrs10579-MRS
+      - cache-mrs1050091-MRS
       X-Timer:
-      - S1736798962.947982,VS0,VE247
+      - S1736799674.432864,VS0,VE152
+      X-XSS-Protection:
+      - 1; mode=block
+    status:
+      code: 200
+      message: OK
+- request:
+    body: null
+    headers:
+      Accept:
+      - '*/*'
+      Accept-Encoding:
+      - gzip, deflate
+      Connection:
+      - keep-alive
+      User-Agent:
+      - python-requests/2.32.3
+    method: GET
+    uri: https://raw.githubusercontent.com/IFRCGo/monty-stac-extension/refs/heads/main/json-schema/schema.json
+  response:
+    body:
+      string: !!binary |
+        H4sIAAAAAAAAA9VXUW/bNhB+z6/g1Dy0gGMn3YABfinaosPyMCxI+rQ2NRjpZLOTSI2kgniG/vtI
+        kZZEiVTkxi2yIAlsknf67ru7j6fdCULRqYg3kONoiaKNlMVysfgqGD0zq3PG14uE41Senf+6MGsv
+        olltR5K9jVBGJOXxms3XRG7Kuzlhi5xRuV3cn88v5ufWcq49W3NJZAbawR/6HPrwIIEKwqjZTUDE
+        nBRSL6gzNx/fvke9gyhlHNUblxJygTBNzNf3LMsg1qZibrwxCn+mys8n9QWhXf1fRxCzPAcq9RM+
+        bohA6lduABmwPf/GVW2Hs6zjruvSuOWgd6MXiwRSQkmNZCEkjlewBy+ixqKa+d3IbVHzw+6+qmii
+        WXePwz8l4ZA4IFqrmbtWcFYAlwQ6T0Xo1vHYObN0cLRI3FW1Hqs4avJ+AyxLDpFzoAqj8Pgacuoj
+        pTneTd21IQOlBLJEoA3ozyp3Om3oqnnqvEeL9RSksjlRF/IyZiWVfLuKmapNr6vm6Ab/i3ky5WTM
+        OF+pPgoc4ixzc7b/uR2sVUMXfuK8xWmoGz7paV4D8KveihtMd7f9vP9kzlpYBzfyQBlq6/9hO9+T
+        BHi/tqKMxAoOfKcmb8mLpiQsQMOkSmmy3eaIbkdz9HgB6K9WIQhFN2WeY65VAb3bIgUFl5mcIUaz
+        LVI28d/GHh6IUCmOAbG0XmgZnKG7UiLKZPdB9pRovE/Nc2PxbclrzT0ZHFW4iermU7ant/GJjTHq
+        1EITQdRvsTa0UDP5Qx04GlRXgNoRBA4KzDneuplWXSMxGZh0++ngwSkapbTqKmNkBX3p10gzSRWq
+        FckDJLYtWhZD7IZoMrUBBRGqLla0zO+Ah7giVMJabfuEwluL0zknekwLCptKJid0PRBTLCXwesj8
+        8unt2V+3u5+r0wDTA6ROO/xwoK+rl2+Wnz8nu1+q01e789lFNRX3fuwIQLYAHg88AVXkWciN76Yb
+        FTG4B07kdnWPs9J7F+092xIbHTcbb6USljFn/Wh9zkBIkmMJq9At6b/WXLPDbk3LNMkLHMsjMx0r
+        TGvGt0+lJcTGIT6OkuxvyvG4nLaqZxrvKiB+X16++cmk6lU/PV3JveKqHqlEOEnq4sAZyj0qPJyB
+        WiCtqYMlxZkAR/xD1RpSmAgUx+6VWXDlgXd1SzWUurqS3mKupE+NhQ1uZz637y+BS+hab9qoGyTu
+        m7r+CTJ6Dal609Oz2QfNrFv9/tfJiW1LxKpO1mjNTffF90DD9dfOTsG5uRP5DSv58w9b1CiPFfPv
+        9Y1z3GjNLXYshJe1Uh8XoVH/SQi9DdiktNODoSmu36z14sgUkxN6aQeZ14fOvoM6e2yeddromQXj
+        7e8JAdkGeWbRDNt2Qii2k75vKBcHv2EN+ntCKLblnlkoQyEIhnKi/6r/AJI1m7vbFwAA
+    headers:
+      Accept-Ranges:
+      - bytes
+      Access-Control-Allow-Origin:
+      - '*'
+      Cache-Control:
+      - max-age=300
+      Connection:
+      - keep-alive
+      Content-Encoding:
+      - gzip
+      Content-Length:
+      - '1077'
+      Content-Security-Policy:
+      - default-src 'none'; style-src 'unsafe-inline'; sandbox
+      Content-Type:
+      - text/plain; charset=utf-8
+      Cross-Origin-Resource-Policy:
+      - cross-origin
+      Date:
+      - Mon, 13 Jan 2025 20:21:16 GMT
+      ETag:
+      - W/"5f6e1f3230195359862218fdea20141106751a1f1764da100ee01a376ddd4589"
+      Expires:
+      - Mon, 13 Jan 2025 20:26:16 GMT
+      Source-Age:
+      - '2'
+      Strict-Transport-Security:
+      - max-age=31536000
+      Vary:
+      - Authorization,Accept-Encoding,Origin
+      Via:
+      - 1.1 varnish
+      X-Cache:
+      - HIT
+      X-Cache-Hits:
+      - '1'
+      X-Content-Type-Options:
+      - nosniff
+      X-Fastly-Request-ID:
+      - 7ab08ccc1646c794beca552c4f1ff3b341840b74
+      X-Frame-Options:
+      - deny
+      X-GitHub-Request-Id:
+      - BE5A:19C89D:3A7E1C0:3CF9F3B:678572F1
+      X-Served-By:
+      - cache-mrs10522-MRS
+      X-Timer:
+      - S1736799677.649308,VS0,VE1
       X-XSS-Protection:
       - 1; mode=block
     status:
