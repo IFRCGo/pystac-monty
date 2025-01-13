@@ -49,6 +49,7 @@ class GlideTest(unittest.TestCase):
         items = transformer.make_items()
         self.assertTrue(len(items) > 0)
         source_event_item = None
+        source_hazard_item = None
         for item in items:
             # write pretty json in a temporary folder for manual inspection
             item_path = get_data_file(f"temp/glide/{item.id}.json")
@@ -58,5 +59,8 @@ class GlideTest(unittest.TestCase):
             monty_item_ext = MontyExtension.ext(item)
             if monty_item_ext.is_source_event():
                 source_event_item = item
-        # Just check that we have at least one source event item
+            elif monty_item_ext.is_source_hazard():
+                source_hazard_item = item
+
         self.assertIsNotNone(source_event_item)
+        self.assertIsNotNone(source_hazard_item)

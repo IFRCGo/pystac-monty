@@ -63,7 +63,7 @@ interactions:
       Content-Type:
       - text/html; charset=utf-8
       Date:
-      - Wed, 08 Jan 2025 16:29:00 GMT
+      - Mon, 13 Jan 2025 07:36:52 GMT
       Location:
       - https://raw.githubusercontent.com/IFRCGo/monty-stac-extension/refs/heads/main/examples/glide-events/glide-events.json
       Referrer-Policy:
@@ -80,7 +80,7 @@ interactions:
       X-Frame-Options:
       - deny
       X-GitHub-Request-Id:
-      - 81C1:125E53:2ACE43:2B940F:677EA7CB
+      - A4B4:154F01:42681B7:561A541:6784C294
       X-XSS-Protection:
       - '0'
     status:
@@ -102,16 +102,16 @@ interactions:
   response:
     body:
       string: !!binary |
-        H4sIAAAAAAAAA3VUTW/bMAy951cIOte2nKbd4lOHrmgHbMWA9tQhKBRJibXqw5BkL1mQ/z5Z9mQ7
-        TQHDDh/J90iKymEGALQOk9eGGcu1ggWAeYpSBC+ii+0cU63Teu8vD3tH6VxliyzjG0O2Ot1yV9br
-        lOtMauX2WYNSz5JZUjKJ09/WE/u8VeB0+4q1MrdaCEZcKxpwTluUnKCOOxHC779/+3oHnnRtCAN3
-        DVPOdhGUWWJ45frqv4CBAugN6PJsl8dCHhAaU0YBV06DH23BHZPgxDca1Gr1pvSfvgajBRv1HkiC
-        p51QIB66q4xuOPXDjPGH8PYuheXQSZ//jj1AnoTWhBnYQ6sYXBvRUvwf/1Z4rVSbbTbw+YnzEBSc
-        hlU3mBqSYstxx3eMxYaTdT720DdTYcexiICH1mu9mxQ3/AIgyT+ji7G9nJgn3iWKxmo2/h77WTom
-        K22m+v6MmGkCdr4GOEcIJSj3zzNCRXhe4FhX1UJ8pDzr1aGtpcSGh5Pop0GxY46HM4vlSK64rGU7
-        3jnKrxJ0ncwvz+hCiXejwGWCPiU5es4vi8WiuLp+gZPGT1dgsmKTJYu7AMNFK4iulTP7V6LplOH2
-        4XHIf/r5eC65xH+xoe9z7x/8SPMhPdjzE3vRM8YJCq7ezmx9adgmbmPSXcDuH2G4ASzsq2ViM9rQ
-        2fEfTe3yJp4EAAA=
+        H4sIAAAAAAAAA3VUW2+bMBR+z6+w/FzApGm38NSpq9pJWzWpfeoUVY45CV6NjWzDkkX57zOGGUhT
+        yQLO5fvO1RxmCGFjKXttQBuuJM4QTmMSE3wRTLCzIFujcdZfTu0MhbWVyZKEbzTbqnjLbVGvY66S
+        Ukm7TxoSO5bEsAJKGv82jtjhVp7T7itow9wqIYDZNqjX87zVbgXPIYIGpDWd3nIrPOD++7evd+hJ
+        1ZoBuht55GCY5pXt8/+CWKBGaoM6nOlwHTMSiuaQIy6tQj/alDsmwZkr1Uer5ZtUf/rctBIwqt6T
+        eEvbI0881Fdp1bga9OB/8E9nkrQcKunx79i9ypHkNQONe9UqONdatBT/B+D7FSu9TQY+13MuQjM1
+        VDc01yymhtOO7xiS9bO1zvfQF1NRy6kICqdar9VuktzwhVCUfiYXY3k5EU+sSxKE1Wz8Pva9tFBW
+        Sk/juxmBbrzufA54TgiJSOrOMyGZPy94HFfWQnwUedZHx6YuS6q5n0TfjZxasNzPLKRTcsnLumzb
+        OyfpVUSuo/nlmbi4pLuR4zIin6KUPKeX2WKRXV2/4EnhpyswWbHJkoVdwP6qZUzV0ur9K1P5lOH2
+        4XHAP/18PAcu6F+q8/fY+wfX0nSAe3l+Ii96xtBBweXbma0vNGxOr3b3TxhuAPh9NSA2ow2dHf8B
+        UT+J1aAEAAA=
     headers:
       Accept-Ranges:
       - bytes
@@ -124,7 +124,7 @@ interactions:
       Content-Encoding:
       - gzip
       Content-Length:
-      - '524'
+      - '521'
       Content-Security-Policy:
       - default-src 'none'; style-src 'unsafe-inline'; sandbox
       Content-Type:
@@ -132,11 +132,11 @@ interactions:
       Cross-Origin-Resource-Policy:
       - cross-origin
       Date:
-      - Wed, 08 Jan 2025 16:29:00 GMT
+      - Mon, 13 Jan 2025 07:36:53 GMT
       ETag:
-      - W/"bbbf2e872479f7121b3ad71cafb4ce38bf4638653a5c516323adb83ea6f0a6b6"
+      - W/"3caa687c740b5b8105d188f529a68d8bc1fef1b00fe573362eb01314289429f0"
       Expires:
-      - Wed, 08 Jan 2025 16:34:00 GMT
+      - Mon, 13 Jan 2025 07:41:53 GMT
       Source-Age:
       - '0'
       Strict-Transport-Security:
@@ -152,15 +152,349 @@ interactions:
       X-Content-Type-Options:
       - nosniff
       X-Fastly-Request-ID:
-      - 8a19dfd775640f4d857a513bedd9dbc40dbe89f5
+      - f26bef0907540cae6f258bce71461ac5d8049485
       X-Frame-Options:
       - deny
       X-GitHub-Request-Id:
-      - 7BC3:F3EEC:6A386:6D92E:677EA7CC
+      - D9FF:1A734A:3004532:3230253:6784C294
       X-Served-By:
-      - cache-mrs10579-MRS
+      - cache-par-lfpg1960061-PAR
       X-Timer:
-      - S1736353740.486408,VS0,VE189
+      - S1736753813.965277,VS0,VE226
+      X-XSS-Protection:
+      - 1; mode=block
+    status:
+      code: 200
+      message: OK
+- request:
+    body: null
+    headers:
+      Accept:
+      - '*/*'
+      Accept-Encoding:
+      - gzip, deflate
+      Connection:
+      - keep-alive
+      User-Agent:
+      - python-requests/2.32.3
+    method: GET
+    uri: https://github.com/IFRCGo/monty-stac-extension/raw/refs/heads/main/examples/glide-events/glide-events.json
+  response:
+    body:
+      string: ''
+    headers:
+      Access-Control-Allow-Origin:
+      - ''
+      Cache-Control:
+      - no-cache
+      Content-Length:
+      - '0'
+      Content-Security-Policy:
+      - 'default-src ''none''; base-uri ''self''; child-src github.com/assets-cdn/worker/
+        github.com/webpack/ github.com/assets/ gist.github.com/assets-cdn/worker/;
+        connect-src ''self'' uploads.github.com www.githubstatus.com collector.github.com
+        raw.githubusercontent.com api.github.com github-cloud.s3.amazonaws.com github-production-repository-file-5c1aeb.s3.amazonaws.com
+        github-production-upload-manifest-file-7fdce7.s3.amazonaws.com github-production-user-asset-6210df.s3.amazonaws.com
+        *.rel.tunnels.api.visualstudio.com wss://*.rel.tunnels.api.visualstudio.com
+        objects-origin.githubusercontent.com copilot-proxy.githubusercontent.com proxy.individual.githubcopilot.com
+        proxy.business.githubcopilot.com proxy.enterprise.githubcopilot.com *.actions.githubusercontent.com
+        wss://*.actions.githubusercontent.com productionresultssa0.blob.core.windows.net/
+        productionresultssa1.blob.core.windows.net/ productionresultssa2.blob.core.windows.net/
+        productionresultssa3.blob.core.windows.net/ productionresultssa4.blob.core.windows.net/
+        productionresultssa5.blob.core.windows.net/ productionresultssa6.blob.core.windows.net/
+        productionresultssa7.blob.core.windows.net/ productionresultssa8.blob.core.windows.net/
+        productionresultssa9.blob.core.windows.net/ productionresultssa10.blob.core.windows.net/
+        productionresultssa11.blob.core.windows.net/ productionresultssa12.blob.core.windows.net/
+        productionresultssa13.blob.core.windows.net/ productionresultssa14.blob.core.windows.net/
+        productionresultssa15.blob.core.windows.net/ productionresultssa16.blob.core.windows.net/
+        productionresultssa17.blob.core.windows.net/ productionresultssa18.blob.core.windows.net/
+        productionresultssa19.blob.core.windows.net/ github-production-repository-image-32fea6.s3.amazonaws.com
+        github-production-release-asset-2e65be.s3.amazonaws.com insights.github.com
+        wss://alive.github.com api.githubcopilot.com api.individual.githubcopilot.com
+        api.business.githubcopilot.com api.enterprise.githubcopilot.com; font-src
+        github.githubassets.com; form-action ''self'' github.com gist.github.com copilot-workspace.githubnext.com
+        objects-origin.githubusercontent.com; frame-ancestors ''none''; frame-src
+        viewscreen.githubusercontent.com notebooks.githubusercontent.com; img-src
+        ''self'' data: blob: github.githubassets.com media.githubusercontent.com camo.githubusercontent.com
+        identicons.github.com avatars.githubusercontent.com private-avatars.githubusercontent.com
+        github-cloud.s3.amazonaws.com objects.githubusercontent.com secured-user-images.githubusercontent.com/
+        user-images.githubusercontent.com/ private-user-images.githubusercontent.com
+        opengraph.githubassets.com github-production-user-asset-6210df.s3.amazonaws.com
+        customer-stories-feed.github.com spotlights-feed.github.com objects-origin.githubusercontent.com
+        *.githubusercontent.com; manifest-src ''self''; media-src github.com user-images.githubusercontent.com/
+        secured-user-images.githubusercontent.com/ private-user-images.githubusercontent.com
+        github-production-user-asset-6210df.s3.amazonaws.com gist.github.com; script-src
+        github.githubassets.com; style-src ''unsafe-inline'' github.githubassets.com;
+        upgrade-insecure-requests; worker-src github.com/assets-cdn/worker/ github.com/webpack/
+        github.com/assets/ gist.github.com/assets-cdn/worker/'
+      Content-Type:
+      - text/html; charset=utf-8
+      Date:
+      - Mon, 13 Jan 2025 07:36:52 GMT
+      Location:
+      - https://raw.githubusercontent.com/IFRCGo/monty-stac-extension/refs/heads/main/examples/glide-events/glide-events.json
+      Referrer-Policy:
+      - no-referrer-when-downgrade
+      Server:
+      - GitHub.com
+      Strict-Transport-Security:
+      - max-age=31536000; includeSubdomains; preload
+      Vary:
+      - X-PJAX, X-PJAX-Container, Turbo-Visit, Turbo-Frame, Accept-Encoding, Accept,
+        X-Requested-With
+      X-Content-Type-Options:
+      - nosniff
+      X-Frame-Options:
+      - deny
+      X-GitHub-Request-Id:
+      - A4BC:31239C:653E6F:86B6AE:6784C295
+      X-XSS-Protection:
+      - '0'
+    status:
+      code: 302
+      message: Found
+- request:
+    body: null
+    headers:
+      Accept:
+      - '*/*'
+      Accept-Encoding:
+      - gzip, deflate
+      Connection:
+      - keep-alive
+      User-Agent:
+      - python-requests/2.32.3
+    method: GET
+    uri: https://raw.githubusercontent.com/IFRCGo/monty-stac-extension/refs/heads/main/examples/glide-events/glide-events.json
+  response:
+    body:
+      string: !!binary |
+        H4sIAAAAAAAAA3VUW2+bMBR+z6+w/FzApGm38NSpq9pJWzWpfeoUVY45CV6NjWzDkkX57zOGGUhT
+        yQLO5fvO1RxmCGFjKXttQBuuJM4QTmMSE3wRTLCzIFujcdZfTu0MhbWVyZKEbzTbqnjLbVGvY66S
+        Ukm7TxoSO5bEsAJKGv82jtjhVp7T7itow9wqIYDZNqjX87zVbgXPIYIGpDWd3nIrPOD++7evd+hJ
+        1ZoBuht55GCY5pXt8/+CWKBGaoM6nOlwHTMSiuaQIy6tQj/alDsmwZkr1Uer5ZtUf/rctBIwqt6T
+        eEvbI0881Fdp1bga9OB/8E9nkrQcKunx79i9ypHkNQONe9UqONdatBT/B+D7FSu9TQY+13MuQjM1
+        VDc01yymhtOO7xiS9bO1zvfQF1NRy6kICqdar9VuktzwhVCUfiYXY3k5EU+sSxKE1Wz8Pva9tFBW
+        Sk/juxmBbrzufA54TgiJSOrOMyGZPy94HFfWQnwUedZHx6YuS6q5n0TfjZxasNzPLKRTcsnLumzb
+        OyfpVUSuo/nlmbi4pLuR4zIin6KUPKeX2WKRXV2/4EnhpyswWbHJkoVdwP6qZUzV0ur9K1P5lOH2
+        4XHAP/18PAcu6F+q8/fY+wfX0nSAe3l+Ii96xtBBweXbma0vNGxOr3b3TxhuAPh9NSA2ow2dHf8B
+        UT+J1aAEAAA=
+    headers:
+      Accept-Ranges:
+      - bytes
+      Access-Control-Allow-Origin:
+      - '*'
+      Cache-Control:
+      - max-age=300
+      Connection:
+      - keep-alive
+      Content-Encoding:
+      - gzip
+      Content-Length:
+      - '521'
+      Content-Security-Policy:
+      - default-src 'none'; style-src 'unsafe-inline'; sandbox
+      Content-Type:
+      - text/plain; charset=utf-8
+      Cross-Origin-Resource-Policy:
+      - cross-origin
+      Date:
+      - Mon, 13 Jan 2025 07:36:53 GMT
+      ETag:
+      - W/"3caa687c740b5b8105d188f529a68d8bc1fef1b00fe573362eb01314289429f0"
+      Expires:
+      - Mon, 13 Jan 2025 07:41:53 GMT
+      Source-Age:
+      - '0'
+      Strict-Transport-Security:
+      - max-age=31536000
+      Vary:
+      - Authorization,Accept-Encoding,Origin
+      Via:
+      - 1.1 varnish
+      X-Cache:
+      - HIT
+      X-Cache-Hits:
+      - '1'
+      X-Content-Type-Options:
+      - nosniff
+      X-Fastly-Request-ID:
+      - ed22e109d6a55f1741c48b6aa30d89688b6a4627
+      X-Frame-Options:
+      - deny
+      X-GitHub-Request-Id:
+      - D9FF:1A734A:3004532:3230253:6784C294
+      X-Served-By:
+      - cache-par-lfpg1960088-PAR
+      X-Timer:
+      - S1736753814.624356,VS0,VE1
+      X-XSS-Protection:
+      - 1; mode=block
+    status:
+      code: 200
+      message: OK
+- request:
+    body: null
+    headers:
+      Accept:
+      - '*/*'
+      Accept-Encoding:
+      - gzip, deflate
+      Connection:
+      - keep-alive
+      User-Agent:
+      - python-requests/2.32.3
+    method: GET
+    uri: https://github.com/IFRCGo/monty-stac-extension/raw/refs/heads/main/examples/glide-hazards/glide-hazards.json
+  response:
+    body:
+      string: ''
+    headers:
+      Access-Control-Allow-Origin:
+      - ''
+      Cache-Control:
+      - no-cache
+      Content-Length:
+      - '0'
+      Content-Security-Policy:
+      - 'default-src ''none''; base-uri ''self''; child-src github.com/assets-cdn/worker/
+        github.com/webpack/ github.com/assets/ gist.github.com/assets-cdn/worker/;
+        connect-src ''self'' uploads.github.com www.githubstatus.com collector.github.com
+        raw.githubusercontent.com api.github.com github-cloud.s3.amazonaws.com github-production-repository-file-5c1aeb.s3.amazonaws.com
+        github-production-upload-manifest-file-7fdce7.s3.amazonaws.com github-production-user-asset-6210df.s3.amazonaws.com
+        *.rel.tunnels.api.visualstudio.com wss://*.rel.tunnels.api.visualstudio.com
+        objects-origin.githubusercontent.com copilot-proxy.githubusercontent.com proxy.individual.githubcopilot.com
+        proxy.business.githubcopilot.com proxy.enterprise.githubcopilot.com *.actions.githubusercontent.com
+        wss://*.actions.githubusercontent.com productionresultssa0.blob.core.windows.net/
+        productionresultssa1.blob.core.windows.net/ productionresultssa2.blob.core.windows.net/
+        productionresultssa3.blob.core.windows.net/ productionresultssa4.blob.core.windows.net/
+        productionresultssa5.blob.core.windows.net/ productionresultssa6.blob.core.windows.net/
+        productionresultssa7.blob.core.windows.net/ productionresultssa8.blob.core.windows.net/
+        productionresultssa9.blob.core.windows.net/ productionresultssa10.blob.core.windows.net/
+        productionresultssa11.blob.core.windows.net/ productionresultssa12.blob.core.windows.net/
+        productionresultssa13.blob.core.windows.net/ productionresultssa14.blob.core.windows.net/
+        productionresultssa15.blob.core.windows.net/ productionresultssa16.blob.core.windows.net/
+        productionresultssa17.blob.core.windows.net/ productionresultssa18.blob.core.windows.net/
+        productionresultssa19.blob.core.windows.net/ github-production-repository-image-32fea6.s3.amazonaws.com
+        github-production-release-asset-2e65be.s3.amazonaws.com insights.github.com
+        wss://alive.github.com api.githubcopilot.com api.individual.githubcopilot.com
+        api.business.githubcopilot.com api.enterprise.githubcopilot.com; font-src
+        github.githubassets.com; form-action ''self'' github.com gist.github.com copilot-workspace.githubnext.com
+        objects-origin.githubusercontent.com; frame-ancestors ''none''; frame-src
+        viewscreen.githubusercontent.com notebooks.githubusercontent.com; img-src
+        ''self'' data: blob: github.githubassets.com media.githubusercontent.com camo.githubusercontent.com
+        identicons.github.com avatars.githubusercontent.com private-avatars.githubusercontent.com
+        github-cloud.s3.amazonaws.com objects.githubusercontent.com secured-user-images.githubusercontent.com/
+        user-images.githubusercontent.com/ private-user-images.githubusercontent.com
+        opengraph.githubassets.com github-production-user-asset-6210df.s3.amazonaws.com
+        customer-stories-feed.github.com spotlights-feed.github.com objects-origin.githubusercontent.com
+        *.githubusercontent.com; manifest-src ''self''; media-src github.com user-images.githubusercontent.com/
+        secured-user-images.githubusercontent.com/ private-user-images.githubusercontent.com
+        github-production-user-asset-6210df.s3.amazonaws.com gist.github.com; script-src
+        github.githubassets.com; style-src ''unsafe-inline'' github.githubassets.com;
+        upgrade-insecure-requests; worker-src github.com/assets-cdn/worker/ github.com/webpack/
+        github.com/assets/ gist.github.com/assets-cdn/worker/'
+      Content-Type:
+      - text/html; charset=utf-8
+      Date:
+      - Mon, 13 Jan 2025 07:36:53 GMT
+      Location:
+      - https://raw.githubusercontent.com/IFRCGo/monty-stac-extension/refs/heads/main/examples/glide-hazards/glide-hazards.json
+      Referrer-Policy:
+      - no-referrer-when-downgrade
+      Server:
+      - GitHub.com
+      Strict-Transport-Security:
+      - max-age=31536000; includeSubdomains; preload
+      Vary:
+      - X-PJAX, X-PJAX-Container, Turbo-Visit, Turbo-Frame, Accept-Encoding, Accept,
+        X-Requested-With
+      X-Content-Type-Options:
+      - nosniff
+      X-Frame-Options:
+      - deny
+      X-GitHub-Request-Id:
+      - A4C2:2C05D:65CE83:86F93F:6784C295
+      X-XSS-Protection:
+      - '0'
+    status:
+      code: 302
+      message: Found
+- request:
+    body: null
+    headers:
+      Accept:
+      - '*/*'
+      Accept-Encoding:
+      - gzip, deflate
+      Connection:
+      - keep-alive
+      User-Agent:
+      - python-requests/2.32.3
+    method: GET
+    uri: https://raw.githubusercontent.com/IFRCGo/monty-stac-extension/refs/heads/main/examples/glide-hazards/glide-hazards.json
+  response:
+    body:
+      string: !!binary |
+        H4sIAAAAAAAAA3VU32+bMBB+z19h+bmASdNu4alVNzWTtmpS+9QpqhxzCV6NjWyTJYvyv9cYZiDJ
+        JAu4X9/dfXfmMEEIG0vZ2xa04UriDOE0JjHBV8EEOwuyMRpn/eXUzlBYW5ksSfhas42KN9wW9Srm
+        KimVtPtkS2KHkhhWQEnj38YBu7ilx7T7Cpo0D0oIYLZJ6vU8b7QbwXOICvqX6ty0Bsut8BGP3799
+        +YqeVa0ZoMXQJQfDNK9s18E9YgEcqTVqA00b2GEjoWgOOeLSKvSjqbqFEpy5bn2+Wr5L9acrTysB
+        AwJgC9J6S0OTR+5brLTaujZ073/wT2eStOx76eLP0L3KgeQ1A4071TI411o0EP9m4CmLld4kPZ6j
+        nYvAp4bqjuaaxdRw2uIdQ7F+vNb5HrpmKmo5FUHhVKuV2o2K678QitLP5Gooz0fiiXVOgrCcDN/H
+        jksLZaX0OL+bEeit112uAU8JIRFJ3XkhJPPnFQ/zylqI/2WedNmxqcuSau4n0bGRUwuW+5mFckou
+        eVmXDb1Tkt5E5DaaXl/Ii0u6GzjOI/IpSslLep3NZtnN7SseNX66AqMVGy1Z2AXsb1vGVC2t3r8x
+        lY8RHhZPffzzz6dLwe11OI99XDhK0z7cy9MTedYhBgYFl+8Xtr7QsD673e1/ob8C4BfWgFgPVnRy
+        /ABAaXGqpAQAAA==
+    headers:
+      Accept-Ranges:
+      - bytes
+      Access-Control-Allow-Origin:
+      - '*'
+      Cache-Control:
+      - max-age=300
+      Connection:
+      - keep-alive
+      Content-Encoding:
+      - gzip
+      Content-Length:
+      - '523'
+      Content-Security-Policy:
+      - default-src 'none'; style-src 'unsafe-inline'; sandbox
+      Content-Type:
+      - text/plain; charset=utf-8
+      Cross-Origin-Resource-Policy:
+      - cross-origin
+      Date:
+      - Mon, 13 Jan 2025 07:36:54 GMT
+      ETag:
+      - W/"7d1c835629b6ff49538e4bbae79674baaab8c972456e5fd5fb8a0ed745765a21"
+      Expires:
+      - Mon, 13 Jan 2025 07:41:54 GMT
+      Source-Age:
+      - '0'
+      Strict-Transport-Security:
+      - max-age=31536000
+      Vary:
+      - Authorization,Accept-Encoding,Origin
+      Via:
+      - 1.1 varnish
+      X-Cache:
+      - MISS
+      X-Cache-Hits:
+      - '0'
+      X-Content-Type-Options:
+      - nosniff
+      X-Fastly-Request-ID:
+      - b57c41f86b77d25e120463be8fe095b5d311d54b
+      X-Frame-Options:
+      - deny
+      X-GitHub-Request-Id:
+      - 7E36:19FB09:2FCE255:31F9EF1:6784C296
+      X-Served-By:
+      - cache-par-lfpg1960020-PAR
+      X-Timer:
+      - S1736753814.134217,VS0,VE225
       X-XSS-Protection:
       - 1; mode=block
     status:
@@ -221,13 +555,13 @@ interactions:
       Cross-Origin-Resource-Policy:
       - cross-origin
       Date:
-      - Wed, 08 Jan 2025 16:29:00 GMT
+      - Mon, 13 Jan 2025 07:36:54 GMT
       ETag:
       - W/"5f6e1f3230195359862218fdea20141106751a1f1764da100ee01a376ddd4589"
       Expires:
-      - Wed, 08 Jan 2025 16:34:00 GMT
+      - Mon, 13 Jan 2025 07:41:54 GMT
       Source-Age:
-      - '18'
+      - '21'
       Strict-Transport-Security:
       - max-age=31536000
       Vary:
@@ -241,15 +575,104 @@ interactions:
       X-Content-Type-Options:
       - nosniff
       X-Fastly-Request-ID:
-      - 4d28c31575f0b767f9736c4e5730f0afe880ef72
+      - 16e29d3b626e21730a43dbc1615c838bb91d8be1
       X-Frame-Options:
       - deny
       X-GitHub-Request-Id:
-      - 56F1:EC184:690A9:6C5B2:677EA7B8
+      - A822:1DC00A:3093A92:32BF63F:6784C280
       X-Served-By:
-      - cache-mrs10573-MRS
+      - cache-par-lfpg1960082-PAR
       X-Timer:
-      - S1736353741.852128,VS0,VE19
+      - S1736753814.474853,VS0,VE1
+      X-XSS-Protection:
+      - 1; mode=block
+    status:
+      code: 200
+      message: OK
+- request:
+    body: null
+    headers:
+      Accept:
+      - '*/*'
+      Accept-Encoding:
+      - gzip, deflate
+      Connection:
+      - keep-alive
+      User-Agent:
+      - python-requests/2.32.3
+    method: GET
+    uri: https://raw.githubusercontent.com/IFRCGo/monty-stac-extension/refs/heads/main/json-schema/schema.json
+  response:
+    body:
+      string: !!binary |
+        H4sIAAAAAAAAA9VXUW/bNhB+z6/g1Dy0gGMn3YABfinaosPyMCxI+rQ2NRjpZLOTSI2kgniG/vtI
+        kZZEiVTkxi2yIAlsknf67ru7j6fdCULRqYg3kONoiaKNlMVysfgqGD0zq3PG14uE41Senf+6MGsv
+        olltR5K9jVBGJOXxms3XRG7Kuzlhi5xRuV3cn88v5ufWcq49W3NJZAbawR/6HPrwIIEKwqjZTUDE
+        nBRSL6gzNx/fvke9gyhlHNUblxJygTBNzNf3LMsg1qZibrwxCn+mys8n9QWhXf1fRxCzPAcq9RM+
+        bohA6lduABmwPf/GVW2Hs6zjruvSuOWgd6MXiwRSQkmNZCEkjlewBy+ixqKa+d3IbVHzw+6+qmii
+        WXePwz8l4ZA4IFqrmbtWcFYAlwQ6T0Xo1vHYObN0cLRI3FW1Hqs4avJ+AyxLDpFzoAqj8Pgacuoj
+        pTneTd21IQOlBLJEoA3ozyp3Om3oqnnqvEeL9RSksjlRF/IyZiWVfLuKmapNr6vm6Ab/i3ky5WTM
+        OF+pPgoc4ixzc7b/uR2sVUMXfuK8xWmoGz7paV4D8KveihtMd7f9vP9kzlpYBzfyQBlq6/9hO9+T
+        BHi/tqKMxAoOfKcmb8mLpiQsQMOkSmmy3eaIbkdz9HgB6K9WIQhFN2WeY65VAb3bIgUFl5mcIUaz
+        LVI28d/GHh6IUCmOAbG0XmgZnKG7UiLKZPdB9pRovE/Nc2PxbclrzT0ZHFW4iermU7ant/GJjTHq
+        1EITQdRvsTa0UDP5Qx04GlRXgNoRBA4KzDneuplWXSMxGZh0++ngwSkapbTqKmNkBX3p10gzSRWq
+        FckDJLYtWhZD7IZoMrUBBRGqLla0zO+Ah7giVMJabfuEwluL0zknekwLCptKJid0PRBTLCXwesj8
+        8unt2V+3u5+r0wDTA6ROO/xwoK+rl2+Wnz8nu1+q01e789lFNRX3fuwIQLYAHg88AVXkWciN76Yb
+        FTG4B07kdnWPs9J7F+092xIbHTcbb6USljFn/Wh9zkBIkmMJq9At6b/WXLPDbk3LNMkLHMsjMx0r
+        TGvGt0+lJcTGIT6OkuxvyvG4nLaqZxrvKiB+X16++cmk6lU/PV3JveKqHqlEOEnq4sAZyj0qPJyB
+        WiCtqYMlxZkAR/xD1RpSmAgUx+6VWXDlgXd1SzWUurqS3mKupE+NhQ1uZz637y+BS+hab9qoGyTu
+        m7r+CTJ6Dal609Oz2QfNrFv9/tfJiW1LxKpO1mjNTffF90DD9dfOTsG5uRP5DSv58w9b1CiPFfPv
+        9Y1z3GjNLXYshJe1Uh8XoVH/SQi9DdiktNODoSmu36z14sgUkxN6aQeZ14fOvoM6e2yeddromQXj
+        7e8JAdkGeWbRDNt2Qii2k75vKBcHv2EN+ntCKLblnlkoQyEIhnKi/6r/AJI1m7vbFwAA
+    headers:
+      Accept-Ranges:
+      - bytes
+      Access-Control-Allow-Origin:
+      - '*'
+      Cache-Control:
+      - max-age=300
+      Connection:
+      - keep-alive
+      Content-Encoding:
+      - gzip
+      Content-Length:
+      - '1077'
+      Content-Security-Policy:
+      - default-src 'none'; style-src 'unsafe-inline'; sandbox
+      Content-Type:
+      - text/plain; charset=utf-8
+      Cross-Origin-Resource-Policy:
+      - cross-origin
+      Date:
+      - Mon, 13 Jan 2025 07:36:54 GMT
+      ETag:
+      - W/"5f6e1f3230195359862218fdea20141106751a1f1764da100ee01a376ddd4589"
+      Expires:
+      - Mon, 13 Jan 2025 07:41:54 GMT
+      Source-Age:
+      - '22'
+      Strict-Transport-Security:
+      - max-age=31536000
+      Vary:
+      - Authorization,Accept-Encoding,Origin
+      Via:
+      - 1.1 varnish
+      X-Cache:
+      - HIT
+      X-Cache-Hits:
+      - '1'
+      X-Content-Type-Options:
+      - nosniff
+      X-Fastly-Request-ID:
+      - 589c0a3f09fc1d3cc2eb379322811d2afa6381b6
+      X-Frame-Options:
+      - deny
+      X-GitHub-Request-Id:
+      - A822:1DC00A:3093A92:32BF63F:6784C280
+      X-Served-By:
+      - cache-par-lfpg1960099-PAR
+      X-Timer:
+      - S1736753815.597338,VS0,VE1
       X-XSS-Protection:
       - 1; mode=block
     status:
