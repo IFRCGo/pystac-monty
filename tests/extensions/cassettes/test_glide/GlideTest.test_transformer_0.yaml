@@ -63,7 +63,7 @@ interactions:
       Content-Type:
       - text/html; charset=utf-8
       Date:
-      - Mon, 13 Jan 2025 07:36:52 GMT
+      - Mon, 13 Jan 2025 11:21:58 GMT
       Location:
       - https://raw.githubusercontent.com/IFRCGo/monty-stac-extension/refs/heads/main/examples/glide-events/glide-events.json
       Referrer-Policy:
@@ -80,7 +80,7 @@ interactions:
       X-Frame-Options:
       - deny
       X-GitHub-Request-Id:
-      - A4B4:154F01:42681B7:561A541:6784C294
+      - E820:19A5D5:143833E3:14CFC496:6784F756
       X-XSS-Protection:
       - '0'
     status:
@@ -132,11 +132,11 @@ interactions:
       Cross-Origin-Resource-Policy:
       - cross-origin
       Date:
-      - Mon, 13 Jan 2025 07:36:53 GMT
+      - Mon, 13 Jan 2025 11:21:58 GMT
       ETag:
       - W/"3caa687c740b5b8105d188f529a68d8bc1fef1b00fe573362eb01314289429f0"
       Expires:
-      - Mon, 13 Jan 2025 07:41:53 GMT
+      - Mon, 13 Jan 2025 11:26:58 GMT
       Source-Age:
       - '0'
       Strict-Transport-Security:
@@ -152,15 +152,15 @@ interactions:
       X-Content-Type-Options:
       - nosniff
       X-Fastly-Request-ID:
-      - f26bef0907540cae6f258bce71461ac5d8049485
+      - d9497ef9f5a271211ad195739e59682ade5f142d
       X-Frame-Options:
       - deny
       X-GitHub-Request-Id:
-      - D9FF:1A734A:3004532:3230253:6784C294
+      - 75F7:19F206:33459CC:35896A1:6784F755
       X-Served-By:
       - cache-par-lfpg1960061-PAR
       X-Timer:
-      - S1736753813.965277,VS0,VE226
+      - S1736767319.731090,VS0,VE176
       X-XSS-Protection:
       - 1; mode=block
     status:
@@ -230,7 +230,7 @@ interactions:
       Content-Type:
       - text/html; charset=utf-8
       Date:
-      - Mon, 13 Jan 2025 07:36:52 GMT
+      - Mon, 13 Jan 2025 11:21:58 GMT
       Location:
       - https://raw.githubusercontent.com/IFRCGo/monty-stac-extension/refs/heads/main/examples/glide-events/glide-events.json
       Referrer-Policy:
@@ -247,7 +247,7 @@ interactions:
       X-Frame-Options:
       - deny
       X-GitHub-Request-Id:
-      - A4BC:31239C:653E6F:86B6AE:6784C295
+      - E82A:1B7C78:135E2B44:13F448F6:6784F757
       X-XSS-Protection:
       - '0'
     status:
@@ -299,13 +299,13 @@ interactions:
       Cross-Origin-Resource-Policy:
       - cross-origin
       Date:
-      - Mon, 13 Jan 2025 07:36:53 GMT
+      - Mon, 13 Jan 2025 11:21:59 GMT
       ETag:
       - W/"3caa687c740b5b8105d188f529a68d8bc1fef1b00fe573362eb01314289429f0"
       Expires:
-      - Mon, 13 Jan 2025 07:41:53 GMT
+      - Mon, 13 Jan 2025 11:26:59 GMT
       Source-Age:
-      - '0'
+      - '1'
       Strict-Transport-Security:
       - max-age=31536000
       Vary:
@@ -319,15 +319,15 @@ interactions:
       X-Content-Type-Options:
       - nosniff
       X-Fastly-Request-ID:
-      - ed22e109d6a55f1741c48b6aa30d89688b6a4627
+      - ffa36e866d93c7207f19f49c4e2ba7596e5d46ed
       X-Frame-Options:
       - deny
       X-GitHub-Request-Id:
-      - D9FF:1A734A:3004532:3230253:6784C294
+      - 75F7:19F206:33459CC:35896A1:6784F755
       X-Served-By:
-      - cache-par-lfpg1960088-PAR
+      - cache-par-lfpg1960052-PAR
       X-Timer:
-      - S1736753814.624356,VS0,VE1
+      - S1736767319.461672,VS0,VE1
       X-XSS-Protection:
       - 1; mode=block
     status:
@@ -397,7 +397,7 @@ interactions:
       Content-Type:
       - text/html; charset=utf-8
       Date:
-      - Mon, 13 Jan 2025 07:36:53 GMT
+      - Mon, 13 Jan 2025 11:21:59 GMT
       Location:
       - https://raw.githubusercontent.com/IFRCGo/monty-stac-extension/refs/heads/main/examples/glide-hazards/glide-hazards.json
       Referrer-Policy:
@@ -414,7 +414,7 @@ interactions:
       X-Frame-Options:
       - deny
       X-GitHub-Request-Id:
-      - A4C2:2C05D:65CE83:86F93F:6784C295
+      - E82E:19BAB6:12E56EA0:137BD8FD:6784F757
       X-XSS-Protection:
       - '0'
     status:
@@ -466,11 +466,11 @@ interactions:
       Cross-Origin-Resource-Policy:
       - cross-origin
       Date:
-      - Mon, 13 Jan 2025 07:36:54 GMT
+      - Mon, 13 Jan 2025 11:22:00 GMT
       ETag:
       - W/"7d1c835629b6ff49538e4bbae79674baaab8c972456e5fd5fb8a0ed745765a21"
       Expires:
-      - Mon, 13 Jan 2025 07:41:54 GMT
+      - Mon, 13 Jan 2025 11:27:00 GMT
       Source-Age:
       - '0'
       Strict-Transport-Security:
@@ -486,15 +486,15 @@ interactions:
       X-Content-Type-Options:
       - nosniff
       X-Fastly-Request-ID:
-      - b57c41f86b77d25e120463be8fe095b5d311d54b
+      - 1420df7461b3c212147d40a9f3d15016ee014bfd
       X-Frame-Options:
       - deny
       X-GitHub-Request-Id:
-      - 7E36:19FB09:2FCE255:31F9EF1:6784C296
+      - 71FB:1A7171:31FA4D4:343E187:6784F757
       X-Served-By:
-      - cache-par-lfpg1960020-PAR
+      - cache-par-lfpg1960044-PAR
       X-Timer:
-      - S1736753814.134217,VS0,VE225
+      - S1736767320.850450,VS0,VE175
       X-XSS-Protection:
       - 1; mode=block
     status:
@@ -555,13 +555,13 @@ interactions:
       Cross-Origin-Resource-Policy:
       - cross-origin
       Date:
-      - Mon, 13 Jan 2025 07:36:54 GMT
+      - Mon, 13 Jan 2025 11:22:00 GMT
       ETag:
       - W/"5f6e1f3230195359862218fdea20141106751a1f1764da100ee01a376ddd4589"
       Expires:
-      - Mon, 13 Jan 2025 07:41:54 GMT
+      - Mon, 13 Jan 2025 11:27:00 GMT
       Source-Age:
-      - '21'
+      - '13'
       Strict-Transport-Security:
       - max-age=31536000
       Vary:
@@ -571,19 +571,19 @@ interactions:
       X-Cache:
       - HIT
       X-Cache-Hits:
-      - '1'
+      - '2'
       X-Content-Type-Options:
       - nosniff
       X-Fastly-Request-ID:
-      - 16e29d3b626e21730a43dbc1615c838bb91d8be1
+      - f28125a59ec7e689e3116f4e0affafbf8115526a
       X-Frame-Options:
       - deny
       X-GitHub-Request-Id:
-      - A822:1DC00A:3093A92:32BF63F:6784C280
+      - 8A74:1B6724:33D8A60:361C6BB:6784F749
       X-Served-By:
-      - cache-par-lfpg1960082-PAR
+      - cache-par-lfpg1960097-PAR
       X-Timer:
-      - S1736753814.474853,VS0,VE1
+      - S1736767320.131068,VS0,VE0
       X-XSS-Protection:
       - 1; mode=block
     status:
@@ -644,13 +644,13 @@ interactions:
       Cross-Origin-Resource-Policy:
       - cross-origin
       Date:
-      - Mon, 13 Jan 2025 07:36:54 GMT
+      - Mon, 13 Jan 2025 11:22:00 GMT
       ETag:
       - W/"5f6e1f3230195359862218fdea20141106751a1f1764da100ee01a376ddd4589"
       Expires:
-      - Mon, 13 Jan 2025 07:41:54 GMT
+      - Mon, 13 Jan 2025 11:27:00 GMT
       Source-Age:
-      - '22'
+      - '13'
       Strict-Transport-Security:
       - max-age=31536000
       Vary:
@@ -664,15 +664,15 @@ interactions:
       X-Content-Type-Options:
       - nosniff
       X-Fastly-Request-ID:
-      - 589c0a3f09fc1d3cc2eb379322811d2afa6381b6
+      - 5c64809522e5e7b953960f710d33b8bb23007661
       X-Frame-Options:
       - deny
       X-GitHub-Request-Id:
-      - A822:1DC00A:3093A92:32BF63F:6784C280
+      - 8A74:1B6724:33D8A60:361C6BB:6784F749
       X-Served-By:
-      - cache-par-lfpg1960099-PAR
+      - cache-par-lfpg1960023-PAR
       X-Timer:
-      - S1736753815.597338,VS0,VE1
+      - S1736767320.251093,VS0,VE1
       X-XSS-Protection:
       - 1; mode=block
     status:

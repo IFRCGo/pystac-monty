@@ -63,7 +63,7 @@ interactions:
       Content-Type:
       - text/html; charset=utf-8
       Date:
-      - Mon, 13 Jan 2025 07:36:55 GMT
+      - Mon, 13 Jan 2025 11:22:00 GMT
       Location:
       - https://raw.githubusercontent.com/IFRCGo/monty-stac-extension/refs/heads/main/examples/reference-events/20241027T150000-ESP-HM-FLOOD-001-GCDB.json
       Referrer-Policy:
@@ -80,7 +80,7 @@ interactions:
       X-Frame-Options:
       - deny
       X-GitHub-Request-Id:
-      - A4CA:177FCF:63435A:83D3BD:6784C296
+      - C558:1C9370:1349C5AE:13E0F97A:6784F758
       X-XSS-Protection:
       - '0'
     status:
@@ -132,11 +132,11 @@ interactions:
       Cross-Origin-Resource-Policy:
       - cross-origin
       Date:
-      - Mon, 13 Jan 2025 07:36:55 GMT
+      - Mon, 13 Jan 2025 11:22:01 GMT
       ETag:
       - W/"9ea00a9c7f61dc2525a639d3eb02e28ad07aa9640d8cd88adb98221401aced31"
       Expires:
-      - Mon, 13 Jan 2025 07:41:55 GMT
+      - Mon, 13 Jan 2025 11:27:01 GMT
       Source-Age:
       - '0'
       Strict-Transport-Security:
@@ -152,15 +152,15 @@ interactions:
       X-Content-Type-Options:
       - nosniff
       X-Fastly-Request-ID:
-      - 937e866840cb8463c18f7e6e984ec53444cc2f56
+      - 84f6133f6d13497940b04f5a47acaabee3a5323e
       X-Frame-Options:
       - deny
       X-GitHub-Request-Id:
-      - AF5D:1DD0D4:309D22D:32C8F44:6784C295
+      - EE6C:1DD0D4:336C8E0:35B0616:6784F758
       X-Served-By:
-      - cache-par-lfpg1960086-PAR
+      - cache-par-lfpg1960090-PAR
       X-Timer:
-      - S1736753815.203775,VS0,VE201
+      - S1736767321.009704,VS0,VE190
       X-XSS-Protection:
       - 1; mode=block
     status:
@@ -221,13 +221,13 @@ interactions:
       Cross-Origin-Resource-Policy:
       - cross-origin
       Date:
-      - Mon, 13 Jan 2025 07:36:55 GMT
+      - Mon, 13 Jan 2025 11:22:01 GMT
       ETag:
       - W/"5f6e1f3230195359862218fdea20141106751a1f1764da100ee01a376ddd4589"
       Expires:
-      - Mon, 13 Jan 2025 07:41:55 GMT
+      - Mon, 13 Jan 2025 11:27:01 GMT
       Source-Age:
-      - '22'
+      - '14'
       Strict-Transport-Security:
       - max-age=31536000
       Vary:
@@ -237,19 +237,19 @@ interactions:
       X-Cache:
       - HIT
       X-Cache-Hits:
-      - '1'
+      - '2'
       X-Content-Type-Options:
       - nosniff
       X-Fastly-Request-ID:
-      - 7c00852239b243a542942d771f74464a80ed35e7
+      - 93a4e14772c9418f7206b5af271c3c07a840a7b8
       X-Frame-Options:
       - deny
       X-GitHub-Request-Id:
-      - A822:1DC00A:3093A92:32BF63F:6784C280
+      - 8A74:1B6724:33D8A60:361C6BB:6784F749
       X-Served-By:
       - cache-par-lfpg1960066-PAR
       X-Timer:
-      - S1736753816.513851,VS0,VE1
+      - S1736767321.339542,VS0,VE0
       X-XSS-Protection:
       - 1; mode=block
     status:
