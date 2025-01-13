@@ -417,7 +417,7 @@ class EMDATTransformer:
                 try:
                     month_name = datetime(2000, int(row["Start Month"]), 1).strftime("%B")
                     date_components.append(month_name)
-                except:
+                except ValueError:
                     pass
             # Add year
             date_components.append(str(int(row["Start Year"])))
@@ -458,7 +458,7 @@ class EMDATTransformer:
                 try:
                     month_name = datetime(2000, int(row["Start Month"]), 1).strftime("%B")
                     date_components.append(month_name)
-                except:
+                except ValueError:
                     pass
             # Add year
             date_components.append(str(int(row["Start Year"])))

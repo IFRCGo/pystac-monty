@@ -1,7 +1,7 @@
 import json
 import zipfile
 from abc import ABC, abstractmethod
-from typing import Any, Dict, List, Optional, Union, Set
+from typing import Any, Dict, List, Optional, Set, Union
 
 import fiona  # type: ignore
 from shapely.geometry import mapping, shape  # type: ignore
@@ -17,7 +17,9 @@ class MontyGeoCoder(ABC):
     def get_geometry_by_country_name(self, country_name: str) -> Optional[Dict[str, Any]]:
         pass
 
+
 GAUL2014_2015_GPCK_ZIP = "gaul2014_2015.gpkg"
+
 
 class GAULGeocoder(MontyGeoCoder):
     """
@@ -54,7 +56,7 @@ class GAULGeocoder(MontyGeoCoder):
     def _is_zip_file(self, file_path: str) -> bool:
         """Check if a file is a ZIP file"""
         try:
-            with zipfile.ZipFile(file_path, "r") as zf:
+            with zipfile.ZipFile(file_path, "r"):
                 return True
         except zipfile.BadZipFile:
             return False
@@ -254,30 +256,22 @@ class MockGeocoder(MontyGeoCoder):
                         [
                             [-9.0, 36.0],  # Southwest
                             [-9.0, 44.0],  # Northwest
-                            [3.0, 44.0],   # Northeast
-                            [3.0, 36.0],   # Southeast
-                            [-9.0, 36.0]   # Close polygon
+                            [3.0, 44.0],  # Northeast
+                            [3.0, 36.0],  # Southeast
+                            [-9.0, 36.0],  # Close polygon
                         ]
-                    ]
+                    ],
                 },
-                "bbox": [-9.0, 36.0, 3.0, 44.0]
+                "bbox": [-9.0, 36.0, 3.0, 44.0],
             },
             # Test admin unit geometry
             "admin1": {
                 "geometry": {
                     "type": "Polygon",
-                    "coordinates": [
-                        [
-                            [-2.0, 40.0],
-                            [-2.0, 42.0],
-                            [0.0, 42.0],
-                            [0.0, 40.0],
-                            [-2.0, 40.0]
-                        ]
-                    ]
+                    "coordinates": [[[-2.0, 40.0], [-2.0, 42.0], [0.0, 42.0], [0.0, 40.0], [-2.0, 40.0]]],
                 },
-                "bbox": [-2.0, 40.0, 0.0, 42.0]
-            }
+                "bbox": [-2.0, 40.0, 0.0, 42.0],
+            },
         }
 
     def get_geometry_from_admin_units(self, admin_units: str) -> Optional[Dict[str, Any]]:

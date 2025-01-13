@@ -348,7 +348,7 @@ class ImpactDetail(ABC):
     Preferably used only in a Impact item. See the :stac-ext:`Monty Impact Detail Object
     <monty#montyimpact_detail>` docs for details.
     """
-    
+
     properties: dict[str, Any]
 
     def __init__(

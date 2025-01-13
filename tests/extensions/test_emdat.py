@@ -9,7 +9,7 @@ import pytest
 from parameterized import parameterized
 
 from pystac_monty.extension import MontyExtension
-from pystac_monty.geocoding import GAULGeocoder, MockGeocoder
+from pystac_monty.geocoding import MockGeocoder
 from pystac_monty.sources.emdat import EMDATDataSource, EMDATTransformer
 from tests.conftest import get_data_file
 from tests.extensions.test_monty import CustomValidator
@@ -41,7 +41,10 @@ def load_scenarios(
 
 spain_flood = (
     "spain_flood",
-    "https://github.com/IFRCGo/monty-stac-extension/raw/refs/heads/EMDAT/model/sources/EM-DAT/public_emdat_custom_request_2025-01-13_4cf1ccf1-9f6e-41a3-9aec-0a19903febae.xlsx",
+    (
+        "https://github.com/IFRCGo/monty-stac-extension/raw/refs/heads/EMDAT/model/sources/"
+        "EM-DAT/public_emdat_custom_request_2025-01-13_4cf1ccf1-9f6e-41a3-9aec-0a19903febae.xlsx"
+    ),
 )
 
 
