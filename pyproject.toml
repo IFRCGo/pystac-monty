@@ -112,6 +112,7 @@ dev-dependencies = [
     "codespell<2.3",
     "coverage>=7.6.2",
     "doc8>=1.1.2",
+    "fiona>=1.10.0",
     "geopandas>=1.0.1",
     "geopy>=2.4.0",
     "html5lib>=1.1",

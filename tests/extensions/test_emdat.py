@@ -4,17 +4,19 @@ import json
 import unittest
 from os import makedirs
 
-import pytest
 import pandas as pd
+import pytest
 from parameterized import parameterized
 
 from pystac_monty.extension import MontyExtension
+from pystac_monty.geocoding import GAULGeocoder
 from pystac_monty.sources.emdat import EMDATDataSource, EMDATTransformer
 from tests.conftest import get_data_file
 from tests.extensions.test_monty import CustomValidator
 
 CURRENT_SCHEMA_URI = "https://ifrcgo.github.io/monty/v0.1.0/schema.json"
 CURRENT_SCHEMA_MAPURL = "https://raw.githubusercontent.com/IFRCGo/monty-stac-extension/refs/heads/main/json-schema/schema.json"
+GAUL2014_2015_GPCK_ZIP = "gaul2014_2015.gpkg"
 
 
 def load_scenarios(
@@ -33,7 +35,8 @@ def load_scenarios(
         # Read Excel file using pandas
         df = pd.read_excel(scenario[1])
         emdat_data_source = EMDATDataSource(scenario[1], df)
-        transformers.append(EMDATTransformer(emdat_data_source))
+        gaul_geocoder = GAULGeocoder(get_data_file("temp/" + GAUL2014_2015_GPCK_ZIP))
+        transformers.append(EMDATTransformer(emdat_data_source, gaul_geocoder))
     return transformers
 
 

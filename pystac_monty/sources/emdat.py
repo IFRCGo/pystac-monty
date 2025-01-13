@@ -1,17 +1,18 @@
 import json
 import mimetypes
+import zipfile
 from dataclasses import dataclass
 from datetime import datetime
-from typing import Any, Dict, List, Optional, Set, Tuple, Union
+from io import BytesIO
+from typing import Any, Dict, List, Optional, Set, Union
 
+import fiona
 import geopandas as gpd
 import pandas as pd
 import pytz
 import requests
-from geopy.extra.rate_limiter import RateLimiter
-from geopy.geocoders import Nominatim
 from pystac import Asset, Collection, Item, Link
-from shapely.geometry import MultiPoint, Point, mapping
+from shapely.geometry import MultiPoint, Point, mapping, shape
 from shapely.geometry.base import BaseGeometry
 
 from pystac_monty.extension import (
@@ -22,6 +23,7 @@ from pystac_monty.extension import (
     MontyImpactExposureCategory,
     MontyImpactType,
 )
+from pystac_monty.geocoding import MontyGeoCoder
 from pystac_monty.hazard_profiles import HazardProfiles
 from pystac_monty.sources.common import MontyDataSource
 
@@ -53,7 +55,7 @@ class EMDATTransformer:
     """
     emdat_events_collection_id = "emdat-events"
     emdat_events_collection_url = (
-        "https://github.com/IFRCGo/monty-stac-extension/raw/refs/heads/main/examples/emdat-events/emdat-events.json"
+        "https://raw.githubusercontent.com/IFRCGo/monty-stac-extension/refs/heads/EMDAT/examples/emdat-events/emdat-events.json"
     )
 
     emdat_hazards_collection_id = "emdat-hazards"
@@ -68,181 +70,17 @@ class EMDATTransformer:
 
     hazard_profiles = HazardProfiles()
 
-    def __init__(self, data: EMDATDataSource, gaul_gpkg_path: str = None) -> None:
+    def __init__(self, data: EMDATDataSource, geocoder: MontyGeoCoder = None) -> None:
         """
         Initialize EMDATTransformer
         
         Args:
             data: EMDATDataSource containing the EM-DAT data
-            gaul_gpkg_path: Path to the GAUL geopackage file for admin boundaries
+            gaul_path: Path to the GAUL geopackage file or ZIP containing it
         """
         self.data = data
-        self.admin_gdf = None
-        if gaul_gpkg_path:
-            self.load_admin_boundaries(gaul_gpkg_path)
+        self.geocoder = geocoder
             
-        # Initialize geocoder with rate limiting
-        self.geolocator = Nominatim(user_agent="emdat_geocoder")
-        self.geocode = RateLimiter(self.geolocator.geocode, min_delay_seconds=1)
-        
-        # Cache for geocoding results to avoid repeated API calls
-        self.geocoding_cache = {}
-            
-    def load_admin_boundaries(self, gpkg_path: str) -> None:
-        """
-        Load administrative boundaries from GAUL geopackage
-        
-        Args:
-            gpkg_path: Path to the GAUL geopackage file
-        """
-        try:
-            # Load admin level 2 boundaries
-            self.admin_gdf = gpd.read_file(gpkg_path, layer='level2')
-            
-            # Load admin level 1 boundaries by dissolving level 2
-            self.admin1_gdf = self.admin_gdf.dissolve(by='ADM1_CODE')
-            
-        except Exception as e:
-            print(f"Warning: Could not load admin boundaries: {str(e)}")
-            self.admin_gdf = None
-            self.admin1_gdf = None
-            
-    def geocode_location(self, location: str, country_code: str) -> Optional[Tuple[float, float]]:
-        """
-        Geocode a location string using Nominatim
-        
-        Args:
-            location: Location name to geocode
-            country_code: ISO country code to restrict search
-            
-        Returns:
-            Tuple of (longitude, latitude) if found, None otherwise
-        """
-        if not location or not country_code:
-            return None
-            
-        cache_key = f"{location}_{country_code}"
-        if cache_key in self.geocoding_cache:
-            return self.geocoding_cache[cache_key]
-            
-        try:
-            # Add country code to improve geocoding accuracy
-            search_text = f"{location}, {country_code}"
-            location_data = self.geocode(search_text)
-            
-            if location_data:
-                result = (location_data.longitude, location_data.latitude)
-                self.geocoding_cache[cache_key] = result
-                return result
-                
-        except Exception as e:
-            print(f"Error geocoding location '{location}': {str(e)}")
-            
-        return None
-
-    def get_geometry_from_location_string(self, location_str: str, country_code: str) -> Optional[Dict]:
-        """
-        Get geometry from a location string (semicolon-separated geonames)
-        
-        Args:
-            location_str: Semicolon-separated location names
-            country_code: ISO country code for the locations
-            
-        Returns:
-            Dictionary containing geometry and bbox if any location was found
-        """
-        if not location_str or not country_code:
-            return None
-            
-        try:
-            # Split locations and geocode each one
-            locations = [loc.strip() for loc in location_str.split(';')]
-            coords = []
-            
-            for loc in locations:
-                result = self.geocode_location(loc, country_code)
-                if result:
-                    coords.append(result)
-                    
-            if not coords:
-                return None
-                
-            # If only one point, return point geometry
-            if len(coords) == 1:
-                point = Point(coords[0])
-                return {
-                    'geometry': mapping(point),
-                    'bbox': [coords[0][0], coords[0][1], coords[0][0], coords[0][1]]
-                }
-                
-            # If multiple points, create a MultiPoint geometry
-            # This could be enhanced to create a convex hull or other area geometry
-            multi_point = MultiPoint(coords)
-            return {
-                'geometry': mapping(multi_point),
-                'bbox': list(multi_point.bounds)
-            }
-            
-        except Exception as e:
-            print(f"Error processing location string '{location_str}': {str(e)}")
-            return None
-
-    def get_geometry_from_admin_units(self, admin_units: str) -> Optional[Dict]:
-        """
-        Get geometry from admin units JSON string
-        
-        Args:
-            admin_units: JSON string containing admin unit information
-            
-        Returns:
-            Dictionary containing geometry and bbox if found, None otherwise
-        """
-        if not admin_units or not self.admin_gdf is not None:
-            return None
-            
-        try:
-            # Parse admin units JSON
-            admin_list = json.loads(admin_units) if isinstance(admin_units, str) else None
-            if not admin_list:
-                return None
-                
-            geometries = []
-            admin1_codes = set()
-            
-            # Collect all relevant geometries
-            for entry in admin_list:
-                if 'adm1_code' in entry:
-                    admin1_codes.add(entry['adm1_code'])
-                elif 'adm2_code' in entry:
-                    # Find corresponding admin1 code
-                    matching = self.admin_gdf[self.admin_gdf['ADM2_CODE'] == entry['adm2_code']]
-                    if not matching.empty:
-                        admin1_codes.add(matching.iloc[0]['ADM1_CODE'])
-                        
-            if not admin1_codes:
-                return None
-                
-            # Get geometries for all admin1 codes
-            geom_gdf = self.admin1_gdf.loc[list(admin1_codes)]
-            if geom_gdf.empty:
-                return None
-                
-            # Dissolve all geometries into one
-            combined_geom = geom_gdf.geometry.unary_union
-            
-            # Create GeoJSON geometry
-            geometry = mapping(combined_geom)
-            bbox = list(combined_geom.bounds)
-            
-            return {
-                'geometry': geometry,
-                'bbox': bbox
-            }
-            
-        except Exception as e:
-            print(f"Error getting geometry from admin units: {str(e)}")
-            return None
-
     def make_items(self) -> list[Item]:
         """Create all STAC items from EM-DAT data"""
         items = []
@@ -252,12 +90,12 @@ class EMDATTransformer:
         items.extend(event_items)
 
         # Create hazard items
-        hazard_items = self.make_hazard_event_items()
-        items.extend(hazard_items)
+        #hazard_items = self.make_hazard_event_items()
+        #items.extend(hazard_items)
 
         # Create impact items 
-        impact_items = self.make_impact_items()
-        items.extend(impact_items)
+        #impact_items = self.make_impact_items()
+        #items.extend(impact_items)
 
         return items
 
@@ -272,7 +110,7 @@ class EMDATTransformer:
                 if item:
                     event_items.append(item)
             except Exception as e:
-                print(f"Error creating event item for DisNo {row.get('DisNo', 'unknown')}: {str(e)}")
+                print(f"Error creating event item for DisNo {row.get('DisNo.', 'unknown')}: {str(e)}")
                 continue
 
         return event_items
@@ -288,9 +126,9 @@ class EMDATTransformer:
         geometry = None
         bbox = None
         
-        # 1. Try admin units first
-        if not pd.isna(row.get('Admin Units')):
-            geom_data = self.get_geometry_from_admin_units(row.get('Admin Units'))
+        # 1. Try admin units first if geocoder is available
+        if self.geocoder and not pd.isna(row.get('Admin Units')):
+            geom_data = self.geocoder.get_geometry_from_admin_units(row.get('Admin Units'))
             if geom_data:
                 geometry = geom_data['geometry']
                 bbox = geom_data['bbox']
@@ -302,15 +140,15 @@ class EMDATTransformer:
             bbox = [float(row['Longitude']), float(row['Latitude']), 
                    float(row['Longitude']), float(row['Latitude'])]
                    
-        # 3. Finally, try geocoding location string if available
-        if geometry is None and not pd.isna(row.get('Location')) and not pd.isna(row.get('ISO')):
-            geom_data = self.get_geometry_from_location_string(row['Location'], row['ISO'])
+        # 3. Finally, try country geometry if geocoder is available
+        if geometry is None and self.geocoder and not pd.isna(row.get('Country')):
+            geom_data = self.geocoder.get_geometry_by_country_name(row['Country'])
             if geom_data:
                 geometry = geom_data['geometry']
                 bbox = geom_data['bbox']
 
         # Create event datetime
-        start_date = self._create_datetime(row)
+        start_date, end_date = self._create_datetimes(row)
         
         # Create item
         item = Item(
@@ -318,10 +156,11 @@ class EMDATTransformer:
             geometry=geometry,
             bbox=bbox,
             datetime=start_date,
+            start_datetime=start_date,
+            end_datetime=end_date,
             properties={
-                "title": row.get('Event Name', ''),
+                "title": self._create_title_from_row(row),
                 "description": f"EM-DAT disaster event: {row.get('Event Name', '')}",
-                "start_datetime": start_date.isoformat() if start_date else None,
             }
         )
 
@@ -329,7 +168,7 @@ class EMDATTransformer:
         MontyExtension.add_to(item)
         monty = MontyExtension.ext(item)
         monty.episode_number = 1  # EM-DAT doesn't have episodes
-        monty.hazard_codes = [row.get('Classification Key', '')]
+        monty.hazard_codes = self._map_emdat_to_hazard_codes(row.get('Classification Key', ''))
         monty.country_codes = [row['ISO']] if not pd.isna(row.get('ISO')) else []
         monty.compute_and_set_correlation_id(hazard_profiles=self.hazard_profiles)
 
@@ -340,7 +179,7 @@ class EMDATTransformer:
         # Add source link
         item.add_link(
             Link("via", 
-                 f"https://public.emdat.be/data/{row['DisNo']}", 
+                 f"https://public.emdat.be/data/{row['DisNo.']}", 
                  "text/html",
                  "EM-DAT Event Data")
         )
@@ -391,9 +230,9 @@ class EMDATTransformer:
             'Total Deaths': (MontyImpactExposureCategory.ALL_PEOPLE, MontyImpactType.DEATHS),
             'No Injured': (MontyImpactExposureCategory.ALL_PEOPLE, MontyImpactType.INJURED),
             'No Affected': (MontyImpactExposureCategory.ALL_PEOPLE, MontyImpactType.TOTAL_AFFECTED),
-            'No Homeless': (MontyImpactExposureCategory.ALL_PEOPLE, MontyImpactType.DISPLACED),
+            'No Homeless': (MontyImpactExposureCategory.ALL_PEOPLE, MontyImpactType.DISPLACED_PERSONS),
             'Total Affected': (MontyImpactExposureCategory.ALL_PEOPLE, MontyImpactType.TOTAL_AFFECTED),
-            'Total Damages (\'000 US$)': (MontyImpactExposureCategory.ECONOMIC, MontyImpactType.ECONOMIC_LOSS)
+            'Total Damages (\'000 US$)': (MontyImpactExposureCategory.TOTAL_COST_UNSPECIFIED, MontyImpactType.LOSS_COST)
         }
 
         for field, (category, impact_type) in impact_fields.items():
@@ -431,18 +270,25 @@ class EMDATTransformer:
             print(f"Error creating impact item for field {field}: {str(e)}")
             return None
 
-    def _create_datetime(self, row: pd.Series) -> datetime:
+    def _create_datetimes(self, row: pd.Series) -> (datetime, datetime):
         """Create datetime object from EM-DAT date fields"""
-        year = int(row['Start Year']) if not pd.isna(row.get('Start Year')) else None
-        month = int(row['Start Month']) if not pd.isna(row.get('Start Month')) else 1
-        day = int(row['Start Day']) if not pd.isna(row.get('Start Day')) else 1
+        start_year = int(row['Start Year']) if not pd.isna(row.get('Start Year')) else None
+        start_month = int(row['Start Month']) if not pd.isna(row.get('Start Month')) else 1
+        start_day = int(row['Start Day']) if not pd.isna(row.get('Start Day')) else 1
+        end_year = int(row['End Year']) if not pd.isna(row.get('End Year')) else None
+        end_month = int(row['End Month']) if not pd.isna(row.get('End Month')) else 1
+        end_day = int(row['End Day']) if not pd.isna(row.get('End Day')) else 1
 
-        if year:
-            dt = datetime(year, month, day)
-            return pytz.utc.localize(dt)
+        if start_year:
+            start_dt = datetime(start_year, start_month, start_day)
+            if end_year:
+                end_dt = datetime(end_year, end_month, end_day)
+                return pytz.utc.localize(start_dt), pytz.utc.localize(end_dt)
+        
+            return pytz.utc.localize(start_dt), None
         return None
 
-    def _map_emdat_to_hazard_code(self, classification_key: str) -> List[str]:
+    def _map_emdat_to_hazard_codes(self, classification_key: str) -> List[str]:
         """
         Map EM-DAT classification key to UNDRR-ISC 2020 Hazard codes
         
@@ -482,7 +328,7 @@ class EMDATTransformer:
             'nat-geo-vol-lah': ['GH0013'],  # Lahar
             'nat-geo-vol-lav': ['GH0009'],  # Lava flow
             'nat-geo-vol-pyr': ['GH0012'],  # Pyroclastic flow
-            'nat-geo-vol-vol': [],          # Volcanic activity (general)
+            'nat-geo-vol-vol': ['VO'],      # Volcanic activity (general)
             'nat-geo-mmd-ava': ['GH0034'],  # Avalanche
             'nat-geo-mmd-lan': ['GH0007'],  # Landslide
             'nat-geo-mmd-roc': ['GH0032'],  # Rockfall
@@ -516,7 +362,7 @@ class EMDATTransformer:
     def _create_hazard_detail(self, row: pd.Series) -> HazardDetail:
         """Create hazard detail from row data"""
         # First map EM-DAT classification to UNDRR-ISC codes
-        hazard_codes = self._map_emdat_to_hazard_code(row.get('Classification Key'))
+        hazard_codes = self._map_emdat_to_hazard_codes(row.get('Classification Key'))
         
         return HazardDetail(
             cluster=self.hazard_profiles.get_cluster_code(hazard_codes),
@@ -548,3 +394,73 @@ class EMDATTransformer:
         response = requests.get(self.emdat_impacts_collection_url)
         collection_dict = json.loads(response.text)
         return Collection.from_dict(collection_dict)
+    
+    def _create_title_from_row(self, row: pd.Series) -> str:
+        """Create a descriptive title from row data when Event Name is missing"""
+        if not pd.isna(row.get('Event Name')):
+            return row['Event Name']
+            
+        components = []
+        
+        # Add disaster type
+        if not pd.isna(row.get('Disaster Type')):
+            components.append(row['Disaster Type'])
+            if not pd.isna(row.get('Disaster Subtype')) and row['Disaster Type'] != row['Disaster Subtype']:
+                components.append(f"({row['Disaster Subtype']})")
+                
+        # Add location info
+        locations = []
+        if not pd.isna(row.get('Location')):
+            locations.append(row['Location'])
+        if not pd.isna(row.get('Country')):
+            locations.append(row['Country'])
+        if locations:
+            components.append('in')
+            components.append(', '.join(locations))
+            
+        # Add date
+        date_str = None
+        if not pd.isna(row.get('Start Year')):
+            date_components = []
+            # Add month if available
+            if not pd.isna(row.get('Start Month')):
+                try:
+                    month_name = datetime(2000, int(row['Start Month']), 1).strftime('%B')
+                    date_components.append(month_name)
+                except:
+                    pass
+            # Add year
+            date_components.append(str(int(row['Start Year'])))
+            if date_components:
+                date_str = ' '.join(date_components)
+                
+        if date_str:
+            components.extend(['of', date_str])
+            
+        return ' '.join(components) if components else "Unnamed Event"
+
+        # Create geometry from lat/lon if available
+        # Try each geometry source in order of preference
+        geometry = None
+        bbox = None
+        
+        # 1. Try admin units first if geocoder is available
+        if self.geocoder and not pd.isna(row.get('Admin Units')):
+            geom_data = self.geocoder.get_geometry_from_admin_units(row.get('Admin Units'))
+            if geom_data:
+                geometry = geom_data['geometry']
+                bbox = geom_data['bbox']
+                
+        # 2. Fall back to lat/lon if available
+        if geometry is None and not pd.isna(row.get('Latitude')) and not pd.isna(row.get('Longitude')):
+            point = Point(float(row['Longitude']), float(row['Latitude']))
+            geometry = mapping(point)
+            bbox = [float(row['Longitude']), float(row['Latitude']), 
+                   float(row['Longitude']), float(row['Latitude'])]
+                   
+        # 3. Finally, try country geometry if geocoder is available
+        if geometry is None and self.geocoder and not pd.isna(row.get('ISO')):
+            geom_data = self.geocoder.get_country_geometry(row['ISO'])
+            if geom_data:
+                geometry = geom_data['geometry']
+                bbox = geom_data['bbox']
