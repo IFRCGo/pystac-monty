@@ -33,7 +33,7 @@ class GlideTransformer:
     )
 
     glide_hazard_collection_url = (
-        "https://github.com/IFRCGo/monty-stac-extension/raw/refs/heads/main/examples/glide-events/glide-events.json"
+        "https://github.com/IFRCGo/monty-stac-extension/raw/refs/heads/main/examples/glide-hazards/glide-hazards.json"
     )
 
     def __init__(self, data: GlideDataSource) -> None:
@@ -108,7 +108,7 @@ class GlideTransformer:
                 )
 
                 event_items.append(item)
-            return event_items
+        return event_items
 
     def make_hazard_event_items(self) -> List[Item]:
         """Create hazard event items"""
@@ -130,8 +130,8 @@ class GlideTransformer:
         """Get hazard detail"""
         monty = MontyExtension.ext(item)
         return HazardDetail(
-            cluster=self.hazard_profiles.get_cluster_code(monty.hazard_codes),
-            severity_value=item.properties["magnitude"],
+            cluster=self.hazard_profiles.get_cluster_code(monty.hazard_codes or []),
+            severity_value=int(item.properties["magnitude"]),
             severity_unit="glide",
             estimate_type=MontyEstimateType.PRIMARY,
         )
