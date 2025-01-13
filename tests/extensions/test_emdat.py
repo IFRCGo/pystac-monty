@@ -23,10 +23,10 @@ def load_scenarios(
     scenarios: list[tuple[str, str]],
 ) -> list[EMDATTransformer]:
     """Load test scenarios for EM-DAT transformation testing.
-    
+
     Args:
         scenarios: List of tuples containing scenario name and Excel file path
-        
+
     Returns:
         List of EMDATTransformer instances initialized with test data
     """
@@ -42,13 +42,13 @@ def load_scenarios(
 
 spain_flood = (
     "spain_flood",
-    "https://github.com/IFRCGo/monty-stac-extension/raw/refs/heads/EMDAT/model/sources/EM-DAT/public_emdat_custom_request_2025-01-13_4cf1ccf1-9f6e-41a3-9aec-0a19903febae.xlsx"
+    "https://github.com/IFRCGo/monty-stac-extension/raw/refs/heads/EMDAT/model/sources/EM-DAT/public_emdat_custom_request_2025-01-13_4cf1ccf1-9f6e-41a3-9aec-0a19903febae.xlsx",
 )
 
 
 class EMDATTest(unittest.TestCase):
     """Test suite for EM-DAT transformation functionality"""
-    
+
     scenarios = [spain_flood]
 
     def setUp(self) -> None:
@@ -62,10 +62,10 @@ class EMDATTest(unittest.TestCase):
     @pytest.mark.vcr()
     def test_transformer(self, transformer: EMDATTransformer) -> None:
         """Test EM-DAT transformation to STAC items
-        
+
         Args:
             transformer: EMDATTransformer instance to test
-            
+
         Tests:
             - Items are created
             - Items validate against schema
@@ -74,19 +74,19 @@ class EMDATTest(unittest.TestCase):
         """
         items = transformer.make_items()
         self.assertTrue(len(items) > 0)
-        
+
         source_event_item = None
         source_hazard_item = None
-        
+
         for item in items:
             # Write pretty JSON in temporary folder for manual inspection
             item_path = get_data_file(f"temp/emdat/{item.id}.json")
             with open(item_path, "w") as f:
                 json.dump(item.to_dict(), f, indent=2)
-            
+
             # Validate item against schema
             item.validate(validator=self.validator)
-            
+
             # Check item type
             monty_item_ext = MontyExtension.ext(item)
             if monty_item_ext.is_source_event():
@@ -96,11 +96,11 @@ class EMDATTest(unittest.TestCase):
 
         # Verify required items were created
         self.assertIsNotNone(source_event_item)
-        #self.assertIsNotNone(source_hazard_item)
+        # self.assertIsNotNone(source_hazard_item)
 
     def test_excel_loading(self) -> None:
         """Test Excel file loading functionality
-        
+
         Tests:
             - Excel files can be loaded
             - Required columns are present
@@ -108,18 +108,12 @@ class EMDATTest(unittest.TestCase):
         """
         for scenario in self.scenarios:
             df = pd.read_excel(scenario[1])
-            
+
             # Check required columns exist
-            required_columns = [
-                'DisNo.',
-                'ISO',
-                'Start Year',
-                'Disaster Type',
-                'Admin Units'
-            ]
+            required_columns = ["DisNo.", "ISO", "Start Year", "Disaster Type", "Admin Units"]
             for col in required_columns:
                 self.assertIn(col, df.columns)
-            
+
             # Check data types
-            self.assertTrue(pd.api.types.is_integer_dtype(df['Start Year']))
-            self.assertTrue(pd.api.types.is_string_dtype(df['ISO']))
+            self.assertTrue(pd.api.types.is_integer_dtype(df["Start Year"]))
+            self.assertTrue(pd.api.types.is_string_dtype(df["ISO"]))
