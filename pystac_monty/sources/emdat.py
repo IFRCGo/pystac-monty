@@ -63,7 +63,7 @@ class EMDATTransformer:
 
     emdat_impacts_collection_id = "emdat-impacts"
     emdat_impacts_collection_url = (
-        "https://github.com/IFRCGo/monty-stac-extension/raw/refs/heads/main/examples/emdat-impacts/emdat-impacts.json"
+        "https://raw.githubusercontent.com/IFRCGo/monty-stac-extension/refs/heads/EMDAT/examples/emdat-impacts/emdat-impacts.json"
     )
 
     hazard_profiles = HazardProfiles()
@@ -92,8 +92,8 @@ class EMDATTransformer:
         items.extend(hazard_items)
 
         # Create impact items
-        # impact_items = self.make_impact_items()
-        # items.extend(impact_items)
+        impact_items = self.make_impact_items()
+        items.extend(impact_items)
 
         return items
 
@@ -245,6 +245,8 @@ class EMDATTransformer:
                 return None
 
             impact_item = base_item.clone()
+            # add in title
+            impact_item.properties["title"] = f"{base_item.properties['title']} - {field}"
             impact_item.id = f"{STAC_IMPACT_ID_PREFIX}{row['DisNo.']}-{field.lower().replace(' ', '-')}"
             impact_item.set_collection(self.get_impact_collection())
             impact_item.properties["roles"] = ["source", "impact"]

@@ -95,7 +95,7 @@ class EMDATTest(unittest.TestCase):
 
         # Verify required items were created
         self.assertIsNotNone(source_event_item)
-        # self.assertIsNotNone(source_hazard_item)
+        self.assertIsNotNone(source_hazard_item)
 
     def test_excel_loading(self) -> None:
         """Test Excel file loading functionality
