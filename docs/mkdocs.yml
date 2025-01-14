@@ -1,0 +1,41 @@
+site_name: PySTAC Monty
+theme:
+  name: material
+  features:
+    - navigation.tabs
+    - navigation.sections
+    - navigation.expand
+    - search.highlight
+    - content.code.copy
+
+repo_name: IFRCGo/monty-stac-extension
+repo_url: https://github.com/IFRCGo/monty-stac-extension
+
+nav:
+  - Home: index.md
+  - Getting Started:
+    - Installation: getting-started/installation.md
+    - Quick Start: getting-started/quickstart.md
+  - API Reference:
+    - Extension: api/extension.md
+    - Sources:
+      - Overview: api/sources.md
+      - Common: api/sources/common.md
+      - GLIDE: api/sources/glide.md
+      - GDACS: api/sources/gdacs.md
+      - EMDAT: api/sources/emdat.md
+
+markdown_extensions:
+  - pymdownx.highlight:
+      anchor_linenums: true
+  - pymdownx.inlinehilite
+  - pymdownx.snippets
+  - pymdownx.superfences
+  - admonition
+  - pymdownx.details
+  - pymdownx.tabbed:
+      alternate_style: true
+
+plugins:
+  - search
+  - include-markdown
