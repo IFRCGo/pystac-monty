@@ -28,10 +28,9 @@ jobs:
           pip install mkdocs-material mkdocs-include-markdown-plugin
           
       - name: Build documentation
-        run: mkdocs build
-        working-directory: docs
+        run: cd docs && mkdocs build
+        working-directory: 
         
       - name: Deploy
         if: github.ref == 'refs/heads/main'
-        run: mkdocs gh-deploy --force
-        working-directory: docs
+        run: cd docs && mkdocs gh-deploy --force
