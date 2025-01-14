@@ -29,7 +29,9 @@ jobs:
           
       - name: Build documentation
         run: mkdocs build
+        working-directory: docs
         
       - name: Deploy
         if: github.ref == 'refs/heads/main'
         run: mkdocs gh-deploy --force
+        working-directory: docs
