@@ -263,7 +263,7 @@ class HazardDetail(ABC):
     <monty#montyhazard_detail>` docs for details.
     """
 
-    properties: dict[str, Any] = {}
+    properties: dict[str, Any]
 
     def __init__(
         self,
@@ -273,6 +273,7 @@ class HazardDetail(ABC):
         severity_label: str | None = None,
         estimate_type: MontyEstimateType | None = None,
     ) -> None:
+        self.properties = {}
         self.cluster = cluster
         if severity_value:
             self.severity_value = severity_value
@@ -348,7 +349,7 @@ class ImpactDetail(ABC):
     <monty#montyimpact_detail>` docs for details.
     """
 
-    properties: dict[str, Any] = {}
+    properties: dict[str, Any]
 
     def __init__(
         self,
@@ -358,6 +359,7 @@ class ImpactDetail(ABC):
         unit: str | None = None,
         estimate_type: MontyEstimateType = None,
     ) -> None:
+        self.properties = {}
         self.category = category
         self.type = type
         self.value = value

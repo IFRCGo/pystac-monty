@@ -161,3 +161,4 @@ cython_debug/
 # asv environments
 .asv
 tests/data-files/temp/
+tests/gaul_gpkg_and_license.zip

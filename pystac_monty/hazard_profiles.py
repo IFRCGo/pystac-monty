@@ -35,6 +35,6 @@ class HazardProfiles:
             if cluster_code:
                 cluster_codes.append(cluster_code)
         if not cluster_codes:
-            raise ValueError("No cluster code found for hazard code")
+            raise ValueError("No cluster code found for hazard code {}".format(hazard_code))
         # return the majority item cluster code in the list
         return max(set(cluster_codes), key=cluster_codes.count)
