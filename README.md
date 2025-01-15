@@ -56,8 +56,16 @@ uv sync
 
 To run the tests:
 
+1. Make the test with actual calls to http and write them in the cassette files:
+
 ```sh
-pytest
+uv run pytest -v -s --record-mode rewrite
+```
+
+2. Run the tests with the recorded calls:
+
+```sh
+uv run pytest -v -s
 ```
 
 ## Contributing
