@@ -129,9 +129,10 @@ class GlideTransformer:
     def get_hazard_detail(self, item: Item) -> HazardDetail:
         """Get hazard detail"""
         monty = MontyExtension.ext(item)
+        magnitude = item.properties.get("magnitude", "").strip()
         return HazardDetail(
             cluster=self.hazard_profiles.get_cluster_code(monty.hazard_codes or []),
-            severity_value=int(item.properties["magnitude"]),
+            severity_value=int(float(magnitude)) if magnitude else 0,
             severity_unit="glide",
             estimate_type=MontyEstimateType.PRIMARY,
         )
