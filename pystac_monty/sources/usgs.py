@@ -30,7 +30,7 @@ class USGSDataSource(MontyDataSource):
 
     def __init__(self, source_url: str, data: str, losses_data: Optional[str] = None):
         """Initialize USGS data source.
-        
+
         Args:
             source_url: URL where the data was retrieved from
             data: Event detail data as JSON string
@@ -52,15 +52,21 @@ class USGSDataSource(MontyDataSource):
 class USGSTransformer:
     """Transforms USGS earthquake event data into STAC Items."""
 
-    usgs_events_collection_url = "https://github.com/IFRCGo/monty-stac-extension/raw/refs/heads/usgs/examples/usgs-events/usgs-events.json"
-    usgs_hazards_collection_url = "https://github.com/IFRCGo/monty-stac-extension/raw/refs/heads/usgs/examples/usgs-hazards/usgs-hazards.json"
-    usgs_impacts_collection_url = "https://github.com/IFRCGo/monty-stac-extension/raw/refs/heads/usgs/examples/usgs-impacts/usgs-impacts.json"
+    usgs_events_collection_url = (
+        "https://github.com/IFRCGo/monty-stac-extension/raw/refs/heads/usgs/examples/usgs-events/usgs-events.json"
+    )
+    usgs_hazards_collection_url = (
+        "https://github.com/IFRCGo/monty-stac-extension/raw/refs/heads/usgs/examples/usgs-hazards/usgs-hazards.json"
+    )
+    usgs_impacts_collection_url = (
+        "https://github.com/IFRCGo/monty-stac-extension/raw/refs/heads/usgs/examples/usgs-impacts/usgs-impacts.json"
+    )
 
     hazard_profiles = HazardProfiles()
 
     def __init__(self, data: USGSDataSource) -> None:
         """Initialize USGS transformer.
-        
+
         Args:
             data: USGSDataSource containing event detail and optional losses data
         """
@@ -88,7 +94,7 @@ class USGSTransformer:
     def make_source_event_item(self) -> Item:
         """Create source event item from USGS data."""
         event_data = self.data.get_data()
-        
+
         # Create geometry from coordinates
         longitude = event_data["geometry"]["coordinates"][0]
         latitude = event_data["geometry"]["coordinates"][1]
@@ -110,7 +116,7 @@ class USGSTransformer:
                 "eq:tsunami": bool(event_data["properties"].get("tsunami")),
                 "eq:felt": event_data["properties"].get("felt"),
                 "eq:depth": event_data["properties"].get("depth"),
-            }
+            },
         )
 
         # Add Monty extension
@@ -118,11 +124,11 @@ class USGSTransformer:
         monty = MontyExtension.ext(item)
         monty.episode_number = 1
         monty.hazard_codes = ["GH0004"]  # Earthquake surface rupture code
-        
+
         # Get country code from event data or geometry
         country_codes = ["CHN"]  # This should be derived from coordinates
         monty.country_codes = country_codes
-        
+
         # Compute correlation ID
         monty.compute_and_set_correlation_id(hazard_profiles=self.hazard_profiles)
 
@@ -149,11 +155,11 @@ class USGSTransformer:
         event_item = self.make_source_event_item()
         hazard_item = event_item.clone()
         hazard_item.id = f"{STAC_HAZARD_ID_PREFIX}{hazard_item.id.replace(STAC_EVENT_ID_PREFIX, '')}-shakemap"
-        
+
         # Set collection and roles
         hazard_item.set_collection(self.get_hazard_collection())
         hazard_item.properties["roles"] = ["source", "hazard"]
-        
+
         # Add hazard detail
         monty = MontyExtension.ext(hazard_item)
         monty.hazard_detail = HazardDetail(
@@ -169,26 +175,26 @@ class USGSTransformer:
                 "href": f"{self.data.get_source_url()}/download/intensity.jpg",
                 "media_type": "image/jpeg",
                 "title": "Intensity Map",
-                "roles": ["overview"]
+                "roles": ["overview"],
             },
             "intensity_overlay": {
                 "href": f"{self.data.get_source_url()}/download/intensity_overlay.png",
                 "media_type": "image/png",
                 "title": "Intensity Overlay",
-                "roles": ["visual"]
+                "roles": ["visual"],
             },
             "mmi_contours": {
                 "href": f"{self.data.get_source_url()}/download/cont_mi.json",
                 "media_type": "application/json",
                 "title": "MMI Contours",
-                "roles": ["data"]
+                "roles": ["data"],
             },
             "grid": {
                 "href": f"{self.data.get_source_url()}/download/grid.xml",
                 "media_type": "application/xml",
                 "title": "Ground Motion Grid",
-                "roles": ["data"]
-            }
+                "roles": ["data"],
+            },
         }
 
         for key, asset_info in shakemap_assets.items():
@@ -211,7 +217,7 @@ class USGSTransformer:
                 MontyImpactExposureCategory.ALL_PEOPLE,
                 MontyImpactType.DEATHS,
                 losses_data["empirical_fatality"]["total_fatalities"],
-                "people"
+                "people",
             )
             impact_items.append(fatalities_item)
 
@@ -222,30 +228,25 @@ class USGSTransformer:
                 MontyImpactExposureCategory.BUILDINGS,
                 MontyImpactType.LOSS_COST,
                 losses_data["empirical_economic"]["total_dollars"],
-                "usd"
+                "usd",
             )
             impact_items.append(economic_item)
 
         return impact_items
 
     def _create_impact_item_from_losses(
-        self,
-        impact_type: str,
-        category: MontyImpactExposureCategory,
-        imp_type: MontyImpactType,
-        value: float,
-        unit: str
+        self, impact_type: str, category: MontyImpactExposureCategory, imp_type: MontyImpactType, value: float, unit: str
     ) -> Item:
         """Helper method to create impact items from PAGER losses data."""
         event_item = self.make_source_event_item()
         impact_item = event_item.clone()
         impact_item.id = f"{STAC_IMPACT_ID_PREFIX}{impact_item.id.replace(STAC_EVENT_ID_PREFIX, '')}-{impact_type}"
-        
+
         # Set title and description
         title_prefix = "Estimated Fatalities" if impact_type == "fatalities" else "Estimated Economic Losses"
         impact_item.properties["title"] = f"{title_prefix} for {event_item.properties['title']}"
         impact_item.properties["description"] = f"PAGER {title_prefix.lower()} for {event_item.common_metadata.title}"
-        
+
         # Set collection and roles
         impact_item.set_collection(self.get_impact_collection())
         impact_item.properties["roles"] = ["source", "impact"]
@@ -253,11 +254,7 @@ class USGSTransformer:
         # Add impact detail
         monty = MontyExtension.ext(impact_item)
         monty.impact_detail = ImpactDetail(
-            category=category,
-            type=imp_type,
-            value=float(value),
-            unit=unit,
-            estimate_type=MontyEstimateType.MODELLED
+            category=category, type=imp_type, value=float(value), unit=unit, estimate_type=MontyEstimateType.MODELLED
         )
 
         # Add PAGER assets
@@ -266,20 +263,20 @@ class USGSTransformer:
                 "href": f"{self.data.get_source_url()}/onepager.pdf",
                 "media_type": "application/pdf",
                 "title": "PAGER One-Pager Report",
-                "roles": ["data"]
+                "roles": ["data"],
             },
             "pager_exposure": {
                 "href": f"{self.data.get_source_url()}/json/exposures.json",
                 "media_type": "application/json",
                 "title": "PAGER Exposure Data",
-                "roles": ["data"]
+                "roles": ["data"],
             },
             "pager_alert": {
                 "href": f"{self.data.get_source_url()}/alert{impact_type}.pdf",
                 "media_type": "application/pdf",
                 "title": f"PAGER {impact_type.title()} Alert",
-                "roles": ["data"]
-            }
+                "roles": ["data"],
+            },
         }
 
         for key, asset_info in pager_assets.items():

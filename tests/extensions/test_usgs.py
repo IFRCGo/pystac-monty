@@ -29,21 +29,21 @@ def load_scenarios(scenarios: list[tuple[str, str, str]]) -> list[USGSTransforme
     transformers = []
     for scenario in scenarios:
         name, event_url, losses_url = scenario
-        
+
         # Get event data
         event_response = requests.get(event_url)
         event_data = event_response.text
-        
+
         # Get losses data if available
         losses_data = None
         if losses_url:
             losses_response = requests.get(losses_url)
             losses_data = losses_response.text
-        
+
         # Create data source and transformer
         data_source = USGSDataSource(event_url, event_data, losses_data)
         transformers.append(USGSTransformer(data_source))
-    
+
     return transformers
 
 
@@ -51,7 +51,7 @@ def load_scenarios(scenarios: list[tuple[str, str, str]]) -> list[USGSTransforme
 tibetan_plateau_eq = (
     "tibetan_plateau_eq",  # Scenario name
     "https://github.com/IFRCGo/monty-stac-extension/raw/refs/heads/usgs/model/sources/USGS/us6000pi9w.geojson",  # Event URL
-    "https://github.com/IFRCGo/monty-stac-extension/raw/refs/heads/usgs/model/sources/USGS/us6000pi9w-losses.json"  # Losses URL
+    "https://github.com/IFRCGo/monty-stac-extension/raw/refs/heads/usgs/model/sources/USGS/us6000pi9w-losses.json",  # Losses URL
 )
 
 
@@ -86,7 +86,7 @@ class USGSTest(unittest.TestCase):
 
         # Track items we find
         source_event_item = None
-        source_hazard_item = None 
+        source_hazard_item = None
         impact_items = []
 
         for item in items:
@@ -110,8 +110,8 @@ class USGSTest(unittest.TestCase):
         # Verify required items were created
         self.assertIsNotNone(source_event_item)
         self.assertIsNotNone(source_hazard_item)
-        
-        # Since we provided losses data, we should have 2 impact items 
+
+        # Since we provided losses data, we should have 2 impact items
         # (fatalities and economic losses)
         self.assertEqual(len(impact_items), 2)
 
@@ -131,12 +131,12 @@ class USGSTest(unittest.TestCase):
         event_data = requests.get(tibetan_plateau_eq[1]).text
         data_source = USGSDataSource(tibetan_plateau_eq[1], event_data)
         transformer = USGSTransformer(data_source)
-        
+
         items = transformer.make_items()
-        
+
         # Should only have event and hazard items
         self.assertEqual(len(items), 2)
-        
+
         found_event = False
         found_hazard = False
         for item in items:
@@ -147,9 +147,9 @@ class USGSTest(unittest.TestCase):
                 found_hazard = True
             else:
                 self.fail("Unexpected item type found")
-            
+
             item.validate(validator=self.validator)
-        
+
         self.assertTrue(found_event)
         self.assertTrue(found_hazard)
 
@@ -165,7 +165,7 @@ class USGSTest(unittest.TestCase):
         invalid_data = "{}"
         data_source = USGSDataSource("test_url", invalid_data)
         transformer = USGSTransformer(data_source)
-        
+
         with self.assertRaises(KeyError):
             transformer.make_items()
 
@@ -184,7 +184,7 @@ class USGSTest(unittest.TestCase):
         """
         # Get valid event data
         event_data = requests.get(tibetan_plateau_eq[1]).text
-        
+
         # Test with invalid losses JSON
         invalid_losses = "{"
         with self.assertRaises(json.JSONDecodeError):
@@ -195,5 +195,5 @@ class USGSTest(unittest.TestCase):
         data_source = USGSDataSource("test_url", event_data, empty_losses)
         transformer = USGSTransformer(data_source)
         items = transformer.make_items()
-        
+
         self.assertEqual(len(items), 2)  # Should still get event and hazard
