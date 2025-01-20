@@ -161,7 +161,7 @@ class GlideTransformer:
         """Validate the source fields"""
         glideset: list[Any] = self.data.get_data()["glideset"]
         if glideset == []:
-            raise ValueError(f"No Glide data found in {self.data.get_source_url()}")
+            print(f"No Glide data found in {self.data.get_source_url()}")
         for obj in glideset:
             required_fields = ["latitude", "longitude", "event", "number", "geocode"]
             missing_fields = [field for field in required_fields if field not in obj]
