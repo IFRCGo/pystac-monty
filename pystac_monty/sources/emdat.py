@@ -37,6 +37,7 @@ class EMDATDataSource(MontyDataSource):
         if isinstance(data, str):
             # If data is a string, assume it's Excel content
             self.df = pd.read_excel(data)
+            # self.df = pd.read_json(data)
         elif isinstance(data, pd.DataFrame):
             self.df = data
         else:
@@ -87,13 +88,13 @@ class EMDATTransformer:
         event_items = self.make_source_event_items()
         items.extend(event_items)
 
-        # Create hazard items
-        hazard_items = self.make_hazard_event_items()
-        items.extend(hazard_items)
+        # # Create hazard items
+        # hazard_items = self.make_hazard_event_items()
+        # items.extend(hazard_items)
 
-        # Create impact items
-        impact_items = self.make_impact_items()
-        items.extend(impact_items)
+        # # Create impact items
+        # impact_items = self.make_impact_items()
+        # items.extend(impact_items)
 
         return items
 
@@ -101,23 +102,31 @@ class EMDATTransformer:
         """Create source event items from EM-DAT data"""
         event_items = []
         df = self.data.get_data()
+        print("Col", df.columns)
 
-        for _, row in df.iterrows():
+        # for _, row in df.iterrows():
+        for _, row in df.iloc[:1].iterrows():
+            print("Row", row)
             try:
                 item = self._create_event_item_from_row(row)
                 if item:
                     event_items.append(item)
             except Exception as e:
-                print(f"Error creating event item for DisNo {row.get('DisNo.', 'unknown')}: {str(e)}")
+                print(f"Error creating event item for DisNo {row.get('disno', 'unknown')}: {str(e)}")
                 continue
+
+        print("Event items", event_items)
 
         return event_items
 
     def _create_event_item_from_row(self, row: pd.Series) -> Optional[Item]:
         """Create a single event item from a DataFrame row"""
         # Skip if required fields are missing
-        if pd.isna(row.get("DisNo.")):
+        if pd.isna(row.get("disno")):
             return None
+
+        print("-----------------0")
+        print("Geocoder", self.geocoder)
 
         # Create geometry from lat/lon if available
         # Try each geometry source in order of preference
@@ -125,21 +134,24 @@ class EMDATTransformer:
         bbox = None
 
         # 1. Try admin units first if geocoder is available
-        if self.geocoder and not pd.isna(row.get("Admin Units")):
-            geom_data = self.geocoder.get_geometry_from_admin_units(row.get("Admin Units"))
+        if self.geocoder and not pd.isna(row.get("admin_units")):
+            print("-----------------1")
+            geom_data = self.geocoder.get_geometry_from_admin_units(row.get("admin_units"))
             if geom_data:
                 geometry = geom_data["geometry"]
                 bbox = geom_data["bbox"]
 
         # 2. Fall back to lat/lon if available
-        if geometry is None and not pd.isna(row.get("Latitude")) and not pd.isna(row.get("Longitude")):
-            point = Point(float(row["Longitude"]), float(row["Latitude"]))
+        if geometry is None and not pd.isna(row.get("latitude")) and not pd.isna(row.get("longitude")):
+            print("-----------------2")
+            point = Point(float(row["longitude"]), float(row["latitude"]))
             geometry = mapping(point)
-            bbox = [float(row["Longitude"]), float(row["Latitude"]), float(row["Longitude"]), float(row["Latitude"])]
+            bbox = [float(row["longitude"]), float(row["latitude"]), float(row["longitude"]), float(row["latitude"])]
 
         # 3. Finally, try country geometry if geocoder is available
-        if geometry is None and self.geocoder and not pd.isna(row.get("Country")):
-            geom_data = self.geocoder.get_geometry_by_country_name(row["Country"])
+        if geometry is None and self.geocoder and not pd.isna(row.get("country")):
+            print("-----------------3")
+            geom_data = self.geocoder.get_geometry_by_country_name(row["country"])
             if geom_data:
                 geometry = geom_data["geometry"]
                 bbox = geom_data["bbox"]
@@ -149,7 +161,7 @@ class EMDATTransformer:
 
         # Create item
         item = Item(
-            id=f"{STAC_EVENT_ID_PREFIX}{row['DisNo.']}",
+            id=f"{STAC_EVENT_ID_PREFIX}{row['disno']}",
             geometry=geometry,
             bbox=bbox,
             datetime=start_date,
@@ -165,8 +177,8 @@ class EMDATTransformer:
         MontyExtension.add_to(item)
         monty = MontyExtension.ext(item)
         monty.episode_number = 1  # EM-DAT doesn't have episodes
-        monty.hazard_codes = self._map_emdat_to_hazard_codes(row.get("Classification Key", ""))
-        monty.country_codes = [row["ISO"]] if not pd.isna(row.get("ISO")) else []
+        monty.hazard_codes = self._map_emdat_to_hazard_codes(row.get("classif_key", ""))
+        monty.country_codes = [row["iso"]] if not pd.isna(row.get("iso")) else []
         monty.compute_and_set_correlation_id(hazard_profiles=self.hazard_profiles)
 
         # Set collection and roles
