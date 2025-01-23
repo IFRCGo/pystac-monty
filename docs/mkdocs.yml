@@ -24,6 +24,7 @@ nav:
       - GLIDE: api/sources/glide.md
       - GDACS: api/sources/gdacs.md
       - EMDAT: api/sources/emdat.md
+      - USGS: api/sources/usgs.md
 
 markdown_extensions:
   - pymdownx.highlight:
