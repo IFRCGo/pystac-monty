@@ -259,7 +259,8 @@ class DesinventarTransformer(MontyDataTransformer):
             for row in data_list
             for item in [
                 self.create_event_item_from_row(row),
-                self.create_hazard_item_from_row(row),
+                # No need to create hazard items for now
+                # self.create_hazard_item_from_row(row),
                 *self.create_impact_items_from_row(row),
             ]
             if item is not None
