@@ -305,7 +305,7 @@ class DesinventarTransformer(MontyDataTransformer):
             # properties = None
 
         item = Item(
-            id=f"{STAC_EVENT_ID_PREFIX}{row['serial']}",
+            id=f"{STAC_EVENT_ID_PREFIX}-{self.data_source.iso3}-{row['serial']}",
             geometry=geometry,
             bbox=bbox,
             datetime=start_date,
