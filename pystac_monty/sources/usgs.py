@@ -215,7 +215,7 @@ class USGSTransformer:
             fatalities_item = self._create_impact_item_from_losses(
                 "fatalities",
                 MontyImpactExposureCategory.ALL_PEOPLE,
-                MontyImpactType.DEATHS,
+                MontyImpactType.DEATH,
                 losses_data["empirical_fatality"]["total_fatalities"],
                 "people",
             )

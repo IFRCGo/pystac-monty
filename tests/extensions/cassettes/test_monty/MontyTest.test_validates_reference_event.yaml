@@ -63,7 +63,7 @@ interactions:
       Content-Type:
       - text/html; charset=utf-8
       Date:
-      - Mon, 20 Jan 2025 21:05:34 GMT
+      - Tue, 28 Jan 2025 13:21:08 GMT
       Location:
       - https://raw.githubusercontent.com/IFRCGo/monty-stac-extension/refs/heads/main/examples/reference-events/20241027T150000-ESP-HM-FLOOD-001-GCDB.json
       Referrer-Policy:
@@ -80,7 +80,7 @@ interactions:
       X-Frame-Options:
       - deny
       X-GitHub-Request-Id:
-      - EA21:12AE:B3EBA19:B8CBA5D:678EBADF
+      - B5E1:62AF0:ACBCC3:B07FD9:6798DA32
       X-XSS-Protection:
       - '0'
     status:
@@ -132,13 +132,13 @@ interactions:
       Cross-Origin-Resource-Policy:
       - cross-origin
       Date:
-      - Mon, 20 Jan 2025 21:06:39 GMT
+      - Tue, 28 Jan 2025 13:22:58 GMT
       ETag:
       - W/"9ea00a9c7f61dc2525a639d3eb02e28ad07aa9640d8cd88adb98221401aced31"
       Expires:
-      - Mon, 20 Jan 2025 21:11:39 GMT
+      - Tue, 28 Jan 2025 13:27:58 GMT
       Source-Age:
-      - '233'
+      - '109'
       Strict-Transport-Security:
       - max-age=31536000
       Vary:
@@ -152,15 +152,15 @@ interactions:
       X-Content-Type-Options:
       - nosniff
       X-Fastly-Request-ID:
-      - 51046c8408424faeddfe291efb3f64f547dc950b
+      - 53ac285f9f3db766bf8bbd4bdbae673ab5c0cac2
       X-Frame-Options:
       - deny
       X-GitHub-Request-Id:
-      - 876C:2FE4D8:6F97EA:73164E:678EB801
+      - F7AC:1F4999:188D7E:195440:6798D9C3
       X-Served-By:
-      - cache-mrs1050099-MRS
+      - cache-mrs10527-MRS
       X-Timer:
-      - S1737407199.388861,VS0,VE1
+      - S1738070578.449632,VS0,VE1
       X-XSS-Protection:
       - 1; mode=block
     status:
@@ -182,25 +182,33 @@ interactions:
   response:
     body:
       string: !!binary |
-        H4sIAAAAAAAAA9VXUW/bNhB+z6/g1Dy0gGMn3YABfinaosPyMCxI+rQ2NRjpZLOTSI2kgniG/vtI
-        kZZEiVTkxi2yIAlsknf67ru7j6fdCULRqYg3kONoiaKNlMVysfgqGD0zq3PG14uE41Senf+6MGsv
-        olltR5K9jVBGJOXxms3XRG7Kuzlhi5xRuV3cn88v5ufWcq49W3NJZAbawR/6HPrwIIEKwqjZTUDE
-        nBRSL6gzNx/fvke9gyhlHNUblxJygTBNzNf3LMsg1qZibrwxCn+mys8n9QWhXf1fRxCzPAcq9RM+
-        bohA6lduABmwPf/GVW2Hs6zjruvSuOWgd6MXiwRSQkmNZCEkjlewBy+ixqKa+d3IbVHzw+6+qmii
-        WXePwz8l4ZA4IFqrmbtWcFYAlwQ6T0Xo1vHYObN0cLRI3FW1Hqs4avJ+AyxLDpFzoAqj8Pgacuoj
-        pTneTd21IQOlBLJEoA3ozyp3Om3oqnnqvEeL9RSksjlRF/IyZiWVfLuKmapNr6vm6Ab/i3ky5WTM
-        OF+pPgoc4ixzc7b/uR2sVUMXfuK8xWmoGz7paV4D8KveihtMd7f9vP9kzlpYBzfyQBlq6/9hO9+T
-        BHi/tqKMxAoOfKcmb8mLpiQsQMOkSmmy3eaIbkdz9HgB6K9WIQhFN2WeY65VAb3bIgUFl5mcIUaz
-        LVI28d/GHh6IUCmOAbG0XmgZnKG7UiLKZPdB9pRovE/Nc2PxbclrzT0ZHFW4iermU7ant/GJjTHq
-        1EITQdRvsTa0UDP5Qx04GlRXgNoRBA4KzDneuplWXSMxGZh0++ngwSkapbTqKmNkBX3p10gzSRWq
-        FckDJLYtWhZD7IZoMrUBBRGqLla0zO+Ah7giVMJabfuEwluL0zknekwLCptKJid0PRBTLCXwesj8
-        8unt2V+3u5+r0wDTA6ROO/xwoK+rl2+Wnz8nu1+q01e789lFNRX3fuwIQLYAHg88AVXkWciN76Yb
-        FTG4B07kdnWPs9J7F+092xIbHTcbb6USljFn/Wh9zkBIkmMJq9At6b/WXLPDbk3LNMkLHMsjMx0r
-        TGvGt0+lJcTGIT6OkuxvyvG4nLaqZxrvKiB+X16++cmk6lU/PV3JveKqHqlEOEnq4sAZyj0qPJyB
-        WiCtqYMlxZkAR/xD1RpSmAgUx+6VWXDlgXd1SzWUurqS3mKupE+NhQ1uZz637y+BS+hab9qoGyTu
-        m7r+CTJ6Dal609Oz2QfNrFv9/tfJiW1LxKpO1mjNTffF90DD9dfOTsG5uRP5DSv58w9b1CiPFfPv
-        9Y1z3GjNLXYshJe1Uh8XoVH/SQi9DdiktNODoSmu36z14sgUkxN6aQeZ14fOvoM6e2yeddromQXj
-        7e8JAdkGeWbRDNt2Qii2k75vKBcHv2EN+ntCKLblnlkoQyEIhnKi/6r/AJI1m7vbFwAA
+        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
     headers:
       Accept-Ranges:
       - bytes
@@ -213,7 +221,7 @@ interactions:
       Content-Encoding:
       - gzip
       Content-Length:
-      - '1077'
+      - '1516'
       Content-Security-Policy:
       - default-src 'none'; style-src 'unsafe-inline'; sandbox
       Content-Type:
@@ -221,13 +229,13 @@ interactions:
       Cross-Origin-Resource-Policy:
       - cross-origin
       Date:
-      - Mon, 20 Jan 2025 21:06:39 GMT
+      - Tue, 28 Jan 2025 13:22:58 GMT
       ETag:
-      - W/"5f6e1f3230195359862218fdea20141106751a1f1764da100ee01a376ddd4589"
+      - W/"466c56ba1628e81d4d454496f77b07173df0b47e1f7947c382e33f9d279d9bb9"
       Expires:
-      - Mon, 20 Jan 2025 21:11:39 GMT
+      - Tue, 28 Jan 2025 13:27:58 GMT
       Source-Age:
-      - '93'
+      - '127'
       Strict-Transport-Security:
       - max-age=31536000
       Vary:
@@ -237,19 +245,19 @@ interactions:
       X-Cache:
       - HIT
       X-Cache-Hits:
-      - '1'
+      - '2'
       X-Content-Type-Options:
       - nosniff
       X-Fastly-Request-ID:
-      - 0fbc87caa1ce32b3b09b133fbfa9210339e08ed3
+      - 6d38008b0e50b84e2fb520a6f6e3cc3b47cbecc5
       X-Frame-Options:
       - deny
       X-GitHub-Request-Id:
-      - AAF1:11B7:1B93688:1CC1532:678EB582
+      - 5E28:1BFC4E:18CE12:199530:6798D9B3
       X-Served-By:
-      - cache-mrs10555-MRS
+      - cache-mrs10546-MRS
       X-Timer:
-      - S1737407200.527898,VS0,VE1
+      - S1738070579.569472,VS0,VE0
       X-XSS-Protection:
       - 1; mode=block
     status:

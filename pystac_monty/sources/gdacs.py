@@ -403,7 +403,7 @@ class GDACSTransformer:
     @staticmethod
     def get_impact_type_from_sendai_a(sendainame: str) -> MontyImpactType:
         if sendainame == "death":
-            return MontyImpactType.DEATHS
+            return MontyImpactType.DEATH
         elif sendainame == "missing":
             return MontyImpactType.MISSING
         else:
