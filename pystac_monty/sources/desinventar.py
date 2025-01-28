@@ -298,8 +298,8 @@ class DesinventarTransformer(MontyDataTransformer):
             # FIXME: calculate end date
             end_datetime=start_date,
             properties={
-                "title": f"{row['event']} in {row['location']}",
-                "comment": row["comment"],
+                "title": f"{row['event']} in {row['location']} on {start_date}",
+                "description": f"{row['event']} in {row['location']}: {row['comment']}",
             },
         )
 
@@ -324,7 +324,7 @@ class DesinventarTransformer(MontyDataTransformer):
         monty.hazard_codes = [hazard_code]
 
         # TODO: map country to standard codes
-        monty.country_codes = self.data_source.iso3
+        monty.country_codes = self.data_source.iso3.upper()
 
         monty.compute_and_set_correlation_id(hazard_profiles=self.hazard_profiles)
 
@@ -355,7 +355,9 @@ class DesinventarTransformer(MontyDataTransformer):
         impact_type: MontyImpactType,
         unit: str,
     ) -> Optional[Item]:
-        if value is None:
+        """ Create an impact item from a base item and a row data """
+        
+        if value is None or value == "0":
             return None
 
         impact_item = base_item.clone()
