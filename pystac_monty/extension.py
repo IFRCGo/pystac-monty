@@ -108,8 +108,8 @@ class MontyImpactExposureCategory(StringEnum):
     IFRC_APPEAL_CONTRIBUTION = "ifrc_contribution"
     IFRC_APPEAL_REQUESTED = "ifrc_request"
     TOTAL_AFFECTED = "total_affected"
-    
-    
+
+
 class MontyImpactExposureCatgoryLabel(Mapping):
     def __init__(self) -> None:
         self._data = {
