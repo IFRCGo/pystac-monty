@@ -141,6 +141,9 @@ hazard_mapping = {
     "TSUNAMI": "MH0029",
     "WINDSTORM": "MH0034",  # Blizzard
     "Inundación": None,
+    "HURRICANE": "MH0057",
+    "VOLCANO": "VO",
+    "COASTAL FLOOD": "MH0004",
 }
 
 

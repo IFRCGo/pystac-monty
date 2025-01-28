@@ -31,7 +31,7 @@ class DesinventarScenario(TypedDict):
 grenada_data: DesinventarScenario = {
     "name": "Grenada subset",
     "data": {
-        "zip_file_url": "https://github.com/IFRCGo/monty-stac-extension/raw/refs/heads/main/model/sources/DesInventar/DI_export_grd_subset.zip",  # noqa: E501
+        "zip_file_url": "https://github.com/IFRCGo/monty-stac-extension/raw/refs/heads/main/model/sources/DesInventar/DI_export_grd.zip",  # noqa: E501
         "country_code": "grd",
         "iso3": "GRD",
     },
@@ -86,7 +86,7 @@ class DesinventarTest(TestCase):
             if monty_item_ext.is_source_event():
                 source_event_items.append(item)
             elif monty_item_ext.is_source_impact():
-                source_hazard_items.append(item)
+                source_impact_items.append(item)
 
         # Verify required items were created
         # source_event_items contains items
