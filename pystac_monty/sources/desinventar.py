@@ -11,6 +11,7 @@ import pytz
 import requests
 from geopandas import gpd
 from lxml import etree
+from pystac import Link
 from pystac.item import Item
 
 from pystac_monty.extension import (
@@ -140,6 +141,9 @@ hazard_mapping = {
     "TSUNAMI": "MH0029",
     "WINDSTORM": "MH0034",  # Blizzard
     "Inundación": None,
+    "HURRICANE": "MH0057",
+    "VOLCANO": "VO",
+    "COASTAL FLOOD": "MH0004",
 }
 
 
@@ -167,16 +171,17 @@ def get_lowest_level(all_levels_in_order: List[str], row_data: DataRow):
 
 class DesinventarDataSource:
     tmp_zip_file: tempfile._TemporaryFileWrapper
-
+    source_url: str
     country_code: str
     iso3: str
 
-    def __init__(self, tmp_zip_file: tempfile._TemporaryFileWrapper, country_code: str, iso3: str):
+    def __init__(self, tmp_zip_file: tempfile._TemporaryFileWrapper, country_code: str, iso3: str, source_url: str = None):
         # self.tmp_zip_file = tempfile.NamedTemporaryFile(suffix=".zip")
 
         self.tmp_zip_file = tmp_zip_file
         self.country_code = country_code
         self.iso3 = iso3
+        self.source_url = source_url
 
     @classmethod
     def from_zip_file(cls, zip_file: ZipFile, country_code: str, iso3: str):
@@ -222,6 +227,8 @@ class DesinventarDataSource:
 
 
 class DesinventarTransformer(MontyDataTransformer):
+    """Transform DesInventar data to STAC items"""
+
     data_source: DesinventarDataSource
     hazard_profiles = HazardProfiles()
     hazard_name_mapping: Dict[str, str] = {}
@@ -232,6 +239,11 @@ class DesinventarTransformer(MontyDataTransformer):
     def __init__(self, data_source: DesinventarDataSource) -> None:
         super().__init__("desiventar")
         self.data_source = data_source
+        self.events_collection_id = "desinventar-events"
+        self.events_collection_url = "https://raw.githubusercontent.com/IFRCGo/monty-stac-extension/refs/heads/main/examples/desinventar-events/desinventar-events.json"  # noqa: E501
+
+        self.impacts_collection_id = "desinventar-impacts"
+        self.impacts_collection_url = "https://raw.githubusercontent.com/IFRCGo/monty-stac-extension/refs/heads/main/examples/desinventar-impacts/desinventar-impacts.json"  # noqa: E501
 
     def create_datetimes(self, row: DataRow) -> datetime | None:
         start_year = strtoi(row["year"], None)
@@ -259,7 +271,8 @@ class DesinventarTransformer(MontyDataTransformer):
             for row in data_list
             for item in [
                 self.create_event_item_from_row(row),
-                self.create_hazard_item_from_row(row),
+                # No need to create hazard items for now
+                # self.create_hazard_item_from_row(row),
                 *self.create_impact_items_from_row(row),
             ]
             if item is not None
@@ -289,7 +302,7 @@ class DesinventarTransformer(MontyDataTransformer):
             # properties = None
 
         item = Item(
-            id=f"{STAC_EVENT_ID_PREFIX}{row['serial']}",
+            id=f"{STAC_EVENT_ID_PREFIX}-{self.data_source.iso3}-{row['serial']}",
             geometry=geometry,
             bbox=bbox,
             datetime=start_date,
@@ -297,8 +310,8 @@ class DesinventarTransformer(MontyDataTransformer):
             # FIXME: calculate end date
             end_datetime=start_date,
             properties={
-                "title": f"{row['event']} in {row['location']}",
-                "comment": row["comment"],
+                "title": f"{row['event']} in {row['location']} on {start_date}",
+                "description": f"{row['event']} in {row['location']}: {row['comment']}",
             },
         )
 
@@ -322,13 +335,21 @@ class DesinventarTransformer(MontyDataTransformer):
 
         monty.hazard_codes = [hazard_code]
 
-        # TODO: map country to standard codes
-        monty.country_codes = self.data_source.iso3
-
+        monty.country_codes = [self.data_source.iso3.upper()]
         monty.compute_and_set_correlation_id(hazard_profiles=self.hazard_profiles)
 
-        # TODO: set collection and roles
-        # TODO: add source link
+        item.set_collection(self.get_event_collection())
+        item.properties["roles"] = ["source", "event"]
+
+        # Add source link
+        item.add_link(
+            Link(
+                "via",
+                self.data_source.source_url,
+                "application/zip",
+                "DesInventar export zip file for {}".format(self.data_source.iso3),
+            )
+        )
 
         return item
 
@@ -354,7 +375,9 @@ class DesinventarTransformer(MontyDataTransformer):
         impact_type: MontyImpactType,
         unit: str,
     ) -> Optional[Item]:
-        if value is None:
+        """Create an impact item from a base item and a row data"""
+
+        if value is None or value == "0":
             return None
 
         impact_item = base_item.clone()
@@ -363,7 +386,8 @@ class DesinventarTransformer(MontyDataTransformer):
         impact_item.properties["title"] = f"{base_item.properties['title']} - {field}"
         impact_item.id = f"{STAC_IMPACT_ID_PREFIX}{row_id}-{field}"
 
-        # TODO: set collection and roles
+        impact_item.set_collection(self.get_impact_collection())
+        impact_item.properties["roles"] = ["source", "impact"]
 
         monty = MontyExtension.ext(impact_item)
         monty.impact_detail = ImpactDetail(
@@ -465,7 +489,7 @@ class DesinventarTransformer(MontyDataTransformer):
                 row["serial"],
                 "losses_in_dollar",
                 row["losses_in_dollar"],
-                MontyImpactExposureCategory.TOTAL_COST_UNSPECIFIED,
+                MontyImpactExposureCategory.USD_UNSURE,
                 MontyImpactType.LOSS_COST,
                 "USD",
             ),
@@ -474,7 +498,7 @@ class DesinventarTransformer(MontyDataTransformer):
                 row["serial"],
                 "losses_local_currency",
                 row["losses_local_currency"],
-                MontyImpactExposureCategory.TOTAL_COST_UNSPECIFIED,
+                MontyImpactExposureCategory.LOCAL_CURRENCY,
                 MontyImpactType.LOSS_COST,
                 "Unknown",
             ),
