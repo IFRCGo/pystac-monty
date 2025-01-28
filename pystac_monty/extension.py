@@ -82,99 +82,63 @@ class MontyEstimateType(StringEnum):
 
 
 class MontyImpactExposureCategory(StringEnum):
-    ALL_PEOPLE = "allpeop"
-    CROP = "crop"
+    ALL_PEOPLE = "people"
+    CROPS = "crops"
     WOMEN = "women"
     MEN = "men"
-    ELDERLY = "elder"
-    CHILDREN_UNDER_14 = "chld14"
-    CHILDREN_UNDER_18 = "chld18"
-    WHEELCHAIR_USERS = "wheelch"
-    ROAD = "road"
-    TRAIN_LINES = "trainlin"
-    VULNERABLE_EMPLOYMENT = "vulempl"
-    BUILDINGS = "build"
-    RECONSTRUCTION_COSTS = "reccost"
-    HOSPITALS = "hosp"
-    EDUCATION_CENTERS = "educ"
-    LOCAL_CURRENCY = "loccur"
-    GLOBAL_CURRENCY = "globdate"
-    INFLATION_ADJUSTED_LOCAL_CURRENCY = "infloccur"
-    INFLATION_ADJUSTED_GLOBAL_CURRENCY = "infglobdate"
-    USD_UNSURE = "usdunsure"
-    AID_CONTRIBUTIONS_INFLATION_ADJUSTED = "aidinf"
-    AID_CONTRIBUTIONS_NON_INFLATION_ADJUSTED = "aidnoninf"
-    AID_CONTRIBUTIONS_UNSPECIFIED = "aidunkinf"
-    RECONSTRUCTION_COSTS_INFLATION_ADJUSTED = "ecorecinf"
-    RECONSTRUCTION_COSTS_NON_INFLATION_ADJUSTED = "ecorecnoninf"
-    RECONSTRUCTION_COSTS_UNSPECIFIED = "ecorecunkinf"
-    INSURED_COSTS_INFLATION_ADJUSTED = "ecoinsinf"
-    INSURED_COSTS_NON_INFLATION_ADJUSTED = "ecoinsnoninf"
-    INSURED_COSTS_UNSPECIFIED = "ecoinsunkinf"
-    UNINSURED_COSTS_INFLATION_ADJUSTED = "ecouninsinf"
-    UNINSURED_COSTS_NON_INFLATION_ADJUSTED = "ecouninsnoninf"
-    UNINSURED_COSTS_UNSPECIFIED = "ecouninsunkinf"
-    TOTAL_COST_INFLATION_ADJUSTED = "ecototinf"
-    TOTAL_COST_NON_INFLATION_ADJUSTED = "ecototnoninf"
-    TOTAL_COST_UNSPECIFIED = "ecototunkinf"
-    TOTAL_DIRECT_COSTS_INFLATION_ADJUSTED = "ecodirtotinf"
-    TOTAL_DIRECT_COSTS_NON_INFLATION_ADJUSTED = "ecodirtotnoninf"
-    TOTAL_DIRECT_COSTS_UNSPECIFIED = "ecodirtotunkinf"
-    TOTAL_INDIRECT_COSTS_INFLATION_ADJUSTED = "ecoindirtotinf"
-    TOTAL_INDIRECT_COSTS_NON_INFLATION_ADJUSTED = "ecoindirtotnoninf"
-    TOTAL_INDIRECT_COSTS_UNSPECIFIED = "ecoindirtotunkinf"
+    ELDERLY = "elderly"
+    CHILDREN_UNDER_14 = "children_under14"
+    CHILDREN_UNDER_18 = "children_under18"
+    WHEELCHAIR_USERS = "wheelchair_users"
+    ROADS = "roads"
+    RAIL_WAYS = "railways"
+    VULNERABLE_EMPLOYMENT = "vulnerable_employment"
+    BUILDINGS = "buildings"
+    RECONSTRUCTION_COSTS = "reconstruction_costs"
+    HOSPITALS = "hospitals"
+    SCHOOLS = "schools"
+    LOCAL_CURRENCY = "local_currency"
+    GLOBAL_CURRENCY = "global_currency"
+    INFLATION_ADJUSTED_LOCAL_CURRENCY = "local_currency_adj"
+    INFLATION_ADJUSTED_GLOBAL_CURRENCY = "global_currency_adj"
+    USD_UNSURE = "usd_uncertain"
     CATTLE = "cattle"
-    ALERTSCORE = "alert"
-    IFRC_AID_CONTRIBUTIONS_UNSPECIFIED = "ecoifrcall"
-
-
+    AID_GENERAL = "aid_general"
+    ALERTSCORE = "alertscore"
+    IFRC_APPEAL_CONTRIBUTION = "ifrc_contribution"
+    IFRC_APPEAL_REQUESTED = "ifrc_request"
+    TOTAL_AFFECTED = "total_affected"
+    
+    
 class MontyImpactExposureCatgoryLabel(Mapping):
     def __init__(self) -> None:
         self._data = {
             MontyImpactExposureCategory.ALL_PEOPLE: "People (All Demographics)",
-            MontyImpactExposureCategory.CROP: "Crops",
+            MontyImpactExposureCategory.CROPS: "Crops",
             MontyImpactExposureCategory.WOMEN: "Women",
             MontyImpactExposureCategory.MEN: "Men",
             MontyImpactExposureCategory.ELDERLY: "Elderly (Over 65)",
             MontyImpactExposureCategory.CHILDREN_UNDER_14: "Children (Under 14)",
             MontyImpactExposureCategory.CHILDREN_UNDER_18: "Children (Under 18)",
             MontyImpactExposureCategory.WHEELCHAIR_USERS: "Wheelchair Users",
-            MontyImpactExposureCategory.ROAD: "Road",
-            MontyImpactExposureCategory.TRAIN_LINES: "Train-lines",
+            MontyImpactExposureCategory.ROADS: "Road",
+            MontyImpactExposureCategory.RAIL_WAYS: "Rail ways",
             MontyImpactExposureCategory.VULNERABLE_EMPLOYMENT: "Population in Vulnerable Employment",
             MontyImpactExposureCategory.BUILDINGS: "Buildings",
             MontyImpactExposureCategory.RECONSTRUCTION_COSTS: "Reconstruction Costs",
             MontyImpactExposureCategory.HOSPITALS: "Hospitals",
-            MontyImpactExposureCategory.EDUCATION_CENTERS: "Education Centers",
+            MontyImpactExposureCategory.SCHOOLS: "Schools",
             MontyImpactExposureCategory.LOCAL_CURRENCY: "Local Currency [Date of Event]",
             MontyImpactExposureCategory.GLOBAL_CURRENCY: "Global/Regional Currency (e.g. USD)",
             MontyImpactExposureCategory.INFLATION_ADJUSTED_LOCAL_CURRENCY: "Inflation-Adjusted Local Currency [Date of Event]",
             MontyImpactExposureCategory.INFLATION_ADJUSTED_GLOBAL_CURRENCY: "Inflation-Adjusted Global/Regional Currency (USD)",
             MontyImpactExposureCategory.USD_UNSURE: "USD [Unsure]",
-            MontyImpactExposureCategory.AID_CONTRIBUTIONS_INFLATION_ADJUSTED: "Aid Contributions Inflation-Adjusted",
-            MontyImpactExposureCategory.AID_CONTRIBUTIONS_NON_INFLATION_ADJUSTED: "Aid Contributions Non-Inflation-Adjusted",
-            MontyImpactExposureCategory.AID_CONTRIBUTIONS_UNSPECIFIED: "Aid Contributions (Unspecified-Inflation-Adjustment)",
-            MontyImpactExposureCategory.RECONSTRUCTION_COSTS_INFLATION_ADJUSTED: "Reconstruction Costs Inflation-Adjusted",
-            MontyImpactExposureCategory.RECONSTRUCTION_COSTS_NON_INFLATION_ADJUSTED: "Reconstruction Costs Non-Inflation-Adjusted",  # noqa: E501
-            MontyImpactExposureCategory.RECONSTRUCTION_COSTS_UNSPECIFIED: "Reconstruction Costs (Unspecified-Inflation-Adjustment)",  # noqa: E501
-            MontyImpactExposureCategory.INSURED_COSTS_INFLATION_ADJUSTED: "Insured Costs Inflation-Adjusted",
-            MontyImpactExposureCategory.INSURED_COSTS_NON_INFLATION_ADJUSTED: "Insured Costs Non-Inflation-Adjusted",
-            MontyImpactExposureCategory.INSURED_COSTS_UNSPECIFIED: "Insured Costs (Unspecified-Inflation-Adjustment)",
-            MontyImpactExposureCategory.UNINSURED_COSTS_INFLATION_ADJUSTED: "Uninsured Costs Inflation-Adjusted",
-            MontyImpactExposureCategory.UNINSURED_COSTS_NON_INFLATION_ADJUSTED: "Uninsured Costs Non-Inflation-Adjusted",
-            MontyImpactExposureCategory.UNINSURED_COSTS_UNSPECIFIED: "Uninsured Costs (Unspecified-Inflation-Adjustment)",
-            MontyImpactExposureCategory.TOTAL_COST_INFLATION_ADJUSTED: "Total Cost Inflation-Adjusted",
-            MontyImpactExposureCategory.TOTAL_COST_NON_INFLATION_ADJUSTED: "Total Cost Non-Inflation-Adjusted",
-            MontyImpactExposureCategory.TOTAL_COST_UNSPECIFIED: "Total Cost (Unspecified-Inflation-Adjustment)",
-            MontyImpactExposureCategory.TOTAL_DIRECT_COSTS_INFLATION_ADJUSTED: "Total Direct Costs Inflation-Adjusted",
-            MontyImpactExposureCategory.TOTAL_DIRECT_COSTS_NON_INFLATION_ADJUSTED: "Total Direct Costs Non-Inflation-Adjusted",
-            MontyImpactExposureCategory.TOTAL_DIRECT_COSTS_UNSPECIFIED: "Total Direct Costs (Unspecified-Inflation-Adjustment)",
-            MontyImpactExposureCategory.TOTAL_INDIRECT_COSTS_INFLATION_ADJUSTED: "Total Indirect Costs Inflation-Adjusted",
-            MontyImpactExposureCategory.TOTAL_INDIRECT_COSTS_NON_INFLATION_ADJUSTED: "Total Indirect Costs Non-Inflation-Adjusted",  # noqa: E501
-            MontyImpactExposureCategory.TOTAL_INDIRECT_COSTS_UNSPECIFIED: "Total Indirect Costs (Unspecified-Inflation-Adjustment)",  # noqa: E501
             MontyImpactExposureCategory.CATTLE: "Cattle",
+            MontyImpactExposureCategory.AID_GENERAL: "Aid (General)",
             MontyImpactExposureCategory.ALERTSCORE: "Alertscore",
-            MontyImpactExposureCategory.IFRC_AID_CONTRIBUTIONS_UNSPECIFIED: "IFRC Aid Contributions (Unspecified-Inflation-Adjustment)",  # noqa: E501
+            MontyImpactExposureCategory.IFRC_APPEAL_CONTRIBUTION: "IFRC Appeal Contribution",
+            MontyImpactExposureCategory.IFRC_APPEAL_REQUESTED: "IFRC Appeal Requested",
+            MontyImpactExposureCategory.TOTAL_AFFECTED: "Total Affected (unspecified)",
         }
 
     def __getitem__(self, key: MontyImpactExposureCategory) -> str:
@@ -188,38 +152,38 @@ class MontyImpactExposureCatgoryLabel(Mapping):
 
 
 class MontyImpactType(StringEnum):
-    UNDEFINED = "unspec"
-    UNAFFECTED = "unaff"
-    DAMAGED = "dama"
-    DESTROYED = "dest"
-    POTENTIALLY_DAMAGED = "potdam"
-    TOTAL_AFFECTED = "affe"
-    DIRECTLY_AFFECTED = "diraffe"
-    INDIRECTLY_AFFECTED = "indaffe"
-    DEATHS = "deat"
-    MISSING = "miss"
-    INJURED = "inju"
-    EVACUATED = "vac"
-    RELOCATED = "reloc"
-    ASSISTED = "assist"
-    EMERGENCY_SHELTERED = "emshel"
-    TEMPORARY_ACCOMMODATED = "tempacc"
-    LONG_TERM_ACCOMMODATED = "longacc"
-    IN_NEED = "need"
-    TARGETED = "targ"
-    DISRUPTED = "disr"
+    UNSPECIFIED = "unspecified"
+    UNAFFECTED = "unaffected"
+    DAMAGED = "damaged"
+    DESTROYED = "destroyed"
+    POTENTIALLY_DAMAGED = "potentially_damaged"
+    TOTAL_AFFECTED = "affected_total"
+    DIRECTLY_AFFECTED = "affected_direct"
+    INDIRECTLY_AFFECTED = "affected_indirect"
+    DEATH = "death"
+    MISSING = "missing"
+    INJURED = "injured"
+    EVACUATED = "evacuated"
+    RELOCATED = "relocated"
+    ASSISTED = "assisted"
+    EMERGENCY_SHELTERED = "shelter_emergency"
+    TEMPORARY_ACCOMMODATED = "shelter_temporary"
+    LONG_TERM_ACCOMMODATED = "shelter_longterm"
+    IN_NEED = "in_need"
+    TARGETED = "targeted"
+    DISRUPTED = "disrupted"
     LOSS_COST = "cost"
-    HOMELESS = "homles"
-    INTERNALLY_DISPLACED_PERSONS = "idp"
-    REFUGEES_ASYLUM_SEEKERS_EXTERNALLY_DISPLACED_PERSONS = "extdisp"
-    DISPLACED_PERSONS = "disp"
-    ALERTSCORE = "alert"
+    HOMELESS = "homeless"
+    INTERNALLY_DISPLACED_PERSONS = "displaced_internal"
+    EXTERNALLY_DISPLACED_PERSONS = "displaced_external"
+    TOTAL_DISPLACED_PERSONS = "displaced_total"
+    ALERTSCORE = "alertscore"
 
 
 class MontyImpactTypeLabel(Mapping):
     def __init__(self) -> None:
         self._data = {
-            MontyImpactType.UNDEFINED: "Unspecified",
+            MontyImpactType.UNSPECIFIED: "Unspecified",
             MontyImpactType.UNAFFECTED: "Unaffected",
             MontyImpactType.DAMAGED: "Damaged",
             MontyImpactType.DESTROYED: "Destroyed",
@@ -227,7 +191,7 @@ class MontyImpactTypeLabel(Mapping):
             MontyImpactType.TOTAL_AFFECTED: "Total Affected",
             MontyImpactType.DIRECTLY_AFFECTED: "Directly Affected",
             MontyImpactType.INDIRECTLY_AFFECTED: "Indirectly Affected",
-            MontyImpactType.DEATHS: "Deaths",
+            MontyImpactType.DEATH: "Death",
             MontyImpactType.MISSING: "Missing",
             MontyImpactType.INJURED: "Injured",
             MontyImpactType.EVACUATED: "Evacuated",
@@ -242,8 +206,8 @@ class MontyImpactTypeLabel(Mapping):
             MontyImpactType.LOSS_COST: "Loss (Cost)",
             MontyImpactType.HOMELESS: "Homeless",
             MontyImpactType.INTERNALLY_DISPLACED_PERSONS: "Internally Displaced Persons (IDPs)",
-            MontyImpactType.REFUGEES_ASYLUM_SEEKERS_EXTERNALLY_DISPLACED_PERSONS: "Refugees, Asylum Seekers and Externally Displaced Persons",  # noqa: E501
-            MontyImpactType.DISPLACED_PERSONS: "Displaced Persons (Internal & External)",
+            MontyImpactType.EXTERNALLY_DISPLACED_PERSONS: "Refugees, Asylum Seekers and Externally Displaced Persons",  # noqa: E501
+            MontyImpactType.TOTAL_DISPLACED_PERSONS: "Displaced Persons (Internal & External)",
             MontyImpactType.ALERTSCORE: "Alertscore",
         }
 

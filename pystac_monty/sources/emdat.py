@@ -219,12 +219,12 @@ class EMDATTransformer:
         """Create impact items from a single row"""
         impact_items = []
         impact_fields = {
-            "Total Deaths": (MontyImpactExposureCategory.ALL_PEOPLE, MontyImpactType.DEATHS),
+            "Total Deaths": (MontyImpactExposureCategory.ALL_PEOPLE, MontyImpactType.DEATH),
             "No Injured": (MontyImpactExposureCategory.ALL_PEOPLE, MontyImpactType.INJURED),
             "No Affected": (MontyImpactExposureCategory.ALL_PEOPLE, MontyImpactType.TOTAL_AFFECTED),
-            "No Homeless": (MontyImpactExposureCategory.ALL_PEOPLE, MontyImpactType.DISPLACED_PERSONS),
+            "No Homeless": (MontyImpactExposureCategory.ALL_PEOPLE, MontyImpactType.TOTAL_DISPLACED_PERSONS),
             "Total Affected": (MontyImpactExposureCategory.ALL_PEOPLE, MontyImpactType.TOTAL_AFFECTED),
-            "Total Damages ('000 US$)": (MontyImpactExposureCategory.TOTAL_COST_UNSPECIFIED, MontyImpactType.LOSS_COST),
+            "Total Damages ('000 US$)": (MontyImpactExposureCategory.TOTAL_AFFECTED, MontyImpactType.LOSS_COST),
         }
 
         for field, (category, impact_type) in impact_fields.items():
