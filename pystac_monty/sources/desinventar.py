@@ -7,11 +7,11 @@ from pathlib import Path
 from typing import Any, Dict, List, Optional, Tuple, TypedDict
 from zipfile import ZipFile
 
-from pystac import Link
 import pytz
 import requests
 from geopandas import gpd
 from lxml import etree
+from pystac import Link
 from pystac.item import Item
 
 from pystac_monty.extension import (
@@ -228,9 +228,7 @@ class DesinventarDataSource:
 
 class DesinventarTransformer(MontyDataTransformer):
     """Transform DesInventar data to STAC items"""
-    
-    
-    
+
     data_source: DesinventarDataSource
     hazard_profiles = HazardProfiles()
     hazard_name_mapping: Dict[str, str] = {}
@@ -242,15 +240,11 @@ class DesinventarTransformer(MontyDataTransformer):
         super().__init__("desiventar")
         self.data_source = data_source
         self.events_collection_id = "desinventar-events"
-        self.events_collection_url = (
-            "https://raw.githubusercontent.com/IFRCGo/monty-stac-extension/refs/heads/main/examples/desinventar-events/desinventar-events.json"
-        )
+        self.events_collection_url = "https://raw.githubusercontent.com/IFRCGo/monty-stac-extension/refs/heads/main/examples/desinventar-events/desinventar-events.json" # noqa: E501
 
         self.impacts_collection_id = "desinventar-impacts"
-        self.impacts_collection_url = (
-            "https://raw.githubusercontent.com/IFRCGo/monty-stac-extension/refs/heads/main/examples/desinventar-impacts/desinventar-impacts.json"
-        )
-
+        self.impacts_collection_url = "https://raw.githubusercontent.com/IFRCGo/monty-stac-extension/refs/heads/main/examples/desinventar-impacts/desinventar-impacts.json" # noqa: E501
+ 
     def create_datetimes(self, row: DataRow) -> datetime | None:
         start_year = strtoi(row["year"], None)
         start_month = strtoi(row["month"], 1)
