@@ -48,16 +48,25 @@ class MontyDataTransformer:
         """Get event collection"""
         response = requests.get(self.events_collection_url)
         collection_dict = json.loads(response.text)
-        return Collection.from_dict(collection_dict)
+        collection = Collection.from_dict(collection_dict)
+        # update self link with actual link
+        collection.set_self_href(self.events_collection_url)
+        return collection
 
     def get_hazard_collection(self) -> Collection:
         """Get hazard collection"""
         response = requests.get(self.hazards_collection_url)
         collection_dict = json.loads(response.text)
-        return Collection.from_dict(collection_dict)
+        collection = Collection.from_dict(collection_dict)
+        # update self link with actual link
+        collection.set_self_href(self.hazards_collection_url)
+        return collection
 
     def get_impact_collection(self) -> Collection:
         """Get impact collection"""
         response = requests.get(self.impacts_collection_url)
         collection_dict = json.loads(response.text)
-        return Collection.from_dict(collection_dict)
+        collection = Collection.from_dict(collection_dict)
+        # update self link with actual link
+        collection.set_self_href(self.impacts_collection_url)
+        return collection

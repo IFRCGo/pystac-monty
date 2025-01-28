@@ -1,0 +1,251 @@
+interactions:
+- request:
+    body: null
+    headers:
+      Accept:
+      - '*/*'
+      Accept-Encoding:
+      - gzip, deflate
+      Connection:
+      - keep-alive
+      User-Agent:
+      - python-requests/2.32.3
+    method: GET
+    uri: https://raw.githubusercontent.com/IFRCGo/monty-stac-extension/refs/heads/main/examples/desinventar-events/desinventar-events.json
+  response:
+    body:
+      string: !!binary |
+        H4sIAAAAAAAAA8VTwW7CMAy98xVRzm1Jpx0G143D7jttQlNoDWQLSRRnCIT49zmh7UAUDXHBitrE
+        79nPbtzdgJHxsHXAx4w/W62hCsoanh0QVUd/DajMGkyQPof4xhbHIKvPNXiMMcQsC1GIFqSwyisX
+        GmySItnc2xULS2AvgK9NVlYrlBjAM20RWS2DnEmENpFW5hspxUc6Rtt1u0TwoKOCtzY0MR209DCP
+        WFEMK0qr7aL4wq7BjtZ+AumcVkSkmoeJ19H22T/qKsDqovpw4eu8HD3eT/xBiHuKl7eKp920mYSg
+        gk4Bx8MzORlJygMGE8l567wC4mxbFDaByAT+dcLRkbDUJ84EzGZ2czJ2rZ17ouXlk8j6kdEF4GLE
+        SJy5p4P+09H1cLoIZ31fL8rQ77VOyLX9cKpO5KKk9SbEOK133l+v+dH6+ooHh+f+FwE1LmaABAAA
+    headers:
+      Accept-Ranges:
+      - bytes
+      Access-Control-Allow-Origin:
+      - '*'
+      Cache-Control:
+      - max-age=300
+      Connection:
+      - keep-alive
+      Content-Encoding:
+      - gzip
+      Content-Length:
+      - '342'
+      Content-Security-Policy:
+      - default-src 'none'; style-src 'unsafe-inline'; sandbox
+      Content-Type:
+      - text/plain; charset=utf-8
+      Cross-Origin-Resource-Policy:
+      - cross-origin
+      Date:
+      - Tue, 28 Jan 2025 15:15:45 GMT
+      ETag:
+      - W/"1e0e9c30e1d7a79da812eb5beafb8bf557b19177156c8fc76b9c33929279862d"
+      Expires:
+      - Tue, 28 Jan 2025 15:20:45 GMT
+      Source-Age:
+      - '19'
+      Strict-Transport-Security:
+      - max-age=31536000
+      Vary:
+      - Authorization,Accept-Encoding,Origin
+      Via:
+      - 1.1 varnish
+      X-Cache:
+      - HIT
+      X-Cache-Hits:
+      - '1'
+      X-Content-Type-Options:
+      - nosniff
+      X-Fastly-Request-ID:
+      - 546ecc0e245618b8b596f9f2ecd977e46a4528d3
+      X-Frame-Options:
+      - deny
+      X-GitHub-Request-Id:
+      - 3743:187701:8801F:8C053:6798F31D
+      X-Served-By:
+      - cache-mrs10530-MRS
+      X-Timer:
+      - S1738077345.349960,VS0,VE1
+      X-XSS-Protection:
+      - 1; mode=block
+    status:
+      code: 200
+      message: OK
+- request:
+    body: null
+    headers:
+      Accept:
+      - '*/*'
+      Accept-Encoding:
+      - gzip, deflate
+      Connection:
+      - keep-alive
+      User-Agent:
+      - python-requests/2.32.3
+    method: GET
+    uri: https://raw.githubusercontent.com/IFRCGo/monty-stac-extension/refs/heads/main/examples/desinventar-events/desinventar-events.json
+  response:
+    body:
+      string: !!binary |
+        H4sIAAAAAAAAA8VTwW7CMAy98xVRzm1Jpx0G143D7jttQlNoDWQLSRRnCIT49zmh7UAUDXHBitrE
+        79nPbtzdgJHxsHXAx4w/W62hCsoanh0QVUd/DajMGkyQPof4xhbHIKvPNXiMMcQsC1GIFqSwyisX
+        GmySItnc2xULS2AvgK9NVlYrlBjAM20RWS2DnEmENpFW5hspxUc6Rtt1u0TwoKOCtzY0MR209DCP
+        WFEMK0qr7aL4wq7BjtZ+AumcVkSkmoeJ19H22T/qKsDqovpw4eu8HD3eT/xBiHuKl7eKp920mYSg
+        gk4Bx8MzORlJygMGE8l567wC4mxbFDaByAT+dcLRkbDUJ84EzGZ2czJ2rZ17ouXlk8j6kdEF4GLE
+        SJy5p4P+09H1cLoIZ31fL8rQ77VOyLX9cKpO5KKk9SbEOK133l+v+dH6+ooHh+f+FwE1LmaABAAA
+    headers:
+      Accept-Ranges:
+      - bytes
+      Access-Control-Allow-Origin:
+      - '*'
+      Cache-Control:
+      - max-age=300
+      Connection:
+      - keep-alive
+      Content-Encoding:
+      - gzip
+      Content-Length:
+      - '342'
+      Content-Security-Policy:
+      - default-src 'none'; style-src 'unsafe-inline'; sandbox
+      Content-Type:
+      - text/plain; charset=utf-8
+      Cross-Origin-Resource-Policy:
+      - cross-origin
+      Date:
+      - Tue, 28 Jan 2025 15:15:45 GMT
+      ETag:
+      - W/"1e0e9c30e1d7a79da812eb5beafb8bf557b19177156c8fc76b9c33929279862d"
+      Expires:
+      - Tue, 28 Jan 2025 15:20:45 GMT
+      Source-Age:
+      - '19'
+      Strict-Transport-Security:
+      - max-age=31536000
+      Vary:
+      - Authorization,Accept-Encoding,Origin
+      Via:
+      - 1.1 varnish
+      X-Cache:
+      - HIT
+      X-Cache-Hits:
+      - '1'
+      X-Content-Type-Options:
+      - nosniff
+      X-Fastly-Request-ID:
+      - e72aedaf8f9efc9c4f56dda4dbed2eddce8f36b4
+      X-Frame-Options:
+      - deny
+      X-GitHub-Request-Id:
+      - 3743:187701:8801F:8C053:6798F31D
+      X-Served-By:
+      - cache-mrs10522-MRS
+      X-Timer:
+      - S1738077345.469431,VS0,VE1
+      X-XSS-Protection:
+      - 1; mode=block
+    status:
+      code: 200
+      message: OK
+- request:
+    body: null
+    headers:
+      Accept:
+      - '*/*'
+      Accept-Encoding:
+      - gzip, deflate
+      Connection:
+      - keep-alive
+      User-Agent:
+      - python-requests/2.32.3
+    method: GET
+    uri: https://raw.githubusercontent.com/IFRCGo/monty-stac-extension/refs/heads/main/json-schema/schema.json
+  response:
+    body:
+      string: !!binary |
+        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
+    headers:
+      Accept-Ranges:
+      - bytes
+      Access-Control-Allow-Origin:
+      - '*'
+      Cache-Control:
+      - max-age=300
+      Connection:
+      - keep-alive
+      Content-Encoding:
+      - gzip
+      Content-Length:
+      - '1516'
+      Content-Security-Policy:
+      - default-src 'none'; style-src 'unsafe-inline'; sandbox
+      Content-Type:
+      - text/plain; charset=utf-8
+      Cross-Origin-Resource-Policy:
+      - cross-origin
+      Date:
+      - Tue, 28 Jan 2025 15:15:45 GMT
+      ETag:
+      - W/"466c56ba1628e81d4d454496f77b07173df0b47e1f7947c382e33f9d279d9bb9"
+      Expires:
+      - Tue, 28 Jan 2025 15:20:45 GMT
+      Source-Age:
+      - '19'
+      Strict-Transport-Security:
+      - max-age=31536000
+      Vary:
+      - Authorization,Accept-Encoding,Origin
+      Via:
+      - 1.1 varnish
+      X-Cache:
+      - HIT
+      X-Cache-Hits:
+      - '1'
+      X-Content-Type-Options:
+      - nosniff
+      X-Fastly-Request-ID:
+      - ffe9b27f44a0567565585a08ea7b39c0a9c278ba
+      X-Frame-Options:
+      - deny
+      X-GitHub-Request-Id:
+      - 5E28:1BFC4E:18CE12:199530:6798D9B3
+      X-Served-By:
+      - cache-mrs10552-MRS
+      X-Timer:
+      - S1738077346.589755,VS0,VE2
+      X-XSS-Protection:
+      - 1; mode=block
+    status:
+      code: 200
+      message: OK
+version: 1
