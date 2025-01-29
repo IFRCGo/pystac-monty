@@ -78,11 +78,11 @@ class USGSTransformer:
 
         # Create event item
         event_item = self.make_source_event_item()
-        items.append(event_item)
+        items.extend(event_item)
 
         # Create hazard item (ShakeMap)
         hazard_item = self.make_hazard_event_item()
-        items.append(hazard_item)
+        items.extend(hazard_item)
 
         # Create impact items (PAGER)
         if self.data.get_losses_data():
@@ -94,113 +94,118 @@ class USGSTransformer:
     def make_source_event_item(self) -> Item:
         """Create source event item from USGS data."""
         event_data = self.data.get_data()
+        items = []
+        for event_data in event_data["features"]:
+            # Create geometry from coordinates
+            longitude = event_data["geometry"]["coordinates"][0]
+            latitude = event_data["geometry"]["coordinates"][1]
+            point = Point(longitude, latitude)
 
-        # Create geometry from coordinates
-        longitude = event_data["geometry"]["coordinates"][0]
-        latitude = event_data["geometry"]["coordinates"][1]
-        point = Point(longitude, latitude)
+            event_datetime = datetime.fromtimestamp(event_data["properties"]["time"] / 1000, pytz.UTC)
 
-        event_datetime = datetime.fromtimestamp(event_data["properties"]["time"] / 1000, pytz.UTC)
+            item = Item(
+                id=f"{STAC_EVENT_ID_PREFIX}{event_data['id']}",
+                geometry=mapping(point),
+                bbox=[longitude, latitude, longitude, latitude],
+                datetime=event_datetime,
+                properties={
+                    "title": event_data["properties"].get("title", ""),
+                    "description": event_data["properties"].get("place", ""),
+                    "eq:magnitude": event_data["properties"].get("mag"),
+                    "eq:magnitude_type": event_data["properties"].get("magType"),
+                    "eq:status": event_data["properties"].get("status"),
+                    "eq:tsunami": bool(event_data["properties"].get("tsunami")),
+                    "eq:felt": event_data["properties"].get("felt"),
+                    "eq:depth": event_data["properties"].get("depth"),
+                },
+            )
 
-        item = Item(
-            id=f"{STAC_EVENT_ID_PREFIX}{event_data['id']}",
-            geometry=mapping(point),
-            bbox=[longitude, latitude, longitude, latitude],
-            datetime=event_datetime,
-            properties={
-                "title": event_data["properties"].get("title", ""),
-                "description": event_data["properties"].get("place", ""),
-                "eq:magnitude": event_data["properties"].get("mag"),
-                "eq:magnitude_type": event_data["properties"].get("magType"),
-                "eq:status": event_data["properties"].get("status"),
-                "eq:tsunami": bool(event_data["properties"].get("tsunami")),
-                "eq:felt": event_data["properties"].get("felt"),
-                "eq:depth": event_data["properties"].get("depth"),
-            },
-        )
+            # Add Monty extension
+            MontyExtension.add_to(item)
+            monty = MontyExtension.ext(item)
+            monty.episode_number = 1
+            monty.hazard_codes = ["GH0004"]  # Earthquake surface rupture code
 
-        # Add Monty extension
-        MontyExtension.add_to(item)
-        monty = MontyExtension.ext(item)
-        monty.episode_number = 1
-        monty.hazard_codes = ["GH0004"]  # Earthquake surface rupture code
+            # Get country code from event data or geometry
+            country_codes = ["CHN"]  # This should be derived from coordinates
+            monty.country_codes = country_codes
 
-        # Get country code from event data or geometry
-        country_codes = ["CHN"]  # This should be derived from coordinates
-        monty.country_codes = country_codes
+            # Compute correlation ID
+            monty.compute_and_set_correlation_id(hazard_profiles=self.hazard_profiles)
 
-        # Compute correlation ID
-        monty.compute_and_set_correlation_id(hazard_profiles=self.hazard_profiles)
+            # Set collection and roles
+            item.set_collection(self.get_event_collection())
+            item.properties["roles"] = ["source", "event"]
 
-        # Set collection and roles
-        item.set_collection(self.get_event_collection())
-        item.properties["roles"] = ["source", "event"]
+            # Add source link and assets
+            item.add_link(Link("via", self.data.get_source_url(), "application/json", "USGS Event Data"))
+            item.add_asset(
+                "source",
+                Asset(
+                    href=self.data.get_source_url(),
+                    media_type="application/geo+json",
+                    title="USGS GeoJSON Source",
+                    roles=["source"],
+                ),
+            )
+            items.append(item)
 
-        # Add source link and assets
-        item.add_link(Link("via", self.data.get_source_url(), "application/json", "USGS Event Data"))
-        item.add_asset(
-            "source",
-            Asset(
-                href=self.data.get_source_url(),
-                media_type="application/geo+json",
-                title="USGS GeoJSON Source",
-                roles=["source"],
-            ),
-        )
-
-        return item
+        return items
 
     def make_hazard_event_item(self) -> Item:
         """Create hazard item (ShakeMap) from USGS data."""
         event_item = self.make_source_event_item()
-        hazard_item = event_item.clone()
-        hazard_item.id = f"{STAC_HAZARD_ID_PREFIX}{hazard_item.id.replace(STAC_EVENT_ID_PREFIX, '')}-shakemap"
+        hazard_items = event_item
+        for hazard_item in hazard_items:
+            print("hazard_item", hazard_item)
 
-        # Set collection and roles
-        hazard_item.set_collection(self.get_hazard_collection())
-        hazard_item.properties["roles"] = ["source", "hazard"]
+            hazard_item.id = f"{STAC_HAZARD_ID_PREFIX}{hazard_item.id.replace(STAC_EVENT_ID_PREFIX, '')}-shakemap"
 
-        # Add hazard detail
-        monty = MontyExtension.ext(hazard_item)
-        monty.hazard_detail = HazardDetail(
-            cluster="GEO-SEIS",
-            severity_value=float(event_item.properties.get("eq:magnitude", 0)),
-            severity_unit=event_item.properties.get("eq:magnitude_type", ""),
-            estimate_type=MontyEstimateType.PRIMARY,
-        )
+            # Set collection and roles
+            hazard_item.set_collection(self.get_hazard_collection())
+            hazard_item.properties["roles"] = ["source", "hazard"]
 
-        # Add shakemap assets
-        shakemap_assets = {
-            "intensity_map": {
-                "href": f"{self.data.get_source_url()}/download/intensity.jpg",
-                "media_type": "image/jpeg",
-                "title": "Intensity Map",
-                "roles": ["overview"],
-            },
-            "intensity_overlay": {
-                "href": f"{self.data.get_source_url()}/download/intensity_overlay.png",
-                "media_type": "image/png",
-                "title": "Intensity Overlay",
-                "roles": ["visual"],
-            },
-            "mmi_contours": {
-                "href": f"{self.data.get_source_url()}/download/cont_mi.json",
-                "media_type": "application/json",
-                "title": "MMI Contours",
-                "roles": ["data"],
-            },
-            "grid": {
-                "href": f"{self.data.get_source_url()}/download/grid.xml",
-                "media_type": "application/xml",
-                "title": "Ground Motion Grid",
-                "roles": ["data"],
-            },
-        }
+            # Add hazard detail
+            monty = MontyExtension.ext(hazard_item)
+            monty.hazard_detail = HazardDetail(
+                cluster="GEO-SEIS",
+                severity_value=float(hazard_item.properties.get("eq:magnitude", 0)),
+                severity_unit=hazard_item.properties.get("eq:magnitude_type", ""),
+                estimate_type=MontyEstimateType.PRIMARY,
+            )
 
-        for key, asset_info in shakemap_assets.items():
-            hazard_item.add_asset(key, Asset(**asset_info))
+            # Add shakemap assets
+            shakemap_assets = {
+                "intensity_map": {
+                    "href": f"{self.data.get_source_url()}/download/intensity.jpg",
+                    "media_type": "image/jpeg",
+                    "title": "Intensity Map",
+                    "roles": ["overview"],
+                },
+                "intensity_overlay": {
+                    "href": f"{self.data.get_source_url()}/download/intensity_overlay.png",
+                    "media_type": "image/png",
+                    "title": "Intensity Overlay",
+                    "roles": ["visual"],
+                },
+                "mmi_contours": {
+                    "href": f"{self.data.get_source_url()}/download/cont_mi.json",
+                    "media_type": "application/json",
+                    "title": "MMI Contours",
+                    "roles": ["data"],
+                },
+                "grid": {
+                    "href": f"{self.data.get_source_url()}/download/grid.xml",
+                    "media_type": "application/xml",
+                    "title": "Ground Motion Grid",
+                    "roles": ["data"],
+                },
+            }
 
-        return hazard_item
+            for key, asset_info in shakemap_assets.items():
+                hazard_item.add_asset(key, Asset(**asset_info))
+
+        return hazard_items
 
     def make_impact_items(self) -> List[Item]:
         """Create impact items (PAGER) from USGS data."""
