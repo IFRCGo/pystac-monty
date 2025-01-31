@@ -34,7 +34,7 @@ def load_scenarios(
         transformers.append(IDUTransformer(idu_data_source))
     return transformers
 
-
+#  TODO Move the contents to monty-stac-extension and create the link to keep the data fixed.
 event_urls = [
     "https://helix-copilot-prod-helix-media-external.s3.amazonaws.com/external-media/api-dump/idus/2025-01-28-02-00-05/Ktl2z/idus.json"
 ]

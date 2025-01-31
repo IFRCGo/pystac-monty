@@ -155,27 +155,35 @@ class IDUTransformer:
         hazard = tuple((item.lower() if item else item for item in hazard))
         hazard_mapping = {
             ('geophysical', 'geophysical', 'earthquake', 'earthquake'): ["GH0001", "GH0004"],
-            ('geophysical', 'geophysical', 'mass movement', 'dry mass movement'): ["Dry Mass Movement"],
+            ('geophysical', 'geophysical', 'earthquake', 'tsunami'): ["GH0006"],
+            ('geophysical', 'geophysical', 'mass movement', 'dry mass movement'): ["GH0007", "GH0014"],
             ('geophysical', 'geophysical', 'mass movement', 'sinkhole'): ["GH0026"],
             ('geophysical', 'geophysical', 'volcanic activity', 'volcanic activity'): ["GH0020"],
-            ('mixed disasters', 'mixed disasters', 'mixed disasters', 'mixed disasters'): "Mixed Disaster",
+            ('mixed disasters', 'mixed disasters', 'mixed disasters', 'mixed disasters'): ["Mixed Disaster"],
+            ('weather related', 'climatological', 'desertification', 'desertification'): ["EN0014"],
             ('weather related', 'climatological', 'drought', 'drought'): ["MH0035"],
             ('weather related', 'climatological', 'erosion', 'erosion'): ["EN0019"],
+            ('weather related', 'climatological', 'salinisation', 'salinization'): ["Salinization"],
             ('weather related', 'climatological', 'sea level rise', 'sea level rise'): ["EN0023"],
             ('weather related', 'climatological', 'wildfire', 'wildfire'): ["EN0013"],
             ('weather related', 'hydrological', 'flood', 'dam release flood'): ["TL0009"],
             ('weather related', 'hydrological', 'flood', 'flood'): ["FL"],
             ('weather related', 'hydrological', 'mass movement', 'avalanche'): ["MH0050"],
-            ('weather related', 'hydrological', 'mass movement', 'landslide/wet mass movement'): ["Landslide/Wet Mass Movement"],
+            ('weather related', 'hydrological', 'mass movement', 'landslide/wet mass movement'): ["MH0051"],
+            ('weather related', 'hydrological', 'wave action', 'rogue wave'): ["MH0027"],
             ('weather related', 'meteorological', 'extreme temperature', 'cold wave'): ["MH0040"],
+            ('weather related', 'meteorological', 'extreme temperature', 'heat wave'): ["MH0047"],
             ('weather related', 'meteorological', 'storm', 'hailstorm'): ["MH0036"],
+            ('weather related', 'meteorological', 'storm', 'sand/dust storm'): ["MH0015"],
             ('weather related', 'meteorological', 'storm', 'storm surge'): ["MH0027"],
             ('weather related', 'meteorological', 'storm', 'storm'): ["MH0058"],
             ('weather related', 'meteorological', 'storm', 'tornado'): ["MH0059"],
             ('weather related', 'meteorological', 'storm', 'typhoon/hurricane/cyclone'): ["MH0057"],
             ('weather related', 'meteorological', 'storm', 'winter storm/blizzard'): ["MH0034"]
         }
-        return hazard_mapping.get(hazard, [hazard[-1]])
+        if hazard not in hazard_mapping:
+            raise KeyError(f"Hazard {hazard} not found.")
+        return hazard_mapping.get(hazard)
 
     def make_impact_items(self) -> List[Item]:
         """Create impact items"""
@@ -195,7 +203,7 @@ class IDUTransformer:
             impact_item.properties["start_datetime"] = startdate.isoformat()
             impact_item.properties["end_datetime"] = enddate.isoformat()
             impact_item.properties["roles"] = ["source", "impact"]
-            impact_item.set_collection(self.get_event_collection())
+            impact_item.set_collection(self.get_impact_collection())
 
             monty = MontyExtension.ext(impact_item)
             monty.impact_detail = self.get_impact_details(src_data)
