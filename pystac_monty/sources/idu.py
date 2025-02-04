@@ -2,12 +2,13 @@ import datetime
 import json
 from dataclasses import dataclass
 from typing import Any, List, Dict
-
+from enum import Enum
 import pytz
 import requests
 from markdownify import markdownify as md
 from pystac import Asset, Collection, Item, Link
 from shapely.geometry import Point, mapping
+
 
 from pystac_monty.extension import (
     ImpactDetail,
@@ -23,6 +24,11 @@ from pystac_monty.sources.common import MontyDataSource
 
 STAC_EVENT_ID_PREFIX = "idu-event-"
 STAC_IMPACT_ID_PREFIX = "idu-impact-"
+
+class DisplacementType(Enum):
+    """Displacement Types"""
+    DISASTER_TYPE = "Disaster"
+    CONFLICT_TYPE = "Conflict"
 
 @dataclass
 class IDUDataSource(MontyDataSource):
@@ -228,12 +234,16 @@ class IDUTransformer:
         idu_data: List[Dict[str, Any]] = self.data.get_data()
         required_fields = ["latitude", "longitude", "event_id"]
 
+        filtered_idu_data = []
         if not idu_data:
             print(f"No IDU data found in {self.data.get_source_url()}")
             return []
 
         for item in idu_data:
-            missing_fields = [field for field in required_fields if field not in item]
-            if missing_fields:
-                raise ValueError(f"Missing required fields {missing_fields}.")
-        return idu_data
+            # Get the Disaster type data only
+            if DisplacementType(item["displacement_type"]) == DisplacementType.DISASTER_TYPE:
+                missing_fields = [field for field in required_fields if field not in item]
+                if missing_fields:
+                    raise ValueError(f"Missing required fields {missing_fields}.")
+                filtered_idu_data.append(item)
+        return filtered_idu_data
