@@ -1,14 +1,14 @@
 import datetime
 import json
 from dataclasses import dataclass
-from typing import Any, List, Dict
 from enum import Enum
+from typing import Any, Dict, List
+
 import pytz
 import requests
 from markdownify import markdownify as md
 from pystac import Asset, Collection, Item, Link
 from shapely.geometry import Point, mapping
-
 
 from pystac_monty.extension import (
     ImpactDetail,
@@ -25,25 +25,30 @@ from pystac_monty.sources.common import MontyDataSource
 STAC_EVENT_ID_PREFIX = "idu-event-"
 STAC_IMPACT_ID_PREFIX = "idu-impact-"
 
+
 class DisplacementType(Enum):
     """Displacement Types"""
+
     DISASTER_TYPE = "Disaster"
     CONFLICT_TYPE = "Conflict"
+
 
 @dataclass
 class IDUDataSource(MontyDataSource):
     """IDU Data directly from the source"""
+
     def __init__(self, source_url: str, data: Any):
         super().__init__(source_url, data)
         self.data = json.loads(data)
-    
+
 
 class IDUTransformer:
     """Transform the source data into the STAC items"""
+
     idu_events_collection_id = "idu-events"
-    idu_events_collection_url = "https://raw.githubusercontent.com/IFRCGo/monty-stac-extension/refs/heads/feature/update-idu-documentation/examples/idu-events/idu-events.json"
+    idu_events_collection_url = "https://raw.githubusercontent.com/IFRCGo/monty-stac-extension/refs/heads/feature/update-idu-documentation/examples/idu-events/idu-events.json"  # noqa
     idu_impacts_collection_id = "idu-impacts"
-    idu_impacts_collection_url = "https://raw.githubusercontent.com/IFRCGo/monty-stac-extension/refs/heads/feature/update-idu-documentation/examples/idu-impacts/idu-impacts.json"
+    idu_impacts_collection_url = "https://raw.githubusercontent.com/IFRCGo/monty-stac-extension/refs/heads/feature/update-idu-documentation/examples/idu-impacts/idu-impacts.json"  # noqa
 
     hazard_profiles = HazardProfiles()
 
@@ -62,8 +67,7 @@ class IDUTransformer:
 
         return items
 
-
-    def get_event_collection(self, timeout: int=30) -> Collection:
+    def get_event_collection(self, timeout: int = 30) -> Collection:
         """Get the event collection"""
         response = requests.get(self.idu_events_collection_url, timeout=timeout)
         if response.status_code == 200:
@@ -71,7 +75,7 @@ class IDUTransformer:
             return Collection.from_dict(collection_dict)
         return Collection.from_dict({})
 
-    def get_impact_collection(self, timeout: int=30) -> Collection:
+    def get_impact_collection(self, timeout: int = 30) -> Collection:
         """Get the impact collection"""
         response = requests.get(self.idu_events_collection_url, timeout=timeout)
         if response.status_code == 200:
@@ -85,12 +89,11 @@ class IDUTransformer:
         idu_data = self.check_and_get_idu_data()
         if not idu_data:
             return []
-        
+
         for data in idu_data:
             item = self.make_source_event_item(data=data)
             items.append(item)
         return items
-
 
     def make_source_event_item(self, data: dict) -> Item:
         """Create an Event Item"""
@@ -123,29 +126,17 @@ class IDUTransformer:
                 "start_datetime": startdate.isoformat(),
                 "end_datetime": enddate.isoformat(),
                 "location": data["locations_name"],
-                "sources": data["sources"]
-            }
+                "sources": data["sources"],
+            },
         )
 
         item.set_collection(self.get_event_collection())
         item.properties["roles"] = ["source", "event"]
 
-        item.add_asset(
-            "report",
-            Asset(
-                href=data["source_url"],
-                media_type="application/pdf",
-                title="Report"
-            )
-        )
+        item.add_asset("report", Asset(href=data["source_url"], media_type="application/pdf", title="Report"))
         item.add_link(Link("via", self.data.get_source_url(), "application/json", "IDU Event Data"))
 
-        hazard_tuple = (
-            data["category"],
-            data["subcategory"],
-            data["type"],
-            data["subtype"]
-        )
+        hazard_tuple = (data["category"], data["subcategory"], data["type"], data["subtype"])
 
         MontyExtension.add_to(item)
         monty = MontyExtension.ext(item)
@@ -160,32 +151,32 @@ class IDUTransformer:
         """Map IDU hazards to UNDRR-ISC 2020 Hazard Codes"""
         hazard = tuple((item.lower() if item else item for item in hazard))
         hazard_mapping = {
-            ('geophysical', 'geophysical', 'earthquake', 'earthquake'): ["GH0001", "GH0004"],
-            ('geophysical', 'geophysical', 'earthquake', 'tsunami'): ["GH0006"],
-            ('geophysical', 'geophysical', 'mass movement', 'dry mass movement'): ["GH0007", "GH0014"],
-            ('geophysical', 'geophysical', 'mass movement', 'sinkhole'): ["GH0026"],
-            ('geophysical', 'geophysical', 'volcanic activity', 'volcanic activity'): ["GH0020"],
-            ('mixed disasters', 'mixed disasters', 'mixed disasters', 'mixed disasters'): ["Mixed Disaster"],
-            ('weather related', 'climatological', 'desertification', 'desertification'): ["EN0014"],
-            ('weather related', 'climatological', 'drought', 'drought'): ["MH0035"],
-            ('weather related', 'climatological', 'erosion', 'erosion'): ["EN0019"],
-            ('weather related', 'climatological', 'salinisation', 'salinization'): ["Salinization"],
-            ('weather related', 'climatological', 'sea level rise', 'sea level rise'): ["EN0023"],
-            ('weather related', 'climatological', 'wildfire', 'wildfire'): ["EN0013"],
-            ('weather related', 'hydrological', 'flood', 'dam release flood'): ["TL0009"],
-            ('weather related', 'hydrological', 'flood', 'flood'): ["FL"],
-            ('weather related', 'hydrological', 'mass movement', 'avalanche'): ["MH0050"],
-            ('weather related', 'hydrological', 'mass movement', 'landslide/wet mass movement'): ["MH0051"],
-            ('weather related', 'hydrological', 'wave action', 'rogue wave'): ["MH0027"],
-            ('weather related', 'meteorological', 'extreme temperature', 'cold wave'): ["MH0040"],
-            ('weather related', 'meteorological', 'extreme temperature', 'heat wave'): ["MH0047"],
-            ('weather related', 'meteorological', 'storm', 'hailstorm'): ["MH0036"],
-            ('weather related', 'meteorological', 'storm', 'sand/dust storm'): ["MH0015"],
-            ('weather related', 'meteorological', 'storm', 'storm surge'): ["MH0027"],
-            ('weather related', 'meteorological', 'storm', 'storm'): ["MH0058"],
-            ('weather related', 'meteorological', 'storm', 'tornado'): ["MH0059"],
-            ('weather related', 'meteorological', 'storm', 'typhoon/hurricane/cyclone'): ["MH0057"],
-            ('weather related', 'meteorological', 'storm', 'winter storm/blizzard'): ["MH0034"]
+            ("geophysical", "geophysical", "earthquake", "earthquake"): ["GH0001", "GH0004"],
+            ("geophysical", "geophysical", "earthquake", "tsunami"): ["GH0006"],
+            ("geophysical", "geophysical", "mass movement", "dry mass movement"): ["GH0007", "GH0014"],
+            ("geophysical", "geophysical", "mass movement", "sinkhole"): ["GH0026"],
+            ("geophysical", "geophysical", "volcanic activity", "volcanic activity"): ["GH0020"],
+            ("mixed disasters", "mixed disasters", "mixed disasters", "mixed disasters"): ["Mixed Disaster"],
+            ("weather related", "climatological", "desertification", "desertification"): ["EN0014"],
+            ("weather related", "climatological", "drought", "drought"): ["MH0035"],
+            ("weather related", "climatological", "erosion", "erosion"): ["EN0019"],
+            ("weather related", "climatological", "salinisation", "salinization"): ["Salinization"],
+            ("weather related", "climatological", "sea level rise", "sea level rise"): ["EN0023"],
+            ("weather related", "climatological", "wildfire", "wildfire"): ["EN0013"],
+            ("weather related", "hydrological", "flood", "dam release flood"): ["TL0009"],
+            ("weather related", "hydrological", "flood", "flood"): ["FL"],
+            ("weather related", "hydrological", "mass movement", "avalanche"): ["MH0050"],
+            ("weather related", "hydrological", "mass movement", "landslide/wet mass movement"): ["MH0051"],
+            ("weather related", "hydrological", "wave action", "rogue wave"): ["MH0027"],
+            ("weather related", "meteorological", "extreme temperature", "cold wave"): ["MH0040"],
+            ("weather related", "meteorological", "extreme temperature", "heat wave"): ["MH0047"],
+            ("weather related", "meteorological", "storm", "hailstorm"): ["MH0036"],
+            ("weather related", "meteorological", "storm", "sand/dust storm"): ["MH0015"],
+            ("weather related", "meteorological", "storm", "storm surge"): ["MH0027"],
+            ("weather related", "meteorological", "storm", "storm"): ["MH0058"],
+            ("weather related", "meteorological", "storm", "tornado"): ["MH0059"],
+            ("weather related", "meteorological", "storm", "typhoon/hurricane/cyclone"): ["MH0057"],
+            ("weather related", "meteorological", "storm", "winter storm/blizzard"): ["MH0034"],
         }
         if hazard not in hazard_mapping:
             raise KeyError(f"Hazard {hazard} not found.")
@@ -217,7 +208,6 @@ class IDUTransformer:
             items.append(impact_item)
         return items
 
-
     def get_impact_details(self, idu_src_item: dict):
         """Returns the impact details related to displacement"""
         return ImpactDetail(
@@ -225,9 +215,8 @@ class IDUTransformer:
             type=MontyImpactType.INTERNALLY_DISPLACED_PERSONS,
             value=idu_src_item["figure"],
             unit="count",
-            estimate_type=MontyEstimateType.PRIMARY
+            estimate_type=MontyEstimateType.PRIMARY,
         )
-
 
     def check_and_get_idu_data(self) -> list[Any]:
         """Validate the source fields"""
