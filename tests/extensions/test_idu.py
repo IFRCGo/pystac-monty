@@ -16,25 +16,25 @@ CURRENT_SCHEMA_URI = "https://ifrcgo.github.io/monty/v0.1.0/schema.json"
 CURRENT_SCHEMA_MAPURL = "https://raw.githubusercontent.com/IFRCGo/monty-stac-extension/refs/heads/main/json-schema/schema.json"
 
 
-def load_scenarios(scenarios: List[str], timeout: int = 30):
+def load_scenarios(scenarios: List[str], timeout: int = 30) -> List[IDUTransformer]:
     transformers = []
-    for scenario_url in scenarios:
-        response = requests.get(scenario_url, timeout=timeout)
+    for scenario in scenarios:
+        response = requests.get(scenario[1], timeout=timeout)
         response_data = response.json()
 
-        idu_data_source = IDUDataSource(source_url=scenario_url, data=json.dumps(response_data[:2]))
+        idu_data_source = IDUDataSource(source_url=scenario[1], data=json.dumps(response_data))
         transformers.append(IDUTransformer(idu_data_source))
     return transformers
 
 
-#  TODO Move the contents to monty-stac-extension and create the link to keep the data fixed.
-event_urls = [
-    "https://helix-copilot-prod-helix-media-external.s3.amazonaws.com/external-media/api-dump/idus/2025-01-28-02-00-05/Ktl2z/idus.json"  # noqa
+spain = [
+    "Spain",
+    "https://raw.githubusercontent.com/IFRCGo/monty-stac-extension/refs/heads/IDMC/model/sources/IDMC/idmc-idu-samples-ESP.json",  # noqa
 ]
 
 
 class IDUTest(unittest.TestCase):
-    scenarios = []
+    scenarios = [spain]
 
     def setUp(self) -> None:
         super().setUp()
@@ -42,7 +42,7 @@ class IDUTest(unittest.TestCase):
         # create temporary folder
         makedirs(get_data_file("temp/idu"), exist_ok=True)
 
-    @parameterized.expand(load_scenarios(event_urls))
+    @parameterized.expand(load_scenarios(scenarios))
     @pytest.mark.vcr()
     def test_transformer(self, transformer: IDUTransformer) -> None:
         items = transformer.make_items()
@@ -52,7 +52,7 @@ class IDUTest(unittest.TestCase):
 
         for item in items:
             item_path = get_data_file(f"temp/idu/{item.id}.json")
-            with open(item_path, "w") as f:
+            with open(item_path, "w", encoding="utf-8") as f:
                 json.dump(item.to_dict(), f, indent=2)
             item.validate(validator=self.validator)
             monty_item_ext = MontyExtension.ext(item)

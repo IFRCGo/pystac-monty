@@ -17,7 +17,7 @@ from pystac_monty.extension import (
     MontyImpactExposureCategory,
     MontyImpactType,
 )
-from pystac_monty.hazard_profiles import HazardProfiles
+from pystac_monty.hazard_profiles import MontyHazardProfiles
 from pystac_monty.sources.common import MontyDataSource
 
 # Constants
@@ -50,7 +50,7 @@ class IDUTransformer:
     idu_impacts_collection_id = "idu-impacts"
     idu_impacts_collection_url = "https://raw.githubusercontent.com/IFRCGo/monty-stac-extension/refs/heads/feature/update-idu-documentation/examples/idu-impacts/idu-impacts.json"  # noqa
 
-    hazard_profiles = HazardProfiles()
+    hazard_profiles = MontyHazardProfiles()
 
     def __init__(self, data: IDUDataSource):
         self.data = data
@@ -157,11 +157,11 @@ class IDUTransformer:
             ("geophysical", "geophysical", "mass movement", "sinkhole"): ["nat-geo-mmd-sub"],
             ("geophysical", "geophysical", "volcanic activity", "volcanic activity"): ["nat-geo-vol-vol"],
             ("mixed disasters", "mixed disasters", "mixed disasters", "mixed disasters"): ["mix-mix-mix-mix"],
-            ("weather related", "climatological", "desertification", "desertification"): ["EN0014"],
+            ("weather related", "climatological", "desertification", "desertification"): ["EN0006", "nat-geo-env-des"],
             ("weather related", "climatological", "drought", "drought"): ["nat-cli-dro-dro"],
-            ("weather related", "climatological", "erosion", "erosion"): ["EN0019"],
-            ("weather related", "climatological", "salinisation", "salinization"): ["EN0007"],
-            ("weather related", "climatological", "sea level rise", "sea level rise"): ["EN0023"],
+            ("weather related", "climatological", "erosion", "erosion"): ["EN0019", "nat-geo-env-soi"],
+            ("weather related", "climatological", "salinisation", "salinization"): ["EN0007", "nat-geo-env-slr"],
+            ("weather related", "climatological", "sea level rise", "sea level rise"): ["EN0023", "nat-geo-env-slr"],
             ("weather related", "climatological", "wildfire", "wildfire"): ["nat-cli-wil-wil"],
             ("weather related", "hydrological", "flood", "dam release flood"): ["tec-mis-col-col"],
             ("weather related", "hydrological", "flood", "flood"): ["nat-hyd-flo-flo"],
@@ -195,7 +195,7 @@ class IDUTransformer:
             startdate = pytz.utc.localize(datetime.datetime.fromisoformat(startdate_str))
             enddate = pytz.utc.localize(datetime.datetime.fromisoformat(enddate_str))
 
-            impact_item.id = f"{STAC_IMPACT_ID_PREFIX}{impact_item.id.replace(STAC_EVENT_ID_PREFIX, '')}"
+            impact_item.id = f"{STAC_IMPACT_ID_PREFIX}{impact_item.id.replace(STAC_EVENT_ID_PREFIX, '')}-displacement"
             impact_item.startdate = startdate
             impact_item.properties["start_datetime"] = startdate.isoformat()
             impact_item.properties["end_datetime"] = enddate.isoformat()
