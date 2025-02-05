@@ -156,7 +156,7 @@ class GIDDTransformer:
         MontyExtension.add_to(item)
         monty = MontyExtension.ext(item)
         monty.episode_number = episode_number
-        monty.country_codes = [data.get("ISO3")]
+        monty.country_codes = [properties.get("ISO3")]
 
         if properties.get("Figure cause") == "Disaster":
             hazard_tuple = (
@@ -166,7 +166,7 @@ class GIDDTransformer:
                 properties["Hazard sub type"],
             )
             monty.hazard_codes = self.map_gidd_to_hazard_codes(hazard=hazard_tuple)
-        # monty.compute_and_set_correlation_id(hazard_profiles=self.hazard_profiles)
+        monty.compute_and_set_correlation_id(hazard_profiles=self.hazard_profiles)
 
         item.set_collection(self.get_event_collection())
         item.properties["roles"] = ["source", "event"]
