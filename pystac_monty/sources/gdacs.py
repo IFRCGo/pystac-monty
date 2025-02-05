@@ -264,7 +264,6 @@ class GDACSTransformer:
     def get_hazard_detail(self, item: Item) -> HazardDetail:
         # get the hazard detail from the event data
         gdacs_event = self.check_and_get_event_data()
-        monty = MontyExtension.ext(item)
         return HazardDetail(
             cluster=self.hazard_profiles.get_cluster_code(item),
             severity_value=gdacs_event.data["properties"].get("episodealertscore", None),

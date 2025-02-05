@@ -286,7 +286,6 @@ class EMDATTransformer:
     def _create_hazard_detail(self, item: Item, row: pd.Series) -> HazardDetail:
         """Create hazard detail from row data"""
         # First map EM-DAT classification to UNDRR-ISC codes
-        hazard_codes = [row.get("Classification Key")]
 
         return HazardDetail(
             cluster=self.hazard_profiles.get_cluster_code(item),

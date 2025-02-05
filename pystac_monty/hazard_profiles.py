@@ -10,8 +10,8 @@ class HazardProfiles(ABC):
     def get_cluster_code(self, item: Item) -> str:
         pass
 
+
 class MontyHazardProfiles(HazardProfiles):
-    
     impact_information_profile_path = "HazardProfiles.csv"
     impact_information_profile_data = None
     IMPACT_CLUSTER_CODE_COLUMN = "emdat_key"
@@ -29,11 +29,11 @@ class MontyHazardProfiles(HazardProfiles):
 
     def get_cluster_code(self, item: Item) -> str:
         from pystac_monty.extension import MontyExtension
-        
+
         monty = MontyExtension.ext(item)
         if not monty.hazard_codes:
             raise ValueError("No hazard codes found in item")
-        
+
         profiles = self.get_profiles()
         # Get the cluster and family codes for each code in the list
         cluster_codes = []
@@ -65,12 +65,12 @@ class MontyHazardProfiles(HazardProfiles):
                             if row["emdat_key"] in monty.hazard_codes:
                                 cluster_code = row[self.IMPACT_CLUSTER_CODE_COLUMN]
                                 break
-                        
+
                         # Get the first having no undrr key in the hazard codes
                         rows = rows[rows["undrr_key"].isna()]
                         if not cluster_code and len(rows) > 0:
                             cluster_code = rows.iloc[0][self.IMPACT_CLUSTER_CODE_COLUMN]
-                                
+
                     else:
                         cluster_code = cluster_codes[-1]
                 except IndexError:

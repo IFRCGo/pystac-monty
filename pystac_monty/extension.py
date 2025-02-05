@@ -454,7 +454,7 @@ class MontyExtension(
     @correlation_id.setter
     def correlation_id(self, v: str) -> None:
         self._set_property(ITEM_CORR_ID_PROP, v)
-        
+
     def compute_and_set_correlation_id(self, hazard_profiles: HazardProfiles = MontyHazardProfiles()) -> None:
         # if the object is an Item, we can generate the correlation id
         if isinstance(self.item, pystac.Item):
