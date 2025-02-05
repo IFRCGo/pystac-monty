@@ -174,31 +174,21 @@ class USGSTransformer:
         )
 
         # Add shakemap assets
+        # download/pin-thumbnail.png
+        pin_thumbnail = (
+            self.data.get_data()["properties"]
+            .get("products", {})
+            .get("shakemap", [])[0]
+            .get("contents", {})
+            .get("download/pin-thumbnail.png", {})
+        )
         shakemap_assets = {
             "intensity_map": {
-                "href": f"{self.data.get_source_url()}/download/intensity.jpg",
-                "media_type": "image/jpeg",
+                "href": pin_thumbnail.get("url"),
+                "media_type": "image/png",
                 "title": "Intensity Map",
                 "roles": ["overview"],
-            },
-            "intensity_overlay": {
-                "href": f"{self.data.get_source_url()}/download/intensity_overlay.png",
-                "media_type": "image/png",
-                "title": "Intensity Overlay",
-                "roles": ["visual"],
-            },
-            "mmi_contours": {
-                "href": f"{self.data.get_source_url()}/download/cont_mi.json",
-                "media_type": "application/json",
-                "title": "MMI Contours",
-                "roles": ["data"],
-            },
-            "grid": {
-                "href": f"{self.data.get_source_url()}/download/grid.xml",
-                "media_type": "application/xml",
-                "title": "Ground Motion Grid",
-                "roles": ["data"],
-            },
+            }
         }
 
         for key, asset_info in shakemap_assets.items():
