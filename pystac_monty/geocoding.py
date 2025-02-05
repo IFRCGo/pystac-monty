@@ -21,6 +21,10 @@ class MontyGeoCoder(ABC):
     def get_iso3_from_geometry(self, geometry: Dict[str, Any]) -> Optional[str]:
         pass
     
+    @abstractmethod
+    def get_geometry_from_iso3(self, iso3: str) -> Optional[Dict[str, Any]]:
+        pass
+    
 WORLD_ADMIN_BOUNDARIES_FGB = "world_admin_boundaries.fgb"
 
 class WorldAdministrativeBoundariesGeocoder(MontyGeoCoder):
@@ -52,7 +56,7 @@ class WorldAdministrativeBoundariesGeocoder(MontyGeoCoder):
     def _find_fgb_in_zip(self, zip_path: str) -> Optional[str]:
         """Find the first .fgb file in a ZIP archive"""
         with zipfile.ZipFile(zip_path, "r") as zf:
-            names = [str(name) for name in zf.namelist()]
+            names: List[str] = zf.namelist()
             for name in names:
                 if name.lower().endswith(".fgb"):
                     return name
@@ -79,8 +83,22 @@ class WorldAdministrativeBoundariesGeocoder(MontyGeoCoder):
     
     def get_geometry_by_country_name(self, country_name: str) -> Optional[Dict[str, Any]]:
         raise NotImplementedError("Method not implemented")
-
     
+    def get_geometry_from_iso3(self, iso3: str) -> Optional[Dict[str, Any]]:
+        if not iso3 or not self._path:
+            return None
+        
+        try:
+            with fiona.open(self._path, layer=self._layer) as src:
+                for feature in src:
+                    if feature["properties"]["iso3"] == iso3:
+                        geom = shape(feature["geometry"]).simplify(self._simplify_tolerance, preserve_topology=True)
+                        return {"geometry": mapping(geom), "bbox": list(geom.bounds)}
+        except Exception as e:
+            print(f"Error getting geometry from ISO3: {str(e)}")
+            return None
+        
+        return None
 
 
 GAUL2014_2015_GPCK_ZIP = "gaul2014_2015.gpkg"
@@ -303,6 +321,9 @@ class GAULGeocoder(MontyGeoCoder):
         
     def get_iso3_from_geometry(self, geometry: Dict[str, Any]) -> Optional[str]:
         raise NotImplementedError("Method not implemented")
+    
+    def get_geometry_from_iso3(self, iso3: str) -> Optional[Dict[str, Any]]:
+        raise NotImplementedError("Method not implemented")
 
 
 class MockGeocoder(MontyGeoCoder):
@@ -426,3 +447,24 @@ class MockGeocoder(MontyGeoCoder):
         except Exception as e:
             print(f"Error getting mock ISO3 from geometry: {str(e)}")
             return None
+        
+    def get_geometry_from_iso3(self, iso3: str) -> Optional[Dict[str, Any]]:
+        """
+        Get geometry for an ISO3 code.
+        Returns the test geometry for the given ISO3 code.
+
+        Args:
+            iso3: ISO3 code
+
+        Returns:
+            Optional[Dict[str, Any]]: Geometry and bbox if found, None otherwise
+        """
+        if not iso3:
+            return None
+
+        try:
+            return self._test_geometries.get(iso3)
+        except Exception as e:
+            print(f"Error getting mock geometry from ISO3: {str(e)}")
+            
+        return None

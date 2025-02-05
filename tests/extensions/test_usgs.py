@@ -17,7 +17,7 @@ from tests.extensions.test_monty import CustomValidator
 CURRENT_SCHEMA_URI = "https://ifrcgo.github.io/monty/v0.1.0/schema.json"
 CURRENT_SCHEMA_MAPURL = "https://raw.githubusercontent.com/IFRCGo/monty-stac-extension/refs/heads/main/json-schema/schema.json"
 
-geocoder = WorldAdministrativeBoundariesGeocoder(get_data_file("world-administrative-boundaries.fgb"))
+geocoder = WorldAdministrativeBoundariesGeocoder(get_data_file("world-administrative-boundaries.fgb"), 0.1)
 
 def load_scenarios(scenarios: list[tuple[str, str, str]]) -> list[USGSTransformer]:
     """Load test scenarios for USGS transformation testing.
@@ -113,9 +113,8 @@ class USGSTest(unittest.TestCase):
         self.assertIsNotNone(source_event_item)
         self.assertIsNotNone(source_hazard_item)
 
-        # Since we provided losses data, we should have 2 impact items
-        # (fatalities and economic losses)
-        self.assertEqual(len(impact_items), 2)
+        # Since we provided losses data, we should have 3 impact items
+        self.assertEqual(len(impact_items), 3)
 
         # Validate specific fields from earthquake extension
         self.assertIn("eq:magnitude", source_event_item.properties)
