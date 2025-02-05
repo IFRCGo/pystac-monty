@@ -110,19 +110,19 @@ EN0003,Ambient (Outdoor) Air Pollution,hazenvenvdeg,haztypeenviron,OT,
 EN0004,Land Degradation,hazenvenvdeg,haztypeenviron,OT,
 EN0005,Soil Degradation,hazenvenvdeg,haztypeenviron,OT,
 EN0006,Runoff / Nonpoint Source Pollution,hazenvenvdeg,haztypeenviron,OT,
-EN0007,Salinity,hazenvenvdeg,haztypeenviron,OT,
+EN0007,Salinity,hazenvenvdeg,haztypeenviron,OT,nat-geo-env-slr
 EN0008,Biodiversity Loss,hazenvenvdeg,haztypeenviron,OT,
 EN0009,Deforestation,hazenvenvdeg,haztypeenviron,OT,
 EN0010,Forest Declines and Diebacks,hazenvenvdeg,haztypeenviron,OT,
 EN0011,Forest Disturbances,hazenvenvdeg,haztypeenviron,OT,
 EN0012,Forest Invasive Species,hazenvenvdeg,haztypeenviron,OT,
 EN0013,Wildfires,hazenvenvdeg,haztypeenviron,WF,nat-cli-wil-wil
-EN0014,Desertification,hazenvenvdeg,haztypeenviron,OT,
+EN0014,Desertification,hazenvenvdeg,haztypeenviron,OT,nat-geo-env-des
 EN0015,Loss of Mangroves,hazenvenvdeg,haztypeenviron,OT,
 EN0016,Wetland Loss/Degradation,hazenvenvdeg,haztypeenviron,OT,
 EN0017,Coral Bleaching,hazenvenvdeg,haztypeenviron,OT,
 EN0018,Compressive Soils,hazenvenvdeg,haztypeenviron,OT,
-EN0019,Soil Erosion,hazenvenvdeg,haztypeenviron,OT,
+EN0019,Soil Erosion,hazenvenvdeg,haztypeenviron,OT,nat-geo-env-soi
 EN0020,Coastal Erosion and Shoreline Change,hazenvenvdeg,haztypeenviron,OT,nat-geo-env-coa
 EN0021,Permafrost Loss,hazenvenvdeg,haztypeenviron,OT,
 EN0022,Sand Mining,hazenvenvdeg,haztypeenviron,OT,
@@ -199,3 +199,5 @@ SO0008,Financial shock,hazsoceco,haztypesoc,OT,
 ,Drought,hazhmprecip,haztypehydromet,DR,nat-cli-dro-dro
 ,Infectious disease (general),hazsocbio,haztypesoc,OT,nat-bio-epi-dis
 ,Explosion (Miscellaneous),haztechindfail,haztypetech,AC,tec-mis-exp-exp
+,Sudden Subsidence,hazgeoother,haztypegeohaz,OT,nat-geo-mmd-sub
+,Landslide,hazgeoother,haztypegeohaz,LS,nat-hyd-mmw-lan
