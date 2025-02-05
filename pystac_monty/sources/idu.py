@@ -147,36 +147,36 @@ class IDUTransformer:
 
         return item
 
-    def map_idu_to_hazard_codes(self, hazard: tuple):
+    def map_idu_to_hazard_codes(self, hazard: tuple) -> list[str]:
         """Map IDU hazards to UNDRR-ISC 2020 Hazard Codes"""
         hazard = tuple((item.lower() if item else item for item in hazard))
         hazard_mapping = {
-            ("geophysical", "geophysical", "earthquake", "earthquake"): ["GH0001", "GH0004"],
-            ("geophysical", "geophysical", "earthquake", "tsunami"): ["GH0006"],
-            ("geophysical", "geophysical", "mass movement", "dry mass movement"): ["GH0007", "GH0014"],
-            ("geophysical", "geophysical", "mass movement", "sinkhole"): ["GH0026"],
-            ("geophysical", "geophysical", "volcanic activity", "volcanic activity"): ["GH0020"],
-            ("mixed disasters", "mixed disasters", "mixed disasters", "mixed disasters"): ["Mixed Disaster"],
+            ("geophysical", "geophysical", "earthquake", "earthquake"): ["nat-geo-ear-gro"],
+            ("geophysical", "geophysical", "earthquake", "tsunami"): ["nat-geo-ear-tsu"],
+            ("geophysical", "geophysical", "mass movement", "dry mass movement"): ["nat-geo-mmd-lan"],
+            ("geophysical", "geophysical", "mass movement", "sinkhole"): ["nat-geo-mmd-sub"],
+            ("geophysical", "geophysical", "volcanic activity", "volcanic activity"): ["nat-geo-vol-vol"],
+            ("mixed disasters", "mixed disasters", "mixed disasters", "mixed disasters"): ["mix-mix-mix-mix"],
             ("weather related", "climatological", "desertification", "desertification"): ["EN0014"],
-            ("weather related", "climatological", "drought", "drought"): ["MH0035"],
+            ("weather related", "climatological", "drought", "drought"): ["nat-cli-dro-dro"],
             ("weather related", "climatological", "erosion", "erosion"): ["EN0019"],
-            ("weather related", "climatological", "salinisation", "salinization"): ["Salinization"],
+            ("weather related", "climatological", "salinisation", "salinization"): ["EN0007"],
             ("weather related", "climatological", "sea level rise", "sea level rise"): ["EN0023"],
-            ("weather related", "climatological", "wildfire", "wildfire"): ["EN0013"],
-            ("weather related", "hydrological", "flood", "dam release flood"): ["TL0009"],
-            ("weather related", "hydrological", "flood", "flood"): ["FL"],
-            ("weather related", "hydrological", "mass movement", "avalanche"): ["MH0050"],
-            ("weather related", "hydrological", "mass movement", "landslide/wet mass movement"): ["MH0051"],
-            ("weather related", "hydrological", "wave action", "rogue wave"): ["MH0027"],
-            ("weather related", "meteorological", "extreme temperature", "cold wave"): ["MH0040"],
-            ("weather related", "meteorological", "extreme temperature", "heat wave"): ["MH0047"],
-            ("weather related", "meteorological", "storm", "hailstorm"): ["MH0036"],
-            ("weather related", "meteorological", "storm", "sand/dust storm"): ["MH0015"],
-            ("weather related", "meteorological", "storm", "storm surge"): ["MH0027"],
-            ("weather related", "meteorological", "storm", "storm"): ["MH0058"],
-            ("weather related", "meteorological", "storm", "tornado"): ["MH0059"],
-            ("weather related", "meteorological", "storm", "typhoon/hurricane/cyclone"): ["MH0057"],
-            ("weather related", "meteorological", "storm", "winter storm/blizzard"): ["MH0034"],
+            ("weather related", "climatological", "wildfire", "wildfire"): ["nat-cli-wil-wil"],
+            ("weather related", "hydrological", "flood", "dam release flood"): ["tec-mis-col-col"],
+            ("weather related", "hydrological", "flood", "flood"): ["nat-hyd-flo-flo"],
+            ("weather related", "hydrological", "mass movement", "avalanche"): ["nat-hyd-mmw-ava"],
+            ("weather related", "hydrological", "mass movement", "landslide/wet mass movement"): ["nat-hyd-mmw-lan"],
+            ("weather related", "hydrological", "wave action", "rogue wave"): ["nat-hyd-wav-rog"],
+            ("weather related", "meteorological", "extreme temperature", "cold wave"): ["nat-met-ext-col "],
+            ("weather related", "meteorological", "extreme temperature", "heat wave"): ["nat-met-ext-hea"],
+            ("weather related", "meteorological", "storm", "hailstorm"): ["nat-met-sto-hai"],
+            ("weather related", "meteorological", "storm", "sand/dust storm"): ["nat-met-sto-san"],
+            ("weather related", "meteorological", "storm", "storm surge"): ["nat-met-sto-sur"],
+            ("weather related", "meteorological", "storm", "storm"): ["nat-met-sto-sto"],
+            ("weather related", "meteorological", "storm", "tornado"): ["nat-met-sto-tor"],
+            ("weather related", "meteorological", "storm", "typhoon/hurricane/cyclone"): ["nat-met-sto-tro"],
+            ("weather related", "meteorological", "storm", "winter storm/blizzard"): ["nat-met-sto-bli"],
         }
         if hazard not in hazard_mapping:
             raise KeyError(f"Hazard {hazard} not found.")
