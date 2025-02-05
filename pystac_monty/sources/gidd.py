@@ -14,7 +14,7 @@ from pystac_monty.extension import (
     MontyImpactExposureCategory,
     MontyImpactType,
 )
-from pystac_monty.hazard_profiles import HazardProfiles, MontyHazardProfiles
+from pystac_monty.hazard_profiles import MontyHazardProfiles
 from pystac_monty.sources.common import MontyDataSource
 
 STAC_EVENT_ID_PREFIX = "gidd-event-"

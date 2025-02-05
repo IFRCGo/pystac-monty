@@ -26,10 +26,9 @@ def load_scenarios(scenarios: List[str], timeout: int = 30) -> List[GIDDTransfor
     return transformers
 
 
-
 test1 = [
-   "Test1",
-   "https://raw.githubusercontent.com/IFRCGo/monty-stac-extension/refs/heads/IDMC/model/sources/IDMC/IDMC_GIDD_Internal_Displacement_Disaggregated.geojson"
+    "Test1",
+    "https://raw.githubusercontent.com/IFRCGo/monty-stac-extension/refs/heads/IDMC/model/sources/IDMC/IDMC_GIDD_Internal_Displacement_Disaggregated.geojson",  # noqa
 ]
 
 
