@@ -22,8 +22,8 @@ from pystac_monty.sources.common import MontyDataSource
 
 # Constants
 
-STAC_EVENT_ID_PREFIX = "idu-event-"
-STAC_IMPACT_ID_PREFIX = "idu-impact-"
+STAC_EVENT_ID_PREFIX = "idmc-idu-event-"
+STAC_IMPACT_ID_PREFIX = "idmc-idu-impact-"
 
 
 class DisplacementType(Enum):
