@@ -17,6 +17,7 @@ from pystac_monty.extension import (
     MontyImpactExposureCategory,
     MontyImpactType,
 )
+from pystac_monty.geocoding import MontyGeoCoder
 from pystac_monty.hazard_profiles import MontyHazardProfiles
 from pystac_monty.sources.common import MontyDataSource
 
@@ -64,13 +65,16 @@ class USGSTransformer:
 
     hazard_profiles = MontyHazardProfiles()
 
-    def __init__(self, data: USGSDataSource) -> None:
+    def __init__(self, data: USGSDataSource, geocoder: MontyGeoCoder) -> None:
         """Initialize USGS transformer.
 
         Args:
             data: USGSDataSource containing event detail and optional losses data
         """
         self.data = data
+        self.geocoder = geocoder
+        if not self.geocoder:
+            raise ValueError("Geocoder is required for USGS transformer")
 
     def make_items(self) -> List[Item]:
         """Create STAC items from USGS data."""
@@ -125,8 +129,8 @@ class USGSTransformer:
         monty.episode_number = 1
         monty.hazard_codes = ["GH0004"]  # Earthquake surface rupture code
 
-        # Get country code from event data or geometry
-        country_codes = ["CHN"]  # This should be derived from coordinates
+        # TODO Get country code from event data or geometry
+        country_codes = [self.geocoder.get_iso3_from_geometry(point)]
         monty.country_codes = country_codes
 
         # Compute correlation ID

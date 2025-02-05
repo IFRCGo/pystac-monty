@@ -16,10 +16,74 @@ class MontyGeoCoder(ABC):
     @abstractmethod
     def get_geometry_by_country_name(self, country_name: str) -> Optional[Dict[str, Any]]:
         pass
+    
+    @abstractmethod
+    def get_iso3_from_geometry(self, geometry: Dict[str, Any]) -> Optional[str]:
+        pass
+    
+WORLD_ADMIN_BOUNDARIES_FGB = "world_admin_boundaries.fgb"
+
+class WorldAdministrativeBoundariesGeocoder(MontyGeoCoder):
+    def __init__(self, fgb_path: str, simplify_tolerance: float = 0.01) -> None:
+        self.fgb_path = fgb_path
+        self._path = ""
+        self._layer = "Layer1"
+        self._simplify_tolerance = simplify_tolerance
+        self._cache: Dict[str, Union[Dict[str, Any], int, None]] = {}
+        self._initialize_path()
+        
+    def _initialize_path(self) -> None:
+        if self._is_zip_file(self.fgb_path):
+            fgb_name = self._find_fgb_in_zip(self.fgb_path)
+            if not fgb_name:
+                raise ValueError("No .fgb file found in ZIP archive")
+            self._path = f"zip://{self.fgb_path}!/{fgb_name}"
+        else:
+            self._path = self.fgb_path
+            
+    def _is_zip_file(self, file_path: str) -> bool:
+        """Check if a file is a ZIP file"""
+        try:
+            with zipfile.ZipFile(file_path, "r"):
+                return True
+        except zipfile.BadZipFile:
+            return False
+    
+    def _find_fgb_in_zip(self, zip_path: str) -> Optional[str]:
+        """Find the first .fgb file in a ZIP archive"""
+        with zipfile.ZipFile(zip_path, "r") as zf:
+            names = [str(name) for name in zf.namelist()]
+            for name in names:
+                if name.lower().endswith(".fgb"):
+                    return name
+        return None
+    
+    def get_iso3_from_geometry(self, geometry: Dict[str, Any]) -> Optional[str]:
+        if not geometry or not self._path:
+            return None
+        
+        try:
+            point = shape(geometry)
+            with fiona.open(self._path, layer=self._layer) as src:
+                for feature in src:
+                    if shape(feature["geometry"]).contains(point):
+                        return feature["properties"]["iso3"]
+        except Exception as e:
+            print(f"Error getting ISO3 from geometry: {str(e)}")
+            return None
+        
+        return None
+    
+    def get_geometry_from_admin_units(self, admin_units: str) -> Optional[Dict[str, Any]]:
+        raise NotImplementedError("Method not implemented")
+    
+    def get_geometry_by_country_name(self, country_name: str) -> Optional[Dict[str, Any]]:
+        raise NotImplementedError("Method not implemented")
+
+    
 
 
 GAUL2014_2015_GPCK_ZIP = "gaul2014_2015.gpkg"
-
 
 class GAULGeocoder(MontyGeoCoder):
     """
@@ -60,12 +124,12 @@ class GAULGeocoder(MontyGeoCoder):
                 return True
         except zipfile.BadZipFile:
             return False
-        return False
 
     def _find_gpkg_in_zip(self, zip_path: str) -> Optional[str]:
         """Find the first .gpkg file in a ZIP archive"""
         with zipfile.ZipFile(zip_path, "r") as zf:
-            for name in zf.namelist():
+            names: List[str] = zf.namelist()
+            for name in names:
                 if name.lower().endswith(".gpkg"):
                     return name
         return None
@@ -236,6 +300,9 @@ class GAULGeocoder(MontyGeoCoder):
         except Exception as e:
             print(f"Error getting country geometry for {country_name}: {str(e)}")
             return None
+        
+    def get_iso3_from_geometry(self, geometry: Dict[str, Any]) -> Optional[str]:
+        raise NotImplementedError("Method not implemented")
 
 
 class MockGeocoder(MontyGeoCoder):
@@ -324,4 +391,38 @@ class MockGeocoder(MontyGeoCoder):
 
         except Exception as e:
             print(f"Error getting mock country geometry: {str(e)}")
+            return None
+        
+    def get_iso3_from_geometry(self, geometry: Dict[str, Any]) -> Optional[str]:
+        """
+        Get ISO3 code for a geometry.
+        Returns the ISO3 code of the first test geometry that intersects with the input geometry.
+
+        Args:
+            geometry: GeoJSON geometry dict
+
+        Returns:
+            Optional[str]: ISO3 code if geometry intersects with any test geometry, None otherwise
+        """
+        if not geometry:
+            return None
+
+        try:
+            # Convert input geometry to shapely
+            input_shape = shape(geometry)
+            
+            # Test intersection with all test geometries
+            for iso3, test_geom in self._test_geometries.items():
+                # Skip non-country geometries (like 'admin1')
+                if len(iso3) != 3:
+                    continue
+                
+                test_shape = shape(test_geom["geometry"])
+                if input_shape.intersects(test_shape):
+                    return iso3
+            
+            return None
+
+        except Exception as e:
+            print(f"Error getting mock ISO3 from geometry: {str(e)}")
             return None
