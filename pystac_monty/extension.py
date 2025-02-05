@@ -14,7 +14,7 @@ from pystac.extensions.base import ExtensionManagementMixin, PropertiesExtension
 from pystac.extensions.hooks import ExtensionHooks
 from pystac.utils import StringEnum, get_opt, get_required, map_opt
 
-from pystac_monty.hazard_profiles import HazardProfiles
+from pystac_monty.hazard_profiles import HazardProfiles, MontyHazardProfiles
 from pystac_monty.paring import Pairing
 
 __version__ = "0.1.0"
@@ -454,6 +454,13 @@ class MontyExtension(
     @correlation_id.setter
     def correlation_id(self, v: str) -> None:
         self._set_property(ITEM_CORR_ID_PROP, v)
+        
+    def compute_and_set_correlation_id(self, hazard_profiles: HazardProfiles = MontyHazardProfiles()) -> None:
+        # if the object is an Item, we can generate the correlation id
+        if isinstance(self.item, pystac.Item):
+            self.correlation_id = self.pairing.generate_correlation_id(self.item, hazard_profiles)
+        else:
+            raise ValueError("Correlation ID can only be computed for Items")
 
     @property
     def country_codes(self) -> list[str]:
@@ -508,10 +515,6 @@ class MontyExtension(
     @episode_number.setter
     def episode_number(self, v: int) -> None:
         self.properties[ITEM_EPISODE_NUMBER_PROP] = v
-
-    def compute_and_set_correlation_id(self, hazard_profiles: HazardProfiles) -> None:
-        correlation_id = self.pairing.generate_correlation_id(self.item, hazard_profiles)
-        self.correlation_id = correlation_id
 
     @classmethod
     def get_schema_uri(cls) -> str:
