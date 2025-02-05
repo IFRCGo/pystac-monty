@@ -3,8 +3,10 @@
 import json
 import unittest
 from os import makedirs
+from typing import List
 
 import pytest
+import requests
 from parameterized import parameterized
 
 from pystac_monty.extension import MontyExtension
@@ -12,107 +14,27 @@ from pystac_monty.sources.gidd import GIDDDataSource, GIDDTransformer
 from tests.conftest import get_data_file
 from tests.extensions.test_monty import CustomValidator
 
-MOCK_GIDD_DATA = """
-{
-   "type":"FeatureCollection",
-   "readme": "TITLE: Disasters Global Internal Displacement Database (GIDD)",
-   "lastUpdated":"2025-01-31",
-   "features":[
-      {
-         "type":"Feature",
-         "geometry":{
-            "type":"MultiPoint",
-            "coordinates":[
-               [
-                  63.97263,
-                  32.187931
-               ]
-            ]
-         },
-         "properties":{
-            "ID":115637,
-            "ISO3":"AFG",
-            "Country":"Afghanistan",
-            "Geographical region":"South Asia",
-            "Figure cause":"Disaster",
-            "Year":2023,
-            "Figure category":"Internal Displacements",
-            "Figure unit":"Household",
-            "Reported figures":300,
-            "Household size":8.04,
-            "Total figures":2412,
-            "Hazard category":"Weather related",
-            "Hazard sub category":"Climatological",
-            "Hazard type":"Drought",
-            "Hazard sub type":"Drought",
-            "Start date":"2023-06-07",
-            "Start date accuracy":"Month",
-            "End date":"2023-06-07",
-            "End date accuracy":"Day",
-            "Publishers":[
-               "Media"
-            ],
-            "Sources":[
-               "Displaced people",
-               "Local residents",
-               "Local Authorities"
-            ],
-            "Sources type":[
-               "Other",
-               "Civil Society",
-               "Local Authority"
-            ],
-            "Event ID":17021,
-            "Event name":"Afghanistan: Drought - Helmand (Wasir) - 07/06/2023",
-            "Event cause":"Disaster",
-            "Event main trigger":"Drought",
-            "Event start date":"2023-06-07",
-            "Event end date":"2023-06-07",
-            "Event start date accuracy":"Month",
-            "Event end date accuracy":"Month",
-            "Is housing destruction":"No",
-            "Event codes (Code:Type)":[
-               [
-                  "DR-2021-000022-AFG",
-                  "Glide Number"
-               ],
-               [
-                  "MDRAF007",
-                  "IFRC Appeal ID"
-               ]
-            ],
-            "Locations name":[
-               "Washir, Helmand, Afghanistan"
-            ],
-            "Locations accuracy":[
-               "District/Zone/Department (ADM2)"
-            ],
-            "Locations type":[
-               "Origin"
-            ],
-            "Displacement occurred":"Displacement without preventive evacuations reported"
-         }
-      }
-    ]
-}"""
 
-
-def load_scenarios(
-    scenarios: list[tuple[str, str]],
-) -> list[GIDDTransformer]:
+def load_scenarios(scenarios: List[str], timeout: int = 30) -> List[GIDDTransformer]:
     transformers = []
     for scenario in scenarios:
-        data = scenario[1]
-        gidd_data_source = GIDDDataSource(scenario[1], data)
-        transformers.append(GIDDTransformer(gidd_data_source))
+        response = requests.get(scenario[1], timeout=timeout)
+        response_data = response.json()
+
+        idu_data_source = GIDDDataSource(source_url=scenario[1], data=json.dumps(response_data))
+        transformers.append(GIDDTransformer(idu_data_source))
     return transformers
 
 
-spain_flood = ("spain_flood", MOCK_GIDD_DATA)
+
+test1 = [
+   "Test1",
+   "https://raw.githubusercontent.com/IFRCGo/monty-stac-extension/refs/heads/IDMC/model/sources/IDMC/IDMC_GIDD_Internal_Displacement_Disaggregated.geojson"
+]
 
 
 class GIDDTest(unittest.TestCase):
-    scenarios = [spain_flood]
+    scenarios = [test1]
 
     def setUp(self) -> None:
         super().setUp()
