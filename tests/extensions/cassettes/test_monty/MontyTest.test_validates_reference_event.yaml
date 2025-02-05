@@ -63,7 +63,7 @@ interactions:
       Content-Type:
       - text/html; charset=utf-8
       Date:
-      - Wed, 05 Feb 2025 04:47:05 GMT
+      - Wed, 05 Feb 2025 15:05:17 GMT
       Location:
       - https://raw.githubusercontent.com/IFRCGo/monty-stac-extension/refs/heads/main/examples/reference-events/20241027T150000-ESP-HM-FLOOD-001-GCDB.json
       Referrer-Policy:
@@ -80,7 +80,7 @@ interactions:
       X-Frame-Options:
       - deny
       X-GitHub-Request-Id:
-      - A82C:285773:2D34B6:36AF30:67A2ED48
+      - AE24:38CF4F:72F816:75552E:67A37E2D
       X-XSS-Protection:
       - '0'
     status:
@@ -132,13 +132,13 @@ interactions:
       Cross-Origin-Resource-Policy:
       - cross-origin
       Date:
-      - Wed, 05 Feb 2025 04:47:05 GMT
+      - Wed, 05 Feb 2025 15:05:18 GMT
       ETag:
       - W/"9ea00a9c7f61dc2525a639d3eb02e28ad07aa9640d8cd88adb98221401aced31"
       Expires:
-      - Wed, 05 Feb 2025 04:52:05 GMT
+      - Wed, 05 Feb 2025 15:10:18 GMT
       Source-Age:
-      - '238'
+      - '0'
       Strict-Transport-Security:
       - max-age=31536000
       Vary:
@@ -146,21 +146,21 @@ interactions:
       Via:
       - 1.1 varnish
       X-Cache:
-      - HIT
+      - MISS
       X-Cache-Hits:
       - '0'
       X-Content-Type-Options:
       - nosniff
       X-Fastly-Request-ID:
-      - d54d5c9cc54ef3f2d9824a098408c6406c250674
+      - 79274e007e3b54a4fb011b11f3ab84cdd3ff3f30
       X-Frame-Options:
       - deny
       X-GitHub-Request-Id:
-      - 2F00:61137:4EA42:890FF:67A2E908
+      - E013:124670:3096CD:321BF8:67A37E2E
       X-Served-By:
-      - cache-del21745-DEL
+      - cache-par-lfpg1960038-PAR
       X-Timer:
-      - S1738730825.482457,VS0,VE1
+      - S1738767918.106088,VS0,VE808
       X-XSS-Protection:
       - 1; mode=block
     status:
@@ -229,13 +229,13 @@ interactions:
       Cross-Origin-Resource-Policy:
       - cross-origin
       Date:
-      - Wed, 05 Feb 2025 04:47:05 GMT
+      - Wed, 05 Feb 2025 15:05:19 GMT
       ETag:
       - W/"b33c1fbdcf3ad1d695f3e36fdab8b596af3be63d4a4ab1a26b189a8079c281ea"
       Expires:
-      - Wed, 05 Feb 2025 04:52:05 GMT
+      - Wed, 05 Feb 2025 15:10:19 GMT
       Source-Age:
-      - '295'
+      - '222'
       Strict-Transport-Security:
       - max-age=31536000
       Vary:
@@ -245,19 +245,19 @@ interactions:
       X-Cache:
       - HIT
       X-Cache-Hits:
-      - '16'
+      - '3'
       X-Content-Type-Options:
       - nosniff
       X-Fastly-Request-ID:
-      - 740112e6d4e60f4aac250d99c1d748105a5733ed
+      - 167e1b39aa3290f03daa790091e4fc217a4a71af
       X-Frame-Options:
       - deny
       X-GitHub-Request-Id:
-      - 2951:08D8:14F76:1EEAF:67A2E897
+      - 25A6:2E4589:2FA690:312527:67A37D50
       X-Served-By:
-      - cache-del21732-DEL
+      - cache-par-lfpg1960024-PAR
       X-Timer:
-      - S1738730826.612372,VS0,VE0
+      - S1738767919.128183,VS0,VE0
       X-XSS-Protection:
       - 1; mode=block
     status:

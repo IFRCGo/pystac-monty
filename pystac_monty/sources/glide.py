@@ -8,7 +8,7 @@ from pystac import Asset, Collection, Item, Link
 from shapely.geometry import Point, mapping
 
 from pystac_monty.extension import HazardDetail, MontyEstimateType, MontyExtension
-from pystac_monty.hazard_profiles import HazardProfiles
+from pystac_monty.hazard_profiles import MontyHazardProfiles
 from pystac_monty.sources.common import MontyDataSource
 
 STAC_EVENT_ID_PREFIX = "glide-event-"
@@ -26,7 +26,7 @@ class GlideTransformer:
     Transforms Glide event data into STAC Items
     """
 
-    hazard_profiles = HazardProfiles()
+    hazard_profiles = MontyHazardProfiles()
 
     glide_events_collection_url = (
         "https://github.com/IFRCGo/monty-stac-extension/raw/refs/heads/main/examples/glide-events/glide-events.json"
@@ -128,10 +128,9 @@ class GlideTransformer:
 
     def get_hazard_detail(self, item: Item) -> HazardDetail:
         """Get hazard detail"""
-        monty = MontyExtension.ext(item)
         magnitude = item.properties.get("magnitude", "").strip()
         return HazardDetail(
-            cluster=self.hazard_profiles.get_cluster_code(monty.hazard_codes or []),
+            cluster=self.hazard_profiles.get_cluster_code(item),
             severity_value=int(float(magnitude)) if magnitude else 0,
             severity_unit="glide",
             estimate_type=MontyEstimateType.PRIMARY,

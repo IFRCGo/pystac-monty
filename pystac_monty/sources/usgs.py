@@ -17,7 +17,7 @@ from pystac_monty.extension import (
     MontyImpactExposureCategory,
     MontyImpactType,
 )
-from pystac_monty.hazard_profiles import HazardProfiles
+from pystac_monty.hazard_profiles import MontyHazardProfiles
 from pystac_monty.sources.common import MontyDataSource
 
 STAC_EVENT_ID_PREFIX = "usgs-event-"
@@ -62,7 +62,7 @@ class USGSTransformer:
         "https://github.com/IFRCGo/monty-stac-extension/raw/refs/heads/usgs/examples/usgs-impacts/usgs-impacts.json"
     )
 
-    hazard_profiles = HazardProfiles()
+    hazard_profiles = MontyHazardProfiles()
 
     def __init__(self, data: USGSDataSource) -> None:
         """Initialize USGS transformer.

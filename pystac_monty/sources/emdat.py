@@ -18,7 +18,7 @@ from pystac_monty.extension import (
     MontyImpactType,
 )
 from pystac_monty.geocoding import MontyGeoCoder
-from pystac_monty.hazard_profiles import HazardProfiles
+from pystac_monty.hazard_profiles import MontyHazardProfiles
 from pystac_monty.sources.common import MontyDataSource
 
 STAC_EVENT_ID_PREFIX = "emdat-event-"
@@ -66,7 +66,7 @@ class EMDATTransformer:
         "https://raw.githubusercontent.com/IFRCGo/monty-stac-extension/refs/heads/EMDAT/examples/emdat-impacts/emdat-impacts.json"
     )
 
-    hazard_profiles = HazardProfiles()
+    hazard_profiles = MontyHazardProfiles()
 
     def __init__(self, data: EMDATDataSource, geocoder: MontyGeoCoder = None) -> None:
         """
@@ -165,9 +165,9 @@ class EMDATTransformer:
         MontyExtension.add_to(item)
         monty = MontyExtension.ext(item)
         monty.episode_number = 1  # EM-DAT doesn't have episodes
-        monty.hazard_codes = self._map_emdat_to_hazard_codes(row.get("Classification Key", ""))
+        monty.hazard_codes = [row.get("Classification Key", "")]
         monty.country_codes = [row["ISO"]] if not pd.isna(row.get("ISO")) else []
-        monty.compute_and_set_correlation_id(hazard_profiles=self.hazard_profiles)
+        monty.compute_and_set_correlation_id()
 
         # Set collection and roles
         item.set_collection(self.get_event_collection())
@@ -201,7 +201,7 @@ class EMDATTransformer:
         monty = MontyExtension.ext(hazard_item)
         original_row = self._get_row_by_disno(hazard_item.id.replace(STAC_HAZARD_ID_PREFIX, ""))
         if original_row is not None:
-            monty.hazard_detail = self._create_hazard_detail(original_row)
+            monty.hazard_detail = self._create_hazard_detail(hazard_item, original_row)
 
         return hazard_item
 
@@ -283,81 +283,12 @@ class EMDATTransformer:
             return pytz.utc.localize(start_dt), None
         return None
 
-    def _map_emdat_to_hazard_codes(self, classification_key: str) -> List[str]:
-        """
-        Map EM-DAT classification key to UNDRR-ISC 2020 Hazard codes
-
-        Args:
-            classification_key: EM-DAT classification key (e.g., 'nat-hyd-flo-flo')
-
-        Returns:
-            List of UNDRR-ISC hazard codes
-        """
-        # EM-DAT classification mapping to UNDRR-ISC codes
-        mapping = {
-            # Meteorological & Hydrological
-            "nat-met-ext-col": ["MH0040"],  # Cold Wave
-            "nat-met-ext-hea": ["MH0047"],  # Heat Wave
-            "nat-met-ext-sev": ["MH0040", "MH0047"],  # Severe winter conditions
-            "nat-met-sto-ext": ["MH0031"],  # Extra-tropical storm
-            "nat-met-sto-tro": ["MH0057"],  # Tropical cyclone
-            "nat-met-sto-san": ["MH0015"],  # Sand/Dust storm
-            "nat-met-sto-tor": ["MH0059"],  # Tornado
-            "nat-hyd-flo-fla": ["MH0006"],  # Flash flood
-            "nat-hyd-flo-flo": ["FL"],  # General flood (no specific code)
-            "nat-hyd-flo-riv": ["MH0007"],  # Riverine flood
-            "nat-hyd-flo-coa": ["MH0004"],  # Coastal flood
-            "nat-hyd-flo-ice": ["MH0009"],  # Ice jam flood
-            # Climatological
-            "nat-cli-dro-dro": ["MH0035"],  # Drought
-            "nat-cli-wil-for": ["EN0013"],  # Forest fire
-            "nat-cli-wil-lan": ["EN0013"],  # Land fire
-            "nat-cli-wil-wil": ["EN0013"],  # Wildfire
-            "nat-cli-glo-glo": ["MH0013"],  # Glacial lake outburst flood
-            # Geophysical
-            "nat-geo-ear-gro": ["GH0004"],  # Ground movement
-            "nat-geo-ear-tsu": ["GH0006"],  # Tsunami
-            "nat-geo-vol-ash": ["GH0010"],  # Ash fall
-            "nat-geo-vol-lah": ["GH0013"],  # Lahar
-            "nat-geo-vol-lav": ["GH0009"],  # Lava flow
-            "nat-geo-vol-pyr": ["GH0012"],  # Pyroclastic flow
-            "nat-geo-vol-vol": ["VO"],  # Volcanic activity (general)
-            "nat-geo-mmd-ava": ["GH0034"],  # Avalanche
-            "nat-geo-mmd-lan": ["GH0007"],  # Landslide
-            "nat-geo-mmd-roc": ["GH0032"],  # Rockfall
-            "nat-geo-mmd-sub": ["GH0024"],  # Subsidence
-            # Biological
-            "nat-bio-epi-bac": ["BI0016"],  # Bacterial disease
-            "nat-bio-epi-vir": ["BI0016"],  # Viral disease
-            "nat-bio-epi-par": ["BI0018"],  # Parasitic disease
-            "nat-bio-inf-ins": ["BI0002"],  # Insect infestation
-            "nat-bio-inf-gra": ["BI0002"],  # Grasshopper infestation
-            "nat-bio-inf-loc": ["BI0003"],  # Locust infestation
-        }
-
-        if not classification_key:
-            return []
-
-        key = classification_key.lower()
-        if key in mapping:
-            return mapping[key]
-
-        # If no specific mapping found, use the broad category
-        # by taking first two parts of classification key
-        broad_key = "-".join(key.split("-")[:2])
-        for map_key, codes in mapping.items():
-            if map_key.startswith(broad_key):
-                return codes
-
-        return []
-
-    def _create_hazard_detail(self, row: pd.Series) -> HazardDetail:
+    def _create_hazard_detail(self, item: Item, row: pd.Series) -> HazardDetail:
         """Create hazard detail from row data"""
         # First map EM-DAT classification to UNDRR-ISC codes
-        hazard_codes = self._map_emdat_to_hazard_codes(row.get("Classification Key"))
 
         return HazardDetail(
-            cluster=self.hazard_profiles.get_cluster_code(hazard_codes),
+            cluster=self.hazard_profiles.get_cluster_code(item),
             severity_value=float(row["Magnitude"]) if not pd.isna(row.get("Magnitude")) else None,
             severity_unit=row.get("Magnitude Scale", "emdat"),
             estimate_type=MontyEstimateType.PRIMARY,

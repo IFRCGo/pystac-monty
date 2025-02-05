@@ -14,7 +14,7 @@ class Pairing:
         if not hazards or not country_codes or not event_datetime or not episode_number:
             raise ValueError("Missing required properties to generate correlation id")
 
-        hazard_cluster_code = hazard_profiles.get_cluster_code(hazards)
+        hazard_cluster_code = hazard_profiles.get_cluster_code(item).upper()
         # This should be dynamically determined based on existing events
         eventdatestr = event_datetime.strftime("%Y%m%d")
 

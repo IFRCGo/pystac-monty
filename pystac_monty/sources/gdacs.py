@@ -21,7 +21,7 @@ from pystac_monty.extension import (
     MontyImpactExposureCategory,
     MontyImpactType,
 )
-from pystac_monty.hazard_profiles import HazardProfiles
+from pystac_monty.hazard_profiles import MontyHazardProfiles
 from pystac_monty.sources.common import MontyDataSource
 
 # Constants
@@ -75,7 +75,7 @@ class GDACSTransformer:
     )
 
     data: list[GDACSDataSource] = []
-    hazard_profiles = HazardProfiles()
+    hazard_profiles = MontyHazardProfiles()
 
     def __init__(self, data: list[GDACSDataSource]) -> None:
         self.data = data
@@ -264,9 +264,8 @@ class GDACSTransformer:
     def get_hazard_detail(self, item: Item) -> HazardDetail:
         # get the hazard detail from the event data
         gdacs_event = self.check_and_get_event_data()
-        monty = MontyExtension.ext(item)
         return HazardDetail(
-            cluster=self.hazard_profiles.get_cluster_code(monty.hazard_codes),
+            cluster=self.hazard_profiles.get_cluster_code(item),
             severity_value=gdacs_event.data["properties"].get("episodealertscore", None),
             severity_unit="GDACS Flood Severity Score",
             severity_label=gdacs_event.data["properties"].get("episodealertlevel", None),

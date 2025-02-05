@@ -63,7 +63,7 @@ interactions:
       Content-Type:
       - text/html; charset=utf-8
       Date:
-      - Wed, 05 Feb 2025 04:47:06 GMT
+      - Wed, 05 Feb 2025 15:05:19 GMT
       Location:
       - https://raw.githubusercontent.com/IFRCGo/monty-stac-extension/refs/heads/usgs/examples/usgs-events/usgs-events.json
       Referrer-Policy:
@@ -80,7 +80,7 @@ interactions:
       X-Frame-Options:
       - deny
       X-GitHub-Request-Id:
-      - A004:285773:2D37FC:36B318:67A2ED4E
+      - AE54:8C084:7B97DF:7E2A15:67A37E33
       X-XSS-Protection:
       - '0'
     status:
@@ -132,13 +132,13 @@ interactions:
       Cross-Origin-Resource-Policy:
       - cross-origin
       Date:
-      - Wed, 05 Feb 2025 04:47:10 GMT
+      - Wed, 05 Feb 2025 15:05:23 GMT
       ETag:
       - W/"69211dd0421e45592d37a35d06e2c683e92d801959ad222e9c892c39a75b4402"
       Expires:
-      - Wed, 05 Feb 2025 04:52:10 GMT
+      - Wed, 05 Feb 2025 15:10:23 GMT
       Source-Age:
-      - '242'
+      - '132'
       Strict-Transport-Security:
       - max-age=31536000
       Vary:
@@ -152,15 +152,15 @@ interactions:
       X-Content-Type-Options:
       - nosniff
       X-Fastly-Request-ID:
-      - 8db622dc6ededee5317fd3da6e2415b74ae045d2
+      - 3c90e245c14df52b5199a8a263e1a31151871e77
       X-Frame-Options:
       - deny
       X-GitHub-Request-Id:
-      - 3AFF:3AB82:4D753:87C76:67A2E90A
+      - F6AD:3EEB4:2F5FF5:30E159:67A37DAE
       X-Served-By:
-      - cache-del21751-DEL
+      - cache-par-lfpg1960039-PAR
       X-Timer:
-      - S1738730830.346796,VS0,VE0
+      - S1738767923.432192,VS0,VE1
       X-XSS-Protection:
       - 1; mode=block
     status:
@@ -230,7 +230,7 @@ interactions:
       Content-Type:
       - text/html; charset=utf-8
       Date:
-      - Wed, 05 Feb 2025 04:47:06 GMT
+      - Wed, 05 Feb 2025 15:05:19 GMT
       Location:
       - https://raw.githubusercontent.com/IFRCGo/monty-stac-extension/refs/heads/usgs/examples/usgs-events/usgs-events.json
       Referrer-Policy:
@@ -247,7 +247,7 @@ interactions:
       X-Frame-Options:
       - deny
       X-GitHub-Request-Id:
-      - A006:6C8A9:2E1DE9:37C2B3:67A2ED4E
+      - AE5C:8C084:7B9B50:7E2D8E:67A37E33
       X-XSS-Protection:
       - '0'
     status:
@@ -299,13 +299,13 @@ interactions:
       Cross-Origin-Resource-Policy:
       - cross-origin
       Date:
-      - Wed, 05 Feb 2025 04:47:10 GMT
+      - Wed, 05 Feb 2025 15:05:23 GMT
       ETag:
       - W/"69211dd0421e45592d37a35d06e2c683e92d801959ad222e9c892c39a75b4402"
       Expires:
-      - Wed, 05 Feb 2025 04:52:10 GMT
+      - Wed, 05 Feb 2025 15:10:23 GMT
       Source-Age:
-      - '242'
+      - '132'
       Strict-Transport-Security:
       - max-age=31536000
       Vary:
@@ -319,15 +319,15 @@ interactions:
       X-Content-Type-Options:
       - nosniff
       X-Fastly-Request-ID:
-      - dc303f727b12e4de2de35c57fd8b250efb673df7
+      - ac17cdb89b1b439ce9b0b75ed72e505e4deb8b4b
       X-Frame-Options:
       - deny
       X-GitHub-Request-Id:
-      - 3AFF:3AB82:4D753:87C76:67A2E90A
+      - F6AD:3EEB4:2F5FF5:30E159:67A37DAE
       X-Served-By:
-      - cache-del21732-DEL
+      - cache-par-lfpg1960033-PAR
       X-Timer:
-      - S1738730831.740418,VS0,VE1
+      - S1738767924.622771,VS0,VE1
       X-XSS-Protection:
       - 1; mode=block
     status:
@@ -397,7 +397,7 @@ interactions:
       Content-Type:
       - text/html; charset=utf-8
       Date:
-      - Wed, 05 Feb 2025 04:47:07 GMT
+      - Wed, 05 Feb 2025 15:03:51 GMT
       Location:
       - https://raw.githubusercontent.com/IFRCGo/monty-stac-extension/refs/heads/usgs/examples/usgs-hazards/usgs-hazards.json
       Referrer-Policy:
@@ -414,7 +414,7 @@ interactions:
       X-Frame-Options:
       - deny
       X-GitHub-Request-Id:
-      - A008:347A76:2D7014:36F81F:67A2ED4E
+      - AE6C:38CF4F:731BCF:757996:67A37E33
       X-XSS-Protection:
       - '0'
     status:
@@ -466,13 +466,13 @@ interactions:
       Cross-Origin-Resource-Policy:
       - cross-origin
       Date:
-      - Wed, 05 Feb 2025 04:47:11 GMT
+      - Wed, 05 Feb 2025 15:05:23 GMT
       ETag:
       - W/"c390ce9b9e4fffb2594b8aac1df0e55b9d73d51f8f9622535376e3a1036dc151"
       Expires:
-      - Wed, 05 Feb 2025 04:52:11 GMT
+      - Wed, 05 Feb 2025 15:10:23 GMT
       Source-Age:
-      - '241'
+      - '0'
       Strict-Transport-Security:
       - max-age=31536000
       Vary:
@@ -482,19 +482,19 @@ interactions:
       X-Cache:
       - HIT
       X-Cache-Hits:
-      - '6'
+      - '1'
       X-Content-Type-Options:
       - nosniff
       X-Fastly-Request-ID:
-      - 141ebcb774dbe67dcd130786991fd09f730b3f3b
+      - d34bc9c11be14e24d4c6ecf67bf228bf894b5b45
       X-Frame-Options:
       - deny
       X-GitHub-Request-Id:
-      - DA0F:1BBEF:4ED96:89422:67A2E90C
+      - F8D3:85303:30F7DC:3278DA:67A37DAF
       X-Served-By:
-      - cache-del21745-DEL
+      - cache-par-lfpg1960025-PAR
       X-Timer:
-      - S1738730831.128044,VS0,VE0
+      - S1738767924.803574,VS0,VE1
       X-XSS-Protection:
       - 1; mode=block
     status:
@@ -564,7 +564,7 @@ interactions:
       Content-Type:
       - text/html; charset=utf-8
       Date:
-      - Wed, 05 Feb 2025 04:47:06 GMT
+      - Wed, 05 Feb 2025 15:05:19 GMT
       Location:
       - https://raw.githubusercontent.com/IFRCGo/monty-stac-extension/refs/heads/usgs/examples/usgs-events/usgs-events.json
       Referrer-Policy:
@@ -581,7 +581,7 @@ interactions:
       X-Frame-Options:
       - deny
       X-GitHub-Request-Id:
-      - A016:10C5FF:2E7757:384289:67A2ED4F
+      - AE6E:829EB:7428A8:768635:67A37E33
       X-XSS-Protection:
       - '0'
     status:
@@ -633,13 +633,13 @@ interactions:
       Cross-Origin-Resource-Policy:
       - cross-origin
       Date:
-      - Wed, 05 Feb 2025 04:47:11 GMT
+      - Wed, 05 Feb 2025 15:05:24 GMT
       ETag:
       - W/"69211dd0421e45592d37a35d06e2c683e92d801959ad222e9c892c39a75b4402"
       Expires:
-      - Wed, 05 Feb 2025 04:52:11 GMT
+      - Wed, 05 Feb 2025 15:10:24 GMT
       Source-Age:
-      - '243'
+      - '133'
       Strict-Transport-Security:
       - max-age=31536000
       Vary:
@@ -649,19 +649,19 @@ interactions:
       X-Cache:
       - HIT
       X-Cache-Hits:
-      - '2'
+      - '1'
       X-Content-Type-Options:
       - nosniff
       X-Fastly-Request-ID:
-      - 5eb38e977be482a52cfd4c108c1dc7d109a6243e
+      - 4b19fa0b48c5bf9193886fe1500015060a886a52
       X-Frame-Options:
       - deny
       X-GitHub-Request-Id:
-      - 3AFF:3AB82:4D753:87C76:67A2E90A
+      - F6AD:3EEB4:2F5FF5:30E159:67A37DAE
       X-Served-By:
-      - cache-del21746-DEL
+      - cache-par-lfpg1960031-PAR
       X-Timer:
-      - S1738730832.516963,VS0,VE0
+      - S1738767924.282549,VS0,VE2
       X-XSS-Protection:
       - 1; mode=block
     status:
@@ -731,7 +731,7 @@ interactions:
       Content-Type:
       - text/html; charset=utf-8
       Date:
-      - Wed, 05 Feb 2025 04:47:11 GMT
+      - Wed, 05 Feb 2025 15:05:24 GMT
       Location:
       - https://raw.githubusercontent.com/IFRCGo/monty-stac-extension/refs/heads/usgs/examples/usgs-impacts/usgs-impacts.json
       Referrer-Policy:
@@ -748,7 +748,7 @@ interactions:
       X-Frame-Options:
       - deny
       X-GitHub-Request-Id:
-      - A018:39A458:2F0F5A:38D783:67A2ED4F
+      - AE76:25E996:716C69:73C87F:67A37E34
       X-XSS-Protection:
       - '0'
     status:
@@ -800,13 +800,13 @@ interactions:
       Cross-Origin-Resource-Policy:
       - cross-origin
       Date:
-      - Wed, 05 Feb 2025 04:47:12 GMT
+      - Wed, 05 Feb 2025 15:05:24 GMT
       ETag:
       - W/"d6770ac2f4fa1d55dff229173a5c0f40ed7fa1ceeeae121757cbc18efedda377"
       Expires:
-      - Wed, 05 Feb 2025 04:52:12 GMT
+      - Wed, 05 Feb 2025 15:10:24 GMT
       Source-Age:
-      - '238'
+      - '0'
       Strict-Transport-Security:
       - max-age=31536000
       Vary:
@@ -814,21 +814,21 @@ interactions:
       Via:
       - 1.1 varnish
       X-Cache:
-      - HIT
+      - MISS
       X-Cache-Hits:
       - '0'
       X-Content-Type-Options:
       - nosniff
       X-Fastly-Request-ID:
-      - 853d88fe8869a3440901d1ea3d157ce86e1dad89
+      - 76b19b9686aee7b2fff02ff0ed680ec96177584a
       X-Frame-Options:
       - deny
       X-GitHub-Request-Id:
-      - DEBC:1BF95C:51966:8BFD6:67A2E911
+      - 838E:37EB0D:3103D3:3288A6:67A37E34
       X-Served-By:
-      - cache-del21740-DEL
+      - cache-par-lfpg1960048-PAR
       X-Timer:
-      - S1738730832.227625,VS0,VE1
+      - S1738767925.613807,VS0,VE371
       X-XSS-Protection:
       - 1; mode=block
     status:
@@ -898,7 +898,7 @@ interactions:
       Content-Type:
       - text/html; charset=utf-8
       Date:
-      - Wed, 05 Feb 2025 04:47:06 GMT
+      - Wed, 05 Feb 2025 15:05:19 GMT
       Location:
       - https://raw.githubusercontent.com/IFRCGo/monty-stac-extension/refs/heads/usgs/examples/usgs-events/usgs-events.json
       Referrer-Policy:
@@ -915,7 +915,7 @@ interactions:
       X-Frame-Options:
       - deny
       X-GitHub-Request-Id:
-      - A01A:D0DCC:2E7672:381B22:67A2ED50
+      - AE82:1A5FAF:7E13C2:80A824:67A37E35
       X-XSS-Protection:
       - '0'
     status:
@@ -967,13 +967,13 @@ interactions:
       Cross-Origin-Resource-Policy:
       - cross-origin
       Date:
-      - Wed, 05 Feb 2025 04:47:12 GMT
+      - Wed, 05 Feb 2025 15:05:25 GMT
       ETag:
       - W/"69211dd0421e45592d37a35d06e2c683e92d801959ad222e9c892c39a75b4402"
       Expires:
-      - Wed, 05 Feb 2025 04:52:12 GMT
+      - Wed, 05 Feb 2025 15:10:25 GMT
       Source-Age:
-      - '244'
+      - '133'
       Strict-Transport-Security:
       - max-age=31536000
       Vary:
@@ -983,19 +983,19 @@ interactions:
       X-Cache:
       - HIT
       X-Cache-Hits:
-      - '2'
+      - '1'
       X-Content-Type-Options:
       - nosniff
       X-Fastly-Request-ID:
-      - 8e738c2626d8d45dc55f123bda56fa4dcee45a42
+      - 1e55403bfa4ed988f01ec79650f6f78c9ed2644e
       X-Frame-Options:
       - deny
       X-GitHub-Request-Id:
-      - 3AFF:3AB82:4D753:87C76:67A2E90A
+      - F6AD:3EEB4:2F5FF5:30E159:67A37DAE
       X-Served-By:
-      - cache-del21726-DEL
+      - cache-par-lfpg1960029-PAR
       X-Timer:
-      - S1738730833.644165,VS0,VE0
+      - S1738767925.182111,VS0,VE14
       X-XSS-Protection:
       - 1; mode=block
     status:
@@ -1065,7 +1065,7 @@ interactions:
       Content-Type:
       - text/html; charset=utf-8
       Date:
-      - Wed, 05 Feb 2025 04:47:11 GMT
+      - Wed, 05 Feb 2025 15:05:24 GMT
       Location:
       - https://raw.githubusercontent.com/IFRCGo/monty-stac-extension/refs/heads/usgs/examples/usgs-impacts/usgs-impacts.json
       Referrer-Policy:
@@ -1082,7 +1082,7 @@ interactions:
       X-Frame-Options:
       - deny
       X-GitHub-Request-Id:
-      - A026:255EDF:2E17DE:37DACE:67A2ED50
+      - AE8C:1CAF8B:7272FE:74D979:67A37E35
       X-XSS-Protection:
       - '0'
     status:
@@ -1134,13 +1134,13 @@ interactions:
       Cross-Origin-Resource-Policy:
       - cross-origin
       Date:
-      - Wed, 05 Feb 2025 04:47:13 GMT
+      - Wed, 05 Feb 2025 15:05:25 GMT
       ETag:
       - W/"d6770ac2f4fa1d55dff229173a5c0f40ed7fa1ceeeae121757cbc18efedda377"
       Expires:
-      - Wed, 05 Feb 2025 04:52:13 GMT
+      - Wed, 05 Feb 2025 15:10:25 GMT
       Source-Age:
-      - '239'
+      - '0'
       Strict-Transport-Security:
       - max-age=31536000
       Vary:
@@ -1154,15 +1154,15 @@ interactions:
       X-Content-Type-Options:
       - nosniff
       X-Fastly-Request-ID:
-      - ce6ac4c390e016e35ee49337bcb7686a6f7b8356
+      - 9a8cf1e041882d5197781f0ec45419e7f5b4c480
       X-Frame-Options:
       - deny
       X-GitHub-Request-Id:
-      - DEBC:1BF95C:51966:8BFD6:67A2E911
+      - 838E:37EB0D:3103D3:3288A6:67A37E34
       X-Served-By:
-      - cache-del21737-DEL
+      - cache-par-lfpg1960055-PAR
       X-Timer:
-      - S1738730833.061530,VS0,VE1
+      - S1738767925.392684,VS0,VE1
       X-XSS-Protection:
       - 1; mode=block
     status:
@@ -1231,13 +1231,13 @@ interactions:
       Cross-Origin-Resource-Policy:
       - cross-origin
       Date:
-      - Wed, 05 Feb 2025 04:47:13 GMT
+      - Wed, 05 Feb 2025 15:05:25 GMT
       ETag:
       - W/"b33c1fbdcf3ad1d695f3e36fdab8b596af3be63d4a4ab1a26b189a8079c281ea"
       Expires:
-      - Wed, 05 Feb 2025 04:52:13 GMT
+      - Wed, 05 Feb 2025 15:10:25 GMT
       Source-Age:
-      - '0'
+      - '228'
       Strict-Transport-Security:
       - max-age=31536000
       Vary:
@@ -1251,15 +1251,15 @@ interactions:
       X-Content-Type-Options:
       - nosniff
       X-Fastly-Request-ID:
-      - 425c9f4176f173b26f4b9ee7535c3a36579e734a
+      - 5d49d81104c1b4863ff4efc11d51b54181d98cbb
       X-Frame-Options:
       - deny
       X-GitHub-Request-Id:
-      - 2951:08D8:14F76:1EEAF:67A2E897
+      - 25A6:2E4589:2FA690:312527:67A37D50
       X-Served-By:
-      - cache-del21722-DEL
+      - cache-par-lfpg1960075-PAR
       X-Timer:
-      - S1738730833.190638,VS0,VE282
+      - S1738767925.493190,VS0,VE1
       X-XSS-Protection:
       - 1; mode=block
     status:
@@ -1328,13 +1328,13 @@ interactions:
       Cross-Origin-Resource-Policy:
       - cross-origin
       Date:
-      - Wed, 05 Feb 2025 04:47:13 GMT
+      - Wed, 05 Feb 2025 15:05:25 GMT
       ETag:
       - W/"b33c1fbdcf3ad1d695f3e36fdab8b596af3be63d4a4ab1a26b189a8079c281ea"
       Expires:
-      - Wed, 05 Feb 2025 04:52:13 GMT
+      - Wed, 05 Feb 2025 15:10:25 GMT
       Source-Age:
-      - '0'
+      - '228'
       Strict-Transport-Security:
       - max-age=31536000
       Vary:
@@ -1344,19 +1344,19 @@ interactions:
       X-Cache:
       - HIT
       X-Cache-Hits:
-      - '1'
+      - '4'
       X-Content-Type-Options:
       - nosniff
       X-Fastly-Request-ID:
-      - 0e2365d7e99ffcd4528eea4fac81a1fce1fdc24c
+      - 4638b2c3518cd5d83c7f452b067f8e98e37a4fd8
       X-Frame-Options:
       - deny
       X-GitHub-Request-Id:
-      - 2951:08D8:14F76:1EEAF:67A2E897
+      - 25A6:2E4589:2FA690:312527:67A37D50
       X-Served-By:
-      - cache-del21725-DEL
+      - cache-par-lfpg1960057-PAR
       X-Timer:
-      - S1738730834.605401,VS0,VE1
+      - S1738767926.583250,VS0,VE0
       X-XSS-Protection:
       - 1; mode=block
     status:
@@ -1425,13 +1425,13 @@ interactions:
       Cross-Origin-Resource-Policy:
       - cross-origin
       Date:
-      - Wed, 05 Feb 2025 04:47:13 GMT
+      - Wed, 05 Feb 2025 15:05:25 GMT
       ETag:
       - W/"b33c1fbdcf3ad1d695f3e36fdab8b596af3be63d4a4ab1a26b189a8079c281ea"
       Expires:
-      - Wed, 05 Feb 2025 04:52:13 GMT
+      - Wed, 05 Feb 2025 15:10:25 GMT
       Source-Age:
-      - '0'
+      - '228'
       Strict-Transport-Security:
       - max-age=31536000
       Vary:
@@ -1445,15 +1445,15 @@ interactions:
       X-Content-Type-Options:
       - nosniff
       X-Fastly-Request-ID:
-      - 817f6e2a93acca3128eda92fe3f134463bedb5cb
+      - f19299799e5698fc7e4e815fe517d548b7d7e48c
       X-Frame-Options:
       - deny
       X-GitHub-Request-Id:
-      - 2951:08D8:14F76:1EEAF:67A2E897
+      - 25A6:2E4589:2FA690:312527:67A37D50
       X-Served-By:
-      - cache-del21744-DEL
+      - cache-par-lfpg1960071-PAR
       X-Timer:
-      - S1738730834.738505,VS0,VE1
+      - S1738767926.673104,VS0,VE1
       X-XSS-Protection:
       - 1; mode=block
     status:
@@ -1522,13 +1522,13 @@ interactions:
       Cross-Origin-Resource-Policy:
       - cross-origin
       Date:
-      - Wed, 05 Feb 2025 04:47:13 GMT
+      - Wed, 05 Feb 2025 15:05:25 GMT
       ETag:
       - W/"b33c1fbdcf3ad1d695f3e36fdab8b596af3be63d4a4ab1a26b189a8079c281ea"
       Expires:
-      - Wed, 05 Feb 2025 04:52:13 GMT
+      - Wed, 05 Feb 2025 15:10:25 GMT
       Source-Age:
-      - '0'
+      - '229'
       Strict-Transport-Security:
       - max-age=31536000
       Vary:
@@ -1538,19 +1538,19 @@ interactions:
       X-Cache:
       - HIT
       X-Cache-Hits:
-      - '1'
+      - '2'
       X-Content-Type-Options:
       - nosniff
       X-Fastly-Request-ID:
-      - 652cb567c90c048bac940802b59ae2d6e08cce31
+      - 40829beb4fe2d0005b1c586d68d7ddf5609f9407
       X-Frame-Options:
       - deny
       X-GitHub-Request-Id:
-      - 2951:08D8:14F76:1EEAF:67A2E897
+      - 25A6:2E4589:2FA690:312527:67A37D50
       X-Served-By:
-      - cache-del21727-DEL
+      - cache-par-lfpg1960077-PAR
       X-Timer:
-      - S1738730834.874075,VS0,VE1
+      - S1738767926.783127,VS0,VE0
       X-XSS-Protection:
       - 1; mode=block
     status:
