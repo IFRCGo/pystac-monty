@@ -148,7 +148,7 @@ interactions:
       X-Cache:
       - HIT
       X-Cache-Hits:
-      - '1'
+      - '2'
       X-Content-Type-Options:
       - nosniff
       X-Fastly-Request-ID:
@@ -472,7 +472,7 @@ interactions:
       Expires:
       - Wed, 05 Feb 2025 15:10:23 GMT
       Source-Age:
-      - '131'
+      - '0'
       Strict-Transport-Security:
       - max-age=31536000
       Vary:
