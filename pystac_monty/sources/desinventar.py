@@ -21,7 +21,7 @@ from pystac_monty.extension import (
     MontyImpactExposureCategory,
     MontyImpactType,
 )
-from pystac_monty.hazard_profiles import HazardProfiles
+from pystac_monty.hazard_profiles import MontyHazardProfiles
 from pystac_monty.sources.common import MontyDataTransformer
 
 STAC_EVENT_ID_PREFIX = "desinventar-event-"
@@ -89,61 +89,59 @@ class DataRow(TypedDict):
 
 # TODO: complete this mapping
 hazard_mapping = {
-    "ALLUVION": "MH0051",  # Mud flow
-    "AVALANCHE": "MH0050",
-    "ACCIDENT": None,
-    "BIOLOGICAL": None,
-    "BOAT CAPSIZE": None,
-    "COASTAL EROSION": "EN0020",
-    "COLD WAVE": "MH0049",
-    "CYCLONE": "MH0057",  # Tropical Cyclone
-    "DROUGHT": "MH0035",
-    "EARTHQUAKE": "GH0001",
-    "ELECTRIC STORM": "MH0002",
-    "EPIDEMIC": None,
-    "EPIZOOTIC": "BI0027",  # Animal Diseases (Not Zoonoses)
-    "EROSION": "EN0019",  # Soil erosion
-    "ERUPTION": None,  # TODO
-    "EXPLOSION": None,
+    "ALLUVION": ["MH0051", "nat-hyd-mmw-mud"],  # Mud flow
+    "AVALANCHE": ["MH0050", "nat-hyd-mmw-ava"],  # Avalanche
+    "ACCIDENT": ["tec-mis-col-col"],
+    "BIOLOGICAL": ["nat-bio-epi-dis"],  # Epidemic
+    "BOAT CAPSIZE": ["tec-tra-wat-wat", "TL0050"],
+    "COASTAL EROSION": ["EN0020", "nat-geo-env-coa "],  # Coastal erosion
+    "COLD WAVE": ["MH0049", "nat-met-ext-col"],  # Cold wave
+    "CYCLONE": ["MH0057", "nat-met-tro-tro"],  # Tropical cyclone
+    "DROUGHT": ["MH0035", "nat-met-dro-dro"],  # Drought
+    "EARTHQUAKE": ["GH0001", "nat-geo-ear-grd"],  # Earthquake
+    "ELECTRIC STORM": ["MH0002", "nat-met-sto-sto"],  # Thunderstorm
+    "EPIDEMIC": ["nat-bio-epi-dis"],  # Epidemic
+    "EPIZOOTIC": ["BI0027", "nat-bio-ani-ani"],  # Animal Diseases (Not Zoonoses)
+    "EROSION": ["EN0019"],  # Soil erosion
+    "ERUPTION": ["VO", "nat-geo-vol-vol"],  # Volcanic eruption
+    "EXPLOSION": ["tec-mis-exp-exp"],  # Explosion
     "FAMINE": None,
-    "FIRE": None,  # TODO
-    "FLASH FLOOD": "MH0006",
-    "FLOOD": "FL",
-    "FOG": "MH0016",
-    "FOREST FIRE": "EN0013",
-    "FROST": "MH0043",
-    "GLOF": None,
-    "HAIL STORM": "MH0036",
-    "HAILSTORM": "MH0036",
-    "HEAT WAVE": "MH0047",
-    "LAHAR": "GH0013",
-    "LANDSLIDE": "GH0007",
-    "LEAK": None,
-    "LIQUEFACTION": "GH0003",
-    "OTHER": None,
-    "OZONO": None,  # TODO
+    "FIRE": ["EN0013", "nat-cli-wil-wil"],  # Fire
+    "FLASH FLOOD": ["MH0006", "nat-hyd-flo-fla"],  # Flash flood
+    "FLOOD": ["nat-hyd-flo-flo"],  # Flood
+    "FOG": ["MH0016", "nat-met-fog-fog"],  # Fog
+    "FOREST FIRE": ["nat-cli-wil-for"],  # Forest fire
+    "FROST": ["MH0043", "nat-met-ext-sev"],  # Severe frost
+    "HAIL STORM": ["MH0036", "nat-met-sto-hai"],  # Hailstorm
+    "HAILSTORM": ["MH0036", "nat-met-sto-hai"],  # Hailstorm
+    "HEAT WAVE": ["MH0047", "nat-met-ext-hea"],  # Heat wave
+    "LAHAR": ["GH0013", "nat-geo-vol-lah"],  # Lahar
+    "LANDSLIDE": ["GH0007", "nat-hyd-mmw-lan"],  # Landslide
+    "LEAK": ["TL0030", "tec-ind-che-che"],  # Chemical leak
+    "LIQUEFACTION": ["GH0003", "nat-geo-ear-gro"],  # Ground liquefaction
+    "OTHER": ["OT"],  # Other
     "PANIC": None,
     "PLAGUE": None,
     "POLLUTION": None,
-    "RAIN": None,  # TODO
-    "RAINS": None,
-    "SANDSTORM": "MH0015",
-    "SEDIMENTATION": None,  # TODO
-    "SNOW STORM": "MH0039",
-    "SNOWSTORM": "MH0039",
-    "STORM": None,  # TODO
-    "STRONG WIND": None,
-    "STRUCT.COLLAPSE": "TL0003",
-    "SUBSIDENCE": "GH0005",
-    "SURGE": "MH0027",  # Storm surge
-    "THUNDERSTORM": None,
-    "TORNADO": "MH0060",
-    "TSUNAMI": "MH0029",
-    "WINDSTORM": "MH0034",  # Blizzard
-    "Inundación": None,
-    "HURRICANE": "MH0057",
-    "VOLCANO": "VO",
-    "COASTAL FLOOD": "MH0004",
+    "RAIN": ["nat-met-sto-sto"],  # Storm
+    "RAINS": ["nat-met-sto-sto"],  # Storm
+    "SANDSTORM": ["MH0015", "nat-met-sto-san"],  # Sandstorm
+    "SEDIMENTATION": ["nat-geo-env-sed"],  # Sedimentation
+    "SNOW STORM": ["MH0039", "nat-met-sto-sto"],  # Snow Storm
+    "SNOWSTORM": ["MH0039", "nat-met-sto-sto"],  # Snow Storm
+    "STORM": ["nat-met-sto-sto"],  # Storm
+    "STRONG WIND": ["MH0060", "nat-met-sto-sto"],  # Strong wind
+    "STRUCT.COLLAPSE": ["TL0005", "tec-mis-col-col"],  # Structural collapse
+    "SUBSIDENCE": ["GH0005", "nat-geo-mmd-sub"],  # Subsidence
+    "SURGE": ["MH0027", "nat-met-sto-sur"],  # Storm surge
+    "THUNDERSTORM": ["MH0003", "nat-met-sto-sto"],  # Thunderstorm
+    "TORNADO": ["MH0059", "nat-met-sto-tor"],  # Tornado
+    "TSUNAMI": ["MH0029", "nat-geo-ear-tsu"],  # Tsunami
+    "WINDSTORM": ["MH0060", "nat-met-sto-sto"],  # Strong wind
+    "Inundación": ["nat-hyd-flo-flo"],  # Flood
+    "HURRICANE": ["MH0057", "nat-met-sto-tro"],  # Tropical cyclone
+    "VOLCANO": ["nat-geo-vol-vol"],  # Volcanic eruption
+    "COASTAL FLOOD": ["MH0004", "nat-hyd-flo-coa"],  # Coastal flood
 }
 
 
@@ -230,7 +228,7 @@ class DesinventarTransformer(MontyDataTransformer):
     """Transform DesInventar data to STAC items"""
 
     data_source: DesinventarDataSource
-    hazard_profiles = HazardProfiles()
+    hazard_profiles = MontyHazardProfiles()
     hazard_name_mapping: Dict[str, str] = {}
     geo_data_mapping: Dict[str, GeoDataEntry] = {}
     geo_data_cache: Dict[str, Tuple[Dict[str, Any], List[float]]] = {}
@@ -302,7 +300,7 @@ class DesinventarTransformer(MontyDataTransformer):
             # properties = None
 
         item = Item(
-            id=f"{STAC_EVENT_ID_PREFIX}-{self.data_source.iso3}-{row['serial']}",
+            id=f"{STAC_EVENT_ID_PREFIX}{self.data_source.iso3}-{row['serial']}",
             geometry=geometry,
             bbox=bbox,
             datetime=start_date,
@@ -324,16 +322,16 @@ class DesinventarTransformer(MontyDataTransformer):
 
         event = row["event"]
         try:
-            hazard_code = hazard_mapping[event]
+            hazard_codes = hazard_mapping[event]
         except KeyError:
-            hazard_code = None
+            hazard_codes = None
             count = self.errored_events.get(event, 0)
             self.errored_events[event] = count + 1
 
-        if not hazard_code:
+        if not hazard_codes:
             return None
 
-        monty.hazard_codes = [hazard_code]
+        monty.hazard_codes = hazard_codes
 
         monty.country_codes = [self.data_source.iso3.upper()]
         monty.compute_and_set_correlation_id(hazard_profiles=self.hazard_profiles)
