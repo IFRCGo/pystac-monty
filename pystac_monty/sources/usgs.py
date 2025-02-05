@@ -422,13 +422,22 @@ class USGSTransformer:
         ]
         hazard_item.bbox = extent
         # polygon from extent
-        hazard_item.geometry = mapping(shape({"type": "Polygon", "coordinates": [[
-            [extent[0], extent[1]],
-            [extent[2], extent[1]],
-            [extent[2], extent[3]],
-            [extent[0], extent[3]],
-            [extent[0], extent[1]],
-        ]]}))
+        hazard_item.geometry = mapping(
+            shape(
+                {
+                    "type": "Polygon",
+                    "coordinates": [
+                        [
+                            [extent[0], extent[1]],
+                            [extent[2], extent[1]],
+                            [extent[2], extent[3]],
+                            [extent[0], extent[3]],
+                            [extent[0], extent[1]],
+                        ]
+                    ],
+                }
+            )
+        )
 
         # Set collection and roles
         hazard_item.set_collection(self.get_hazard_collection())
@@ -480,7 +489,7 @@ class USGSTransformer:
                     country["fatalities"],
                     "people",
                     country["country_code"],
-                    hazard_item
+                    hazard_item,
                 )
                 impact_items.append(fatalities_item)
 
@@ -496,7 +505,7 @@ class USGSTransformer:
                     country["us_dollars"],
                     "usd",
                     country["country_code"],
-                    hazard_item
+                    hazard_item,
                 )
                 impact_items.append(economic_item)
 
@@ -510,7 +519,7 @@ class USGSTransformer:
         value: float,
         unit: str,
         iso2: str,
-        hazard_item: Item
+        hazard_item: Item,
     ) -> Item:
         """Helper method to create impact items from PAGER losses data."""
         event_item = self.make_source_event_item()

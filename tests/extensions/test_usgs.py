@@ -19,6 +19,7 @@ CURRENT_SCHEMA_MAPURL = "https://raw.githubusercontent.com/IFRCGo/monty-stac-ext
 
 geocoder = WorldAdministrativeBoundariesGeocoder(get_data_file("world-administrative-boundaries.fgb"), 0.1)
 
+
 def load_scenarios(scenarios: list[tuple[str, str, str]]) -> list[USGSTransformer]:
     """Load test scenarios for USGS transformation testing.
 
