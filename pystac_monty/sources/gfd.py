@@ -14,7 +14,7 @@ from pystac_monty.extension import (
     MontyImpactExposureCategory,
     MontyImpactType,
 )
-from pystac_monty.hazard_profiles import HazardProfiles
+from pystac_monty.hazard_profiles import MontyHazardProfiles
 from pystac_monty.sources.common import MontyDataSource
 
 # Constants
@@ -43,7 +43,7 @@ class GFDTransformer:
 
     gfd_impacts_collection_id = "gfd-impacts"
     gfd_impacts_collection_url = "https://raw.githubusercontent.com/IFRCGo/monty-stac-extension/refs/heads/feature/gfd-documentation/examples/gfd-impacts/gfd-impacts.json"  # noqa
-    hazard_profiles = HazardProfiles()
+    hazard_profiles = MontyHazardProfiles()
 
     def __init__(self, data: GFDDataSource):
         self.data = data
@@ -154,7 +154,7 @@ class GFDTransformer:
             monty = MontyExtension.ext(hazard_item)
             # Hazard Detail
             monty.hazard_detail = HazardDetail(
-                cluster=self.hazard_profiles.get_cluster_code(monty.hazard_codes),
+                cluster=self.hazard_profiles.get_cluster_code(hazard_item),
                 severity_value=src_data["dfo_severity"],
                 severity_unit="GFD Flood Severity Score",
                 severity_label=None,
@@ -201,4 +201,4 @@ class GFDTransformer:
 
     def check_and_get_gfd_data(self):
         """Get the GFD data"""
-        return self.data.get_data()
+        return [item["properties"] for item in self.data.get_data()]
