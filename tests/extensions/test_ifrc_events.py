@@ -6,6 +6,7 @@ from typing import List,  TypedDict
 from unittest import TestCase
 
 from parameterized import parameterized
+from pystac_monty.geocoding import MockGeocoder
 
 from pystac_monty.sources.ifrc_events import (
     IfrcEventsDataSource,
@@ -37,13 +38,14 @@ def load_scenarios(
 
     for scenario in scenarios:
         event_url = scenario.get('event_url', None)
+        geocoder = MockGeocoder()
 
         if event_url is None:
             continue
 
         data_source = IfrcEventsDataSource(event_url)
 
-        transformer = IfrcEventsTransformer(data_source)
+        transformer = IfrcEventsTransformer(data_source, geocoder)
         transformers.append(transformer)
 
     return transformers
@@ -60,7 +62,7 @@ class IfrcEventsTest(TestCase):
 
     @parameterized.expand(load_scenarios(scenarios))
     def test_transformer(self, transformer: IfrcEventsTransformer) -> None:
-        items = transformer.get_items()
+        items = transformer.make_items()
         self.assertTrue(len(items) > 0)
 
         makedirs(get_data_file("temp/ifrc_events"), exist_ok=True)
