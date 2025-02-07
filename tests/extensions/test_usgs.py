@@ -9,12 +9,15 @@ import requests
 from parameterized import parameterized
 
 from pystac_monty.extension import MontyExtension
+from pystac_monty.geocoding import WorldAdministrativeBoundariesGeocoder
 from pystac_monty.sources.usgs import USGSDataSource, USGSTransformer
 from tests.conftest import get_data_file
 from tests.extensions.test_monty import CustomValidator
 
 CURRENT_SCHEMA_URI = "https://ifrcgo.github.io/monty/v0.1.0/schema.json"
 CURRENT_SCHEMA_MAPURL = "https://raw.githubusercontent.com/IFRCGo/monty-stac-extension/refs/heads/main/json-schema/schema.json"
+
+geocoder = WorldAdministrativeBoundariesGeocoder(get_data_file("world-administrative-boundaries.fgb"), 0.1)
 
 
 def load_scenarios(scenarios: list[tuple[str, str, str]]) -> list[USGSTransformer]:
@@ -42,7 +45,7 @@ def load_scenarios(scenarios: list[tuple[str, str, str]]) -> list[USGSTransforme
 
         # Create data source and transformer
         data_source = USGSDataSource(event_url, event_data, losses_data)
-        transformers.append(USGSTransformer(data_source))
+        transformers.append(USGSTransformer(data_source, geocoder))
 
     return transformers
 
@@ -111,9 +114,8 @@ class USGSTest(unittest.TestCase):
         self.assertIsNotNone(source_event_item)
         self.assertIsNotNone(source_hazard_item)
 
-        # Since we provided losses data, we should have 2 impact items
-        # (fatalities and economic losses)
-        self.assertEqual(len(impact_items), 2)
+        # Since we provided losses data, we should have 3 impact items
+        self.assertEqual(len(impact_items), 3)
 
         # Validate specific fields from earthquake extension
         self.assertIn("eq:magnitude", source_event_item.properties)
@@ -130,7 +132,7 @@ class USGSTest(unittest.TestCase):
         """
         event_data = requests.get(tibetan_plateau_eq[1]).text
         data_source = USGSDataSource(tibetan_plateau_eq[1], event_data)
-        transformer = USGSTransformer(data_source)
+        transformer = USGSTransformer(data_source, geocoder)
 
         items = transformer.make_items()
 
@@ -164,7 +166,7 @@ class USGSTest(unittest.TestCase):
         # Test missing required fields
         invalid_data = "{}"
         data_source = USGSDataSource("test_url", invalid_data)
-        transformer = USGSTransformer(data_source)
+        transformer = USGSTransformer(data_source, geocoder)
 
         with self.assertRaises(KeyError):
             transformer.make_items()
@@ -193,7 +195,7 @@ class USGSTest(unittest.TestCase):
         # Test with empty losses data - should still create event and hazard
         empty_losses = "{}"
         data_source = USGSDataSource("test_url", event_data, empty_losses)
-        transformer = USGSTransformer(data_source)
+        transformer = USGSTransformer(data_source, geocoder)
         items = transformer.make_items()
 
         self.assertEqual(len(items), 2)  # Should still get event and hazard

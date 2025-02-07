@@ -7,7 +7,7 @@ from typing import List, Optional
 import pytz
 import requests
 from pystac import Asset, Collection, Item, Link
-from shapely.geometry import Point, mapping
+from shapely.geometry import Point, mapping, shape
 
 from pystac_monty.extension import (
     HazardDetail,
@@ -17,6 +17,7 @@ from pystac_monty.extension import (
     MontyImpactExposureCategory,
     MontyImpactType,
 )
+from pystac_monty.geocoding import MontyGeoCoder
 from pystac_monty.hazard_profiles import MontyHazardProfiles
 from pystac_monty.sources.common import MontyDataSource
 
@@ -64,13 +65,268 @@ class USGSTransformer:
 
     hazard_profiles = MontyHazardProfiles()
 
-    def __init__(self, data: USGSDataSource) -> None:
+    def __init__(self, data: USGSDataSource, geocoder: MontyGeoCoder) -> None:
         """Initialize USGS transformer.
 
         Args:
             data: USGSDataSource containing event detail and optional losses data
         """
         self.data = data
+        self.geocoder = geocoder
+        if not self.geocoder:
+            raise ValueError("Geocoder is required for USGS transformer")
+
+    @staticmethod
+    def iso2_to_iso3(iso2: str) -> str:
+        """Convert ISO 2-letter country code to ISO 3-letter country code.
+
+        Args:
+            iso2: ISO 2-letter country code
+
+        Returns:
+            ISO 3-letter country code
+        """
+        # Common ISO2 to ISO3 mappings
+        iso_mappings = {
+            "AF": "AFG",
+            "AL": "ALB",
+            "DZ": "DZA",
+            "AS": "ASM",
+            "AD": "AND",
+            "AO": "AGO",
+            "AI": "AIA",
+            "AQ": "ATA",
+            "AG": "ATG",
+            "AR": "ARG",
+            "AM": "ARM",
+            "AW": "ABW",
+            "AU": "AUS",
+            "AT": "AUT",
+            "AZ": "AZE",
+            "BS": "BHS",
+            "BH": "BHR",
+            "BD": "BGD",
+            "BB": "BRB",
+            "BY": "BLR",
+            "BE": "BEL",
+            "BZ": "BLZ",
+            "BJ": "BEN",
+            "BM": "BMU",
+            "BT": "BTN",
+            "BO": "BOL",
+            "BA": "BIH",
+            "BW": "BWA",
+            "BV": "BVT",
+            "BR": "BRA",
+            "IO": "IOT",
+            "BN": "BRN",
+            "BG": "BGR",
+            "BF": "BFA",
+            "BI": "BDI",
+            "KH": "KHM",
+            "CM": "CMR",
+            "CA": "CAN",
+            "CV": "CPV",
+            "KY": "CYM",
+            "CF": "CAF",
+            "TD": "TCD",
+            "CL": "CHL",
+            "CN": "CHN",
+            "CX": "CXR",
+            "CC": "CCK",
+            "CO": "COL",
+            "KM": "COM",
+            "CG": "COG",
+            "CD": "COD",
+            "CK": "COK",
+            "CR": "CRI",
+            "CI": "CIV",
+            "HR": "HRV",
+            "CU": "CUB",
+            "CY": "CYP",
+            "CZ": "CZE",
+            "DK": "DNK",
+            "DJ": "DJI",
+            "DM": "DMA",
+            "DO": "DOM",
+            "EC": "ECU",
+            "EG": "EGY",
+            "SV": "SLV",
+            "GQ": "GNQ",
+            "ER": "ERI",
+            "EE": "EST",
+            "ET": "ETH",
+            "FK": "FLK",
+            "FO": "FRO",
+            "FJ": "FJI",
+            "FI": "FIN",
+            "FR": "FRA",
+            "GF": "GUF",
+            "PF": "PYF",
+            "TF": "ATF",
+            "GA": "GAB",
+            "GM": "GMB",
+            "GE": "GEO",
+            "DE": "DEU",
+            "GH": "GHA",
+            "GI": "GIB",
+            "GR": "GRC",
+            "GL": "GRL",
+            "GD": "GRD",
+            "GP": "GLP",
+            "GU": "GUM",
+            "GT": "GTM",
+            "GN": "GIN",
+            "GW": "GNB",
+            "GY": "GUY",
+            "HT": "HTI",
+            "HM": "HMD",
+            "VA": "VAT",
+            "HN": "HND",
+            "HK": "HKG",
+            "HU": "HUN",
+            "IS": "ISL",
+            "IN": "IND",
+            "ID": "IDN",
+            "IR": "IRN",
+            "IQ": "IRQ",
+            "IE": "IRL",
+            "IL": "ISR",
+            "IT": "ITA",
+            "JM": "JAM",
+            "JP": "JPN",
+            "JO": "JOR",
+            "KZ": "KAZ",
+            "KE": "KEN",
+            "KI": "KIR",
+            "KP": "PRK",
+            "KR": "KOR",
+            "KW": "KWT",
+            "KG": "KGZ",
+            "LA": "LAO",
+            "LV": "LVA",
+            "LB": "LBN",
+            "LS": "LSO",
+            "LR": "LBR",
+            "LY": "LBY",
+            "LI": "LIE",
+            "LT": "LTU",
+            "LU": "LUX",
+            "MO": "MAC",
+            "MK": "MKD",
+            "MG": "MDG",
+            "MW": "MWI",
+            "MY": "MYS",
+            "MV": "MDV",
+            "ML": "MLI",
+            "MT": "MLT",
+            "MH": "MHL",
+            "MQ": "MTQ",
+            "MR": "MRT",
+            "MU": "MUS",
+            "YT": "MYT",
+            "MX": "MEX",
+            "FM": "FSM",
+            "MD": "MDA",
+            "MC": "MCO",
+            "MN": "MNG",
+            "MS": "MSR",
+            "MA": "MAR",
+            "MZ": "MOZ",
+            "MM": "MMR",
+            "NA": "NAM",
+            "NR": "NRU",
+            "NP": "NPL",
+            "NL": "NLD",
+            "NC": "NCL",
+            "NZ": "NZL",
+            "NI": "NIC",
+            "NE": "NER",
+            "NG": "NGA",
+            "NU": "NIU",
+            "NF": "NFK",
+            "MP": "MNP",
+            "NO": "NOR",
+            "OM": "OMN",
+            "PK": "PAK",
+            "PW": "PLW",
+            "PS": "PSE",
+            "PA": "PAN",
+            "PG": "PNG",
+            "PY": "PRY",
+            "PE": "PER",
+            "PH": "PHL",
+            "PN": "PCN",
+            "PL": "POL",
+            "PT": "PRT",
+            "PR": "PRI",
+            "QA": "QAT",
+            "RE": "REU",
+            "RO": "ROU",
+            "RU": "RUS",
+            "RW": "RWA",
+            "SH": "SHN",
+            "KN": "KNA",
+            "LC": "LCA",
+            "PM": "SPM",
+            "VC": "VCT",
+            "WS": "WSM",
+            "SM": "SMR",
+            "ST": "STP",
+            "SA": "SAU",
+            "SN": "SEN",
+            "SC": "SYC",
+            "SL": "SLE",
+            "SG": "SGP",
+            "SK": "SVK",
+            "SI": "SVN",
+            "SB": "SLB",
+            "SO": "SOM",
+            "ZA": "ZAF",
+            "GS": "SGS",
+            "ES": "ESP",
+            "LK": "LKA",
+            "SD": "SDN",
+            "SR": "SUR",
+            "SJ": "SJM",
+            "SZ": "SWZ",
+            "SE": "SWE",
+            "CH": "CHE",
+            "SY": "SYR",
+            "TW": "TWN",
+            "TJ": "TJK",
+            "TZ": "TZA",
+            "TH": "THA",
+            "TL": "TLS",
+            "TG": "TGO",
+            "TK": "TKL",
+            "TO": "TON",
+            "TT": "TTO",
+            "TN": "TUN",
+            "TR": "TUR",
+            "TM": "TKM",
+            "TC": "TCA",
+            "TV": "TUV",
+            "UG": "UGA",
+            "UA": "UKR",
+            "AE": "ARE",
+            "GB": "GBR",
+            "US": "USA",
+            "UM": "UMI",
+            "UY": "URY",
+            "UZ": "UZB",
+            "VU": "VUT",
+            "VE": "VEN",
+            "VN": "VNM",
+            "VG": "VGB",
+            "VI": "VIR",
+            "WF": "WLF",
+            "EH": "ESH",
+            "YE": "YEM",
+            "ZM": "ZMB",
+            "ZW": "ZWE",
+        }
+        return iso_mappings.get(iso2.upper(), "")
 
     def make_items(self) -> List[Item]:
         """Create STAC items from USGS data."""
@@ -86,7 +342,7 @@ class USGSTransformer:
 
         # Create impact items (PAGER)
         if self.data.get_losses_data():
-            impact_items = self.make_impact_items()
+            impact_items = self.make_impact_items(hazard_item)
             items.extend(impact_items)
 
         return items
@@ -125,8 +381,8 @@ class USGSTransformer:
         monty.episode_number = 1
         monty.hazard_codes = ["GH0004"]  # Earthquake surface rupture code
 
-        # Get country code from event data or geometry
-        country_codes = ["CHN"]  # This should be derived from coordinates
+        # TODO Get country code from event data or geometry
+        country_codes = [self.geocoder.get_iso3_from_geometry(point)]
         monty.country_codes = country_codes
 
         # Compute correlation ID
@@ -156,6 +412,33 @@ class USGSTransformer:
         hazard_item = event_item.clone()
         hazard_item.id = f"{STAC_HAZARD_ID_PREFIX}{hazard_item.id.replace(STAC_EVENT_ID_PREFIX, '')}-shakemap"
 
+        # extent the hazard zone with the shakemap extent
+        shakemap = self.data.get_data()["properties"].get("products", {}).get("shakemap", [])[0]
+        extent = [
+            float(shakemap.get("properties", {}).get("minimum-longitude", 0)),
+            float(shakemap.get("properties", {}).get("minimum-latitude", 0)),
+            float(shakemap.get("properties", {}).get("maximum-longitude", 0)),
+            float(shakemap.get("properties", {}).get("maximum-latitude", 0)),
+        ]
+        hazard_item.bbox = extent
+        # polygon from extent
+        hazard_item.geometry = mapping(
+            shape(
+                {
+                    "type": "Polygon",
+                    "coordinates": [
+                        [
+                            [extent[0], extent[1]],
+                            [extent[2], extent[1]],
+                            [extent[2], extent[3]],
+                            [extent[0], extent[3]],
+                            [extent[0], extent[1]],
+                        ]
+                    ],
+                }
+            )
+        )
+
         # Set collection and roles
         hazard_item.set_collection(self.get_hazard_collection())
         hazard_item.properties["roles"] = ["source", "hazard"]
@@ -170,31 +453,15 @@ class USGSTransformer:
         )
 
         # Add shakemap assets
+        # download/pin-thumbnail.png
+        pin_thumbnail = shakemap.get("contents", {}).get("download/pin-thumbnail.png", {})
         shakemap_assets = {
             "intensity_map": {
-                "href": f"{self.data.get_source_url()}/download/intensity.jpg",
-                "media_type": "image/jpeg",
+                "href": pin_thumbnail.get("url"),
+                "media_type": "image/png",
                 "title": "Intensity Map",
                 "roles": ["overview"],
-            },
-            "intensity_overlay": {
-                "href": f"{self.data.get_source_url()}/download/intensity_overlay.png",
-                "media_type": "image/png",
-                "title": "Intensity Overlay",
-                "roles": ["visual"],
-            },
-            "mmi_contours": {
-                "href": f"{self.data.get_source_url()}/download/cont_mi.json",
-                "media_type": "application/json",
-                "title": "MMI Contours",
-                "roles": ["data"],
-            },
-            "grid": {
-                "href": f"{self.data.get_source_url()}/download/grid.xml",
-                "media_type": "application/xml",
-                "title": "Ground Motion Grid",
-                "roles": ["data"],
-            },
+            }
         }
 
         for key, asset_info in shakemap_assets.items():
@@ -202,7 +469,7 @@ class USGSTransformer:
 
         return hazard_item
 
-    def make_impact_items(self) -> List[Item]:
+    def make_impact_items(self, hazard_item: Item) -> List[Item]:
         """Create impact items (PAGER) from USGS data."""
         impact_items = []
         losses_data = self.data.get_losses_data()
@@ -212,35 +479,52 @@ class USGSTransformer:
 
         # Create fatalities impact item
         if "empirical_fatality" in losses_data:
-            fatalities_item = self._create_impact_item_from_losses(
-                "fatalities",
-                MontyImpactExposureCategory.ALL_PEOPLE,
-                MontyImpactType.DEATH,
-                losses_data["empirical_fatality"]["total_fatalities"],
-                "people",
-            )
-            impact_items.append(fatalities_item)
+            for country in losses_data["empirical_fatality"]["country_fatalities"]:
+                if country["fatalities"] == 0:
+                    continue
+                fatalities_item = self._create_impact_item_from_losses(
+                    "fatalities",
+                    MontyImpactExposureCategory.ALL_PEOPLE,
+                    MontyImpactType.DEATH,
+                    country["fatalities"],
+                    "people",
+                    country["country_code"],
+                    hazard_item,
+                )
+                impact_items.append(fatalities_item)
 
         # Create economic losses impact item
         if "empirical_economic" in losses_data:
-            economic_item = self._create_impact_item_from_losses(
-                "economic",
-                MontyImpactExposureCategory.BUILDINGS,
-                MontyImpactType.LOSS_COST,
-                losses_data["empirical_economic"]["total_dollars"],
-                "usd",
-            )
-            impact_items.append(economic_item)
+            for country in losses_data["empirical_economic"]["country_dollars"]:
+                if country["us_dollars"] == 0:
+                    continue
+                economic_item = self._create_impact_item_from_losses(
+                    "economic",
+                    MontyImpactExposureCategory.BUILDINGS,
+                    MontyImpactType.LOSS_COST,
+                    country["us_dollars"],
+                    "usd",
+                    country["country_code"],
+                    hazard_item,
+                )
+                impact_items.append(economic_item)
 
         return impact_items
 
     def _create_impact_item_from_losses(
-        self, impact_type: str, category: MontyImpactExposureCategory, imp_type: MontyImpactType, value: float, unit: str
+        self,
+        impact_type: str,
+        category: MontyImpactExposureCategory,
+        imp_type: MontyImpactType,
+        value: float,
+        unit: str,
+        iso2: str,
+        hazard_item: Item,
     ) -> Item:
         """Helper method to create impact items from PAGER losses data."""
         event_item = self.make_source_event_item()
         impact_item = event_item.clone()
-        impact_item.id = f"{STAC_IMPACT_ID_PREFIX}{impact_item.id.replace(STAC_EVENT_ID_PREFIX, '')}-{impact_type}"
+        impact_item.id = f"{STAC_IMPACT_ID_PREFIX}{impact_item.id.replace(STAC_EVENT_ID_PREFIX, '')}-{impact_type}-{iso2}"
 
         # Set title and description
         title_prefix = "Estimated Fatalities" if impact_type == "fatalities" else "Estimated Economic Losses"
@@ -253,9 +537,15 @@ class USGSTransformer:
 
         # Add impact detail
         monty = MontyExtension.ext(impact_item)
+        monty.country_codes = [self.iso2_to_iso3(iso2)]
         monty.impact_detail = ImpactDetail(
             category=category, type=imp_type, value=float(value), unit=unit, estimate_type=MontyEstimateType.MODELLED
         )
+        geom = self.geocoder.get_geometry_from_iso3(monty.country_codes[0])
+        # intersect with the hazard geometry
+        geom = shape(geom["geometry"]).intersection(shape(hazard_item.geometry))
+        impact_item.geometry = mapping(geom)
+        impact_item.bbox = geom.bounds
 
         # Add PAGER assets
         pager_assets = {
