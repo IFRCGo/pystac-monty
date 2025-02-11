@@ -16,15 +16,15 @@ STAC_EVENT_ID_PREFIX = "ifrc-event-"
 STAC_IMPACT_ID_PREFIX = "ifrc-impact-"
 
 
-class IfrcEventsDataSource(MontyDataSource):
+class IFRCDataSource(MontyDataSource):
     event_url: str
 
     def __init__(self, event_url: str):
         self.event_url = event_url
 
 
-class IfrcEventsTransformer():
-    data_source: IfrcEventsDataSource
+class IFRCTransformer():
+    data_source: IFRCDataSource
 
     ifrc_events_collection_id = "ifrc-events"
     ifrc_events_collection_url = ""  # TODO
@@ -32,7 +32,7 @@ class IfrcEventsTransformer():
     ifrc_impacts_collection_url = ""  # TODO
     hazard_profiles = HazardProfiles()
 
-    def __init__(self, data_source: IfrcEventsDataSource, geocoder: MontyGeoCoder):
+    def __init__(self, data_source: IFRCDataSource, geocoder: MontyGeoCoder):
         self.data_source = data_source
         self.geocoder = geocoder
 
@@ -74,7 +74,7 @@ class IfrcEventsTransformer():
         """Create ane event item"""
         geometry = None
         bbox = None
-        geom_data = self.geocoder.get_geometry_by_country_name(data["country"]["iso3"])
+        geom_data = self.geocoder.get_geometry_by_country_name(data["countries"][0]["iso3"])
 
         # Filter out relevant disaster types
         monty_accepted_disaster_types = {
@@ -86,7 +86,7 @@ class IfrcEventsTransformer():
         if data["dtype"]["name"] not in monty_accepted_disaster_types:
             return []
 
-        if data["aid"] not in {0, 1}:
+        if data["appeals"]['atype'] not in {0, 1}:
             return []
 
         if geom_data:
@@ -95,10 +95,10 @@ class IfrcEventsTransformer():
 
         # Create item
         item = Item(
-            id=f"{STAC_EVENT_ID_PREFIX}{data["aid"]}",
+            id=f"{STAC_EVENT_ID_PREFIX}{data["id"]}",
             geometry=geometry,
             bbox=bbox,
-            datetime=data["start_date"],
+            datetime=data["disaster_start_date"],
             start_datetime=data["start_date"],
             end_datetime=data["end_date"],
             properties={
@@ -111,7 +111,8 @@ class IfrcEventsTransformer():
         monty = MontyExtension.ext(item)
         monty.episode_number = 1  # IFRC DREF doesn't have episodes
         monty.hazard_codes = data["dtype"]["name"]
-        monty.country_codes = data["country"]["iso3"]
+        # monty.country_codes = data["country"]["iso3"]
+        monty.country_codes = [country["iso3"] for country in data["countries"]]
         monty.compute_and_set_correlation_id(hazard_profiles=self.hazard_profiles)
 
         # Set collection and roles
