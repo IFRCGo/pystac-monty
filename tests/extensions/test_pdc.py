@@ -18,11 +18,8 @@ CURRENT_SCHEMA_MAPURL = "https://raw.githubusercontent.com/IFRCGo/monty-stac-ext
 def load_scenarios(scenarios: List[dict]) -> List[PDCTransformer]:
     """Load Scenarios"""
     transformers = []
-    for scenario in scenarios:
-        # response = requests.get(scenario[1], timeout=timeout)
-        # response_data = response.json()
-
-        idu_data_source = PDCDataSource(source_url=scenario[0], data=json.dumps(scenario[1]))
+    for scenario_item in scenarios:
+        idu_data_source = PDCDataSource(source_url=scenario_item[0], data=json.dumps(scenario_item[1]))
         transformers.append(PDCTransformer(idu_data_source))
     return transformers
 
@@ -46,7 +43,7 @@ class PDCTest(unittest.TestCase):
         super().setUp()
         self.validator = CustomValidator()
         # create temporary folder
-        makedirs(get_data_file("temp/idu"), exist_ok=True)
+        makedirs(get_data_file("temp/pdc"), exist_ok=True)
 
     @parameterized.expand(load_scenarios(scenarios))
     @pytest.mark.vcr()
@@ -58,7 +55,7 @@ class PDCTest(unittest.TestCase):
         source_impact_item = None
 
         for item in items:
-            item_path = get_data_file(f"temp/idu/{item.id}.json")
+            item_path = get_data_file(f"temp/pdc/{item.id}.json")
             with open(item_path, "w", encoding="utf-8") as f:
                 json.dump(item.to_dict(), f, indent=2)
             item.validate(validator=self.validator)
