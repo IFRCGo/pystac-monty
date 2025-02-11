@@ -30,7 +30,7 @@ scenario = [
         "hazards_file_path": "./tests/hazard_data.json",
         "exposure_detail_file_path": "./tests/exposure_detail.json",
         "uuid": "f2762e72-5169-487e-a3fa-30e21fc55893",
-        "exposure_timestamp": "11234",
+        "exposure_timestamp": "1738941728977",
         "geojson_file_path": "",
     },
 ]

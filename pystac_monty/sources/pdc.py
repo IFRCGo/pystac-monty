@@ -50,6 +50,10 @@ class PDCTransformer:
     def __init__(self, pdc_data_src: PDCDataSource):
         self.config_data = pdc_data_src.data
 
+        self.hazards_data = []
+        self.exposure_detail = {}
+        self.geojson_data = {}
+
         if "hazards_file_path" in self.config_data and os.path.exists(self.config_data["hazards_file_path"]):
             with open(self.config_data["hazards_file_path"], "r", encoding="utf-8") as f:
                 self.hazards_data = json.loads(f.read())
@@ -59,7 +63,7 @@ class PDCTransformer:
                 self.exposure_detail = json.loads(f.read())
 
         self.uuid = self.config_data.get("uuid", None)
-        self.episode_number = int(self.config_data.get("exposure_timestamp", 0))
+        self.episode_number = int(float(self.config_data.get("exposure_timestamp", 0)))
         if "geojson_file_path" in self.config_data and os.path.exists(self.config_data["geojson_file_path"]):
             with open(self.config_data["geojson_file_path"], "r", encoding="utf-8") as f:
                 self.geojson_data = json.loads(f.read())
@@ -71,7 +75,7 @@ class PDCTransformer:
         for item in self.hazards_data:
             if item["uuid"] == self.uuid:
                 return item
-        return None
+        return {}
 
     def make_items(self) -> List[Item]:
         """Create items"""
@@ -180,7 +184,7 @@ class PDCTransformer:
         }
 
         if hazard not in hazard_mapping:
-            raise Exception(f"The hazard {hazard} is not in the mapping.")
+            raise KeyError(f"The hazard {hazard} is not in the mapping.")
 
         return hazard_mapping.get(hazard)
 
@@ -217,9 +221,33 @@ class PDCTransformer:
     def make_impact_items(self) -> List[Item]:
         """Create Impact Items"""
         impact_fields = {
-            ("population", "vulnerable0_14", "value"): (
+            ("population", "total0_14", "value"): (
                 MontyImpactExposureCategory.CHILDREN_UNDER_14,
                 MontyImpactType.TOTAL_AFFECTED,
+            ),
+            ("population", "total65_Plus", "value"): (
+                MontyImpactExposureCategory.ELDERLY,
+                MontyImpactType.TOTAL_AFFECTED
+            ),
+            ("population", "total", "value"): (
+                MontyImpactExposureCategory.ALL_PEOPLE,
+                MontyImpactType.TOTAL_AFFECTED
+            ),
+            # ("population", "households", "value"): (
+            #     MontyImpactExposureCategory.HOUSEHOLDS,
+            #     MontyImpactType.TOTAL_AFFECTED
+            # ),
+            ("capital", "total", "value"): (
+                MontyImpactExposureCategory.GLOBAL_CURRENCY,
+                MontyImpactType.LOSS_COST
+            ),
+            # ("capital", "school", "value"): (
+            #     MontyImpactExposureCategory.SCHOOLS,
+            #     MontyImpactType.TOTAL_AFFECTED
+            # ),
+            ("capital", "hospital", "value"): (
+                MontyImpactExposureCategory.HOSPITALS,
+                MontyImpactType.TOTAL_AFFECTED
             )
         }
         event_item = self.make_source_event_item()
@@ -230,7 +258,7 @@ class PDCTransformer:
                 continue
             for admin_item in self.exposure_detail["totalByAdmin"]:
                 impact_item = event_item.clone()
-                impact_item.id = f"{impact_item.id.replace(STAC_EVENT_ID_PREFIX, STAC_IMPACT_ID_PREFIX)} - {self.episode_number} - {field_key[-1]}"  # noqa
+                impact_item.id = f"{impact_item.id.replace(STAC_EVENT_ID_PREFIX, STAC_IMPACT_ID_PREFIX)}-{self.episode_number}{'-'.join(field_key[:-1])}"  # noqa
                 impact_item.set_collection(self.get_impact_collection())
                 impact_item.properties["roles"] = ["source", "impact"]
 
