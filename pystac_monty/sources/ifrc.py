@@ -1,6 +1,9 @@
 import json
+from datetime import datetime
 from typing import Any, Dict, List
 from pystac import Collection, Item
+from pystac_monty.hazard_profiles import MontyHazardProfiles
+import pytz
 
 import requests
 
@@ -12,33 +15,36 @@ from pystac_monty.hazard_profiles import HazardProfiles
 from pystac_monty.geocoding import MontyGeoCoder
 from pystac_monty.sources.common import MontyDataSource
 
-STAC_EVENT_ID_PREFIX = "ifrc-event-"
-STAC_IMPACT_ID_PREFIX = "ifrc-impact-"
+STAC_EVENT_ID_PREFIX = "ifrcevent-event-"
+STAC_IMPACT_ID_PREFIX = "ifrcevent-impact-"
 
 
-class IFRCDataSource(MontyDataSource):
-    event_url: str
+class IFRCEventDataSource(MontyDataSource):
+    def __init__(self, source_url: str, data: str):
+        super().__init__(source_url, data)
+        self.source_url = source_url
+        self.data = json.loads(data)[:5]
 
-    def __init__(self, event_url: str):
-        self.event_url = event_url
+    def get_data(self) -> dict:
+        """Get the event detail data."""
+        return self.data
 
 
-class IFRCTransformer():
-    data_source: IFRCDataSource
+class IFRCEventTransformer():
 
-    ifrc_events_collection_id = "ifrc-events"
-    ifrc_events_collection_url = ""  # TODO
-    ifrc_impacts_collection_id = "ifrc-impacts"
-    ifrc_impacts_collection_url = ""  # TODO
-    hazard_profiles = HazardProfiles()
+    ifrc_events_collection_id = "ifrcevent-events"
+    ifrc_events_collection_url = "https://raw.githubusercontent.com/IFRCGo/monty-stac-extension/refs/heads/feature/collection-ifrc-event/examples/ifrcevent-events/ifrcevent_events.json"
+    ifrc_hazards_collection_id = "ifrcevent-hazards"
+    ifrc_hazards_collection_url = "https://raw.githubusercontent.com/IFRCGo/monty-stac-extension/refs/heads/feature/collection-ifrc-event/examples/ifrcevent-hazards/ifrcevent_hazards.json"
+    ifrc_impacts_collection_id = "ifrcevent-impacts"
+    ifrc_impacts_collection_url = "https://raw.githubusercontent.com/IFRCGo/monty-stac-extension/refs/heads/feature/collection-ifrc-event/examples/ifrcevent-impacts/ifrcevent_impacts.json"
+    hazard_profiles = MontyHazardProfiles()
 
-    def __init__(self, data_source: IFRCDataSource, geocoder: MontyGeoCoder):
-        self.data_source = data_source
+    def __init__(self, data: IFRCEventDataSource, geocoder: MontyGeoCoder):
+        self.data = data
         self.geocoder = geocoder
-
-    def get_items(self):
-        print("\n", self.data_source.event_url)
-        return []
+        if not self.geocoder:
+            raise ValueError("Geocoder is required for IFRC events transformer")
 
     def get_event_collection(self) -> Collection:
         """Get event collection"""
@@ -61,9 +67,9 @@ class IFRCTransformer():
     def make_source_event_items(self) -> List[Item]:
         """Create ifrc event item"""
         items = []
-        ifrc_data: List[Dict[str, Any]] = self.data_source.get_data()
-        if not ifrc_data:
-            return []
+        ifrc_data: List[Dict[str, Any]] = self.data.get_data()
+        # if not ifrc_data:
+        #     return []
 
         for data in ifrc_data:
             item = self.make_source_event_item(data=data)
@@ -71,7 +77,7 @@ class IFRCTransformer():
         return items
 
     def make_source_event_item(self, data: dict) -> Item:
-        """Create ane event item"""
+        """Create an event item"""
         geometry = None
         bbox = None
         geom_data = self.geocoder.get_geometry_by_country_name(data["countries"][0]["iso3"])
@@ -83,26 +89,26 @@ class IFRCTransformer():
             "Landslide", "Flash Flood"
         }
 
-        if data["dtype"]["name"] not in monty_accepted_disaster_types:
-            return []
+        # if data["dtype"]["name"] not in monty_accepted_disaster_types:
+        #     return []
 
-        if data["appeals"]['atype'] not in {0, 1}:
-            return []
+        # if data["appeals"]['atype'] not in {0, 1}:
+        #     return []
 
         if geom_data:
             geometry = geom_data["geometry"]
             bbox = geom_data["bbox"]
 
+        start_date = datetime.fromisoformat(data["disaster_start_date"])
         # Create item
         item = Item(
             id=f"{STAC_EVENT_ID_PREFIX}{data["id"]}",
             geometry=geometry,
             bbox=bbox,
-            datetime=data["disaster_start_date"],
-            start_datetime=data["start_date"],
-            end_datetime=data["end_date"],
+            datetime=start_date,
             properties={
                 "title": data["name"],
+                "description": data["summary"]
             },
         )
 
@@ -110,10 +116,10 @@ class IFRCTransformer():
         MontyExtension.add_to(item)
         monty = MontyExtension.ext(item)
         monty.episode_number = 1  # IFRC DREF doesn't have episodes
-        monty.hazard_codes = data["dtype"]["name"]
+        monty.hazard_codes = self.map_ifrc_to_hazard_codes(data["dtype"]["name"])
         # monty.country_codes = data["country"]["iso3"]
         monty.country_codes = [country["iso3"] for country in data["countries"]]
-        monty.compute_and_set_correlation_id(hazard_profiles=self.hazard_profiles)
+        # monty.compute_and_set_correlation_id(hazard_profiles=self.hazard_profiles)
 
         # Set collection and roles
         item.set_collection(self.get_event_collection())
@@ -132,8 +138,8 @@ class IFRCTransformer():
             List of UNDRR-ISC hazard codes
         """
 
-        if not classification_key:
-            return []
+        # if not classification_key:
+        #     return []
 
         key = classification_key.lower()
 
