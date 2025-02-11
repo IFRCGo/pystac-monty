@@ -114,7 +114,7 @@ class GFDTransformer:
         enddate = pytz.utc.localize(datetime.fromtimestamp(data["system:time_end"] / 1000))
 
         item = Item(
-            id=f'{STAC_EVENT_ID_PREFIX}{data["system:index"]}',
+            id=f'{STAC_EVENT_ID_PREFIX}{data["id"]}',
             geometry=geometry,
             bbox=bbox,
             datetime=startdate,
@@ -183,8 +183,8 @@ class GFDTransformer:
 
         for key_field, (category, impact_type) in impact_fields.items():
             impact_item = event_item.clone()
-            impact_item.id = f"{STAC_IMPACT_ID_PREFIX}{src_data['system:index']} - {key_field}"
-            impact_item.properties["title"] = f"{event_item.properties['title']} - {key_field}"
+            impact_item.id = f"{STAC_IMPACT_ID_PREFIX}{src_data['id']}-{key_field}"
+            impact_item.properties["title"] = f"{event_item.properties['title']}-{key_field}"
             impact_item.properties["roles"] = ["source", "impact"]
             impact_item.set_collection(self.get_impact_collection())
 
