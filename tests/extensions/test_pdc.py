@@ -25,7 +25,7 @@ def load_scenarios(scenarios: List[dict]) -> List[PDCTransformer]:
 
 
 scenario = [
-    "https://raw.githubusercontent.com/ranjan-stha/testrepo/refs/heads/main/testpdc.json",  # noqa
+    "https://sentry.pdc.org/hp_srv/services/hazards/t/json/get_active_hazards",
     {
         "hazards_file_path": "./tests/data/pdc/hazard_data.json",
         "exposure_detail_file_path": "./tests/data/pdc/exposure_detail.json",

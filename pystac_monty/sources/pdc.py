@@ -171,7 +171,6 @@ class PDCTransformer:
             "EARTHQUAKE": ["GH0001", "nat-geo-ear-gro"],
             "EXTREMETEMPERATURE": ["MH0040", "MH0047", "MH0041", "nat-met-ext-col", "nat-met-ext-hea", "nat-met-ext-sev"],
             "FLOOD": ["MH0012", "nat-hyd-flo-flo"],
-            # "HIGHSURF": [],
             "HIGHWIND": ["MH0060", "nat-met-sto-sto"],
             "LANDSLIDE": ["nat-geo-mmd-lan"],
             "SEVEREWEATHER": ["nat-met-sto-sev"],
@@ -182,6 +181,7 @@ class PDCTransformer:
             "VOLCANO": ["GH0020"],
             "WILDFIRE": ["EN0013", "nat-cli-wil-for"],
             "WINTERSTORM": ["nat-met-sto-bli"],
+            "STORMSURGE": ["MH0027", "nat-met-sto-sur"],
         }
 
         if hazard not in hazard_mapping:
