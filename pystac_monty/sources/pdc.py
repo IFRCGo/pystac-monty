@@ -221,34 +221,25 @@ class PDCTransformer:
     def make_impact_items(self) -> List[Item]:
         """Create Impact Items"""
         impact_fields = {
-            ("population", "total0_14", "value"): (
-                MontyImpactExposureCategory.CHILDREN_UNDER_14,
-                MontyImpactType.TOTAL_AFFECTED,
-            ),
-            ("population", "total65_Plus", "value"): (
-                MontyImpactExposureCategory.ELDERLY,
-                MontyImpactType.TOTAL_AFFECTED
-            ),
-            ("population", "total", "value"): (
-                MontyImpactExposureCategory.ALL_PEOPLE,
-                MontyImpactType.TOTAL_AFFECTED
-            ),
-            # ("population", "households", "value"): (
-            #     MontyImpactExposureCategory.HOUSEHOLDS,
-            #     MontyImpactType.TOTAL_AFFECTED
-            # ),
-            ("capital", "total", "value"): (
-                MontyImpactExposureCategory.GLOBAL_CURRENCY,
-                MontyImpactType.LOSS_COST
-            ),
-            # ("capital", "school", "value"): (
-            #     MontyImpactExposureCategory.SCHOOLS,
-            #     MontyImpactType.TOTAL_AFFECTED
-            # ),
-            ("capital", "hospital", "value"): (
-                MontyImpactExposureCategory.HOSPITALS,
-                MontyImpactType.TOTAL_AFFECTED
-            )
+            ("population", "total0_4", "value"): (MontyImpactExposureCategory.CHILDREN_0_4, MontyImpactType.TOTAL_AFFECTED),
+            ("population", "total5_9", "value"): (MontyImpactExposureCategory.CHILDREN_5_9, MontyImpactType.TOTAL_AFFECTED),
+            ("population", "total10_14", "value"): (MontyImpactExposureCategory.CHILDREN_10_14, MontyImpactType.TOTAL_AFFECTED),
+            ("population", "total15_19", "value"): (MontyImpactExposureCategory.CHILDREN_15_19, MontyImpactType.TOTAL_AFFECTED),
+            ("population", "total20_24", "value"): (MontyImpactExposureCategory.ADULT_20_24, MontyImpactType.TOTAL_AFFECTED),
+            ("population", "total25_29", "value"): (MontyImpactExposureCategory.ADULT_25_29, MontyImpactType.TOTAL_AFFECTED),
+            ("population", "total30_34", "value"): (MontyImpactExposureCategory.ADULT_30_34, MontyImpactType.TOTAL_AFFECTED),
+            ("population", "total35_39", "value"): (MontyImpactExposureCategory.ADULT_35_39, MontyImpactType.TOTAL_AFFECTED),
+            ("population", "total40_44", "value"): (MontyImpactExposureCategory.ADULT_40_44, MontyImpactType.TOTAL_AFFECTED),
+            ("population", "total45_49", "value"): (MontyImpactExposureCategory.ADULT_45_49, MontyImpactType.TOTAL_AFFECTED),
+            ("population", "total50_54", "value"): (MontyImpactExposureCategory.ADULT_50_54, MontyImpactType.TOTAL_AFFECTED),
+            ("population", "total55_59", "value"): (MontyImpactExposureCategory.ADULT_55_59, MontyImpactType.TOTAL_AFFECTED),
+            ("population", "total60_64", "value"): (MontyImpactExposureCategory.ADULT_60_64, MontyImpactType.TOTAL_AFFECTED),
+            ("population", "total65_Plus", "value"): (MontyImpactExposureCategory.ELDERLY, MontyImpactType.TOTAL_AFFECTED),
+            ("population", "total", "value"): (MontyImpactExposureCategory.ALL_PEOPLE, MontyImpactType.TOTAL_AFFECTED),
+            ("population", "households", "value"): (MontyImpactExposureCategory.HOUSEHOLDS, MontyImpactType.TOTAL_AFFECTED),
+            ("capital", "total", "value"): (MontyImpactExposureCategory.GLOBAL_CURRENCY, MontyImpactType.LOSS_COST),
+            ("capital", "school", "value"): (MontyImpactExposureCategory.SCHOOLS, MontyImpactType.TOTAL_AFFECTED),
+            ("capital", "hospital", "value"): (MontyImpactExposureCategory.HOSPITALS, MontyImpactType.TOTAL_AFFECTED),
         }
         event_item = self.make_source_event_item()
 

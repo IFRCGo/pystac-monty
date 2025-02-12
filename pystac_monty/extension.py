@@ -86,6 +86,19 @@ class MontyImpactExposureCategory(StringEnum):
     CROPS = "crops"
     WOMEN = "women"
     MEN = "men"
+    CHILDREN_0_4 = "children_0_4"
+    CHILDREN_5_9 = "children_5_9"
+    CHILDREN_10_14 = "children_10_14"
+    CHILDREN_15_19 = "children_15_19"
+    ADULT_20_24 = "adult_20_24"
+    ADULT_25_29 = "adult_25_29"
+    ADULT_30_34 = "adult_30_34"
+    ADULT_35_39 = "adult_35_39"
+    ADULT_40_44 = "adult_40_44"
+    ADULT_45_49 = "adult_45_49"
+    ADULT_50_54 = "adult_50_54"
+    ADULT_55_59 = "adult_55_59"
+    ADULT_60_64 = "adult_60_64"
     ELDERLY = "elderly"
     CHILDREN_UNDER_14 = "children_under14"
     CHILDREN_UNDER_18 = "children_under18"
@@ -108,6 +121,7 @@ class MontyImpactExposureCategory(StringEnum):
     IFRC_APPEAL_CONTRIBUTION = "ifrc_contribution"
     IFRC_APPEAL_REQUESTED = "ifrc_request"
     TOTAL_AFFECTED = "total_affected"
+    HOUSEHOLDS = "households"
 
 
 class MontyImpactExposureCatgoryLabel(Mapping):
@@ -117,9 +131,20 @@ class MontyImpactExposureCatgoryLabel(Mapping):
             MontyImpactExposureCategory.CROPS: "Crops",
             MontyImpactExposureCategory.WOMEN: "Women",
             MontyImpactExposureCategory.MEN: "Men",
+            MontyImpactExposureCategory.CHILDREN_0_4: "Children (0-4)",
+            MontyImpactExposureCategory.CHILDREN_5_9: "Children (5-9)",
+            MontyImpactExposureCategory.CHILDREN_10_14: "Children (10-14)",
+            MontyImpactExposureCategory.CHILDREN_15_19: "Children (15-19)",
+            MontyImpactExposureCategory.ADULT_20_24: "Adult (20-24)",
+            MontyImpactExposureCategory.ADULT_25_29: "Adult (25-29)",
+            MontyImpactExposureCategory.ADULT_30_34: "Adult (30-24)",
+            MontyImpactExposureCategory.ADULT_35_39: "Adult (35-39)",
+            MontyImpactExposureCategory.ADULT_40_44: "Adult (40-44)",
+            MontyImpactExposureCategory.ADULT_45_49: "Adult (45-49)",
+            MontyImpactExposureCategory.ADULT_50_54: "Adult (50-54)",
+            MontyImpactExposureCategory.ADULT_55_59: "Adult (55-59)",
+            MontyImpactExposureCategory.ADULT_60_64: "Adult (60-64)",
             MontyImpactExposureCategory.ELDERLY: "Elderly (Over 65)",
-            MontyImpactExposureCategory.CHILDREN_UNDER_14: "Children (Under 14)",
-            MontyImpactExposureCategory.CHILDREN_UNDER_18: "Children (Under 18)",
             MontyImpactExposureCategory.WHEELCHAIR_USERS: "Wheelchair Users",
             MontyImpactExposureCategory.ROADS: "Road",
             MontyImpactExposureCategory.RAIL_WAYS: "Rail ways",
@@ -139,6 +164,7 @@ class MontyImpactExposureCatgoryLabel(Mapping):
             MontyImpactExposureCategory.IFRC_APPEAL_CONTRIBUTION: "IFRC Appeal Contribution",
             MontyImpactExposureCategory.IFRC_APPEAL_REQUESTED: "IFRC Appeal Requested",
             MontyImpactExposureCategory.TOTAL_AFFECTED: "Total Affected (unspecified)",
+            MontyImpactExposureCategory.HOUSEHOLDS: "Households",
         }
 
     def __getitem__(self, key: MontyImpactExposureCategory) -> str:
