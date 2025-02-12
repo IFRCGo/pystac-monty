@@ -142,6 +142,7 @@ class PDCTransformer:
                 "start_datetime": startdate.isoformat(),
                 "end_datetime": enddate.isoformat(),
                 "category_id": self.hazard_data["category_ID"],
+                "geometry_geojson": self.geojson_data,
             },
         )
 
@@ -273,7 +274,7 @@ class PDCTransformer:
         required_fields = ["latitude", "longitude"]
 
         if not self.hazard_data:
-            raise Exception("No PDC data found.")
+            raise ValueError("No PDC data found.")
 
         pdc_hazard_data_keys = list(self.hazard_data.keys())
 

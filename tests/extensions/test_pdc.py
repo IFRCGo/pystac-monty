@@ -27,11 +27,11 @@ def load_scenarios(scenarios: List[dict]) -> List[PDCTransformer]:
 scenario = [
     "https://raw.githubusercontent.com/ranjan-stha/testrepo/refs/heads/main/testpdc.json",  # noqa
     {
-        "hazards_file_path": "./tests/hazard_data.json",
-        "exposure_detail_file_path": "./tests/exposure_detail.json",
+        "hazards_file_path": "./tests/data/pdc/hazard_data.json",
+        "exposure_detail_file_path": "./tests/data/pdc/exposure_detail.json",
         "uuid": "f2762e72-5169-487e-a3fa-30e21fc55893",
         "exposure_timestamp": "1738941728977",
-        "geojson_file_path": "",
+        "geojson_file_path": "./tests/data/pdc/hazard_geo.geojson",
     },
 ]
 
