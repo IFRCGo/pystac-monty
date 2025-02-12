@@ -121,7 +121,7 @@ class PDCTransformer:
         geometry = mapping(point)
         bbox = [longitude, latitude, longitude, latitude]
 
-        description = md(self.hazard_data.get("description", ""))
+        description = md(self.hazard_data.get("description", "")) or "NA"
 
         startdate = int(self.hazard_data.get("create_Date"))
         enddate = int(self.hazard_data.get("end_Date"))
@@ -157,7 +157,9 @@ class PDCTransformer:
         monty.episode_number = self.episode_number
         monty.country_codes = list(set(all_iso3))
         monty.hazard_codes = self._map_pdc_to_hazard_codes(hazard=self.hazard_data["type_ID"])
-        monty.compute_and_set_correlation_id(hazard_profiles=self.hazard_profiles)
+        # TODO: Deal with correlation id if country_codes is a empty list
+        if monty.country_codes:
+            monty.compute_and_set_correlation_id(hazard_profiles=self.hazard_profiles)
 
         if self.hazard_data["snc_url"]:
             item.add_asset("report", Asset(href=self.hazard_data["snc_url"], media_type="html", title="Report"))
@@ -250,7 +252,7 @@ class PDCTransformer:
                 continue
             for admin_item in self.exposure_detail["totalByAdmin"]:
                 impact_item = event_item.clone()
-                impact_item.id = f"{impact_item.id.replace(STAC_EVENT_ID_PREFIX, STAC_IMPACT_ID_PREFIX)}-{self.episode_number}{'-'.join(field_key[:-1])}"  # noqa
+                impact_item.id = f"{impact_item.id.replace(STAC_EVENT_ID_PREFIX, STAC_IMPACT_ID_PREFIX)}-{self.episode_number}-{'-'.join(field_key[:-1])}"  # noqa
                 impact_item.set_collection(self.get_impact_collection())
                 impact_item.properties["roles"] = ["source", "impact"]
 
