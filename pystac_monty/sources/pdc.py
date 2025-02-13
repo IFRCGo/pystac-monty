@@ -121,7 +121,7 @@ class PDCTransformer:
         geometry = mapping(point)
         bbox = [longitude, latitude, longitude, latitude]
 
-        description = md(self.hazard_data.get("description", "")) or "NA"
+        description = md(self.hazard_data.get("description", "").strip()) or "NA"
 
         startdate = int(self.hazard_data.get("create_Date"))
         enddate = int(self.hazard_data.get("end_Date"))
