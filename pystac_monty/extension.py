@@ -137,7 +137,7 @@ class MontyImpactExposureCatgoryLabel(Mapping):
             MontyImpactExposureCategory.CHILDREN_15_19: "Children (15-19)",
             MontyImpactExposureCategory.ADULT_20_24: "Adult (20-24)",
             MontyImpactExposureCategory.ADULT_25_29: "Adult (25-29)",
-            MontyImpactExposureCategory.ADULT_30_34: "Adult (30-24)",
+            MontyImpactExposureCategory.ADULT_30_34: "Adult (30-34)",
             MontyImpactExposureCategory.ADULT_35_39: "Adult (35-39)",
             MontyImpactExposureCategory.ADULT_40_44: "Adult (40-44)",
             MontyImpactExposureCategory.ADULT_45_49: "Adult (45-49)",
