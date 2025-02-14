@@ -186,6 +186,7 @@ class MontyImpactType(StringEnum):
     TOTAL_AFFECTED = "affected_total"
     DIRECTLY_AFFECTED = "affected_direct"
     INDIRECTLY_AFFECTED = "affected_indirect"
+    POTENTIALLY_AFFECTED = "potentially_affected"
     DEATH = "death"
     MISSING = "missing"
     INJURED = "injured"
@@ -204,6 +205,7 @@ class MontyImpactType(StringEnum):
     EXTERNALLY_DISPLACED_PERSONS = "displaced_external"
     TOTAL_DISPLACED_PERSONS = "displaced_total"
     ALERTSCORE = "alertscore"
+    HIGHEST_RISK = "highest_risk"
 
 
 class MontyImpactTypeLabel(Mapping):
