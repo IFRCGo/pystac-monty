@@ -39,11 +39,11 @@ class PDCTransformer:
     """Transform the source data into the STAC items"""
 
     pdc_events_collection_id = "pdc-events"
-    pdc_events_collection_url = "https://raw.githubusercontent.com/IFRCGo/monty-stac-extension/refs/heads/feature/pdc-documentation/examples/pdc-events/pdc-events.json"  # noqa
+    pdc_events_collection_url = "https://raw.githubusercontent.com/IFRCGo/monty-stac-extension/refs/heads/main/examples/pdc-events/pdc-events.json"  # noqa
     pdc_hazards_collection_id = "pdc-hazards"
-    pdc_hazards_collection_url = "https://raw.githubusercontent.com/IFRCGo/monty-stac-extension/refs/heads/feature/pdc-documentation/examples/pdc-hazards/pdc-hazards.json"  # noqa
+    pdc_hazards_collection_url = "https://raw.githubusercontent.com/IFRCGo/monty-stac-extension/refs/heads/main/examples/pdc-hazards/pdc-hazards.json"  # noqa
     pdc_impacts_collection_id = "pdc-impacts"
-    pdc_impacts_collection_url = "https://raw.githubusercontent.com/IFRCGo/monty-stac-extension/refs/heads/feature/pdc-documentation/examples/pdc-impacts/pdc-impacts.json"  # noqa
+    pdc_impacts_collection_url = "https://raw.githubusercontent.com/IFRCGo/monty-stac-extension/refs/heads/main/examples/pdc-impacts/pdc-impacts.json"  # noqa
 
     hazard_profiles = MontyHazardProfiles()
 
