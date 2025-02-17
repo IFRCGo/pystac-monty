@@ -17,7 +17,7 @@ from pystac_monty.extension import (
 from pystac_monty.hazard_profiles import MontyHazardProfiles
 from pystac_monty.sources.common import MontyDataSource
 
-STAC_EVENT_ID_PREFIX = "gidd-event-"
+STAC_EVENT_ID_PREFIX = "idmc-gidd-event-"
 STAC_IMPACT_ID_PREFIX = "idmc-gidd-impact-"
 
 
@@ -33,9 +33,10 @@ class GIDDDataSource(MontyDataSource):
 class GIDDTransformer:
     """Transforms GIDD event data into STAC Items"""
 
-    gidd_events_collection_id = "gidd-events"
+    gidd_events_collection_id = "idmc-gidd-events"
     gidd_events_collection_url = (
-        "https://raw.githubusercontent.com/IFRCGo/monty-stac-extension/refs/heads/IDMC/" "examples/idmc-events/idmc-events.json"
+        "https://raw.githubusercontent.com/IFRCGo/monty-stac-extension/refs/heads/IDMC/"
+        "examples/idmc-gidd-events/idmc-gidd-events.json"
     )
     gidd_hazards_collection_id = "idmc-gidd-impacts"
     gidd_hazards_collection_url = (
