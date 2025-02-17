@@ -12,7 +12,7 @@ from tests.conftest import get_data_file
 from tests.extensions.test_monty import CustomValidator
 
 CURRENT_SCHEMA_URI = "https://ifrcgo.github.io/monty/v0.1.0/schema.json"
-# CURRENT_SCHEMA_MAPURL = "https://raw.githubusercontent.com/IFRCGo/monty-stac-extension/refs/heads/main/json-schema/schema.json"  # noqa
+CURRENT_SCHEMA_MAPURL = "https://raw.githubusercontent.com/IFRCGo/monty-stac-extension/refs/heads/main/json-schema/schema.json"
 
 
 def load_scenarios(scenarios: List[dict]) -> List[PDCTransformer]:

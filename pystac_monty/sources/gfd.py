@@ -36,13 +36,19 @@ class GFDTransformer:
     """Transform the source data into the STAC items"""
 
     gfd_events_collection_id = "gfd-events"
-    gfd_events_collection_url = "https://raw.githubusercontent.com/IFRCGo/monty-stac-extension/refs/heads/main/examples/gfd-events/gfd-events.json"  # noqa
+    gfd_events_collection_url = (
+        "https://raw.githubusercontent.com/IFRCGo/monty-stac-extension/refs/heads/main/examples/gfd-events/gfd-events.json"
+    )
 
     gfd_hazards_collection_id = "gfd-hazards"
-    gfd_hazards_collection_url = "https://raw.githubusercontent.com/IFRCGo/monty-stac-extension/refs/heads/main/examples/gfd-hazards/gfd-hazards.json"  # noqa
+    gfd_hazards_collection_url = (
+        "https://raw.githubusercontent.com/IFRCGo/monty-stac-extension/refs/heads/main/examples/gfd-hazards/gfd-hazards.json"
+    )
 
     gfd_impacts_collection_id = "gfd-impacts"
-    gfd_impacts_collection_url = "https://raw.githubusercontent.com/IFRCGo/monty-stac-extension/refs/heads/main/examples/gfd-impacts/gfd-impacts.json"  # noqa
+    gfd_impacts_collection_url = (
+        "https://raw.githubusercontent.com/IFRCGo/monty-stac-extension/refs/heads/main/examples/gfd-impacts/gfd-impacts.json"
+    )
     hazard_profiles = MontyHazardProfiles()
 
     def __init__(self, data: GFDDataSource):
