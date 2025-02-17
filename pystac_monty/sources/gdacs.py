@@ -3,7 +3,7 @@ import json
 import mimetypes
 from dataclasses import dataclass
 from enum import Enum
-from typing import Any
+from typing import Any, List
 
 import pytz
 import requests
@@ -145,6 +145,20 @@ class GDACSTransformer:
 
         return gdacs_geometry
 
+    def get_hazard_codes(self, hazard: str) -> List[str]:
+        hazard_mapping = {
+            "EQ": ["GH0001", "GH0002", "GH0003", "GH0004", "GH0005"],
+            "TC": ["MH0030", "MH0031", "MH0032"],
+            "FL": ["FL"],  # General flood
+            "DR": ["MH0035"],
+            "WF": ["EN0013"],
+            "VO": ["GH009", "GH0013", "GH0014", "GH0015", "GH0016"],
+            "TS": ["MH0029", "GH0006"],
+        }
+        if hazard not in hazard_mapping:
+            raise KeyError(f"Hazard {hazard} not found.")
+        return hazard_mapping.get(hazard)
+
     def make_source_event_item(self) -> Item:
         # check event_data
         gdacs_event = self.check_and_get_event_data()
@@ -187,7 +201,7 @@ class GDACSTransformer:
         MontyExtension.add_to(item)
         monty = MontyExtension.ext(item)
         monty.episode_number = episode_number
-        monty.hazard_codes = [gdacs_event.data["properties"]["eventtype"]]
+        monty.hazard_codes = self.get_hazard_codes(gdacs_event.data["properties"]["eventtype"])
         cc = set([gdacs_event.data["properties"]["iso3"]])
         if "affectedcountries" in gdacs_event.data["properties"]:
             cc.update([cc["iso3"] for cc in gdacs_event.data["properties"]["affectedcountries"]])
