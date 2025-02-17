@@ -168,7 +168,7 @@ class IDUTransformer:
             ("weather related", "hydrological", "mass movement", "avalanche"): ["nat-hyd-mmw-ava"],
             ("weather related", "hydrological", "mass movement", "landslide/wet mass movement"): ["nat-hyd-mmw-lan"],
             ("weather related", "hydrological", "wave action", "rogue wave"): ["nat-hyd-wav-rog"],
-            ("weather related", "meteorological", "extreme temperature", "cold wave"): ["nat-met-ext-col "],
+            ("weather related", "meteorological", "extreme temperature", "cold wave"): ["nat-met-ext-col"],
             ("weather related", "meteorological", "extreme temperature", "heat wave"): ["nat-met-ext-hea"],
             ("weather related", "meteorological", "storm", "hailstorm"): ["nat-met-sto-hai"],
             ("weather related", "meteorological", "storm", "sand/dust storm"): ["nat-met-sto-san"],
