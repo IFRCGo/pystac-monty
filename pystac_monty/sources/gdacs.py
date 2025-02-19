@@ -380,7 +380,7 @@ class GDACSTransformer:
     def get_impact_category_from_sendai_c(
         sendainame: str,
     ) -> MontyImpactExposureCategory:
-        if sendainame == "houses damaged" or sendainame == "houses":
+        if sendainame == "houses damaged" or sendainame == "houses" or sendainame == "houses destroyed":
             return MontyImpactExposureCategory.BUILDINGS
         else:
             raise ValueError(f"Unknown sendai name {sendainame} for indicators C")

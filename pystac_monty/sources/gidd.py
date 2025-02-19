@@ -256,7 +256,7 @@ class GIDDTransformer:
             ("geophysical", "geophysical", "mass movement", "dry mass movement"): ["GH0007", "GH0014"],
             ("geophysical", "geophysical", "mass movement", "sinkhole"): ["GH0026"],
             ("geophysical", "geophysical", "volcanic activity", "volcanic activity"): ["GH0020"],
-            ("mixed disasters", "mixed disasters", "mixed disasters", "mixed disasters"): ["Mixed Disaster"],
+            ("mixed disasters", "mixed disasters", "mixed disasters", "mixed disasters"): ["mix-mix-mix-mix"],
             ("weather related", "climatological", "desertification", "desertification"): ["EN0014"],
             ("weather related", "climatological", "drought", "drought"): ["MH0035"],
             ("weather related", "climatological", "erosion", "erosion"): ["EN0019"],
