@@ -51,6 +51,38 @@ class GlideTransformer:
 
         return items
 
+    def get_hazard_codes(self, hazard: str) -> List[str]:
+        hazard_mapping = {
+            "EQ": ["GH0001", "GH0002", "GH0003", "GH0004", "GH0005"],
+            "TC": ["MH0030", "MH0031", "MH0032"],
+            "FL": ["nat-hyd-flo-flo"],
+            "DR": ["MH0035"],
+            "WF": ["EN0013"],
+            "VO": ["GH009", "GH0013", "GH0014", "GH0015", "GH0016"],
+            "TS": ["MH0029", "GH0006"],
+            "CW": ["MH0040"],
+            "EP": ["nat-bio-epi-dis"],
+            "EC": ["MH0031"],
+            "ET": ["nat-met-ext-col", "nat-met-ext-hea", "nat-met-ext-sev"],
+            "FR": ["tec-ind-fir-fir"],
+            "FF": ["MH0006"],
+            "HT": ["MH0047"],
+            "IN": ["BI0002", "BI0003"],
+            "LS": ["nat-hyd-mmw-lan"],
+            "MS": ["MH0051"],
+            "ST": ["MH0003"],
+            "SL": ["nat-hyd-mmw-lan"],
+            "AV": ["nat-geo-mmd-ava"],
+            "SS": ["MH0027"],
+            "AC": ["AC"],
+            "TO": ["MH0059"],
+            "VW": ["MH0060"],
+            "WV": ["MH0029", "GH0006"],
+        }
+        if hazard not in hazard_mapping:
+            raise KeyError(f"Hazard {hazard} not found.")
+        return hazard_mapping.get(hazard)
+
     def make_source_event_items(self) -> List[Item]:
         """Create source event items"""
         event_items = []
@@ -62,7 +94,11 @@ class GlideTransformer:
                 glide_id = STAC_EVENT_ID_PREFIX + data.get("event") + "-" + data.get("number") + "-" + data.get("geocode")
                 latitude = float(data.get("latitude"))
                 longitude = float(data.get("longitude"))
-                event_date = {"year": data.get("year"), "month": data.get("month"), "day": data.get("day")}
+                event_date = {
+                    "year": abs(int(data.get("year"))),
+                    "month": abs(int(data.get("month"))),
+                    "day": abs(int(data.get("day"))),
+                }  # abs is used to ignore negative sign
 
                 point = Point(longitude, latitude)
                 geometry = mapping(point)
@@ -92,7 +128,7 @@ class GlideTransformer:
                 # we set it to 1 as it is required to create the correlation id
                 # in the method monty.compute_and_set_correlation_id(..)
                 monty.episode_number = 1
-                monty.hazard_codes = [data.get("event")]
+                monty.hazard_codes = self.get_hazard_codes(data.get("event"))
                 monty.country_codes = [data.get("geocode")]
 
                 monty.compute_and_set_correlation_id(hazard_profiles=self.hazard_profiles)
