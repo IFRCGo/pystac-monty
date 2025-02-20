@@ -53,9 +53,9 @@ class USGSDataSource(MontyDataSource):
 class USGSTransformer:
     """Transforms USGS earthquake event data into STAC Items."""
 
-    usgs_events_collection_url = ("../../monty-stac-extension/examples/usgs-events/usgs-events.json")
-    usgs_hazards_collection_url = ("../../monty-stac-extension/examples/usgs-hazards/usgs-hazards.json")
-    usgs_impacts_collection_url = ("../../monty-stac-extension/examples/usgs-impacts/usgs-impacts.json")
+    usgs_events_collection_url = ("./monty-stac-extension/examples/usgs-events/usgs-events.json")
+    usgs_hazards_collection_url = ("./monty-stac-extension/examples/usgs-hazards/usgs-hazards.json")
+    usgs_impacts_collection_url = ("./monty-stac-extension/examples/usgs-impacts/usgs-impacts.json")
 
     hazard_profiles = MontyHazardProfiles()
 
@@ -570,15 +570,18 @@ class USGSTransformer:
 
     def get_event_collection(self) -> Collection:
         """Get event collection."""
-        response = open(self.usgs_events_collection_url)
-        return Collection.from_dict(json.loads(response.text))
+        with open(self.usgs_events_collection_url, "r", encoding="utf-8") as f:
+            data = f.read()
+        return Collection.from_dict(json.loads(data))
 
     def get_hazard_collection(self) -> Collection:
         """Get hazard collection."""
-        response = open(self.usgs_hazards_collection_url)
-        return Collection.from_dict(json.loads(response.text))
+        with open(self.usgs_hazards_collection_url, "r", encoding="utf-8") as f:
+            data = f.read()
+        return Collection.from_dict(json.loads(data))
 
     def get_impact_collection(self) -> Collection:
         """Get impact collection."""
-        response = open(self.usgs_impacts_collection_url)
-        return Collection.from_dict(json.loads(response.text))
+        with open(self.usgs_impacts_collection_url, "r", encoding="utf-8") as f:
+            data = f.read()
+        return Collection.from_dict(json.loads(data))

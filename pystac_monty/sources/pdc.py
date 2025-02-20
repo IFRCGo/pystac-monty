@@ -39,11 +39,11 @@ class PDCTransformer:
     """Transform the source data into the STAC items"""
 
     pdc_events_collection_id = "pdc-events"
-    pdc_events_collection_url = "../../monty-stac-extension/examples/pdc-events/pdc-events.json"  # noqa
+    pdc_events_collection_url = "./monty-stac-extension/examples/pdc-events/pdc-events.json"  # noqa
     pdc_hazards_collection_id = "pdc-hazards"
-    pdc_hazards_collection_url = "../../monty-stac-extension/examples/pdc-hazards/pdc-hazards.json"  # noqa
+    pdc_hazards_collection_url = "./monty-stac-extension/examples/pdc-hazards/pdc-hazards.json"  # noqa
     pdc_impacts_collection_id = "pdc-impacts"
-    pdc_impacts_collection_url = "../../monty-stac-extension/examples/pdc-impacts/pdc-impacts.json"  # noqa
+    pdc_impacts_collection_url = "./monty-stac-extension/examples/pdc-impacts/pdc-impacts.json"  # noqa
 
     hazard_profiles = MontyHazardProfiles()
 
@@ -92,23 +92,23 @@ class PDCTransformer:
 
         return items
 
-    def get_event_collection(self, timeout: int = 30):
+    def get_event_collection(self):
         """Get Event Collection"""
-        response = open(self.pdc_events_collection_url)
-        collection_dict = response.json()
-        return Collection.from_dict(collection_dict)
+        with open(self.pdc_events_collection_url, "r", encoding="utf-8") as f:
+            data = f.read()
+        return Collection.from_dict(json.loads(data))
 
-    def get_hazard_collection(self, timeout: int = 30):
+    def get_hazard_collection(self):
         """Get Hazard Collection"""
-        response = open(self.pdc_hazards_collection_url)
-        collection_dict = response.json()
-        return Collection.from_dict(collection_dict)
+        with open(self.pdc_hazards_collection_url, "r", encoding="utf-8") as f:
+            data = f.read()
+        return Collection.from_dict(json.loads(data))
 
-    def get_impact_collection(self, timeout: int = 30):
+    def get_impact_collection(self):
         """Get Impact Collection"""
-        response = open(self.pdc_impacts_collection_url)
-        collection_dict = response.json()
-        return Collection.from_dict(collection_dict)
+        with open(self.pdc_impacts_collection_url, "r", encoding="utf-8") as f:
+            data = f.read()
+        return Collection.from_dict(json.loads(data))
 
     def make_source_event_item(self) -> Optional[Item]:
         """Create an Event Item"""
