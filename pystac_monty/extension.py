@@ -237,6 +237,8 @@ class MontyImpactTypeLabel(Mapping):
             MontyImpactType.EXTERNALLY_DISPLACED_PERSONS: "Refugees, Asylum Seekers and Externally Displaced Persons",  # noqa: E501
             MontyImpactType.TOTAL_DISPLACED_PERSONS: "Displaced Persons (Internal & External)",
             MontyImpactType.ALERTSCORE: "Alertscore",
+            MontyImpactType.POTENTIALLY_AFFECTED: "Potentially Affected",
+            MontyImpactType.HIGHEST_RISK: "Highest Risk",
         }
 
     def __getitem__(self, key: MontyImpactType) -> str:
