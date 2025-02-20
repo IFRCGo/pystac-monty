@@ -39,11 +39,11 @@ class PDCTransformer:
     """Transform the source data into the STAC items"""
 
     pdc_events_collection_id = "pdc-events"
-    pdc_events_collection_url = "https://raw.githubusercontent.com/IFRCGo/monty-stac-extension/refs/heads/feature/pdc-documentation/examples/pdc-events/pdc-events.json"  # noqa
+    pdc_events_collection_url = "../../monty-stac-extension/examples/pdc-events/pdc-events.json"  # noqa
     pdc_hazards_collection_id = "pdc-hazards"
-    pdc_hazards_collection_url = "https://raw.githubusercontent.com/IFRCGo/monty-stac-extension/refs/heads/feature/pdc-documentation/examples/pdc-hazards/pdc-hazards.json"  # noqa
+    pdc_hazards_collection_url = "../../monty-stac-extension/examples/pdc-hazards/pdc-hazards.json"  # noqa
     pdc_impacts_collection_id = "pdc-impacts"
-    pdc_impacts_collection_url = "https://raw.githubusercontent.com/IFRCGo/monty-stac-extension/refs/heads/feature/pdc-documentation/examples/pdc-impacts/pdc-impacts.json"  # noqa
+    pdc_impacts_collection_url = "../../monty-stac-extension/examples/pdc-impacts/pdc-impacts.json"  # noqa
 
     hazard_profiles = MontyHazardProfiles()
 
@@ -94,19 +94,19 @@ class PDCTransformer:
 
     def get_event_collection(self, timeout: int = 30):
         """Get Event Collection"""
-        response = requests.get(self.pdc_events_collection_url, timeout=timeout)
+        response = open(self.pdc_events_collection_url)
         collection_dict = response.json()
         return Collection.from_dict(collection_dict)
 
     def get_hazard_collection(self, timeout: int = 30):
         """Get Hazard Collection"""
-        response = requests.get(self.pdc_hazards_collection_url, timeout=timeout)
+        response = open(self.pdc_hazards_collection_url)
         collection_dict = response.json()
         return Collection.from_dict(collection_dict)
 
     def get_impact_collection(self, timeout: int = 30):
         """Get Impact Collection"""
-        response = requests.get(self.pdc_impacts_collection_url, timeout=timeout)
+        response = open(self.pdc_impacts_collection_url)
         collection_dict = response.json()
         return Collection.from_dict(collection_dict)
 

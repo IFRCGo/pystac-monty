@@ -60,19 +60,13 @@ class GDACSTransformer:
     """
 
     gdacs_events_collection_id = "gdacs-events"
-    gdacs_events_collection_url = (
-        "https://github.com/IFRCGo/monty-stac-extension/raw/refs/heads/main/examples/gdacs-events/gdacs-events.json"
-    )
+    gdacs_events_collection_url = ("../../monty-stac-extension/examples/gdacs-events/gdacs-events.json")
 
     gdacs_hazards_collection_id = "gdacs-hazards"
-    gdacs_hazards_collection_url = (
-        "https://github.com/IFRCGo/monty-stac-extension/raw/refs/heads/main/examples/gdacs-hazards/gdacs-hazards.json"
-    )
+    gdacs_hazards_collection_url = ("../../monty-stac-extension/examples/gdacs-hazards/gdacs-hazards.json")
 
     gdacs_impacts_collection_id = "gdacs-impacts"
-    gdacs_impacts_collection_url = (
-        "https://github.com/IFRCGo/monty-stac-extension/raw/refs/heads/main/examples/gdacs-impacts/gdacs-impacts.json"
-    )
+    gdacs_impacts_collection_url = ("../../monty-stac-extension/examples/gdacs-impacts/gdacs-impacts.json")
 
     data: list[GDACSDataSource] = []
     hazard_profiles = MontyHazardProfiles()
@@ -98,17 +92,17 @@ class GDACSTransformer:
         return items
 
     def get_event_collection(self) -> Collection:
-        response = requests.get(self.gdacs_events_collection_url)
+        response = open(self.gdacs_events_collection_url)
         collection_dict = json.loads(response.text)
         return Collection.from_dict(collection_dict)
 
     def get_hazard_collection(self) -> Collection:
-        response = requests.get(self.gdacs_hazards_collection_url)
+        response = open(self.gdacs_hazards_collection_url)
         collection_dict = json.loads(response.text)
         return Collection.from_dict(collection_dict)
 
     def get_impact_collection(self) -> Collection:
-        response = requests.get(self.gdacs_impacts_collection_url)
+        response = open(self.gdacs_impacts_collection_url)
         collection_dict = json.loads(response.text)
         return Collection.from_dict(collection_dict)
 

@@ -28,13 +28,9 @@ class GlideTransformer:
 
     hazard_profiles = MontyHazardProfiles()
 
-    glide_events_collection_url = (
-        "https://github.com/IFRCGo/monty-stac-extension/raw/refs/heads/main/examples/glide-events/glide-events.json"
-    )
+    glide_events_collection_url = ("../../monty-stac-extension/examples/glide-events/glide-events.json")
 
-    glide_hazard_collection_url = (
-        "https://github.com/IFRCGo/monty-stac-extension/raw/refs/heads/main/examples/glide-hazards/glide-hazards.json"
-    )
+    glide_hazard_collection_url = ("../../monty-stac-extension/examples/glide-hazards/glide-hazards.json")
 
     def __init__(self, data: GlideDataSource) -> None:
         self.data = data
@@ -182,13 +178,13 @@ class GlideTransformer:
 
     def get_event_collection(self, timeout: int = 30) -> Collection:
         """Get event collection"""
-        response = requests.get(self.glide_events_collection_url, timeout=timeout)
+        response = open(self.glide_events_collection_url)
         collection_dict = json.loads(response.text)
         return Collection.from_dict(collection_dict)
 
     def get_hazard_collection(self, timeout: int = 30) -> Collection:
         """Get hazard collection"""
-        response = requests.get(self.glide_hazard_collection_url, timeout=timeout)
+        response = open(self.glide_hazard_collection_url)
         collection_dict = json.loads(response.text)
         return Collection.from_dict(collection_dict)
 

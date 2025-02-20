@@ -52,19 +52,13 @@ class EMDATTransformer:
     """
 
     emdat_events_collection_id = "emdat-events"
-    emdat_events_collection_url = (
-        "https://raw.githubusercontent.com/IFRCGo/monty-stac-extension/refs/heads/EMDAT/examples/emdat-events/emdat-events.json"
-    )
+    emdat_events_collection_url = ("../../monty-stac-extension/examples/emdat-events/emdat-events.json")
 
     emdat_hazards_collection_id = "emdat-hazards"
-    emdat_hazards_collection_url = (
-        "https://raw.githubusercontent.com/IFRCGo/monty-stac-extension/refs/heads/EMDAT/examples/emdat-hazards/emdat-hazards.json"
-    )
+    emdat_hazards_collection_url = ("../../monty-stac-extension/examples/emdat-hazards/emdat-hazards.json")
 
     emdat_impacts_collection_id = "emdat-impacts"
-    emdat_impacts_collection_url = (
-        "https://raw.githubusercontent.com/IFRCGo/monty-stac-extension/refs/heads/EMDAT/examples/emdat-impacts/emdat-impacts.json"
-    )
+    emdat_impacts_collection_url = ("../../monty-stac-extension/examples/emdat-impacts/emdat-impacts.json")
 
     hazard_profiles = MontyHazardProfiles()
 
@@ -302,19 +296,19 @@ class EMDATTransformer:
 
     def get_event_collection(self) -> Collection:
         """Get event collection"""
-        response = requests.get(self.emdat_events_collection_url)
+        response = open(self.emdat_events_collection_url)
         collection_dict = json.loads(response.text)
         return Collection.from_dict(collection_dict)
 
     def get_hazard_collection(self) -> Collection:
         """Get hazard collection"""
-        response = requests.get(self.emdat_hazards_collection_url)
+        response = open(self.emdat_hazards_collection_url)
         collection_dict = json.loads(response.text)
         return Collection.from_dict(collection_dict)
 
     def get_impact_collection(self) -> Collection:
         """Get impact collection"""
-        response = requests.get(self.emdat_impacts_collection_url)
+        response = open(self.emdat_impacts_collection_url)
         collection_dict = json.loads(response.text)
         return Collection.from_dict(collection_dict)
 

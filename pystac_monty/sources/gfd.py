@@ -36,13 +36,13 @@ class GFDTransformer:
     """Transform the source data into the STAC items"""
 
     gfd_events_collection_id = "gfd-events"
-    gfd_events_collection_url = "https://raw.githubusercontent.com/IFRCGo/monty-stac-extension/refs/heads/feature/gfd-documentation/examples/gfd-events/gfd-events.json"  # noqa
+    gfd_events_collection_url = "../../monty-stac-extension/examples/gfd-events/gfd-events.json"  # noqa
 
     gfd_hazards_collection_id = "gfd-hazards"
-    gfd_hazards_collection_url = "https://raw.githubusercontent.com/IFRCGo/monty-stac-extension/refs/heads/feature/gfd-documentation/examples/gfd-hazards/gfd-hazards.json"  # noqa
+    gfd_hazards_collection_url = "../../monty-stac-extension/examples/gfd-hazards/gfd-hazards.json"  # noqa
 
     gfd_impacts_collection_id = "gfd-impacts"
-    gfd_impacts_collection_url = "https://raw.githubusercontent.com/IFRCGo/monty-stac-extension/refs/heads/feature/gfd-documentation/examples/gfd-impacts/gfd-impacts.json"  # noqa
+    gfd_impacts_collection_url = "../../monty-stac-extension/examples/gfd-impacts/gfd-impacts.json"  # noqa
     hazard_profiles = MontyHazardProfiles()
 
     def __init__(self, data: GFDDataSource):
@@ -65,19 +65,19 @@ class GFDTransformer:
 
     def get_event_collection(self, timeout: int = 30) -> Collection:
         """Get Event collection"""
-        response = requests.get(self.gfd_events_collection_url, timeout=timeout)
+        response = open(self.gfd_events_collection_url)
         collection_dict = json.loads(response.text)
         return Collection.from_dict(collection_dict)
 
     def get_hazard_collection(self, timeout: int = 30) -> Collection:
         """Get Hazard collection"""
-        response = requests.get(self.gfd_hazards_collection_url, timeout=timeout)
+        response = open(self.gfd_hazards_collection_url)
         collection_dict = json.loads(response.text)
         return Collection.from_dict(collection_dict)
 
     def get_impact_collection(self, timeout: int = 30) -> Collection:
         """Get Impact collection"""
-        response = requests.get(self.gfd_impacts_collection_url, timeout=timeout)
+        response = open(self.gfd_impacts_collection_url)
         collection_dict = json.loads(response.text)
         return Collection.from_dict(collection_dict)
 

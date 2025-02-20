@@ -33,6 +33,7 @@ class IFRCEventDataSource(MontyDataSource):
 
 class IFRCEventTransformer:
     ifrcevent_events_collection_id = "ifrcevent-events"
+    # TODO: Update collection url after IFRC DREF PR is merged
     ifrcevent_events_collection_url = "https://raw.githubusercontent.com/IFRCGo/monty-stac-extension/refs/heads/feature/collection-ifrc-event/examples/ifrcevent-events/ifrcevent_events.json"  # noqa: E501
     ifrcevent_impacts_collection_id = "ifrcevent-impacts"
     ifrcevent_impacts_collection_url = "https://raw.githubusercontent.com/IFRCGo/monty-stac-extension/refs/heads/feature/collection-ifrc-event/examples/ifrcevent-impacts/ifrcevent_impacts.json"  # noqa: E501
@@ -47,12 +48,14 @@ class IFRCEventTransformer:
 
     def get_event_collection(self) -> Collection:
         """Get event collection"""
+    # TODO: Update request after collection url is updated
         response = requests.get(self.ifrcevent_events_collection_url)
         collection_dict = json.loads(response.text)
         return Collection.from_dict(collection_dict)
 
     def get_impact_collection(self) -> Collection:
         """Get event collection"""
+    # TODO: Update request after collection url is updated
         response = requests.get(self.ifrcevent_impacts_collection_url)
         collection_dict = json.loads(response.text)
         return Collection.from_dict(collection_dict)

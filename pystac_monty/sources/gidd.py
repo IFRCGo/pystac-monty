@@ -34,14 +34,10 @@ class GIDDTransformer:
     """Transforms GIDD event data into STAC Items"""
 
     gidd_events_collection_id = "gidd-events"
-    gidd_events_collection_url = (
-        "https://raw.githubusercontent.com/IFRCGo/monty-stac-extension/refs/heads/IDMC/" "examples/idmc-events/idmc-events.json"
-    )
+    gidd_events_collection_url = ("../../monty-stac-extension/examples/idmc-events/idmc-events.json")
+    # TODO: Make these events collection id consistent
     gidd_hazards_collection_id = "idmc-gidd-impacts"
-    gidd_hazards_collection_url = (
-        "https://raw.githubusercontent.com/IFRCGo/monty-stac-extension/refs/heads/IDMC/"
-        "examples/idmc-gidd-impacts/idmc-gidd-impacts.json"
-    )
+    gidd_hazards_collection_url = ("../../monty-stac-extension/examples/idmc-gidd-impacts/idmc-gidd-impacts.json")
     hazard_profiles = MontyHazardProfiles()
 
     def __init__(self, data: GIDDDataSource) -> None:
@@ -71,7 +67,7 @@ class GIDDTransformer:
 
     def get_event_collection(self, timeout: int = 30) -> Collection:
         """Get the event collection"""
-        response = requests.get(self.gidd_events_collection_url, timeout=timeout)
+        response = open(self.gidd_events_collection_url)
         if response.status_code == 200:
             collection_dict = json.loads(response.text)
             return Collection.from_dict(collection_dict)
@@ -79,7 +75,7 @@ class GIDDTransformer:
 
     def get_impact_collection(self, timeout: int = 30) -> Collection:
         """Get the hazard collection"""
-        response = requests.get(self.gidd_hazards_collection_url, timeout=timeout)
+        response = open(self.gidd_hazards_collection_url)
         if response.status_code == 200:
             collection_dict = json.loads(response.text)
             return Collection.from_dict(collection_dict)

@@ -53,15 +53,9 @@ class USGSDataSource(MontyDataSource):
 class USGSTransformer:
     """Transforms USGS earthquake event data into STAC Items."""
 
-    usgs_events_collection_url = (
-        "https://github.com/IFRCGo/monty-stac-extension/raw/refs/heads/usgs/examples/usgs-events/usgs-events.json"
-    )
-    usgs_hazards_collection_url = (
-        "https://github.com/IFRCGo/monty-stac-extension/raw/refs/heads/usgs/examples/usgs-hazards/usgs-hazards.json"
-    )
-    usgs_impacts_collection_url = (
-        "https://github.com/IFRCGo/monty-stac-extension/raw/refs/heads/usgs/examples/usgs-impacts/usgs-impacts.json"
-    )
+    usgs_events_collection_url = ("../../monty-stac-extension/examples/usgs-events/usgs-events.json")
+    usgs_hazards_collection_url = ("../../monty-stac-extension/examples/usgs-hazards/usgs-hazards.json")
+    usgs_impacts_collection_url = ("../../monty-stac-extension/examples/usgs-impacts/usgs-impacts.json")
 
     hazard_profiles = MontyHazardProfiles()
 
@@ -576,15 +570,15 @@ class USGSTransformer:
 
     def get_event_collection(self) -> Collection:
         """Get event collection."""
-        response = requests.get(self.usgs_events_collection_url)
+        response = open(self.usgs_events_collection_url)
         return Collection.from_dict(json.loads(response.text))
 
     def get_hazard_collection(self) -> Collection:
         """Get hazard collection."""
-        response = requests.get(self.usgs_hazards_collection_url)
+        response = open(self.usgs_hazards_collection_url)
         return Collection.from_dict(json.loads(response.text))
 
     def get_impact_collection(self) -> Collection:
         """Get impact collection."""
-        response = requests.get(self.usgs_impacts_collection_url)
+        response = open(self.usgs_impacts_collection_url)
         return Collection.from_dict(json.loads(response.text))
