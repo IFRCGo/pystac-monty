@@ -30,7 +30,14 @@ class IFRCEventDataSource(MontyDataSource):
         return self.data
 
 
+<<<<<<< HEAD
 class IFRCEventTransformer(MontyDataTransformer):
+    ifrcevent_events_collection_id = "ifrcevent-events"
+    # TODO: Update collection url after IFRC DREF PR is merged
+    ifrcevent_events_collection_url = "https://raw.githubusercontent.com/IFRCGo/monty-stac-extension/refs/heads/feature/collection-ifrc-event/examples/ifrcevent-events/ifrcevent_events.json"  # noqa: E501
+    ifrcevent_impacts_collection_id = "ifrcevent-impacts"
+    ifrcevent_impacts_collection_url = "https://raw.githubusercontent.com/IFRCGo/monty-stac-extension/refs/heads/feature/collection-ifrc-event/examples/ifrcevent-impacts/ifrcevent_impacts.json"  # noqa: E501
+
     hazard_profiles = MontyHazardProfiles()
 
     def __init__(self, data: IFRCEventDataSource, geocoder: MontyGeoCoder):
