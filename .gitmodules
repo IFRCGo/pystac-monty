@@ -1,0 +1,3 @@
+[submodule "monty-stac-extension"]
+	path = monty-stac-extension
+	url = git@github.com:IFRCGo/monty-stac-extension.git

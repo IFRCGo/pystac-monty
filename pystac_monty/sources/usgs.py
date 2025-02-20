@@ -52,6 +52,10 @@ class USGSDataSource(MontyDataSource):
 class USGSTransformer(MontyDataTransformer):
     """Transforms USGS earthquake event data into STAC Items."""
 
+    usgs_events_collection_url = ("../../monty-stac-extension/examples/usgs-events/usgs-events.json")
+    usgs_hazards_collection_url = ("../../monty-stac-extension/examples/usgs-hazards/usgs-hazards.json")
+    usgs_impacts_collection_url = ("../../monty-stac-extension/examples/usgs-impacts/usgs-impacts.json")
+
     hazard_profiles = MontyHazardProfiles()
 
     def __init__(self, data: USGSDataSource, geocoder: MontyGeoCoder) -> None:
