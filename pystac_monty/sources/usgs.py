@@ -5,7 +5,6 @@ from datetime import datetime
 from typing import List, Optional
 
 import pytz
-import requests
 from pystac import Asset, Collection, Item, Link
 from shapely.geometry import Point, mapping, shape
 
@@ -571,17 +570,17 @@ class USGSTransformer:
     def get_event_collection(self) -> Collection:
         """Get event collection."""
         with open(self.usgs_events_collection_url, "r", encoding="utf-8") as f:
-            data = f.read()
-        return Collection.from_dict(json.loads(data))
+            data = json.load(f)
+        return Collection.from_dict(data)
 
     def get_hazard_collection(self) -> Collection:
         """Get hazard collection."""
         with open(self.usgs_hazards_collection_url, "r", encoding="utf-8") as f:
-            data = f.read()
-        return Collection.from_dict(json.loads(data))
+            data = json.load(f)
+        return Collection.from_dict(data)
 
     def get_impact_collection(self) -> Collection:
         """Get impact collection."""
         with open(self.usgs_impacts_collection_url, "r", encoding="utf-8") as f:
-            data = f.read()
-        return Collection.from_dict(json.loads(data))
+            data = json.load(f)
+        return Collection.from_dict(data)

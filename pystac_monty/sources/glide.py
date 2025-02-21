@@ -3,7 +3,6 @@ import mimetypes
 from datetime import datetime
 from typing import Any, List
 
-import requests
 from pystac import Asset, Collection, Item, Link
 from shapely.geometry import Point, mapping
 
@@ -28,9 +27,9 @@ class GlideTransformer:
 
     hazard_profiles = MontyHazardProfiles()
 
-    glide_events_collection_url = ("../../monty-stac-extension/examples/glide-events/glide-events.json")
+    glide_events_collection_url = ("./monty-stac-extension/examples/glide-events/glide-events.json")
 
-    glide_hazard_collection_url = ("../../monty-stac-extension/examples/glide-hazards/glide-hazards.json")
+    glide_hazard_collection_url = ("./monty-stac-extension/examples/glide-hazards/glide-hazards.json")
 
     def __init__(self, data: GlideDataSource) -> None:
         self.data = data
@@ -176,17 +175,17 @@ class GlideTransformer:
         date = datetime.fromisoformat(formatted_date.replace("Z", "+00:00"))
         return date
 
-    def get_event_collection(self, timeout: int = 30) -> Collection:
+    def get_event_collection(self) -> Collection:
         """Get event collection"""
-        response = open(self.glide_events_collection_url)
-        collection_dict = json.loads(response.text)
-        return Collection.from_dict(collection_dict)
+        with open(self.glide_events_collection_url, "r", encoding="utf-8") as f:
+            response = json.load(f)
+        return Collection.from_dict(response)
 
-    def get_hazard_collection(self, timeout: int = 30) -> Collection:
+    def get_hazard_collection(self) -> Collection:
         """Get hazard collection"""
-        response = open(self.glide_hazard_collection_url)
-        collection_dict = json.loads(response.text)
-        return Collection.from_dict(collection_dict)
+        with open(self.glide_hazard_collection_url, "r", encoding="utf-8") as f:
+            response = json.load(f)
+        return Collection.from_dict(response)
 
     def check_and_get_glide_events(self) -> list[Any]:
         """Validate the source fields"""

@@ -238,10 +238,10 @@ class DesinventarTransformer(MontyDataTransformer):
         super().__init__("desinventar")
         self.data_source = data_source
         self.events_collection_id = "desinventar-events"
-        self.events_collection_url = "../../monty-stac-extension/examples/desinventar-events/desinventar-events.json"  # noqa: E501
+        self.events_collection_url = "./monty-stac-extension/examples/desinventar-events/desinventar-events.json"  # noqa: E501
 
         self.impacts_collection_id = "desinventar-impacts"
-        self.impacts_collection_url = "../../monty-stac-extension/examples/desinventar-impacts/desinventar-impacts.json"  # noqa: E501
+        self.impacts_collection_url = "./monty-stac-extension/examples/desinventar-impacts/desinventar-impacts.json"  # noqa: E501
 
     def create_datetimes(self, row: DataRow) -> datetime | None:
         start_year = strtoi(row["year"], None)

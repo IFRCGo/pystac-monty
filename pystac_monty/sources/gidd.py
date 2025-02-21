@@ -4,7 +4,6 @@ from datetime import datetime
 from typing import Any, Dict, List
 
 import pytz
-import requests
 from pystac import Asset, Collection, Item, Link
 
 from pystac_monty.extension import (
@@ -34,10 +33,10 @@ class GIDDTransformer:
     """Transforms GIDD event data into STAC Items"""
 
     gidd_events_collection_id = "gidd-events"
-    gidd_events_collection_url = ("../../monty-stac-extension/examples/idmc-events/idmc-events.json")
+    gidd_events_collection_url = ("./monty-stac-extension/examples/idmc-gidd-events/idmc-gidd-events.json")
     # TODO: Make these events collection id consistent
     gidd_hazards_collection_id = "idmc-gidd-impacts"
-    gidd_hazards_collection_url = ("../../monty-stac-extension/examples/idmc-gidd-impacts/idmc-gidd-impacts.json")
+    gidd_hazards_collection_url = ("./monty-stac-extension/examples/idmc-gidd-impacts/idmc-gidd-impacts.json")
     hazard_profiles = MontyHazardProfiles()
 
     def __init__(self, data: GIDDDataSource) -> None:
@@ -65,20 +64,23 @@ class GIDDTransformer:
 
         return items
 
-    def get_event_collection(self, timeout: int = 30) -> Collection:
+    def get_event_collection(self) -> Collection:
         """Get the event collection"""
-        response = open(self.gidd_events_collection_url)
+        with open(self.gidd_events_collection_url, "r", encoding="utf-8") as f:
+            response = json.load(f)
+
         if response.status_code == 200:
-            collection_dict = json.loads(response.text)
+            collection_dict = json.loads(response)
             return Collection.from_dict(collection_dict)
         return Collection.from_dict({})
 
-    def get_impact_collection(self, timeout: int = 30) -> Collection:
+    def get_impact_collection(self) -> Collection:
         """Get the hazard collection"""
-        response = open(self.gidd_hazards_collection_url)
+        with open(self.gidd_hazards_collection_url, "r", encoding="utf-8") as f:
+            response = json.load(f)
+
         if response.status_code == 200:
-            collection_dict = json.loads(response.text)
-            return Collection.from_dict(collection_dict)
+            return Collection.from_dict(response)
         return Collection.from_dict({})
 
     def make_source_event_items(self) -> List[Item]:

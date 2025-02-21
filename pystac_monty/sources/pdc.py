@@ -4,7 +4,6 @@ from datetime import datetime
 from typing import Any, List, Optional, Union
 
 import pytz
-import requests
 from markdownify import markdownify as md
 from pystac import Asset, Collection, Item
 from shapely.geometry import Point, mapping
@@ -95,20 +94,20 @@ class PDCTransformer:
     def get_event_collection(self):
         """Get Event Collection"""
         with open(self.pdc_events_collection_url, "r", encoding="utf-8") as f:
-            data = f.read()
-        return Collection.from_dict(json.loads(data))
+            data = json.load(f)
+        return Collection.from_dict(data)
 
     def get_hazard_collection(self):
         """Get Hazard Collection"""
         with open(self.pdc_hazards_collection_url, "r", encoding="utf-8") as f:
-            data = f.read()
-        return Collection.from_dict(json.loads(data))
+            data = json.load(f)
+        return Collection.from_dict(data)
 
     def get_impact_collection(self):
         """Get Impact Collection"""
         with open(self.pdc_impacts_collection_url, "r", encoding="utf-8") as f:
-            data = f.read()
-        return Collection.from_dict(json.loads(data))
+            data = json.load(f)
+        return Collection.from_dict(data)
 
     def make_source_event_item(self) -> Optional[Item]:
         """Create an Event Item"""

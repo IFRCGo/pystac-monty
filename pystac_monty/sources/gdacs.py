@@ -6,7 +6,6 @@ from enum import Enum
 from typing import Any, List
 
 import pytz
-import requests
 from markdownify import markdownify as md
 from pystac import Asset, Collection, Item, Link
 from shapely import simplify, to_geojson
@@ -60,13 +59,13 @@ class GDACSTransformer:
     """
 
     gdacs_events_collection_id = "gdacs-events"
-    gdacs_events_collection_url = ("../../monty-stac-extension/examples/gdacs-events/gdacs-events.json")
+    gdacs_events_collection_url = ("./monty-stac-extension/examples/gdacs-events/gdacs-events.json")
 
     gdacs_hazards_collection_id = "gdacs-hazards"
-    gdacs_hazards_collection_url = ("../../monty-stac-extension/examples/gdacs-hazards/gdacs-hazards.json")
+    gdacs_hazards_collection_url = ("./monty-stac-extension/examples/gdacs-hazards/gdacs-hazards.json")
 
     gdacs_impacts_collection_id = "gdacs-impacts"
-    gdacs_impacts_collection_url = ("../../monty-stac-extension/examples/gdacs-impacts/gdacs-impacts.json")
+    gdacs_impacts_collection_url = ("./monty-stac-extension/examples/gdacs-impacts/gdacs-impacts.json")
 
     data: list[GDACSDataSource] = []
     hazard_profiles = MontyHazardProfiles()
@@ -92,19 +91,19 @@ class GDACSTransformer:
         return items
 
     def get_event_collection(self) -> Collection:
-        response = open(self.gdacs_events_collection_url)
-        collection_dict = json.loads(response.text)
-        return Collection.from_dict(collection_dict)
+        with open(self.gdacs_events_collection_url, "r", encoding="utf-8") as f:
+            response = json.load(f)
+        return Collection.from_dict(response)
 
     def get_hazard_collection(self) -> Collection:
-        response = open(self.gdacs_hazards_collection_url)
-        collection_dict = json.loads(response.text)
-        return Collection.from_dict(collection_dict)
+        with open(self.gdacs_hazards_collection_url, "r", encoding="utf-8") as f:
+            response = json.load(f)
+        return Collection.from_dict(response)
 
     def get_impact_collection(self) -> Collection:
-        response = open(self.gdacs_impacts_collection_url)
-        collection_dict = json.loads(response.text)
-        return Collection.from_dict(collection_dict)
+        with open(self.gdacs_impacts_collection_url, "r", encoding="utf-8") as f:
+            response = json.load(f)
+        return Collection.from_dict(response)
 
     def check_and_get_event_data(self) -> GDACSDataSource:
         # first check that the event data is present in the data

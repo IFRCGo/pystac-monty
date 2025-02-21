@@ -5,7 +5,6 @@ from enum import Enum
 from typing import Any, Dict, List
 
 import pytz
-import requests
 from markdownify import markdownify as md
 from pystac import Asset, Collection, Item, Link
 from shapely.geometry import Point, mapping
@@ -46,10 +45,9 @@ class IDUTransformer:
     """Transform the source data into the STAC items"""
 
     idu_events_collection_id = "idu-events"
-    idu_events_collection_url = "../../monty-stac-extension/examples/idmc-events/idmc-events.json"  # noqa
+    idu_events_collection_url = "./monty-stac-extension/examples/idmc-idu-events/idmc-idu-events.json"  # noqa
     idu_impacts_collection_id = "idu-impacts"
-    # TODO: Update idu collection url after the PR is merged in monty-stac-extension
-    idu_impacts_collection_url = "https://raw.githubusercontent.com/IFRCGo/monty-stac-extension/refs/heads/feature/update-idu-documentation/examples/idu-impacts/idu-impacts.json"  # noqa
+    idu_impacts_collection_url = "./monty-stac-extension/examples/idmc-idu-impacts/idmc-idu-impacts.json"  # noqa
 
     hazard_profiles = MontyHazardProfiles()
 
@@ -68,21 +66,20 @@ class IDUTransformer:
 
         return items
 
-    def get_event_collection(self, timeout: int = 30) -> Collection:
+    def get_event_collection(self) -> Collection:
         """Get the event collection"""
-        response = open(self.idu_events_collection_url)
+        with open(self.idu_events_collection_url, "r", encoding="utf-8") as f:
+            response = json.load(f)
         if response.status_code == 200:
-            collection_dict = json.loads(response.text)
-            return Collection.from_dict(collection_dict)
+            return Collection.from_dict(response)
         return Collection.from_dict({})
 
-    def get_impact_collection(self, timeout: int = 30) -> Collection:
+    def get_impact_collection(self) -> Collection:
         """Get the impact collection"""
-        # TODO: Update this when the collection url is updated
-        response = requests.get(self.idu_events_collection_url, timeout=timeout)
+        with open(self.idu_events_collection_url, "r", encoding="utf-8") as f:
+            response = json.load(f)
         if response.status_code == 200:
-            collection_dict = json.loads(response.text)
-            return Collection.from_dict(collection_dict)
+            return Collection.from_dict(response)
         return Collection.from_dict({})
 
     def make_source_event_items(self) -> List[Item]:
