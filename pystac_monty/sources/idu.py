@@ -45,10 +45,9 @@ class IDUTransformer(MontyDataTransformer):
     """Transform the source data into the STAC items"""
 
     idu_events_collection_id = "idu-events"
-    idu_events_collection_url = "../../monty-stac-extension/examples/idmc-events/idmc-events.json"  # noqa
+    idu_events_collection_url = "./monty-stac-extension/examples/idmc-idu-events/idmc-idu-events.json"  # noqa
     idu_impacts_collection_id = "idu-impacts"
-    # TODO: Update idu collection url after the PR is merged in monty-stac-extension
-    idu_impacts_collection_url = "https://raw.githubusercontent.com/IFRCGo/monty-stac-extension/refs/heads/feature/update-idu-documentation/examples/idu-impacts/idu-impacts.json"  # noqa
+    idu_impacts_collection_url = "./monty-stac-extension/examples/idmc-idu-impacts/idmc-idu-impacts.json"  # noqa
 
     hazard_profiles = MontyHazardProfiles()
 
