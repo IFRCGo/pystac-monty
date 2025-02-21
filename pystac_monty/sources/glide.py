@@ -27,9 +27,9 @@ class GlideTransformer(MontyDataTransformer):
 
     hazard_profiles = MontyHazardProfiles()
 
-    glide_events_collection_url = ("../../monty-stac-extension/examples/glide-events/glide-events.json")
+    glide_events_collection_url = ("./monty-stac-extension/examples/glide-events/glide-events.json")
 
-    glide_hazard_collection_url = ("../../monty-stac-extension/examples/glide-hazards/glide-hazards.json")
+    glide_hazard_collection_url = ("./monty-stac-extension/examples/glide-hazards/glide-hazards.json")
 
     def __init__(self, data: GlideDataSource) -> None:
         super().__init__("glide")
