@@ -5,7 +5,6 @@ from typing import List, Optional, Union
 
 import pandas as pd
 import pytz
-import requests
 from pystac import Collection, Item, Link
 from shapely.geometry import Point, mapping
 
@@ -52,19 +51,13 @@ class EMDATTransformer:
     """
 
     emdat_events_collection_id = "emdat-events"
-    emdat_events_collection_url = (
-        "https://raw.githubusercontent.com/IFRCGo/monty-stac-extension/refs/heads/EMDAT/examples/emdat-events/emdat-events.json"
-    )
+    emdat_events_collection_url = ("./monty-stac-extension/examples/emdat-events/emdat-events.json")
 
     emdat_hazards_collection_id = "emdat-hazards"
-    emdat_hazards_collection_url = (
-        "https://raw.githubusercontent.com/IFRCGo/monty-stac-extension/refs/heads/EMDAT/examples/emdat-hazards/emdat-hazards.json"
-    )
+    emdat_hazards_collection_url = ("./monty-stac-extension/examples/emdat-hazards/emdat-hazards.json")
 
     emdat_impacts_collection_id = "emdat-impacts"
-    emdat_impacts_collection_url = (
-        "https://raw.githubusercontent.com/IFRCGo/monty-stac-extension/refs/heads/EMDAT/examples/emdat-impacts/emdat-impacts.json"
-    )
+    emdat_impacts_collection_url = ("./monty-stac-extension/examples/emdat-impacts/emdat-impacts.json")
 
     hazard_profiles = MontyHazardProfiles()
 
@@ -302,21 +295,21 @@ class EMDATTransformer:
 
     def get_event_collection(self) -> Collection:
         """Get event collection"""
-        response = requests.get(self.emdat_events_collection_url)
-        collection_dict = json.loads(response.text)
-        return Collection.from_dict(collection_dict)
+        with open(self.emdat_events_collection_url, "r", encoding="utf-8") as f:
+            response = json.load(f)
+        return Collection.from_dict(response)
 
     def get_hazard_collection(self) -> Collection:
         """Get hazard collection"""
-        response = requests.get(self.emdat_hazards_collection_url)
-        collection_dict = json.loads(response.text)
-        return Collection.from_dict(collection_dict)
+        with open(self.emdat_hazards_collection_url, "r", encoding="utf-8") as f:
+            response = json.load(f)
+        return Collection.from_dict(response)
 
     def get_impact_collection(self) -> Collection:
         """Get impact collection"""
-        response = requests.get(self.emdat_impacts_collection_url)
-        collection_dict = json.loads(response.text)
-        return Collection.from_dict(collection_dict)
+        with open(self.emdat_impacts_collection_url, "r", encoding="utf-8") as f:
+            response = json.load(f)
+        return Collection.from_dict(response)
 
     def _create_title_from_row(self, row: pd.Series) -> str | None:
         """Create a descriptive title from row data when Event Name is missing"""

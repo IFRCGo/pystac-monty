@@ -33,9 +33,9 @@ class IFRCEventDataSource(MontyDataSource):
 
 class IFRCEventTransformer:
     ifrcevent_events_collection_id = "ifrcevent-events"
-    ifrcevent_events_collection_url = "https://raw.githubusercontent.com/IFRCGo/monty-stac-extension/refs/heads/feature/collection-ifrc-event/examples/ifrcevent-events/ifrcevent_events.json"  # noqa: E501
+    ifrcevent_events_collection_url = "./monty-stac-extension/examples/ifrcevent-events/ifrcevent_events.json"  # noqa: E501
     ifrcevent_impacts_collection_id = "ifrcevent-impacts"
-    ifrcevent_impacts_collection_url = "https://raw.githubusercontent.com/IFRCGo/monty-stac-extension/refs/heads/feature/collection-ifrc-event/examples/ifrcevent-impacts/ifrcevent_impacts.json"  # noqa: E501
+    ifrcevent_impacts_collection_url = "./monty-stac-extension/examples/ifrcevent-impacts/ifrcevent_impacts.json"  # noqa: E501
 
     hazard_profiles = MontyHazardProfiles()
 
@@ -47,15 +47,17 @@ class IFRCEventTransformer:
 
     def get_event_collection(self) -> Collection:
         """Get event collection"""
-        response = requests.get(self.ifrcevent_events_collection_url)
-        collection_dict = json.loads(response.text)
-        return Collection.from_dict(collection_dict)
+        with open(self.ifrcevent_events_collection_url, "r", encoding="utf-8") as f:
+            response = json.load(f)
+
+        return Collection.from_dict(response)
 
     def get_impact_collection(self) -> Collection:
         """Get event collection"""
-        response = requests.get(self.ifrcevent_impacts_collection_url)
-        collection_dict = json.loads(response.text)
-        return Collection.from_dict(collection_dict)
+        with open(self.ifrcevent_impacts_collection_url, "r", encoding="utf-8") as f:
+            response = json.load(f)
+
+        return Collection.from_dict(response)
 
     def make_items(self) -> List[Item]:
         """Create items"""

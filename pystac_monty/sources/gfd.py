@@ -3,7 +3,6 @@ from datetime import datetime
 from typing import Any, List
 
 import pytz
-import requests
 from pystac import Collection, Item
 
 from pystac_monty.extension import (
@@ -36,13 +35,13 @@ class GFDTransformer:
     """Transform the source data into the STAC items"""
 
     gfd_events_collection_id = "gfd-events"
-    gfd_events_collection_url = "https://raw.githubusercontent.com/IFRCGo/monty-stac-extension/refs/heads/feature/gfd-documentation/examples/gfd-events/gfd-events.json"  # noqa
+    gfd_events_collection_url = "./monty-stac-extension/examples/gfd-events/gfd-events.json"  # noqa
 
     gfd_hazards_collection_id = "gfd-hazards"
-    gfd_hazards_collection_url = "https://raw.githubusercontent.com/IFRCGo/monty-stac-extension/refs/heads/feature/gfd-documentation/examples/gfd-hazards/gfd-hazards.json"  # noqa
+    gfd_hazards_collection_url = "./monty-stac-extension/examples/gfd-hazards/gfd-hazards.json"  # noqa
 
     gfd_impacts_collection_id = "gfd-impacts"
-    gfd_impacts_collection_url = "https://raw.githubusercontent.com/IFRCGo/monty-stac-extension/refs/heads/feature/gfd-documentation/examples/gfd-impacts/gfd-impacts.json"  # noqa
+    gfd_impacts_collection_url = "./monty-stac-extension/examples/gfd-impacts/gfd-impacts.json"  # noqa
     hazard_profiles = MontyHazardProfiles()
 
     def __init__(self, data: GFDDataSource):
@@ -63,23 +62,23 @@ class GFDTransformer:
 
         return items
 
-    def get_event_collection(self, timeout: int = 30) -> Collection:
+    def get_event_collection(self) -> Collection:
         """Get Event collection"""
-        response = requests.get(self.gfd_events_collection_url, timeout=timeout)
-        collection_dict = json.loads(response.text)
-        return Collection.from_dict(collection_dict)
+        with open(self.gfd_events_collection_url, "r", encoding="utf-8") as f:
+            response = json.load(f)
+        return Collection.from_dict(response)
 
-    def get_hazard_collection(self, timeout: int = 30) -> Collection:
+    def get_hazard_collection(self) -> Collection:
         """Get Hazard collection"""
-        response = requests.get(self.gfd_hazards_collection_url, timeout=timeout)
-        collection_dict = json.loads(response.text)
-        return Collection.from_dict(collection_dict)
+        with open(self.gfd_hazards_collection_url, "r", encoding="utf-8") as f:
+            response = json.load(f)
+        return Collection.from_dict(response)
 
-    def get_impact_collection(self, timeout: int = 30) -> Collection:
+    def get_impact_collection(self) -> Collection:
         """Get Impact collection"""
-        response = requests.get(self.gfd_impacts_collection_url, timeout=timeout)
-        collection_dict = json.loads(response.text)
-        return Collection.from_dict(collection_dict)
+        with open(self.gfd_impacts_collection_url, "r", encoding="utf-8") as f:
+            response = json.load(f)
+        return Collection.from_dict(response)
 
     def _get_bounding_box(self, polygon: list):
         """Get the bounding box from the polygon"""
