@@ -45,10 +45,13 @@ class IDUDataSource(MontyDataSource):
 class IDUTransformer:
     """Transform the source data into the STAC items"""
 
-    idu_events_collection_id = "idu-events"
-    idu_events_collection_url = "https://raw.githubusercontent.com/IFRCGo/monty-stac-extension/refs/heads/feature/update-idu-documentation/examples/idu-events/idu-events.json"  # noqa
-    idu_impacts_collection_id = "idu-impacts"
-    idu_impacts_collection_url = "https://raw.githubusercontent.com/IFRCGo/monty-stac-extension/refs/heads/feature/update-idu-documentation/examples/idu-impacts/idu-impacts.json"  # noqa
+    # TODO use main branch url for collection once pr is merged in stac-extension
+    idu_events_collection_id = "idmc-idu-events"
+    idu_events_collection_url = "https://raw.githubusercontent.com/IFRCGo/monty-stac-extension/refs/heads/fix/collection-for-gidd-events/examples/idmc-gidd-events/idmc-gidd-events.py"  # noqa
+
+    # TODO use main branch url for collection once pr is merged in stac-extension
+    idu_impacts_collection_id = "idmc-idu-impacts"
+    idu_impacts_collection_url = "https://raw.githubusercontent.com/IFRCGo/monty-stac-extension/refs/heads/fix/collection-for-gidd-events/examples/idmc-gidd-impacts/idmc-gidd-impacts.json" # noqa
 
     hazard_profiles = MontyHazardProfiles()
 
@@ -77,7 +80,7 @@ class IDUTransformer:
 
     def get_impact_collection(self, timeout: int = 30) -> Collection:
         """Get the impact collection"""
-        response = requests.get(self.idu_events_collection_url, timeout=timeout)
+        response = requests.get(self.idu_impacts_collection_url, timeout=timeout)
         if response.status_code == 200:
             collection_dict = json.loads(response.text)
             return Collection.from_dict(collection_dict)
