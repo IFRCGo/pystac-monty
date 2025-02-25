@@ -11,7 +11,94 @@ interactions:
       User-Agent:
       - python-requests/2.32.3
     method: GET
-    uri: https://raw.githubusercontent.com/IFRCGo/monty-stac-extension/refs/heads/EMDAT/examples/emdat-events/emdat-events.json
+    uri: https://github.com/IFRCGo/monty-stac-extension/raw/refs/heads/main/examples/emdat-events/emdat-events.json
+  response:
+    body:
+      string: ''
+    headers:
+      Access-Control-Allow-Origin:
+      - ''
+      Cache-Control:
+      - no-cache
+      Content-Length:
+      - '0'
+      Content-Security-Policy:
+      - 'default-src ''none''; base-uri ''self''; child-src github.com/assets-cdn/worker/
+        github.com/webpack/ github.com/assets/ gist.github.com/assets-cdn/worker/;
+        connect-src ''self'' uploads.github.com www.githubstatus.com collector.github.com
+        raw.githubusercontent.com api.github.com github-cloud.s3.amazonaws.com github-production-repository-file-5c1aeb.s3.amazonaws.com
+        github-production-upload-manifest-file-7fdce7.s3.amazonaws.com github-production-user-asset-6210df.s3.amazonaws.com
+        *.rel.tunnels.api.visualstudio.com wss://*.rel.tunnels.api.visualstudio.com
+        objects-origin.githubusercontent.com copilot-proxy.githubusercontent.com proxy.individual.githubcopilot.com
+        proxy.business.githubcopilot.com proxy.enterprise.githubcopilot.com *.actions.githubusercontent.com
+        wss://*.actions.githubusercontent.com productionresultssa0.blob.core.windows.net/
+        productionresultssa1.blob.core.windows.net/ productionresultssa2.blob.core.windows.net/
+        productionresultssa3.blob.core.windows.net/ productionresultssa4.blob.core.windows.net/
+        productionresultssa5.blob.core.windows.net/ productionresultssa6.blob.core.windows.net/
+        productionresultssa7.blob.core.windows.net/ productionresultssa8.blob.core.windows.net/
+        productionresultssa9.blob.core.windows.net/ productionresultssa10.blob.core.windows.net/
+        productionresultssa11.blob.core.windows.net/ productionresultssa12.blob.core.windows.net/
+        productionresultssa13.blob.core.windows.net/ productionresultssa14.blob.core.windows.net/
+        productionresultssa15.blob.core.windows.net/ productionresultssa16.blob.core.windows.net/
+        productionresultssa17.blob.core.windows.net/ productionresultssa18.blob.core.windows.net/
+        productionresultssa19.blob.core.windows.net/ github-production-repository-image-32fea6.s3.amazonaws.com
+        github-production-release-asset-2e65be.s3.amazonaws.com insights.github.com
+        wss://alive.github.com api.githubcopilot.com api.individual.githubcopilot.com
+        api.business.githubcopilot.com api.enterprise.githubcopilot.com; font-src
+        github.githubassets.com; form-action ''self'' github.com gist.github.com copilot-workspace.githubnext.com
+        objects-origin.githubusercontent.com; frame-ancestors ''none''; frame-src
+        viewscreen.githubusercontent.com notebooks.githubusercontent.com; img-src
+        ''self'' data: blob: github.githubassets.com media.githubusercontent.com camo.githubusercontent.com
+        identicons.github.com avatars.githubusercontent.com private-avatars.githubusercontent.com
+        github-cloud.s3.amazonaws.com objects.githubusercontent.com secured-user-images.githubusercontent.com/
+        user-images.githubusercontent.com/ private-user-images.githubusercontent.com
+        opengraph.githubassets.com github-production-user-asset-6210df.s3.amazonaws.com
+        customer-stories-feed.github.com spotlights-feed.github.com objects-origin.githubusercontent.com
+        *.githubusercontent.com; manifest-src ''self''; media-src github.com user-images.githubusercontent.com/
+        secured-user-images.githubusercontent.com/ private-user-images.githubusercontent.com
+        github-production-user-asset-6210df.s3.amazonaws.com gist.github.com; script-src
+        github.githubassets.com; style-src ''unsafe-inline'' github.githubassets.com;
+        upgrade-insecure-requests; worker-src github.com/assets-cdn/worker/ github.com/webpack/
+        github.com/assets/ gist.github.com/assets-cdn/worker/'
+      Content-Type:
+      - text/html; charset=utf-8
+      Date:
+      - Tue, 25 Feb 2025 16:59:10 GMT
+      Location:
+      - https://raw.githubusercontent.com/IFRCGo/monty-stac-extension/refs/heads/main/examples/emdat-events/emdat-events.json
+      Referrer-Policy:
+      - no-referrer-when-downgrade
+      Server:
+      - GitHub.com
+      Strict-Transport-Security:
+      - max-age=31536000; includeSubdomains; preload
+      Vary:
+      - X-PJAX, X-PJAX-Container, Turbo-Visit, Turbo-Frame, Accept-Encoding, Accept,
+        X-Requested-With
+      X-Content-Type-Options:
+      - nosniff
+      X-Frame-Options:
+      - deny
+      X-GitHub-Request-Id:
+      - 9C81:251611:15E5706:165B12E:67BDF6DE
+      X-XSS-Protection:
+      - '0'
+    status:
+      code: 302
+      message: Found
+- request:
+    body: null
+    headers:
+      Accept:
+      - '*/*'
+      Accept-Encoding:
+      - gzip, deflate
+      Connection:
+      - keep-alive
+      User-Agent:
+      - python-requests/2.32.3
+    method: GET
+    uri: https://raw.githubusercontent.com/IFRCGo/monty-stac-extension/refs/heads/main/examples/emdat-events/emdat-events.json
   response:
     body:
       string: !!binary |
@@ -45,13 +132,13 @@ interactions:
       Cross-Origin-Resource-Policy:
       - cross-origin
       Date:
-      - Fri, 14 Feb 2025 08:23:57 GMT
+      - Tue, 25 Feb 2025 16:59:11 GMT
       ETag:
       - W/"3efbfae947e8deb7b488e3390c219c49d42b2bdc3add09994861790151f9540b"
       Expires:
-      - Fri, 14 Feb 2025 08:28:57 GMT
+      - Tue, 25 Feb 2025 17:04:11 GMT
       Source-Age:
-      - '283'
+      - '0'
       Strict-Transport-Security:
       - max-age=31536000
       Vary:
@@ -61,19 +148,19 @@ interactions:
       X-Cache:
       - HIT
       X-Cache-Hits:
-      - '7'
+      - '0'
       X-Content-Type-Options:
       - nosniff
       X-Fastly-Request-ID:
-      - ee0cb69d7f1837bb6388c0c97f6707333c2b4700
+      - 3e9a4b63724c5fd9a4427f74324eabcce8d8f6c0
       X-Frame-Options:
       - deny
       X-GitHub-Request-Id:
-      - A25D:198AAD:2FE35E:436546:67AEF999
+      - E7D8:80671:35B54D:3B124D:67BDF2EE
       X-Served-By:
-      - cache-del21750-DEL
+      - cache-mrs10532-MRS
       X-Timer:
-      - S1739521437.249773,VS0,VE0
+      - S1740502751.896023,VS0,VE159
       X-XSS-Protection:
       - 1; mode=block
     status:
@@ -91,74 +178,81 @@ interactions:
       User-Agent:
       - python-requests/2.32.3
     method: GET
-    uri: https://raw.githubusercontent.com/IFRCGo/monty-stac-extension/refs/heads/EMDAT/examples/emdat-events/emdat-events.json
+    uri: https://github.com/IFRCGo/monty-stac-extension/raw/refs/heads/main/examples/emdat-hazards/emdat-hazards.json
   response:
     body:
-      string: !!binary |
-        H4sIAAAAAAAAA3VUW2+bMBR+z69AfuqkAqZNsoSnTk217iHVpOapU1QZcxK82RjZJpdF+e8zhnJJ
-        M8kCznfO+c7VnEaeh7Qh9H0HSjOZo9hDUYADjG5bFRwM5JVSW+0vC1tFZkyh4zBkG0W3Mtgyk5VJ
-        wGQoZG6O4Q4HliXUNANBgt/aElu/teM0xwKqMI+Sc6CmCupwllYoiJQYH3aQG13jhhnuHJ6W/uLb
-        ynuVpaLgPfVMUtBUscI0BXznMiHcWzBNtAHVmHobJYVnMusqQG0hp8cPzYIYkhAN3k0d40tQ83JG
-        beUu+PLHqsaU5NBrhMvUaap2udS6Ugsldyy1nW3tT+5pVTkRvaIagk/0DrIsaUlBoQZat8al4hXH
-        xzD2+33g+hckEHaUdgTM2VE7G0LNA1WQWpOa79xm6+ZsrOGpqaYghhHeAhZKEnkYJNd9eZ4fzfBt
-        X54PxAvtHLfCetR/n5tmGhCFVMP4LLfz3Dnseg4oms9mPo7sWWEcu/OG+nHzkvP/RR410ZEuhSCK
-        uUk03bBtBcPc0Np0BMuZKEXV2zscTXw89e/ur8RFghx6hnMff/UjvIru4/E4nkzf0KDwyxUY7Nhg
-        y9pdQO7axVSWuVHHdyrTIcPj80vn//rz5ZpzRv4SlX72XT5jjMedu5MnF/K0YWw7yFn+58raZwo2
-        l9e8/j90NwDcsmrgm96Gjs7/AOEAlzGsBAAA
+      string: ''
     headers:
-      Accept-Ranges:
-      - bytes
       Access-Control-Allow-Origin:
-      - '*'
+      - ''
       Cache-Control:
-      - max-age=300
-      Connection:
-      - keep-alive
-      Content-Encoding:
-      - gzip
+      - no-cache
       Content-Length:
-      - '540'
+      - '0'
       Content-Security-Policy:
-      - default-src 'none'; style-src 'unsafe-inline'; sandbox
+      - 'default-src ''none''; base-uri ''self''; child-src github.com/assets-cdn/worker/
+        github.com/webpack/ github.com/assets/ gist.github.com/assets-cdn/worker/;
+        connect-src ''self'' uploads.github.com www.githubstatus.com collector.github.com
+        raw.githubusercontent.com api.github.com github-cloud.s3.amazonaws.com github-production-repository-file-5c1aeb.s3.amazonaws.com
+        github-production-upload-manifest-file-7fdce7.s3.amazonaws.com github-production-user-asset-6210df.s3.amazonaws.com
+        *.rel.tunnels.api.visualstudio.com wss://*.rel.tunnels.api.visualstudio.com
+        objects-origin.githubusercontent.com copilot-proxy.githubusercontent.com proxy.individual.githubcopilot.com
+        proxy.business.githubcopilot.com proxy.enterprise.githubcopilot.com *.actions.githubusercontent.com
+        wss://*.actions.githubusercontent.com productionresultssa0.blob.core.windows.net/
+        productionresultssa1.blob.core.windows.net/ productionresultssa2.blob.core.windows.net/
+        productionresultssa3.blob.core.windows.net/ productionresultssa4.blob.core.windows.net/
+        productionresultssa5.blob.core.windows.net/ productionresultssa6.blob.core.windows.net/
+        productionresultssa7.blob.core.windows.net/ productionresultssa8.blob.core.windows.net/
+        productionresultssa9.blob.core.windows.net/ productionresultssa10.blob.core.windows.net/
+        productionresultssa11.blob.core.windows.net/ productionresultssa12.blob.core.windows.net/
+        productionresultssa13.blob.core.windows.net/ productionresultssa14.blob.core.windows.net/
+        productionresultssa15.blob.core.windows.net/ productionresultssa16.blob.core.windows.net/
+        productionresultssa17.blob.core.windows.net/ productionresultssa18.blob.core.windows.net/
+        productionresultssa19.blob.core.windows.net/ github-production-repository-image-32fea6.s3.amazonaws.com
+        github-production-release-asset-2e65be.s3.amazonaws.com insights.github.com
+        wss://alive.github.com api.githubcopilot.com api.individual.githubcopilot.com
+        api.business.githubcopilot.com api.enterprise.githubcopilot.com; font-src
+        github.githubassets.com; form-action ''self'' github.com gist.github.com copilot-workspace.githubnext.com
+        objects-origin.githubusercontent.com; frame-ancestors ''none''; frame-src
+        viewscreen.githubusercontent.com notebooks.githubusercontent.com; img-src
+        ''self'' data: blob: github.githubassets.com media.githubusercontent.com camo.githubusercontent.com
+        identicons.github.com avatars.githubusercontent.com private-avatars.githubusercontent.com
+        github-cloud.s3.amazonaws.com objects.githubusercontent.com secured-user-images.githubusercontent.com/
+        user-images.githubusercontent.com/ private-user-images.githubusercontent.com
+        opengraph.githubassets.com github-production-user-asset-6210df.s3.amazonaws.com
+        customer-stories-feed.github.com spotlights-feed.github.com objects-origin.githubusercontent.com
+        *.githubusercontent.com; manifest-src ''self''; media-src github.com user-images.githubusercontent.com/
+        secured-user-images.githubusercontent.com/ private-user-images.githubusercontent.com
+        github-production-user-asset-6210df.s3.amazonaws.com gist.github.com; script-src
+        github.githubassets.com; style-src ''unsafe-inline'' github.githubassets.com;
+        upgrade-insecure-requests; worker-src github.com/assets-cdn/worker/ github.com/webpack/
+        github.com/assets/ gist.github.com/assets-cdn/worker/'
       Content-Type:
-      - text/plain; charset=utf-8
-      Cross-Origin-Resource-Policy:
-      - cross-origin
+      - text/html; charset=utf-8
       Date:
-      - Fri, 14 Feb 2025 08:23:57 GMT
-      ETag:
-      - W/"3efbfae947e8deb7b488e3390c219c49d42b2bdc3add09994861790151f9540b"
-      Expires:
-      - Fri, 14 Feb 2025 08:28:57 GMT
-      Source-Age:
-      - '283'
+      - Tue, 25 Feb 2025 16:59:11 GMT
+      Location:
+      - https://raw.githubusercontent.com/IFRCGo/monty-stac-extension/refs/heads/main/examples/emdat-hazards/emdat-hazards.json
+      Referrer-Policy:
+      - no-referrer-when-downgrade
+      Server:
+      - GitHub.com
       Strict-Transport-Security:
-      - max-age=31536000
+      - max-age=31536000; includeSubdomains; preload
       Vary:
-      - Authorization,Accept-Encoding,Origin
-      Via:
-      - 1.1 varnish
-      X-Cache:
-      - HIT
-      X-Cache-Hits:
-      - '1'
+      - X-PJAX, X-PJAX-Container, Turbo-Visit, Turbo-Frame, Accept-Encoding, Accept,
+        X-Requested-With
       X-Content-Type-Options:
       - nosniff
-      X-Fastly-Request-ID:
-      - e66e589438ea97c92988dd1ad40481f16fc04ecd
       X-Frame-Options:
       - deny
       X-GitHub-Request-Id:
-      - A25D:198AAD:2FE35E:436546:67AEF999
-      X-Served-By:
-      - cache-del21742-DEL
-      X-Timer:
-      - S1739521437.395220,VS0,VE1
+      - 9CE1:199BE2:15D00FC:1645B65:67BDF6DF
       X-XSS-Protection:
-      - 1; mode=block
+      - '0'
     status:
-      code: 200
-      message: OK
+      code: 302
+      message: Found
 - request:
     body: null
     headers:
@@ -171,7 +265,7 @@ interactions:
       User-Agent:
       - python-requests/2.32.3
     method: GET
-    uri: https://raw.githubusercontent.com/IFRCGo/monty-stac-extension/refs/heads/EMDAT/examples/emdat-hazards/emdat-hazards.json
+    uri: https://raw.githubusercontent.com/IFRCGo/monty-stac-extension/refs/heads/main/examples/emdat-hazards/emdat-hazards.json
   response:
     body:
       string: !!binary |
@@ -205,13 +299,13 @@ interactions:
       Cross-Origin-Resource-Policy:
       - cross-origin
       Date:
-      - Fri, 14 Feb 2025 08:23:57 GMT
+      - Tue, 25 Feb 2025 16:59:11 GMT
       ETag:
       - W/"59d1cd24375bd1021d844146e39d6c0dcc7f4dddcd759b22fd18583ce3b94bb7"
       Expires:
-      - Fri, 14 Feb 2025 08:28:57 GMT
+      - Tue, 25 Feb 2025 17:04:11 GMT
       Source-Age:
-      - '282'
+      - '0'
       Strict-Transport-Security:
       - max-age=31536000
       Vary:
@@ -225,15 +319,15 @@ interactions:
       X-Content-Type-Options:
       - nosniff
       X-Fastly-Request-ID:
-      - 95aaf264190e4b101f04ed759c006ea6cf5790c9
+      - 48b2734de58a04b4843497a84da6c59369a20575
       X-Frame-Options:
       - deny
       X-GitHub-Request-Id:
-      - 2280:375228:2F92BB:43144C:67AEF99A
+      - 5EA1:37153E:35056B:3A62C8:67BDF2EE
       X-Served-By:
-      - cache-del21741-DEL
+      - cache-mrs1050085-MRS
       X-Timer:
-      - S1739521438.544010,VS0,VE3
+      - S1740502752.514889,VS0,VE184
       X-XSS-Protection:
       - 1; mode=block
     status:
@@ -251,74 +345,81 @@ interactions:
       User-Agent:
       - python-requests/2.32.3
     method: GET
-    uri: https://raw.githubusercontent.com/IFRCGo/monty-stac-extension/refs/heads/EMDAT/examples/emdat-events/emdat-events.json
+    uri: https://github.com/IFRCGo/monty-stac-extension/raw/refs/heads/main/examples/emdat-impacts/emdat-impacts.json
   response:
     body:
-      string: !!binary |
-        H4sIAAAAAAAAA3VUW2+bMBR+z69AfuqkAqZNsoSnTk217iHVpOapU1QZcxK82RjZJpdF+e8zhnJJ
-        M8kCznfO+c7VnEaeh7Qh9H0HSjOZo9hDUYADjG5bFRwM5JVSW+0vC1tFZkyh4zBkG0W3Mtgyk5VJ
-        wGQoZG6O4Q4HliXUNANBgt/aElu/teM0xwKqMI+Sc6CmCupwllYoiJQYH3aQG13jhhnuHJ6W/uLb
-        ynuVpaLgPfVMUtBUscI0BXznMiHcWzBNtAHVmHobJYVnMusqQG0hp8cPzYIYkhAN3k0d40tQ83JG
-        beUu+PLHqsaU5NBrhMvUaap2udS6Ugsldyy1nW3tT+5pVTkRvaIagk/0DrIsaUlBoQZat8al4hXH
-        xzD2+33g+hckEHaUdgTM2VE7G0LNA1WQWpOa79xm6+ZsrOGpqaYghhHeAhZKEnkYJNd9eZ4fzfBt
-        X54PxAvtHLfCetR/n5tmGhCFVMP4LLfz3Dnseg4oms9mPo7sWWEcu/OG+nHzkvP/RR410ZEuhSCK
-        uUk03bBtBcPc0Np0BMuZKEXV2zscTXw89e/ur8RFghx6hnMff/UjvIru4/E4nkzf0KDwyxUY7Nhg
-        y9pdQO7axVSWuVHHdyrTIcPj80vn//rz5ZpzRv4SlX72XT5jjMedu5MnF/K0YWw7yFn+58raZwo2
-        l9e8/j90NwDcsmrgm96Gjs7/AOEAlzGsBAAA
+      string: ''
     headers:
-      Accept-Ranges:
-      - bytes
       Access-Control-Allow-Origin:
-      - '*'
+      - ''
       Cache-Control:
-      - max-age=300
-      Connection:
-      - keep-alive
-      Content-Encoding:
-      - gzip
+      - no-cache
       Content-Length:
-      - '540'
+      - '0'
       Content-Security-Policy:
-      - default-src 'none'; style-src 'unsafe-inline'; sandbox
+      - 'default-src ''none''; base-uri ''self''; child-src github.com/assets-cdn/worker/
+        github.com/webpack/ github.com/assets/ gist.github.com/assets-cdn/worker/;
+        connect-src ''self'' uploads.github.com www.githubstatus.com collector.github.com
+        raw.githubusercontent.com api.github.com github-cloud.s3.amazonaws.com github-production-repository-file-5c1aeb.s3.amazonaws.com
+        github-production-upload-manifest-file-7fdce7.s3.amazonaws.com github-production-user-asset-6210df.s3.amazonaws.com
+        *.rel.tunnels.api.visualstudio.com wss://*.rel.tunnels.api.visualstudio.com
+        objects-origin.githubusercontent.com copilot-proxy.githubusercontent.com proxy.individual.githubcopilot.com
+        proxy.business.githubcopilot.com proxy.enterprise.githubcopilot.com *.actions.githubusercontent.com
+        wss://*.actions.githubusercontent.com productionresultssa0.blob.core.windows.net/
+        productionresultssa1.blob.core.windows.net/ productionresultssa2.blob.core.windows.net/
+        productionresultssa3.blob.core.windows.net/ productionresultssa4.blob.core.windows.net/
+        productionresultssa5.blob.core.windows.net/ productionresultssa6.blob.core.windows.net/
+        productionresultssa7.blob.core.windows.net/ productionresultssa8.blob.core.windows.net/
+        productionresultssa9.blob.core.windows.net/ productionresultssa10.blob.core.windows.net/
+        productionresultssa11.blob.core.windows.net/ productionresultssa12.blob.core.windows.net/
+        productionresultssa13.blob.core.windows.net/ productionresultssa14.blob.core.windows.net/
+        productionresultssa15.blob.core.windows.net/ productionresultssa16.blob.core.windows.net/
+        productionresultssa17.blob.core.windows.net/ productionresultssa18.blob.core.windows.net/
+        productionresultssa19.blob.core.windows.net/ github-production-repository-image-32fea6.s3.amazonaws.com
+        github-production-release-asset-2e65be.s3.amazonaws.com insights.github.com
+        wss://alive.github.com api.githubcopilot.com api.individual.githubcopilot.com
+        api.business.githubcopilot.com api.enterprise.githubcopilot.com; font-src
+        github.githubassets.com; form-action ''self'' github.com gist.github.com copilot-workspace.githubnext.com
+        objects-origin.githubusercontent.com; frame-ancestors ''none''; frame-src
+        viewscreen.githubusercontent.com notebooks.githubusercontent.com; img-src
+        ''self'' data: blob: github.githubassets.com media.githubusercontent.com camo.githubusercontent.com
+        identicons.github.com avatars.githubusercontent.com private-avatars.githubusercontent.com
+        github-cloud.s3.amazonaws.com objects.githubusercontent.com secured-user-images.githubusercontent.com/
+        user-images.githubusercontent.com/ private-user-images.githubusercontent.com
+        opengraph.githubassets.com github-production-user-asset-6210df.s3.amazonaws.com
+        customer-stories-feed.github.com spotlights-feed.github.com objects-origin.githubusercontent.com
+        *.githubusercontent.com; manifest-src ''self''; media-src github.com user-images.githubusercontent.com/
+        secured-user-images.githubusercontent.com/ private-user-images.githubusercontent.com
+        github-production-user-asset-6210df.s3.amazonaws.com gist.github.com; script-src
+        github.githubassets.com; style-src ''unsafe-inline'' github.githubassets.com;
+        upgrade-insecure-requests; worker-src github.com/assets-cdn/worker/ github.com/webpack/
+        github.com/assets/ gist.github.com/assets-cdn/worker/'
       Content-Type:
-      - text/plain; charset=utf-8
-      Cross-Origin-Resource-Policy:
-      - cross-origin
+      - text/html; charset=utf-8
       Date:
-      - Fri, 14 Feb 2025 08:23:57 GMT
-      ETag:
-      - W/"3efbfae947e8deb7b488e3390c219c49d42b2bdc3add09994861790151f9540b"
-      Expires:
-      - Fri, 14 Feb 2025 08:28:57 GMT
-      Source-Age:
-      - '283'
+      - Tue, 25 Feb 2025 16:59:12 GMT
+      Location:
+      - https://raw.githubusercontent.com/IFRCGo/monty-stac-extension/refs/heads/main/examples/emdat-impacts/emdat-impacts.json
+      Referrer-Policy:
+      - no-referrer-when-downgrade
+      Server:
+      - GitHub.com
       Strict-Transport-Security:
-      - max-age=31536000
+      - max-age=31536000; includeSubdomains; preload
       Vary:
-      - Authorization,Accept-Encoding,Origin
-      Via:
-      - 1.1 varnish
-      X-Cache:
-      - HIT
-      X-Cache-Hits:
-      - '1'
+      - X-PJAX, X-PJAX-Container, Turbo-Visit, Turbo-Frame, Accept-Encoding, Accept,
+        X-Requested-With
       X-Content-Type-Options:
       - nosniff
-      X-Fastly-Request-ID:
-      - a1ab5e270052e2e36b077e351760cc041b384bb7
       X-Frame-Options:
       - deny
       X-GitHub-Request-Id:
-      - A25D:198AAD:2FE35E:436546:67AEF999
-      X-Served-By:
-      - cache-del21725-DEL
-      X-Timer:
-      - S1739521438.691027,VS0,VE1
+      - 9D21:1B0FB6:161D154:1692E3E:67BDF6DF
       X-XSS-Protection:
-      - 1; mode=block
+      - '0'
     status:
-      code: 200
-      message: OK
+      code: 302
+      message: Found
 - request:
     body: null
     headers:
@@ -331,7 +432,7 @@ interactions:
       User-Agent:
       - python-requests/2.32.3
     method: GET
-    uri: https://raw.githubusercontent.com/IFRCGo/monty-stac-extension/refs/heads/EMDAT/examples/emdat-impacts/emdat-impacts.json
+    uri: https://raw.githubusercontent.com/IFRCGo/monty-stac-extension/refs/heads/main/examples/emdat-impacts/emdat-impacts.json
   response:
     body:
       string: !!binary |
@@ -365,13 +466,13 @@ interactions:
       Cross-Origin-Resource-Policy:
       - cross-origin
       Date:
-      - Fri, 14 Feb 2025 08:23:57 GMT
+      - Tue, 25 Feb 2025 16:59:12 GMT
       ETag:
       - W/"79ca02d763c29df2e5b58f9bb02c341f9a6bcfbe9b81a7c9eb6ad3f1b2f03fb0"
       Expires:
-      - Fri, 14 Feb 2025 08:28:57 GMT
+      - Tue, 25 Feb 2025 17:04:12 GMT
       Source-Age:
-      - '282'
+      - '0'
       Strict-Transport-Security:
       - max-age=31536000
       Vary:
@@ -385,575 +486,15 @@ interactions:
       X-Content-Type-Options:
       - nosniff
       X-Fastly-Request-ID:
-      - 0b268c5d2ba954512db98487bd46fbcd7304e77e
+      - d8fc183305337c1b16f21cfdf1e1d55d2f3ed1a6
       X-Frame-Options:
       - deny
       X-GitHub-Request-Id:
-      - C569:375228:2F92CA:431459:67AEF99A
+      - 1978:238089:331A59:387805:67BDF2F0
       X-Served-By:
-      - cache-del21749-DEL
+      - cache-mrs1050115-MRS
       X-Timer:
-      - S1739521438.834320,VS0,VE1
-      X-XSS-Protection:
-      - 1; mode=block
-    status:
-      code: 200
-      message: OK
-- request:
-    body: null
-    headers:
-      Accept:
-      - '*/*'
-      Accept-Encoding:
-      - gzip, deflate
-      Connection:
-      - keep-alive
-      User-Agent:
-      - python-requests/2.32.3
-    method: GET
-    uri: https://raw.githubusercontent.com/IFRCGo/monty-stac-extension/refs/heads/EMDAT/examples/emdat-events/emdat-events.json
-  response:
-    body:
-      string: !!binary |
-        H4sIAAAAAAAAA3VUW2+bMBR+z69AfuqkAqZNsoSnTk217iHVpOapU1QZcxK82RjZJpdF+e8zhnJJ
-        M8kCznfO+c7VnEaeh7Qh9H0HSjOZo9hDUYADjG5bFRwM5JVSW+0vC1tFZkyh4zBkG0W3Mtgyk5VJ
-        wGQoZG6O4Q4HliXUNANBgt/aElu/teM0xwKqMI+Sc6CmCupwllYoiJQYH3aQG13jhhnuHJ6W/uLb
-        ynuVpaLgPfVMUtBUscI0BXznMiHcWzBNtAHVmHobJYVnMusqQG0hp8cPzYIYkhAN3k0d40tQ83JG
-        beUu+PLHqsaU5NBrhMvUaap2udS6Ugsldyy1nW3tT+5pVTkRvaIagk/0DrIsaUlBoQZat8al4hXH
-        xzD2+33g+hckEHaUdgTM2VE7G0LNA1WQWpOa79xm6+ZsrOGpqaYghhHeAhZKEnkYJNd9eZ4fzfBt
-        X54PxAvtHLfCetR/n5tmGhCFVMP4LLfz3Dnseg4oms9mPo7sWWEcu/OG+nHzkvP/RR410ZEuhSCK
-        uUk03bBtBcPc0Np0BMuZKEXV2zscTXw89e/ur8RFghx6hnMff/UjvIru4/E4nkzf0KDwyxUY7Nhg
-        y9pdQO7axVSWuVHHdyrTIcPj80vn//rz5ZpzRv4SlX72XT5jjMedu5MnF/K0YWw7yFn+58raZwo2
-        l9e8/j90NwDcsmrgm96Gjs7/AOEAlzGsBAAA
-    headers:
-      Accept-Ranges:
-      - bytes
-      Access-Control-Allow-Origin:
-      - '*'
-      Cache-Control:
-      - max-age=300
-      Connection:
-      - keep-alive
-      Content-Encoding:
-      - gzip
-      Content-Length:
-      - '540'
-      Content-Security-Policy:
-      - default-src 'none'; style-src 'unsafe-inline'; sandbox
-      Content-Type:
-      - text/plain; charset=utf-8
-      Cross-Origin-Resource-Policy:
-      - cross-origin
-      Date:
-      - Fri, 14 Feb 2025 08:23:57 GMT
-      ETag:
-      - W/"3efbfae947e8deb7b488e3390c219c49d42b2bdc3add09994861790151f9540b"
-      Expires:
-      - Fri, 14 Feb 2025 08:28:57 GMT
-      Source-Age:
-      - '283'
-      Strict-Transport-Security:
-      - max-age=31536000
-      Vary:
-      - Authorization,Accept-Encoding,Origin
-      Via:
-      - 1.1 varnish
-      X-Cache:
-      - HIT
-      X-Cache-Hits:
-      - '1'
-      X-Content-Type-Options:
-      - nosniff
-      X-Fastly-Request-ID:
-      - 41cc7207ab3c612e65c129b1357cbdfa784b4604
-      X-Frame-Options:
-      - deny
-      X-GitHub-Request-Id:
-      - A25D:198AAD:2FE35E:436546:67AEF999
-      X-Served-By:
-      - cache-del21726-DEL
-      X-Timer:
-      - S1739521438.978737,VS0,VE1
-      X-XSS-Protection:
-      - 1; mode=block
-    status:
-      code: 200
-      message: OK
-- request:
-    body: null
-    headers:
-      Accept:
-      - '*/*'
-      Accept-Encoding:
-      - gzip, deflate
-      Connection:
-      - keep-alive
-      User-Agent:
-      - python-requests/2.32.3
-    method: GET
-    uri: https://raw.githubusercontent.com/IFRCGo/monty-stac-extension/refs/heads/EMDAT/examples/emdat-impacts/emdat-impacts.json
-  response:
-    body:
-      string: !!binary |
-        H4sIAAAAAAAAA3VUW2+bMBR+z6+weNqkAqZNsoSnTU209iHVpOapU1QZcxK82RjZJpdF+e81hgK5
-        TLKAc75zvnM1xwFCnjaEvm9BaSZzL0ZeFOAAe3ctBHsDeQVqi/62agtkxhQ6DkO2VnQjgw0zWZkE
-        TIZC5uYQbnFgWUJNMxAk+KMtsfVbOU5zKKAK8yg5B2qqoE7P0koLIiXGZ6Ig1OgaMMxw5zFf+LMf
-        S/QqS0UBPfdtUtBUscI0JfzkMiEczZgm2oBC8y3kRqO1kgKZDNBcgNpATg+fyIwYkhAN6Esd5GtQ
-        83JGbe0u+uJ5WeuU5NBrRZ2rg6qOueS6agsltyy1zW0dju5poZyIXlkNwRW/U1mWtKSgvEa1ao1L
-        xSuOz3nsdrvAtTBIIOwo7RSYs6N2PDbb71RBak1qvlObrRu1sYbHppqCGEZ4q7CqJJH7s+S6L4T8
-        aILv+vL0TLxAp7gVVoP++9Q004AopDqPz3I70K3T3c7Bi6aTiY8je5YYx+68ef24ecn5/yIPmuie
-        LoUgirlJNN2wbQXD3NDadATLmShF1dt7HI18PPbvH27E9QTZ9wynPv7mR3gZPcTDYTwav3lnhV+u
-        gAfVmnZk3Za1u+C5mxdTWeZGHd6pTM8ZHp9eOv/XXy+3nDPyj6j02nfxhDEedu5OHl3I44ax7SBn
-        +d8ba58pWF/d9Pof0V0BcNuqga97Kzo4fQD5uGzIsAQAAA==
-    headers:
-      Accept-Ranges:
-      - bytes
-      Access-Control-Allow-Origin:
-      - '*'
-      Cache-Control:
-      - max-age=300
-      Connection:
-      - keep-alive
-      Content-Encoding:
-      - gzip
-      Content-Length:
-      - '547'
-      Content-Security-Policy:
-      - default-src 'none'; style-src 'unsafe-inline'; sandbox
-      Content-Type:
-      - text/plain; charset=utf-8
-      Cross-Origin-Resource-Policy:
-      - cross-origin
-      Date:
-      - Fri, 14 Feb 2025 08:23:58 GMT
-      ETag:
-      - W/"79ca02d763c29df2e5b58f9bb02c341f9a6bcfbe9b81a7c9eb6ad3f1b2f03fb0"
-      Expires:
-      - Fri, 14 Feb 2025 08:28:58 GMT
-      Source-Age:
-      - '282'
-      Strict-Transport-Security:
-      - max-age=31536000
-      Vary:
-      - Authorization,Accept-Encoding,Origin
-      Via:
-      - 1.1 varnish
-      X-Cache:
-      - HIT
-      X-Cache-Hits:
-      - '1'
-      X-Content-Type-Options:
-      - nosniff
-      X-Fastly-Request-ID:
-      - d3406e9cb4082d8f50f96f8af00554c2f538fb44
-      X-Frame-Options:
-      - deny
-      X-GitHub-Request-Id:
-      - C569:375228:2F92CA:431459:67AEF99A
-      X-Served-By:
-      - cache-del21736-DEL
-      X-Timer:
-      - S1739521438.142114,VS0,VE1
-      X-XSS-Protection:
-      - 1; mode=block
-    status:
-      code: 200
-      message: OK
-- request:
-    body: null
-    headers:
-      Accept:
-      - '*/*'
-      Accept-Encoding:
-      - gzip, deflate
-      Connection:
-      - keep-alive
-      User-Agent:
-      - python-requests/2.32.3
-    method: GET
-    uri: https://raw.githubusercontent.com/IFRCGo/monty-stac-extension/refs/heads/main/json-schema/schema.json
-  response:
-    body:
-      string: !!binary |
-        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
-        /sHFIgAA
-    headers:
-      Accept-Ranges:
-      - bytes
-      Access-Control-Allow-Origin:
-      - '*'
-      Cache-Control:
-      - max-age=300
-      Connection:
-      - keep-alive
-      Content-Encoding:
-      - gzip
-      Content-Length:
-      - '1659'
-      Content-Security-Policy:
-      - default-src 'none'; style-src 'unsafe-inline'; sandbox
-      Content-Type:
-      - text/plain; charset=utf-8
-      Cross-Origin-Resource-Policy:
-      - cross-origin
-      Date:
-      - Fri, 14 Feb 2025 08:23:58 GMT
-      ETag:
-      - W/"20a0cfa36c884920765e29f304a00bad64cb255c7038cfe515596810e89b571d"
-      Expires:
-      - Fri, 14 Feb 2025 08:28:58 GMT
-      Source-Age:
-      - '37'
-      Strict-Transport-Security:
-      - max-age=31536000
-      Vary:
-      - Authorization,Accept-Encoding,Origin
-      Via:
-      - 1.1 varnish
-      X-Cache:
-      - HIT
-      X-Cache-Hits:
-      - '9'
-      X-Content-Type-Options:
-      - nosniff
-      X-Fastly-Request-ID:
-      - 28140764aa7c6d0a9b047d7ce16ec0b1f3fd9ce0
-      X-Frame-Options:
-      - deny
-      X-GitHub-Request-Id:
-      - 721A:152473:2FB83B:4338E9:67AEF961
-      X-Served-By:
-      - cache-del21727-DEL
-      X-Timer:
-      - S1739521438.295212,VS0,VE0
-      X-XSS-Protection:
-      - 1; mode=block
-    status:
-      code: 200
-      message: OK
-- request:
-    body: null
-    headers:
-      Accept:
-      - '*/*'
-      Accept-Encoding:
-      - gzip, deflate
-      Connection:
-      - keep-alive
-      User-Agent:
-      - python-requests/2.32.3
-    method: GET
-    uri: https://raw.githubusercontent.com/IFRCGo/monty-stac-extension/refs/heads/main/json-schema/schema.json
-  response:
-    body:
-      string: !!binary |
-        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
-        /sHFIgAA
-    headers:
-      Accept-Ranges:
-      - bytes
-      Access-Control-Allow-Origin:
-      - '*'
-      Cache-Control:
-      - max-age=300
-      Connection:
-      - keep-alive
-      Content-Encoding:
-      - gzip
-      Content-Length:
-      - '1659'
-      Content-Security-Policy:
-      - default-src 'none'; style-src 'unsafe-inline'; sandbox
-      Content-Type:
-      - text/plain; charset=utf-8
-      Cross-Origin-Resource-Policy:
-      - cross-origin
-      Date:
-      - Fri, 14 Feb 2025 08:23:58 GMT
-      ETag:
-      - W/"20a0cfa36c884920765e29f304a00bad64cb255c7038cfe515596810e89b571d"
-      Expires:
-      - Fri, 14 Feb 2025 08:28:58 GMT
-      Source-Age:
-      - '37'
-      Strict-Transport-Security:
-      - max-age=31536000
-      Vary:
-      - Authorization,Accept-Encoding,Origin
-      Via:
-      - 1.1 varnish
-      X-Cache:
-      - HIT
-      X-Cache-Hits:
-      - '10'
-      X-Content-Type-Options:
-      - nosniff
-      X-Fastly-Request-ID:
-      - c59735c1b40faddd89a3424958f668c99adf8853
-      X-Frame-Options:
-      - deny
-      X-GitHub-Request-Id:
-      - 721A:152473:2FB83B:4338E9:67AEF961
-      X-Served-By:
-      - cache-del21727-DEL
-      X-Timer:
-      - S1739521438.447123,VS0,VE0
-      X-XSS-Protection:
-      - 1; mode=block
-    status:
-      code: 200
-      message: OK
-- request:
-    body: null
-    headers:
-      Accept:
-      - '*/*'
-      Accept-Encoding:
-      - gzip, deflate
-      Connection:
-      - keep-alive
-      User-Agent:
-      - python-requests/2.32.3
-    method: GET
-    uri: https://raw.githubusercontent.com/IFRCGo/monty-stac-extension/refs/heads/main/json-schema/schema.json
-  response:
-    body:
-      string: !!binary |
-        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
-        /sHFIgAA
-    headers:
-      Accept-Ranges:
-      - bytes
-      Access-Control-Allow-Origin:
-      - '*'
-      Cache-Control:
-      - max-age=300
-      Connection:
-      - keep-alive
-      Content-Encoding:
-      - gzip
-      Content-Length:
-      - '1659'
-      Content-Security-Policy:
-      - default-src 'none'; style-src 'unsafe-inline'; sandbox
-      Content-Type:
-      - text/plain; charset=utf-8
-      Cross-Origin-Resource-Policy:
-      - cross-origin
-      Date:
-      - Fri, 14 Feb 2025 08:23:58 GMT
-      ETag:
-      - W/"20a0cfa36c884920765e29f304a00bad64cb255c7038cfe515596810e89b571d"
-      Expires:
-      - Fri, 14 Feb 2025 08:28:58 GMT
-      Source-Age:
-      - '37'
-      Strict-Transport-Security:
-      - max-age=31536000
-      Vary:
-      - Authorization,Accept-Encoding,Origin
-      Via:
-      - 1.1 varnish
-      X-Cache:
-      - HIT
-      X-Cache-Hits:
-      - '5'
-      X-Content-Type-Options:
-      - nosniff
-      X-Fastly-Request-ID:
-      - f91c1b564ae774c731454122bee792116038770a
-      X-Frame-Options:
-      - deny
-      X-GitHub-Request-Id:
-      - 721A:152473:2FB83B:4338E9:67AEF961
-      X-Served-By:
-      - cache-del21738-DEL
-      X-Timer:
-      - S1739521439.602590,VS0,VE0
-      X-XSS-Protection:
-      - 1; mode=block
-    status:
-      code: 200
-      message: OK
-- request:
-    body: null
-    headers:
-      Accept:
-      - '*/*'
-      Accept-Encoding:
-      - gzip, deflate
-      Connection:
-      - keep-alive
-      User-Agent:
-      - python-requests/2.32.3
-    method: GET
-    uri: https://raw.githubusercontent.com/IFRCGo/monty-stac-extension/refs/heads/main/json-schema/schema.json
-  response:
-    body:
-      string: !!binary |
-        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
-        /sHFIgAA
-    headers:
-      Accept-Ranges:
-      - bytes
-      Access-Control-Allow-Origin:
-      - '*'
-      Cache-Control:
-      - max-age=300
-      Connection:
-      - keep-alive
-      Content-Encoding:
-      - gzip
-      Content-Length:
-      - '1659'
-      Content-Security-Policy:
-      - default-src 'none'; style-src 'unsafe-inline'; sandbox
-      Content-Type:
-      - text/plain; charset=utf-8
-      Cross-Origin-Resource-Policy:
-      - cross-origin
-      Date:
-      - Fri, 14 Feb 2025 08:23:58 GMT
-      ETag:
-      - W/"20a0cfa36c884920765e29f304a00bad64cb255c7038cfe515596810e89b571d"
-      Expires:
-      - Fri, 14 Feb 2025 08:28:58 GMT
-      Source-Age:
-      - '38'
-      Strict-Transport-Security:
-      - max-age=31536000
-      Vary:
-      - Authorization,Accept-Encoding,Origin
-      Via:
-      - 1.1 varnish
-      X-Cache:
-      - HIT
-      X-Cache-Hits:
-      - '12'
-      X-Content-Type-Options:
-      - nosniff
-      X-Fastly-Request-ID:
-      - fd8ab5ae628abb973b3249876771cb172d303bb4
-      X-Frame-Options:
-      - deny
-      X-GitHub-Request-Id:
-      - 721A:152473:2FB83B:4338E9:67AEF961
-      X-Served-By:
-      - cache-del21744-DEL
-      X-Timer:
-      - S1739521439.754344,VS0,VE0
+      - S1740502752.256206,VS0,VE174
       X-XSS-Protection:
       - 1; mode=block
     status:

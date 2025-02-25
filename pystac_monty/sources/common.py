@@ -44,29 +44,39 @@ class MontyDataTransformer:
         self.hazards_collection_url = f"{base_collection_url}/{self.hazards_collection_id}/{self.hazards_collection_id}.json"
         self.impacts_collection_url = f"{base_collection_url}/{self.impacts_collection_id}/{self.impacts_collection_id}.json"
 
+    _event_collection_cache = None
+    _hazard_collection_cache = None
+    _impact_collection_cache = None
+
     def get_event_collection(self) -> Collection:
         """Get event collection"""
-        response = requests.get(self.events_collection_url)
-        collection_dict = json.loads(response.text)
-        collection = Collection.from_dict(collection_dict)
-        # update self link with actual link
-        collection.set_self_href(self.events_collection_url)
-        return collection
+        if self._event_collection_cache is None:
+            response = requests.get(self.events_collection_url)
+            collection_dict = json.loads(response.text)
+            collection = Collection.from_dict(collection_dict)
+            # update self link with actual link
+            collection.set_self_href(self.events_collection_url)
+            self._event_collection_cache = collection
+        return self._event_collection_cache
 
     def get_hazard_collection(self) -> Collection:
         """Get hazard collection"""
-        response = requests.get(self.hazards_collection_url)
-        collection_dict = json.loads(response.text)
-        collection = Collection.from_dict(collection_dict)
-        # update self link with actual link
-        collection.set_self_href(self.hazards_collection_url)
-        return collection
+        if self._hazard_collection_cache is None:
+            response = requests.get(self.hazards_collection_url)
+            collection_dict = json.loads(response.text)
+            collection = Collection.from_dict(collection_dict)
+            # update self link with actual link
+            collection.set_self_href(self.hazards_collection_url)
+            self._hazard_collection_cache = collection
+        return self._hazard_collection_cache
 
     def get_impact_collection(self) -> Collection:
         """Get impact collection"""
-        response = requests.get(self.impacts_collection_url)
-        collection_dict = json.loads(response.text)
-        collection = Collection.from_dict(collection_dict)
-        # update self link with actual link
-        collection.set_self_href(self.impacts_collection_url)
-        return collection
+        if self._impact_collection_cache is None:
+            response = requests.get(self.impacts_collection_url)
+            collection_dict = json.loads(response.text)
+            collection = Collection.from_dict(collection_dict)
+            # update self link with actual link
+            collection.set_self_href(self.impacts_collection_url)
+            self._impact_collection_cache = collection
+        return self._impact_collection_cache

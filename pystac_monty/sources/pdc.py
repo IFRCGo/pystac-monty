@@ -18,7 +18,7 @@ from pystac_monty.extension import (
     MontyImpactType,
 )
 from pystac_monty.hazard_profiles import MontyHazardProfiles
-from pystac_monty.sources.common import MontyDataSource
+from pystac_monty.sources.common import MontyDataSource, MontyDataTransformer
 
 # Constants
 
@@ -35,19 +35,13 @@ class PDCDataSource(MontyDataSource):
         self.data = json.loads(data)
 
 
-class PDCTransformer:
+class PDCTransformer(MontyDataTransformer):
     """Transform the source data into the STAC items"""
-
-    pdc_events_collection_id = "pdc-events"
-    pdc_events_collection_url = "https://raw.githubusercontent.com/IFRCGo/monty-stac-extension/refs/heads/feature/pdc-documentation/examples/pdc-events/pdc-events.json"  # noqa
-    pdc_hazards_collection_id = "pdc-hazards"
-    pdc_hazards_collection_url = "https://raw.githubusercontent.com/IFRCGo/monty-stac-extension/refs/heads/feature/pdc-documentation/examples/pdc-hazards/pdc-hazards.json"  # noqa
-    pdc_impacts_collection_id = "pdc-impacts"
-    pdc_impacts_collection_url = "https://raw.githubusercontent.com/IFRCGo/monty-stac-extension/refs/heads/feature/pdc-documentation/examples/pdc-impacts/pdc-impacts.json"  # noqa
 
     hazard_profiles = MontyHazardProfiles()
 
     def __init__(self, pdc_data_src: PDCDataSource):
+        super().__init__("pdc")
         self.config_data = pdc_data_src.data
 
         self.hazards_data = []
@@ -92,23 +86,6 @@ class PDCTransformer:
 
         return items
 
-    def get_event_collection(self, timeout: int = 30):
-        """Get Event Collection"""
-        response = requests.get(self.pdc_events_collection_url, timeout=timeout)
-        collection_dict = response.json()
-        return Collection.from_dict(collection_dict)
-
-    def get_hazard_collection(self, timeout: int = 30):
-        """Get Hazard Collection"""
-        response = requests.get(self.pdc_hazards_collection_url, timeout=timeout)
-        collection_dict = response.json()
-        return Collection.from_dict(collection_dict)
-
-    def get_impact_collection(self, timeout: int = 30):
-        """Get Impact Collection"""
-        response = requests.get(self.pdc_impacts_collection_url, timeout=timeout)
-        collection_dict = response.json()
-        return Collection.from_dict(collection_dict)
 
     def make_source_event_item(self) -> Optional[Item]:
         """Create an Event Item"""

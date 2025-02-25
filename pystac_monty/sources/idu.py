@@ -18,7 +18,7 @@ from pystac_monty.extension import (
     MontyImpactType,
 )
 from pystac_monty.hazard_profiles import MontyHazardProfiles
-from pystac_monty.sources.common import MontyDataSource
+from pystac_monty.sources.common import MontyDataSource, MontyDataTransformer
 
 # Constants
 
@@ -42,17 +42,13 @@ class IDUDataSource(MontyDataSource):
         self.data = json.loads(data)
 
 
-class IDUTransformer:
+class IDUTransformer(MontyDataTransformer):
     """Transform the source data into the STAC items"""
-
-    idu_events_collection_id = "idu-events"
-    idu_events_collection_url = "https://raw.githubusercontent.com/IFRCGo/monty-stac-extension/refs/heads/feature/update-idu-documentation/examples/idu-events/idu-events.json"  # noqa
-    idu_impacts_collection_id = "idu-impacts"
-    idu_impacts_collection_url = "https://raw.githubusercontent.com/IFRCGo/monty-stac-extension/refs/heads/feature/update-idu-documentation/examples/idu-impacts/idu-impacts.json"  # noqa
 
     hazard_profiles = MontyHazardProfiles()
 
     def __init__(self, data: IDUDataSource):
+        super().__init__("idmc-idu")
         self.data = data
 
     def make_items(self) -> List[Item]:
@@ -67,21 +63,6 @@ class IDUTransformer:
 
         return items
 
-    def get_event_collection(self, timeout: int = 30) -> Collection:
-        """Get the event collection"""
-        response = requests.get(self.idu_events_collection_url, timeout=timeout)
-        if response.status_code == 200:
-            collection_dict = json.loads(response.text)
-            return Collection.from_dict(collection_dict)
-        return Collection.from_dict({})
-
-    def get_impact_collection(self, timeout: int = 30) -> Collection:
-        """Get the impact collection"""
-        response = requests.get(self.idu_events_collection_url, timeout=timeout)
-        if response.status_code == 200:
-            collection_dict = json.loads(response.text)
-            return Collection.from_dict(collection_dict)
-        return Collection.from_dict({})
 
     def make_source_event_items(self) -> List[Item]:
         """Create the source event item"""
