@@ -62,3 +62,4 @@ class GIDDTest(unittest.TestCase):
 
         self.assertIsNotNone(source_event_item)
         self.assertIsNotNone(source_impact_item)
+        

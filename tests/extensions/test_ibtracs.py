@@ -112,7 +112,7 @@ na_scenario = (
 )
 
 
-def load_scenarios(scenarios):
+def load_scenarios(scenarios) -> list[tuple[str, IBTrACSTransformer]]: # type: ignore
     """Load test scenarios for IBTrACS transformation testing.
 
     Args:
@@ -128,7 +128,7 @@ def load_scenarios(scenarios):
         # Create data source and transformer
         # fetch the data if url is provided
         if csv_data.startswith("http"):
-            csv_data = StringIO(requests.get(csv_data).text)
+            csv_data = requests.get(csv_data).text
             
         data_source = IBTrACSDataSource(source_url, csv_data)
         transformers.append((name, IBTrACSTransformer(data_source, geocoder)))
@@ -139,7 +139,7 @@ def load_scenarios(scenarios):
 class IBTrACSTest(unittest.TestCase):
     """Test suite for IBTrACS transformation functionality"""
 
-    scenarios = [beryl_scenario, multi_storm_scenario, landfall_scenario]
+    scenarios = [beryl_scenario, multi_storm_scenario, landfall_scenario, na_scenario]
 
     def setUp(self) -> None:
         """Set up test environment"""
@@ -150,7 +150,7 @@ class IBTrACSTest(unittest.TestCase):
 
     @parameterized.expand(load_scenarios(scenarios))
     @pytest.mark.vcr()
-    def test_transformer(self, name, transformer: IBTrACSTransformer) -> None:
+    def test_transformer(self, name: str, transformer: IBTrACSTransformer) -> None:
         """Test IBTrACS transformation to STAC items
 
         Args:
@@ -181,9 +181,10 @@ class IBTrACSTest(unittest.TestCase):
 
             # Check item type
             monty_item_ext = MontyExtension.ext(item)
-            if monty_item_ext.is_source_event():
+            roles = item.properties.get("roles", [])
+            if "event" in roles and "source" in roles:
                 source_event_items.append(item)
-            elif monty_item_ext.is_source_hazard():
+            elif "hazard" in roles and "source" in roles:
                 source_hazard_items.append(item)
 
         # Verify required items were created
@@ -352,15 +353,15 @@ class IBTrACSTest(unittest.TestCase):
         # Check Monty extension properties
         monty_ext = MontyExtension.ext(hazard_item)
         self.assertIsNotNone(monty_ext)
-        self.assertIn("MH0057", monty_ext.hazard_codes)
-        self.assertIn("TC", monty_ext.hazard_codes)
+        self.assertIn("nat-met-sto-tro", monty_ext.hazard_codes)
         self.assertIsNotNone(monty_ext.correlation_id)
         
         # Check hazard detail
-        self.assertIsNotNone(monty_ext.hazard_detail)
-        self.assertEqual(monty_ext.hazard_detail.cluster, "nat-met-sto-tro")
-        self.assertIsNotNone(monty_ext.hazard_detail.severity_value)
-        self.assertEqual(monty_ext.hazard_detail.severity_unit, "knots")
+        hazard_detail = monty_ext.hazard_detail
+        self.assertIsNotNone(hazard_detail)
+        self.assertEqual(hazard_detail.cluster, "nat-met-sto-tro")
+        self.assertIsNotNone(hazard_detail.severity_value)
+        self.assertEqual(hazard_detail.severity_unit, "knots")
         
     def test_item_links_and_assets(self) -> None:
         """Test that items have the correct links and assets"""
@@ -418,10 +419,10 @@ class IBTrACSTest(unittest.TestCase):
         
         # Test collection methods
         event_collection = transformer.get_event_collection()
-        self.assertEqual(event_collection, "ibtracs-events")
+        self.assertEqual(event_collection.id, "ibtracs-events")
         
         hazard_collection = transformer.get_hazard_collection()
-        self.assertEqual(hazard_collection, "ibtracs-hazards")
+        self.assertEqual(hazard_collection.id, "ibtracs-hazards")
         
         # Test country detection from track
         # Create a simple LineString for testing

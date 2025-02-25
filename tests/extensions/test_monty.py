@@ -42,9 +42,13 @@ def make_item() -> Item:
 
 
 class CustomValidator(JsonSchemaSTACValidator):
+    _schema_cache = None
+
     def _get_schema(self, schema_uri: str) -> dict[str, Any]:
         if schema_uri == CURRENT_SCHEMA_URI:
-            return json.loads(requests.get(CURRENT_SCHEMA_MAPURL).text)
+            if self._schema_cache is None:
+                self.__class__._schema_cache = json.loads(requests.get(CURRENT_SCHEMA_MAPURL).text)
+            return self._schema_cache
         return super()._get_schema(schema_uri)
 
 
