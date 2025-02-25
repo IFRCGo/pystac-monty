@@ -3,8 +3,7 @@ from datetime import datetime
 from typing import Any, List
 
 import pytz
-import requests
-from pystac import Collection, Item
+from pystac import Item
 
 from pystac_monty.extension import (
     HazardDetail,
@@ -55,7 +54,6 @@ class GFDTransformer(MontyDataTransformer):
         items.extend(impact_items)
 
         return items
-
 
     def _get_bounding_box(self, polygon: list):
         """Get the bounding box from the polygon"""

@@ -5,9 +5,8 @@ from enum import Enum
 from typing import Any, Dict, List
 
 import pytz
-import requests
 from markdownify import markdownify as md
-from pystac import Asset, Collection, Item, Link
+from pystac import Asset, Item, Link
 from shapely.geometry import Point, mapping
 
 from pystac_monty.extension import (
@@ -62,7 +61,6 @@ class IDUTransformer(MontyDataTransformer):
         items.extend(impact_items)
 
         return items
-
 
     def make_source_event_items(self) -> List[Item]:
         """Create the source event item"""

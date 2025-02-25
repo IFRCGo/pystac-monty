@@ -5,8 +5,7 @@ from datetime import datetime
 from typing import List, Optional
 
 import pytz
-import requests
-from pystac import Asset, Collection, Item, Link
+from pystac import Asset, Item, Link
 from shapely.geometry import Point, mapping, shape
 
 from pystac_monty.extension import (

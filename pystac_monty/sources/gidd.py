@@ -4,8 +4,7 @@ from datetime import datetime
 from typing import Any, Dict, List
 
 import pytz
-import requests
-from pystac import Asset, Collection, Item, Link
+from pystac import Asset, Item, Link
 
 from pystac_monty.extension import (
     ImpactDetail,
@@ -60,7 +59,6 @@ class GIDDTransformer(MontyDataTransformer):
         items.extend(impact_items)
 
         return items
-
 
     def make_source_event_items(self) -> List[Item]:
         """Create the source event items"""

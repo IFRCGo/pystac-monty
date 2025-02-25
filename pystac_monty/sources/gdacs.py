@@ -6,9 +6,8 @@ from enum import Enum
 from typing import Any, List
 
 import pytz
-import requests
 from markdownify import markdownify as md
-from pystac import Asset, Collection, Item, Link
+from pystac import Asset, Item, Link
 from shapely import simplify, to_geojson
 from shapely.geometry import shape
 from shapely.geometry.base import BaseGeometry
@@ -82,7 +81,6 @@ class GDACSTransformer(MontyDataTransformer):
         items.extend(impact_items)
 
         return items
-
 
     def check_and_get_event_data(self) -> GDACSDataSource:
         # first check that the event data is present in the data

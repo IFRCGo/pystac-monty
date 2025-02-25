@@ -4,9 +4,8 @@ from datetime import datetime
 from typing import Any, List, Optional, Union
 
 import pytz
-import requests
 from markdownify import markdownify as md
-from pystac import Asset, Collection, Item
+from pystac import Asset, Item
 from shapely.geometry import Point, mapping
 
 from pystac_monty.extension import (
@@ -85,7 +84,6 @@ class PDCTransformer(MontyDataTransformer):
         items.extend(impact_items)
 
         return items
-
 
     def make_source_event_item(self) -> Optional[Item]:
         """Create an Event Item"""

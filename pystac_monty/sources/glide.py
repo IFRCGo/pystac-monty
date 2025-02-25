@@ -3,8 +3,7 @@ import mimetypes
 from datetime import datetime
 from typing import Any, List
 
-import requests
-from pystac import Asset, Collection, Item, Link
+from pystac import Asset, Item, Link
 from shapely.geometry import Point, mapping
 
 from pystac_monty.extension import HazardDetail, MontyEstimateType, MontyExtension
@@ -172,7 +171,6 @@ class GlideTransformer(MontyDataTransformer):
 
         date = datetime.fromisoformat(formatted_date.replace("Z", "+00:00"))
         return date
-
 
     def check_and_get_glide_events(self) -> list[Any]:
         """Validate the source fields"""

@@ -121,7 +121,7 @@ def test_get_iso3_from_geometry_performance():
 
     # Close the geocoder safely
     try:
-        if geocoder._file_handle:
+        if geocoder._file_handle is not None:
             geocoder._file_handle.close()
             geocoder._file_handle = None
     except Exception as e:

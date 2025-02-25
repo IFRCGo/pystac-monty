@@ -1,12 +1,10 @@
-import json
 from dataclasses import dataclass
 from datetime import datetime
 from typing import List, Optional, Union
 
 import pandas as pd
 import pytz
-import requests
-from pystac import Collection, Item, Link
+from pystac import Item, Link
 from shapely.geometry import Point, mapping
 
 from pystac_monty.extension import (
@@ -285,7 +283,6 @@ class EMDATTransformer(MontyDataTransformer):
         df = self.data.get_data()
         matching_rows = df[df["DisNo."] == disno]
         return matching_rows.iloc[0] if not matching_rows.empty else None
-
 
     def _create_title_from_row(self, row: pd.Series) -> Optional[str]:
         """Create a descriptive title from row data when Event Name is missing"""
