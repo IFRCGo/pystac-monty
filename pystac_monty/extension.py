@@ -266,6 +266,7 @@ class HazardDetail(ABC):
         severity_unit: str | None = None,
         severity_label: str | None = None,
         estimate_type: MontyEstimateType | None = None,
+        **kwargs: Any,
     ) -> None:
         self.properties = {}
         self.cluster = cluster
@@ -277,6 +278,10 @@ class HazardDetail(ABC):
             self.severity_label = severity_label
         if estimate_type:
             self.estimate_type = estimate_type
+        
+        # Add any additional properties
+        for key, value in kwargs.items():
+            self.properties[key] = value
 
     @property
     def cluster(self) -> str:
@@ -333,8 +338,30 @@ class HazardDetail(ABC):
     @staticmethod
     def from_dict(d: dict[str, Any]) -> HazardDetail:
         cluster: str = get_required(d.get(HAZDET_CLUSTER_PROP), "hazard_detail", HAZDET_CLUSTER_PROP)
-
-        return HazardDetail(cluster)
+        
+        # Extract standard properties
+        severity_value = d.get(HAZDET_SEV_VALUE_PROP)
+        severity_unit = d.get(HAZDET_SEV_UNIT_PROP)
+        severity_label = d.get(HAZDET_SEV_LABEL_PROP)
+        estimate_type = d.get(HAZDET_ESTIMATE_TYPE_PROP)
+        
+        # Create the HazardDetail with standard properties
+        hazard_detail = HazardDetail(
+            cluster=cluster,
+            severity_value=severity_value,
+            severity_unit=severity_unit,
+            severity_label=severity_label,
+            estimate_type=estimate_type
+        )
+        
+        # Add any additional properties
+        for key, value in d.items():
+            if key not in [HAZDET_CLUSTER_PROP, HAZDET_SEV_VALUE_PROP, 
+                          HAZDET_SEV_UNIT_PROP, HAZDET_SEV_LABEL_PROP, 
+                          HAZDET_ESTIMATE_TYPE_PROP]:
+                hazard_detail.properties[key] = value
+        
+        return hazard_detail
 
 
 class ImpactDetail(ABC):
