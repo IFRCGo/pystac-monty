@@ -40,7 +40,7 @@ class WorldAdministrativeBoundariesGeocoder(MontyGeoCoder):
         self._initialize_path()
         self._open_file()
 
-    def __enter__(self) -> 'WorldAdministrativeBoundariesGeocoder':
+    def __enter__(self) -> "WorldAdministrativeBoundariesGeocoder":
         """Context manager entry point"""
         return self
 
@@ -56,7 +56,7 @@ class WorldAdministrativeBoundariesGeocoder(MontyGeoCoder):
             self._path = f"zip://{self.fgb_path}!/{fgb_name}"
         else:
             self._path = self.fgb_path
-    
+
     def _open_file(self) -> None:
         """Open the file and keep the handle in memory"""
         if self._path and not self._file_handle:
@@ -65,7 +65,7 @@ class WorldAdministrativeBoundariesGeocoder(MontyGeoCoder):
             except Exception as e:
                 print(f"Error opening file: {str(e)}")
                 self._file_handle = None
-    
+
     def close(self) -> None:
         """Close the file handle if it's open"""
         if self._file_handle:
@@ -97,7 +97,7 @@ class WorldAdministrativeBoundariesGeocoder(MontyGeoCoder):
         # Using a hash of the stringified geometry as the key
         geom_str = json.dumps(mapping(shape(geometry)), sort_keys=True)
         cache_key = f"geom_iso3_{hash(geom_str)}"
-        
+
         # Check cache first
         cached_value = self._cache.get(cache_key)
         if cached_value is not None:
@@ -106,17 +106,17 @@ class WorldAdministrativeBoundariesGeocoder(MontyGeoCoder):
         # Reopen file if handle is closed
         if self._file_handle is None or self._file_handle.closed:
             self._open_file()
-            
+
         if self._file_handle is None:
             return None
 
         try:
             # Convert input geometry to a shapely object
             point = shape(geometry)
-            
+
             # Use the spatial filter if available in the file handle
             # This leverages FlatGeobuf's spatial indexing capabilities
-            if hasattr(self._file_handle, 'filter') and callable(getattr(self._file_handle, 'filter')):
+            if hasattr(self._file_handle, "filter") and callable(getattr(self._file_handle, "filter")):
                 # Get a small bounding box around the point to use for filtering
                 # This is more efficient than checking against all features
                 bbox = (point.x - 0.001, point.y - 0.001, point.x + 0.001, point.y + 0.001)
@@ -126,7 +126,7 @@ class WorldAdministrativeBoundariesGeocoder(MontyGeoCoder):
                 # Reset cursor to beginning of file if spatial filtering is not available
                 self._file_handle.reset()
                 features_to_check = self._file_handle
-            
+
             # Check each feature to see if it contains the point
             for feature in features_to_check:
                 if shape(feature["geometry"]).contains(point):
@@ -134,7 +134,7 @@ class WorldAdministrativeBoundariesGeocoder(MontyGeoCoder):
                     # Cache the result
                     self._cache[cache_key] = iso3
                     return iso3
-                    
+
             # Cache negative result to avoid repeated lookups
             self._cache[cache_key] = None
         except Exception as e:
@@ -155,14 +155,14 @@ class WorldAdministrativeBoundariesGeocoder(MontyGeoCoder):
         cached_value = self._cache.get(cache_key)
         if cached_value is not None and isinstance(cached_value, dict):
             return cached_value
-            
+
         if not iso3 or not self._path:
             return None
 
         # Reopen file if handle is closed
         if self._file_handle is None or self._file_handle.closed:
             self._open_file()
-            
+
         if self._file_handle is None:
             return None
 
@@ -209,7 +209,7 @@ class GAULGeocoder(MontyGeoCoder):
         self._initialize_path()
         self._open_file()
 
-    def __enter__(self) -> 'GAULGeocoder':
+    def __enter__(self) -> "GAULGeocoder":
         """Context manager entry point"""
         return self
 
@@ -226,7 +226,7 @@ class GAULGeocoder(MontyGeoCoder):
             self._path = f"zip://{self.gpkg_path}!/{gpkg_name}"
         else:
             self._path = self.gpkg_path
-            
+
     def _open_file(self) -> None:
         """Open the file and keep the handle in memory"""
         if self._path and not self._file_handle:
@@ -235,7 +235,7 @@ class GAULGeocoder(MontyGeoCoder):
             except Exception as e:
                 print(f"Error opening file: {str(e)}")
                 self._file_handle = None
-    
+
     def close(self) -> None:
         """Close the file handle if it's open"""
         if self._file_handle:
@@ -268,11 +268,11 @@ class GAULGeocoder(MontyGeoCoder):
 
         if not self._path:
             return None
-            
+
         # Reopen file if handle is closed
         if not self._file_handle:
             self._open_file()
-            
+
         if not self._file_handle:
             return None
 
@@ -294,11 +294,11 @@ class GAULGeocoder(MontyGeoCoder):
 
         if not self._path:
             return None
-            
+
         # Reopen file if handle is closed
         if not self._file_handle:
             self._open_file()
-            
+
         if not self._file_handle:
             return None
 
@@ -328,11 +328,11 @@ class GAULGeocoder(MontyGeoCoder):
 
         if not self._path:
             return None
-            
+
         # Reopen file if handle is closed
         if not self._file_handle:
             self._open_file()
-            
+
         if not self._file_handle:
             return None
 
@@ -362,11 +362,11 @@ class GAULGeocoder(MontyGeoCoder):
 
         if not self._path:
             return None
-            
+
         # Reopen file if handle is closed
         if not self._file_handle:
             self._open_file()
-            
+
         if not self._file_handle:
             return None
 
@@ -393,7 +393,7 @@ class GAULGeocoder(MontyGeoCoder):
         # Check if we have a valid path and admin_units
         if not admin_units or not self._path:
             return None
-            
+
         # Create a cache key based on the admin_units string
         cache_key = f"admin_units_{hash(admin_units)}"
         cached_value = self._cache.get(cache_key)
@@ -434,7 +434,7 @@ class GAULGeocoder(MontyGeoCoder):
             combined = unary_union(geoms)
             simplified = combined.simplify(self._simplify_tolerance, preserve_topology=True)
             result = {"geometry": mapping(simplified), "bbox": list(simplified.bounds)}
-            
+
             # Cache the result
             self._cache[cache_key] = result
             return result
@@ -455,7 +455,7 @@ class GAULGeocoder(MontyGeoCoder):
         """
         if not country_name or not self._path:
             return None
-            
+
         # Create a cache key based on the country name
         cache_key = f"country_geom_{country_name.lower()}"
         cached_value = self._cache.get(cache_key)

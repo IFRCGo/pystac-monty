@@ -278,7 +278,7 @@ class HazardDetail(ABC):
             self.severity_label = severity_label
         if estimate_type:
             self.estimate_type = estimate_type
-        
+
         # Add any additional properties
         for key, value in kwargs.items():
             self.properties[key] = value
@@ -338,29 +338,33 @@ class HazardDetail(ABC):
     @staticmethod
     def from_dict(d: dict[str, Any]) -> HazardDetail:
         cluster: str = get_required(d.get(HAZDET_CLUSTER_PROP), "hazard_detail", HAZDET_CLUSTER_PROP)
-        
+
         # Extract standard properties
         severity_value = d.get(HAZDET_SEV_VALUE_PROP)
         severity_unit = d.get(HAZDET_SEV_UNIT_PROP)
         severity_label = d.get(HAZDET_SEV_LABEL_PROP)
         estimate_type = d.get(HAZDET_ESTIMATE_TYPE_PROP)
-        
+
         # Create the HazardDetail with standard properties
         hazard_detail = HazardDetail(
             cluster=cluster,
             severity_value=severity_value,
             severity_unit=severity_unit,
             severity_label=severity_label,
-            estimate_type=estimate_type
+            estimate_type=estimate_type,
         )
-        
+
         # Add any additional properties
         for key, value in d.items():
-            if key not in [HAZDET_CLUSTER_PROP, HAZDET_SEV_VALUE_PROP, 
-                          HAZDET_SEV_UNIT_PROP, HAZDET_SEV_LABEL_PROP, 
-                          HAZDET_ESTIMATE_TYPE_PROP]:
+            if key not in [
+                HAZDET_CLUSTER_PROP,
+                HAZDET_SEV_VALUE_PROP,
+                HAZDET_SEV_UNIT_PROP,
+                HAZDET_SEV_LABEL_PROP,
+                HAZDET_ESTIMATE_TYPE_PROP,
+            ]:
                 hazard_detail.properties[key] = value
-        
+
         return hazard_detail
 
 
@@ -454,11 +458,11 @@ class ImpactDetail(ABC):
         category_str: str = get_required(d.get(IMPDET_CATEGORY_PROP), "impact_detail", IMPDET_CATEGORY_PROP)
         type_str: str = get_required(d.get(IMPDET_TYPE_PROP), "impact_detail", IMPDET_TYPE_PROP)
         value: float = get_required(d.get(IMPDET_VALUE_PROP), "impact_detail", IMPDET_VALUE_PROP)
-        
+
         # Convert strings to enum values
         category = MontyImpactExposureCategory(category_str)
         impact_type = MontyImpactType(type_str)
-        
+
         # Get optional properties
         unit = d.get(IMPDET_UNIT_PROP)
         estimate_type_str = d.get(IMPDET_ESTIMATE_TYPE_PROP)
@@ -523,7 +527,7 @@ class MontyExtension(
 
     def compute_and_set_correlation_id(self, hazard_profiles: HazardProfiles = MontyHazardProfiles()) -> None:
         # if the object is an ItemMontyExtension, we can generate the correlation id
-        if hasattr(self, 'item') and isinstance(self.item, pystac.Item):
+        if hasattr(self, "item") and isinstance(self.item, pystac.Item):
             self.correlation_id = self.pairing.generate_correlation_id(self.item, hazard_profiles)
         else:
             raise ValueError("Correlation ID can only be computed for Items")
@@ -613,7 +617,7 @@ class MontyExtension(
     @staticmethod
     def enable_extension() -> None:
         # Add monty property to ItemExt
-        setattr(pystac.extensions.ext.ItemExt, 'monty', property(lambda self: MontyExtension.ext(self)))
+        setattr(pystac.extensions.ext.ItemExt, "monty", property(lambda self: MontyExtension.ext(self)))
 
 
 class CollectionMontyExtension(MontyExtension[pystac.Collection]):

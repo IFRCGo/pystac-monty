@@ -3,17 +3,13 @@
 import csv
 import io
 from datetime import datetime
-from typing import Any, Dict, List, Optional, Tuple, Union
+from typing import Dict, List, Union
 
 import pytz
 from pystac import Asset, Item, Link
-from shapely.geometry import LineString, Point, mapping, shape
+from shapely.geometry import LineString, Point, mapping
 
-from pystac_monty.extension import (
-    HazardDetail,
-    MontyEstimateType,
-    MontyExtension,
-)
+from pystac_monty.extension import HazardDetail, MontyEstimateType, MontyExtension
 from pystac_monty.geocoding import MontyGeoCoder
 from pystac_monty.hazard_profiles import MontyHazardProfiles
 from pystac_monty.sources.common import MontyDataSource, MontyDataTransformer

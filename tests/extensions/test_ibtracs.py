@@ -3,20 +3,17 @@
 import json
 import unittest
 from os import makedirs
-from io import StringIO
-from datetime import datetime
 
 import pytest
-from parameterized import parameterized
 import requests
-from shapely.geometry import LineString, Point
+from parameterized import parameterized
+from shapely.geometry import LineString
 
-from pystac_monty.extension import MontyExtension, HazardDetail, MontyEstimateType
+from pystac_monty.extension import MontyExtension
 from pystac_monty.geocoding import WorldAdministrativeBoundariesGeocoder
 from pystac_monty.sources.ibtracs import IBTrACSDataSource, IBTrACSTransformer
 from tests.conftest import get_data_file
 from tests.extensions.test_monty import CustomValidator
-from tests.utils.test_cases import ARBITRARY_GEOM
 
 CURRENT_SCHEMA_URI = "https://ifrcgo.github.io/monty/v0.1.0/schema.json"
 CURRENT_SCHEMA_MAPURL = "https://raw.githubusercontent.com/IFRCGo/monty-stac-extension/refs/heads/main/json-schema/schema.json"
@@ -49,7 +46,7 @@ SAMPLE_IBTRACS_CSV = """SID,SEASON,BASIN,NAME,ISO_TIME,LAT,LON,WMO_WIND,WMO_PRES
 2024178N09335,2024,NA,BERYL,2024-07-01 00:00:00,9.1,-39.5,115,974,115,974,main,2000,0,HU,HU4
 2024178N09335,2024,NA,BERYL,2024-07-01 06:00:00,9.0,-40.2,120,972,120,972,main,2050,0,HU,HU4
 2024178N09335,2024,NA,BERYL,2024-07-01 12:00:00,9.0,-41.0,125,970,125,970,main,2100,0,HU,HU4
-"""
+"""  # noqa: E501
 
 # Sample IBTrACS CSV data with multiple storms
 MULTI_STORM_IBTRACS_CSV = """SID,SEASON,BASIN,NAME,ISO_TIME,LAT,LON,WMO_WIND,WMO_PRES,USA_WIND,USA_PRES,TRACK_TYPE,DIST2LAND,LANDFALL,USA_SSHS,USA_STATUS
@@ -61,7 +58,7 @@ MULTI_STORM_IBTRACS_CSV = """SID,SEASON,BASIN,NAME,ISO_TIME,LAT,LON,WMO_WIND,WMO
 2024200N12345,2024,NA,CHRIS,2024-07-18 06:00:00,12.1,-45.5,20,1007,20,1007,main,1050,0,TD,TD
 2024200N12345,2024,NA,CHRIS,2024-07-18 12:00:00,12.2,-46.0,25,1006,25,1006,main,1100,0,TD,TD
 2024200N12345,2024,NA,CHRIS,2024-07-18 18:00:00,12.3,-46.5,30,1005,30,1005,main,1150,0,TD,TD
-"""
+"""  # noqa: E501
 
 # Sample IBTrACS CSV data with landfall
 LANDFALL_IBTRACS_CSV = """SID,SEASON,BASIN,NAME,ISO_TIME,LAT,LON,WMO_WIND,WMO_PRES,USA_WIND,USA_PRES,TRACK_TYPE,DIST2LAND,LANDFALL,USA_SSHS,USA_STATUS
@@ -69,7 +66,7 @@ LANDFALL_IBTRACS_CSV = """SID,SEASON,BASIN,NAME,ISO_TIME,LAT,LON,WMO_WIND,WMO_PR
 2024178N09335,2024,NA,BERYL,2024-07-12 06:00:00,17.8,-78.3,25,1006,25,1006,main,0,1,TD,TD
 2024178N09335,2024,NA,BERYL,2024-07-12 12:00:00,18.1,-79.2,20,1007,20,1007,main,0,1,TD,TD
 2024178N09335,2024,NA,BERYL,2024-07-12 18:00:00,18.3,-80.1,15,1008,15,1008,main,0,1,TD,TD
-"""
+"""  # noqa: E501
 
 # Invalid CSV data for testing error handling
 INVALID_IBTRACS_CSV = """INVALID,CSV,DATA
@@ -90,29 +87,29 @@ EMPTY_IBTRACS_CSV = """SID,SEASON,BASIN,NAME,ISO_TIME,LAT,LON,WMO_WIND,WMO_PRES,
 beryl_scenario = (
     "beryl",  # Scenario name
     SAMPLE_IBTRACS_CSV,  # CSV data
-    "https://www.ncei.noaa.gov/data/international-best-track-archive-for-climate-stewardship-ibtracs/v04r00/access/csv/ibtracs.NA.list.v04r00.csv",  # Source URL
+    "https://www.ncei.noaa.gov/data/international-best-track-archive-for-climate-stewardship-ibtracs/v04r00/access/csv/ibtracs.NA.list.v04r00.csv",  # noqa
 )
 
 multi_storm_scenario = (
     "multi_storm",  # Scenario name
     MULTI_STORM_IBTRACS_CSV,  # CSV data
-    "https://www.ncei.noaa.gov/data/international-best-track-archive-for-climate-stewardship-ibtracs/v04r00/access/csv/ibtracs.NA.list.v04r00.csv",  # Source URL
+    "https://www.ncei.noaa.gov/data/international-best-track-archive-for-climate-stewardship-ibtracs/v04r00/access/csv/ibtracs.NA.list.v04r00.csv",  # noqa
 )
 
 landfall_scenario = (
     "landfall",  # Scenario name
     LANDFALL_IBTRACS_CSV,  # CSV data
-    "https://www.ncei.noaa.gov/data/international-best-track-archive-for-climate-stewardship-ibtracs/v04r00/access/csv/ibtracs.NA.list.v04r00.csv",  # Source URL
+    "https://www.ncei.noaa.gov/data/international-best-track-archive-for-climate-stewardship-ibtracs/v04r00/access/csv/ibtracs.NA.list.v04r00.csv",  # noqa
 )
 
 na_scenario = (
     "North Atlantic",  # Scenario name
-    "https://raw.githubusercontent.com/IFRCGo/monty-stac-extension/refs/heads/main/model/sources/IBTrACS/ibtracs.NA.list.v04r01.csv",  # CSV data
-    "https://raw.githubusercontent.com/IFRCGo/monty-stac-extension/refs/heads/main/model/sources/IBTrACS/ibtracs.NA.list.v04r01.csv",  # Source URL
+    "https://raw.githubusercontent.com/IFRCGo/monty-stac-extension/refs/heads/main/model/sources/IBTrACS/ibtracs.NA.list.v04r01.csv",  # noqa
+    "https://raw.githubusercontent.com/IFRCGo/monty-stac-extension/refs/heads/main/model/sources/IBTrACS/ibtracs.NA.list.v04r01.csv",  # noqa
 )
 
 
-def load_scenarios(scenarios) -> list[tuple[str, IBTrACSTransformer]]: # type: ignore
+def load_scenarios(scenarios) -> list[tuple[str, IBTrACSTransformer]]:  # type: ignore
     """Load test scenarios for IBTrACS transformation testing.
 
     Args:
@@ -129,7 +126,7 @@ def load_scenarios(scenarios) -> list[tuple[str, IBTrACSTransformer]]: # type: i
         # fetch the data if url is provided
         if csv_data.startswith("http"):
             csv_data = requests.get(csv_data).text
-            
+
         data_source = IBTrACSDataSource(source_url, csv_data)
         transformers.append((name, IBTrACSTransformer(data_source, geocoder)))
 
@@ -180,7 +177,6 @@ class IBTrACSTest(unittest.TestCase):
             item.validate(validator=self.validator)
 
             # Check item type
-            monty_item_ext = MontyExtension.ext(item)
             roles = item.properties.get("roles", [])
             if "event" in roles and "source" in roles:
                 source_event_items.append(item)
@@ -192,19 +188,19 @@ class IBTrACSTest(unittest.TestCase):
             # For single storm scenario, we should have 1 event and multiple hazards
             self.assertEqual(len(source_event_items), 1)
             self.assertGreater(len(source_hazard_items), 0)
-            
+
             # Check that the event item has the correct storm ID
             self.assertEqual(source_event_items[0].id, "2024178N09335")
-            
+
             # Check that hazard items have the correct prefix
             for hazard_item in source_hazard_items:
                 self.assertTrue(hazard_item.id.startswith("2024178N09335-hazard-"))
-                
+
         elif name == "multi_storm":
             # For multi-storm scenario, we should have 2 events
             self.assertEqual(len(source_event_items), 2)
             self.assertGreater(len(source_hazard_items), 0)
-            
+
             # Check that we have both storm IDs in the event items
             storm_ids = [item.id for item in source_event_items]
             self.assertIn("2024178N09335", storm_ids)
@@ -220,42 +216,42 @@ class IBTrACSTest(unittest.TestCase):
         """
         # Test with sample data
         data_source = IBTrACSDataSource("test_url", SAMPLE_IBTRACS_CSV)
-        
+
         # Check that data is parsed
         parsed_data = data_source.get_data()
         self.assertIsNotNone(parsed_data)
         self.assertEqual(len(parsed_data), 23)  # 23 rows in sample data
-        
+
         # Check storm IDs
         storm_ids = data_source.get_storm_ids()
         self.assertEqual(len(storm_ids), 1)
         self.assertEqual(storm_ids[0], "2024178N09335")
-        
+
         # Check storm data filtering
         storm_data = data_source.get_storm_data("2024178N09335")
         self.assertEqual(len(storm_data), 23)
-        
+
         # Test with multi-storm data
         multi_data_source = IBTrACSDataSource("test_url", MULTI_STORM_IBTRACS_CSV)
-        
+
         # Check storm IDs
         multi_storm_ids = multi_data_source.get_storm_ids()
         self.assertEqual(len(multi_storm_ids), 2)
         self.assertIn("2024178N09335", multi_storm_ids)
         self.assertIn("2024200N12345", multi_storm_ids)
-        
+
         # Check storm data filtering
         beryl_data = multi_data_source.get_storm_data("2024178N09335")
         self.assertEqual(len(beryl_data), 4)
-        
+
         chris_data = multi_data_source.get_storm_data("2024200N12345")
         self.assertEqual(len(chris_data), 4)
-        
+
         # Test with landfall data
         landfall_data_source = IBTrACSDataSource("test_url", LANDFALL_IBTRACS_CSV)
         landfall_data = landfall_data_source.get_data()
         self.assertEqual(len(landfall_data), 4)
-        
+
         # Check landfall flag
         for row in landfall_data:
             self.assertEqual(row["LANDFALL"], "1")
@@ -272,22 +268,22 @@ class IBTrACSTest(unittest.TestCase):
         invalid_data_source = IBTrACSDataSource("test_url", INVALID_IBTRACS_CSV)
         parsed_data = invalid_data_source.get_data()
         self.assertEqual(len(parsed_data), 0)  # Should return empty list
-        
+
         # Test with empty CSV data
         empty_data_source = IBTrACSDataSource("test_url", EMPTY_IBTRACS_CSV)
         empty_parsed_data = empty_data_source.get_data()
         self.assertEqual(len(empty_parsed_data), 0)  # Should return empty list
-        
+
         # Test transformer with empty data
         transformer = IBTrACSTransformer(empty_data_source, geocoder)
         items = transformer.make_items()
         self.assertEqual(len(items), 0)  # Should return empty list
-        
+
         # Test with missing fields
         missing_fields_source = IBTrACSDataSource("test_url", MISSING_FIELDS_CSV)
         missing_fields_data = missing_fields_source.get_data()
         self.assertEqual(len(missing_fields_data), 1)  # Should parse the row
-        
+
         # Check that missing fields don't cause errors
         storm_ids = missing_fields_source.get_storm_ids()
         self.assertEqual(len(storm_ids), 1)
@@ -296,31 +292,31 @@ class IBTrACSTest(unittest.TestCase):
     def test_missing_geocoder(self) -> None:
         """Test that transformer raises error when geocoder is missing"""
         data_source = IBTrACSDataSource("test_url", SAMPLE_IBTRACS_CSV)
-        
+
         # Test with None geocoder
         with self.assertRaises(ValueError):
             IBTrACSTransformer(data_source, None)
-            
+
     def test_event_item_properties(self) -> None:
         """Test that event items have the correct properties"""
         data_source = IBTrACSDataSource("test_url", SAMPLE_IBTRACS_CSV)
         transformer = IBTrACSTransformer(data_source, geocoder)
-        
+
         items = transformer.make_items()
-        
+
         # Find the event item
         event_items = [item for item in items if "event" in item.properties.get("roles", [])]
         self.assertEqual(len(event_items), 1)
-        
+
         event_item = event_items[0]
-        
+
         # Check basic properties
         self.assertEqual(event_item.id, "2024178N09335")
         self.assertEqual(event_item.properties.get("title"), "Tropical Cyclone BERYL")
         self.assertIn("description", event_item.properties)
         self.assertIn("start_datetime", event_item.properties)
         self.assertIn("end_datetime", event_item.properties)
-        
+
         # Check Monty extension properties
         monty_ext = MontyExtension.ext(event_item)
         self.assertIsNotNone(monty_ext)
@@ -328,106 +324,106 @@ class IBTrACSTest(unittest.TestCase):
         self.assertIn("TC", monty_ext.hazard_codes)
         self.assertIsNotNone(monty_ext.correlation_id)
         self.assertTrue(monty_ext.correlation_id.startswith("20240626T000000"))
-        
+
     def test_hazard_item_properties(self) -> None:
         """Test that hazard items have the correct properties"""
         data_source = IBTrACSDataSource("test_url", SAMPLE_IBTRACS_CSV)
         transformer = IBTrACSTransformer(data_source, geocoder)
-        
+
         items = transformer.make_items()
-        
+
         # Find hazard items
         hazard_items = [item for item in items if "hazard" in item.properties.get("roles", [])]
         self.assertGreater(len(hazard_items), 0)
-        
+
         # Check first hazard item
         hazard_item = hazard_items[0]
-        
+
         # Check basic properties
         self.assertTrue(hazard_item.id.startswith("2024178N09335-hazard-"))
         self.assertIn("title", hazard_item.properties)
         self.assertIn("description", hazard_item.properties)
         self.assertIn("start_datetime", hazard_item.properties)
         self.assertIn("end_datetime", hazard_item.properties)
-        
+
         # Check Monty extension properties
         monty_ext = MontyExtension.ext(hazard_item)
         self.assertIsNotNone(monty_ext)
         self.assertIn("nat-met-sto-tro", monty_ext.hazard_codes)
         self.assertIsNotNone(monty_ext.correlation_id)
-        
+
         # Check hazard detail
         hazard_detail = monty_ext.hazard_detail
         self.assertIsNotNone(hazard_detail)
         self.assertEqual(hazard_detail.cluster, "nat-met-sto-tro")
         self.assertIsNotNone(hazard_detail.severity_value)
         self.assertEqual(hazard_detail.severity_unit, "knots")
-        
+
     def test_item_links_and_assets(self) -> None:
         """Test that items have the correct links and assets"""
         data_source = IBTrACSDataSource("test_url", SAMPLE_IBTRACS_CSV)
         transformer = IBTrACSTransformer(data_source, geocoder)
-        
+
         items = transformer.make_items()
-        
+
         # Find event and hazard items
         event_items = [item for item in items if "event" in item.properties.get("roles", [])]
         hazard_items = [item for item in items if "hazard" in item.properties.get("roles", [])]
-        
+
         # Check event item links and assets
         event_item = event_items[0]
-        
+
         # Check assets
         self.assertIn("data", event_item.assets)
         self.assertIn("documentation", event_item.assets)
-        
+
         data_asset = event_item.assets["data"]
         self.assertEqual(data_asset.media_type, "text/csv")
         self.assertIn("roles", data_asset.extra_fields)
         self.assertIn("data", data_asset.extra_fields["roles"])
-        
+
         doc_asset = event_item.assets["documentation"]
         self.assertEqual(doc_asset.media_type, "text/html")
         self.assertIn("roles", doc_asset.extra_fields)
         self.assertIn("documentation", doc_asset.extra_fields["roles"])
-        
+
         # Check links
         via_links = [link for link in event_item.links if link.rel == "via"]
         self.assertEqual(len(via_links), 1)
-        
+
         # Check hazard item links and assets
         if hazard_items:
             hazard_item = hazard_items[0]
-            
+
             # Check assets
             self.assertIn("data", hazard_item.assets)
             self.assertIn("documentation", hazard_item.assets)
-            
+
             # Check links
             related_links = [link for link in hazard_item.links if link.rel == "related"]
             self.assertGreaterEqual(len(related_links), 1)
-            
+
             # Check that related link points to event
             event_link = next((link for link in related_links if "event" in link.extra_fields.get("roles", [])), None)
             self.assertIsNotNone(event_link)
             self.assertIn("source", event_link.extra_fields.get("roles", []))
-            
+
     def test_helper_methods(self) -> None:
         """Test helper methods in the IBTrACSTransformer class"""
         data_source = IBTrACSDataSource("test_url", SAMPLE_IBTRACS_CSV)
         transformer = IBTrACSTransformer(data_source, geocoder)
-        
+
         # Test collection methods
         event_collection = transformer.get_event_collection()
         self.assertEqual(event_collection.id, "ibtracs-events")
-        
+
         hazard_collection = transformer.get_hazard_collection()
         self.assertEqual(hazard_collection.id, "ibtracs-hazards")
-        
+
         # Test country detection from track
         # Create a simple LineString for testing
         line = LineString([(-80.0, 25.0), (-75.0, 30.0), (-70.0, 35.0)])
         countries = transformer._get_countries_from_track(line)
-        
+
         # Should at least include XYZ (international waters) as a fallback
         self.assertIn("XYZ", countries)
