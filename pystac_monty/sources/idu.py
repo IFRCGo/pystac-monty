@@ -19,8 +19,6 @@ from pystac_monty.extension import (
 from pystac_monty.hazard_profiles import MontyHazardProfiles
 from pystac_monty.sources.common import MontyDataSource, MontyDataTransformer
 
-from monty_stac_extension.examples.
-
 # Constants
 
 STAC_EVENT_ID_PREFIX = "idmc-idu-event-"
