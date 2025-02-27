@@ -33,11 +33,10 @@ class GIDDTransformer(MontyDataTransformer):
     """Transforms GIDD event data into STAC Items"""
 
     gidd_events_collection_id = "gidd-events"
-    gidd_events_collection_url = ("./monty-stac-extension/examples/idmc-gidd-events/idmc-gidd-events.json")
+    gidd_events_collection_url = "./monty-stac-extension/examples/idmc-gidd-events/idmc-gidd-events.json"
     # TODO: Make these events collection id consistent
     gidd_hazards_collection_id = "idmc-gidd-impacts"
-    gidd_hazards_collection_url = ("../../monty-stac-extension/examples/idmc-gidd-impacts/idmc-gidd-impacts.json")
-
+    gidd_hazards_collection_url = "./monty-stac-extension/examples/idmc-gidd-impacts/idmc-gidd-impacts.json"
     hazard_profiles = MontyHazardProfiles()
 
     def __init__(self, data: GIDDDataSource) -> None:
