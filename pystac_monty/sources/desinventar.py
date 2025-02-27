@@ -11,7 +11,7 @@ import pytz
 import requests
 from geopandas import gpd
 from lxml import etree
-from pystac import Link, Collection
+from pystac import Collection, Link
 from pystac.item import Item
 
 from pystac_monty.extension import (
@@ -242,7 +242,7 @@ class DesinventarTransformer(MontyDataTransformer):
 
         self.impacts_collection_id = "desinventar-impacts"
         self.impacts_collection_url = "./monty-stac-extension/examples/desinventar-impacts/desinventar-impacts.json"  # noqa: E501
-    
+
     def get_event_collection(self) -> Collection:
         """Get event collection"""
         with open(self.events_collection_url, "r", encoding="utf-8") as f:
