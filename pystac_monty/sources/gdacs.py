@@ -59,13 +59,13 @@ class GDACSTransformer(MontyDataTransformer):
     """
 
     gdacs_events_collection_id = "gdacs-events"
-    gdacs_events_collection_url = ("./monty-stac-extension/examples/gdacs-events/gdacs-events.json")
+    gdacs_events_collection_url = "./monty-stac-extension/examples/gdacs-events/gdacs-events.json"
 
     gdacs_hazards_collection_id = "gdacs-hazards"
-    gdacs_hazards_collection_url = ("./monty-stac-extension/examples/gdacs-hazards/gdacs-hazards.json")
+    gdacs_hazards_collection_url = "./monty-stac-extension/examples/gdacs-hazards/gdacs-hazards.json"
 
     gdacs_impacts_collection_id = "gdacs-impacts"
-    gdacs_impacts_collection_url = ("./monty-stac-extension/examples/gdacs-impacts/gdacs-impacts.json")
+    gdacs_impacts_collection_url = "./monty-stac-extension/examples/gdacs-impacts/gdacs-impacts.json"
 
     data: list[GDACSDataSource] = []
     hazard_profiles = MontyHazardProfiles()

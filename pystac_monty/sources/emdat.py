@@ -57,13 +57,13 @@ class EMDATTransformer(MontyDataTransformer):
     """
 
     emdat_events_collection_id = "emdat-events"
-    emdat_events_collection_url = ("./monty-stac-extension/examples/emdat-events/emdat-events.json")
+    emdat_events_collection_url = "./monty-stac-extension/examples/emdat-events/emdat-events.json"
 
     emdat_hazards_collection_id = "emdat-hazards"
-    emdat_hazards_collection_url = ("./monty-stac-extension/examples/emdat-hazards/emdat-hazards.json")
+    emdat_hazards_collection_url = "./monty-stac-extension/examples/emdat-hazards/emdat-hazards.json"
 
     emdat_impacts_collection_id = "emdat-impacts"
-    emdat_impacts_collection_url = ("./monty-stac-extension/examples/emdat-impacts/emdat-impacts.json")
+    emdat_impacts_collection_url = "./monty-stac-extension/examples/emdat-impacts/emdat-impacts.json"
 
     hazard_profiles = MontyHazardProfiles()
 
