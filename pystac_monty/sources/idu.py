@@ -46,7 +46,7 @@ class IDUTransformer:
     """Transform the source data into the STAC items"""
 
     idu_events_collection_id = "idu-events"
-    idu_events_collection_url = "https://raw.githubusercontent.com/IFRCGo/monty-stac-extension/refs/heads/feature/update-idu-documentation/examples/idu-events/idu-events.json"  # noqa
+    idu_events_collection_url = "https://raw.githubusercontent.com/IFRCGo/monty-stac-extension/refs/heads/main/examples/idmc-idu-events/idmc-idu-events.json"  # noqa
     idu_impacts_collection_id = "idu-impacts"
     idu_impacts_collection_url = "https://raw.githubusercontent.com/IFRCGo/monty-stac-extension/refs/heads/feature/update-idu-documentation/examples/idu-impacts/idu-impacts.json"  # noqa
 
