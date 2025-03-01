@@ -63,7 +63,13 @@ class PDCTransformer:
                 self.exposure_detail = json.loads(f.read())
 
         self.uuid = self.config_data.get("uuid", None)
-        self.episode_number = int(float(self.config_data.get("exposure_timestamp", 0)))
+        # Note: We might need to handle this differently if the exposure_timestamp
+        # is other than numeric (e.g. alphabetic)
+        # For now, we have assigned 0 to the episode_number
+        try:
+            self.episode_number = int(float(self.config_data.get("exposure_timestamp", 0)))
+        except ValueError:
+            self.episode_number = 0
         if "geojson_file_path" in self.config_data and os.path.exists(self.config_data["geojson_file_path"]):
             with open(self.config_data["geojson_file_path"], "r", encoding="utf-8") as f:
                 self.geojson_data = json.loads(f.read())
