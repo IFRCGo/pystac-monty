@@ -23,8 +23,8 @@ interactions:
       Content-Length:
       - '0'
       Content-Security-Policy:
-      - 'default-src ''none''; base-uri ''self''; child-src github.com/assets-cdn/worker/
-        github.com/webpack/ github.com/assets/ gist.github.com/assets-cdn/worker/;
+      - 'default-src ''none''; base-uri ''self''; child-src github.githubassets.com
+        github.com/assets-cdn/worker/ github.com/webpack/ github.com/assets/ gist.github.com/assets-cdn/worker/;
         connect-src ''self'' uploads.github.com www.githubstatus.com collector.github.com
         raw.githubusercontent.com api.github.com github-cloud.s3.amazonaws.com github-production-repository-file-5c1aeb.s3.amazonaws.com
         github-production-upload-manifest-file-7fdce7.s3.amazonaws.com github-production-user-asset-6210df.s3.amazonaws.com
@@ -58,12 +58,12 @@ interactions:
         secured-user-images.githubusercontent.com/ private-user-images.githubusercontent.com
         github-production-user-asset-6210df.s3.amazonaws.com gist.github.com; script-src
         github.githubassets.com; style-src ''unsafe-inline'' github.githubassets.com;
-        upgrade-insecure-requests; worker-src github.com/assets-cdn/worker/ github.com/webpack/
-        github.com/assets/ gist.github.com/assets-cdn/worker/'
+        upgrade-insecure-requests; worker-src github.githubassets.com github.com/assets-cdn/worker/
+        github.com/webpack/ github.com/assets/ gist.github.com/assets-cdn/worker/'
       Content-Type:
       - text/html; charset=utf-8
       Date:
-      - Tue, 25 Feb 2025 16:59:10 GMT
+      - Sun, 02 Mar 2025 16:26:46 GMT
       Location:
       - https://raw.githubusercontent.com/IFRCGo/monty-stac-extension/refs/heads/main/examples/emdat-events/emdat-events.json
       Referrer-Policy:
@@ -80,7 +80,7 @@ interactions:
       X-Frame-Options:
       - deny
       X-GitHub-Request-Id:
-      - 9C81:251611:15E5706:165B12E:67BDF6DE
+      - D622:20539C:AD0BF97:B34DD6E:67C486C6
       X-XSS-Protection:
       - '0'
     status:
@@ -132,11 +132,11 @@ interactions:
       Cross-Origin-Resource-Policy:
       - cross-origin
       Date:
-      - Tue, 25 Feb 2025 16:59:11 GMT
+      - Sun, 02 Mar 2025 16:26:47 GMT
       ETag:
       - W/"3efbfae947e8deb7b488e3390c219c49d42b2bdc3add09994861790151f9540b"
       Expires:
-      - Tue, 25 Feb 2025 17:04:11 GMT
+      - Sun, 02 Mar 2025 16:31:47 GMT
       Source-Age:
       - '0'
       Strict-Transport-Security:
@@ -146,21 +146,21 @@ interactions:
       Via:
       - 1.1 varnish
       X-Cache:
-      - HIT
+      - MISS
       X-Cache-Hits:
       - '0'
       X-Content-Type-Options:
       - nosniff
       X-Fastly-Request-ID:
-      - 3e9a4b63724c5fd9a4427f74324eabcce8d8f6c0
+      - 5c4f5bd8a16ac5996fbddb02cfdbbd08cce92313
       X-Frame-Options:
       - deny
       X-GitHub-Request-Id:
-      - E7D8:80671:35B54D:3B124D:67BDF2EE
+      - 34F7:3FB397:419AE7:49CB8C:67C486C3
       X-Served-By:
-      - cache-mrs10532-MRS
+      - cache-par-lfpg1960044-PAR
       X-Timer:
-      - S1740502751.896023,VS0,VE159
+      - S1740932807.976894,VS0,VE175
       X-XSS-Protection:
       - 1; mode=block
     status:
@@ -190,8 +190,8 @@ interactions:
       Content-Length:
       - '0'
       Content-Security-Policy:
-      - 'default-src ''none''; base-uri ''self''; child-src github.com/assets-cdn/worker/
-        github.com/webpack/ github.com/assets/ gist.github.com/assets-cdn/worker/;
+      - 'default-src ''none''; base-uri ''self''; child-src github.githubassets.com
+        github.com/assets-cdn/worker/ github.com/webpack/ github.com/assets/ gist.github.com/assets-cdn/worker/;
         connect-src ''self'' uploads.github.com www.githubstatus.com collector.github.com
         raw.githubusercontent.com api.github.com github-cloud.s3.amazonaws.com github-production-repository-file-5c1aeb.s3.amazonaws.com
         github-production-upload-manifest-file-7fdce7.s3.amazonaws.com github-production-user-asset-6210df.s3.amazonaws.com
@@ -225,12 +225,12 @@ interactions:
         secured-user-images.githubusercontent.com/ private-user-images.githubusercontent.com
         github-production-user-asset-6210df.s3.amazonaws.com gist.github.com; script-src
         github.githubassets.com; style-src ''unsafe-inline'' github.githubassets.com;
-        upgrade-insecure-requests; worker-src github.com/assets-cdn/worker/ github.com/webpack/
-        github.com/assets/ gist.github.com/assets-cdn/worker/'
+        upgrade-insecure-requests; worker-src github.githubassets.com github.com/assets-cdn/worker/
+        github.com/webpack/ github.com/assets/ gist.github.com/assets-cdn/worker/'
       Content-Type:
       - text/html; charset=utf-8
       Date:
-      - Tue, 25 Feb 2025 16:59:11 GMT
+      - Sun, 02 Mar 2025 16:26:47 GMT
       Location:
       - https://raw.githubusercontent.com/IFRCGo/monty-stac-extension/refs/heads/main/examples/emdat-hazards/emdat-hazards.json
       Referrer-Policy:
@@ -247,7 +247,7 @@ interactions:
       X-Frame-Options:
       - deny
       X-GitHub-Request-Id:
-      - 9CE1:199BE2:15D00FC:1645B65:67BDF6DF
+      - D630:3FB1E9:15075E5:15CAFD6:67C486C7
       X-XSS-Protection:
       - '0'
     status:
@@ -299,11 +299,11 @@ interactions:
       Cross-Origin-Resource-Policy:
       - cross-origin
       Date:
-      - Tue, 25 Feb 2025 16:59:11 GMT
+      - Sun, 02 Mar 2025 16:26:48 GMT
       ETag:
       - W/"59d1cd24375bd1021d844146e39d6c0dcc7f4dddcd759b22fd18583ce3b94bb7"
       Expires:
-      - Tue, 25 Feb 2025 17:04:11 GMT
+      - Sun, 02 Mar 2025 16:31:48 GMT
       Source-Age:
       - '0'
       Strict-Transport-Security:
@@ -313,21 +313,21 @@ interactions:
       Via:
       - 1.1 varnish
       X-Cache:
-      - HIT
+      - MISS
       X-Cache-Hits:
       - '0'
       X-Content-Type-Options:
       - nosniff
       X-Fastly-Request-ID:
-      - 48b2734de58a04b4843497a84da6c59369a20575
+      - b4db9eeea7c2c663760c98d9e9a96522faa67acf
       X-Frame-Options:
       - deny
       X-GitHub-Request-Id:
-      - 5EA1:37153E:35056B:3A62C8:67BDF2EE
+      - 6812:1DF427:1E63A43:230D08F:67C486C4
       X-Served-By:
-      - cache-mrs1050085-MRS
+      - cache-par-lfpg1960047-PAR
       X-Timer:
-      - S1740502752.514889,VS0,VE184
+      - S1740932808.985994,VS0,VE176
       X-XSS-Protection:
       - 1; mode=block
     status:
@@ -357,8 +357,8 @@ interactions:
       Content-Length:
       - '0'
       Content-Security-Policy:
-      - 'default-src ''none''; base-uri ''self''; child-src github.com/assets-cdn/worker/
-        github.com/webpack/ github.com/assets/ gist.github.com/assets-cdn/worker/;
+      - 'default-src ''none''; base-uri ''self''; child-src github.githubassets.com
+        github.com/assets-cdn/worker/ github.com/webpack/ github.com/assets/ gist.github.com/assets-cdn/worker/;
         connect-src ''self'' uploads.github.com www.githubstatus.com collector.github.com
         raw.githubusercontent.com api.github.com github-cloud.s3.amazonaws.com github-production-repository-file-5c1aeb.s3.amazonaws.com
         github-production-upload-manifest-file-7fdce7.s3.amazonaws.com github-production-user-asset-6210df.s3.amazonaws.com
@@ -392,12 +392,12 @@ interactions:
         secured-user-images.githubusercontent.com/ private-user-images.githubusercontent.com
         github-production-user-asset-6210df.s3.amazonaws.com gist.github.com; script-src
         github.githubassets.com; style-src ''unsafe-inline'' github.githubassets.com;
-        upgrade-insecure-requests; worker-src github.com/assets-cdn/worker/ github.com/webpack/
-        github.com/assets/ gist.github.com/assets-cdn/worker/'
+        upgrade-insecure-requests; worker-src github.githubassets.com github.com/assets-cdn/worker/
+        github.com/webpack/ github.com/assets/ gist.github.com/assets-cdn/worker/'
       Content-Type:
       - text/html; charset=utf-8
       Date:
-      - Tue, 25 Feb 2025 16:59:12 GMT
+      - Sun, 02 Mar 2025 16:26:48 GMT
       Location:
       - https://raw.githubusercontent.com/IFRCGo/monty-stac-extension/refs/heads/main/examples/emdat-impacts/emdat-impacts.json
       Referrer-Policy:
@@ -414,7 +414,7 @@ interactions:
       X-Frame-Options:
       - deny
       X-GitHub-Request-Id:
-      - 9D21:1B0FB6:161D154:1692E3E:67BDF6DF
+      - D63C:3E4953:A9C0884:B005480:67C486C8
       X-XSS-Protection:
       - '0'
     status:
@@ -466,11 +466,11 @@ interactions:
       Cross-Origin-Resource-Policy:
       - cross-origin
       Date:
-      - Tue, 25 Feb 2025 16:59:12 GMT
+      - Sun, 02 Mar 2025 16:26:49 GMT
       ETag:
       - W/"79ca02d763c29df2e5b58f9bb02c341f9a6bcfbe9b81a7c9eb6ad3f1b2f03fb0"
       Expires:
-      - Tue, 25 Feb 2025 17:04:12 GMT
+      - Sun, 02 Mar 2025 16:31:49 GMT
       Source-Age:
       - '0'
       Strict-Transport-Security:
@@ -480,21 +480,121 @@ interactions:
       Via:
       - 1.1 varnish
       X-Cache:
-      - HIT
+      - MISS
       X-Cache-Hits:
       - '0'
       X-Content-Type-Options:
       - nosniff
       X-Fastly-Request-ID:
-      - d8fc183305337c1b16f21cfdf1e1d55d2f3ed1a6
+      - 3dcf35a5736b5fcf8b9d0296e7bb326b85e69af7
       X-Frame-Options:
       - deny
       X-GitHub-Request-Id:
-      - 1978:238089:331A59:387805:67BDF2F0
+      - 310E:2AFED8:1F5255C:23FBC0A:67C486C8
       X-Served-By:
-      - cache-mrs1050115-MRS
+      - cache-par-lfpg1960098-PAR
       X-Timer:
-      - S1740502752.256206,VS0,VE174
+      - S1740932809.995122,VS0,VE172
+      X-XSS-Protection:
+      - 1; mode=block
+    status:
+      code: 200
+      message: OK
+- request:
+    body: null
+    headers:
+      Accept:
+      - '*/*'
+      Accept-Encoding:
+      - gzip, deflate
+      Connection:
+      - keep-alive
+      User-Agent:
+      - python-requests/2.32.3
+    method: GET
+    uri: https://raw.githubusercontent.com/IFRCGo/monty-stac-extension/refs/heads/main/json-schema/schema.json
+  response:
+    body:
+      string: !!binary |
+        H4sIAAAAAAAAA9UZ2XLbNvDdX4EyfrBnbEk+lE78knHSdOqHTD1JnpoDA5ErEQ5IsAComHH1710e
+        kngANOU4HdeTQ8Ye2HsXq7s9Qrx97YcQMe+CeKExycV4fKNlfFyejqRajAPF5uZ48uu4PHvmHRV0
+        PFjTaCTic+Uv5GjBTZjORlyOIxmbbLycjE5Gk4pylHOuyA03AnIGb3M88ubWQKy5jEtoANpXPDH5
+        AeK8/3D5mrQQyVwqUgCuDESasDgof30thQA/J9WjkpuM4c858vmIvxByV/yba+DLKILY5Dd8CLkm
+        +MeEQEphW/xLVgUdE6LGrs6yZKsgh3rPxgHMecwLScbaMJ/CWnjtbShWR3Y2JksK+8jZDWrjHdVh
+        Cv5OuYKgIcSW6qh5liiZgDIcarcS8rnBsYZz0ZBjK0nzFM991KMw3u/ATKrAayCs3FJYeHVtajPK
+        Br3uunelMcicgwg0CSH/jL7L3UauN7eOWmapODlNucEoAvnCl2lsVEZ9ibFpZbVBDdl3poIhmL5U
+        imIeOZCUFE2frX8+d85WXRZ2w1mDszRd96Yf4+oQf9U6aSpTh24/rz+VuJVYOydypzIU1P/DdF7y
+        AFQ7tjzBfRQHflKSb43nDXGYwwyDImXj7a2P4qzXR/cHQP5rVSF4TN6nUcRUXhXIq4ygKCwV5ojI
+        WGQEafyvJT3cco0u9oHIeXGwteARmaWGxNLUL6qw9Ib7UD9vKB7mvC25xYO9FW5gdbNVth9P471K
+        R68WCxsNvHaKbVVzJZNd1Q6jTnQ5TNsjQUMKphTLmp7GrDGMd0jq+bTz4OT1mnRVr4xeVdAv7DWy
+        nKQSTEV+C0GVFlsruqzrMlMZG5BwjXFB4zSagXLZiscGFgi2FQprLA63Oc/HNGdhQ2cqHi86xZQZ
+        A6oYMr8cfLw8/uvz3dnq8J/LVy/226h1CyI8rzGM6AR8zgTJhd3UmctZBpwwBYykGg08y8jVb29f
+        OxzYMUAjy/57/U9XBy8vPn0K7s5X+4d3k6MTtMfBR3b8PTfNsftDjlUxONwfqut6AnKoWQl9v7EC
+        wHwTLja7NV1fpFj11cNK8ZrYUohdSrUUK3A1LEFxk9ElE6m1Ma+5Vfk2jFuKVfbRRBNsBm2T78wN
+        tOERM0BdA4h9YmiSuVtPw28sCApyJq7rHjQqhZ4I41HCfPOACOsNE5R9IVU2wHztbuwButzezBOQ
+        iWgPjOV9KIu1sX+TWNOsHd9+7IdcBApiOqHnvfApfdELP5nQk34OJ1N6YuXBApzW6OmEnloZVOAp
+        Pe2hPpvQsx7qsyk966E+R+17qM+n9LyHejqh0x7q6ZROe6ifT+hzKzV2cVAis3o5BBB+yLii2JE6
+        T4cCR0kW2AEY999YZoUtUxGDYjMBFKJEyKzokBbEWYpexXC23wDFWKTS4n2BnU8bK14odcINE1Yg
+        jkpS2kEQpJhwBWsUz6G/kD4T1E8Vxp5vteJCyNk9KE0mlAU3Axi50FIdYMX2sYbgLGlNFeze9nxn
+        PKALyF0jbOB86KT5kKo4PmPWazcbUt4msdiCbUmBT2eUTWMPt8pgJLqKsvkcK6OdPpQYjaG07B5a
+        r4lW03D1iodXzjQuJjkcha2CpnGfGgGL2MIBQtspmdmBicSnhcHxUWS0h8f6aloYtBcjwInGt+bf
+        BoXHbqQAmAmtzYBrbbNoHiXxTarsgsOS+SlzGE1BniuuwMLrXEGnQxCYw1hvQC1cebhGwpk4kYqp
+        XiQh4wX+H9nVozHYBTEM73eFBNcqTRzAvL7Z0yECAdpanZBhIphfODCf2O2BsMXKn633Y7kjqjez
+        64Hbm998EWICUMX1190y/FHG3seYdn/CfNq6ofldx27C7jrqzrF31mbdvRbp+jl47Xjpfzl4+Us5
+        FB+2B+H66/ha4RMhNmQrBIksK4fuwm8ryL3yrzcdLv+4ekG3B+CcjhwaFQLfONgcg9ZhhA9yIWAj
+        d2MZXS3rHRuXdzmw0nojSfNrqfzHadF3MAdVLCLfLNsDluO7k4GByjUtnNUbo8N5qbWg7kDdJr5z
+        SVzT/L1M1dNXWxdSPpbOfxQ7jcfVttyTPJaEV8Wb+HElLN/ZgyS0JuDGpbUcdK0s28laHPbs1iIe
+        X1XrtdNdF72dOLtvedtIoyemjDW/ByhUJcgT06abtgNUqTLp56pysvPXCZ38fuiKOWK3Gynut0aV
+        tU/MGt1a4nTsXv53tfcv3WxK+wwjAAA=
+    headers:
+      Accept-Ranges:
+      - bytes
+      Access-Control-Allow-Origin:
+      - '*'
+      Cache-Control:
+      - max-age=300
+      Connection:
+      - keep-alive
+      Content-Encoding:
+      - gzip
+      Content-Length:
+      - '1676'
+      Content-Security-Policy:
+      - default-src 'none'; style-src 'unsafe-inline'; sandbox
+      Content-Type:
+      - text/plain; charset=utf-8
+      Cross-Origin-Resource-Policy:
+      - cross-origin
+      Date:
+      - Sun, 02 Mar 2025 16:26:49 GMT
+      ETag:
+      - W/"46b2d208ff47c76f665a58d5a9a82972e12d5066b8f0fcb6b2e3a510105e1d7a"
+      Expires:
+      - Sun, 02 Mar 2025 16:31:49 GMT
+      Source-Age:
+      - '0'
+      Strict-Transport-Security:
+      - max-age=31536000
+      Vary:
+      - Authorization,Accept-Encoding,Origin
+      Via:
+      - 1.1 varnish
+      X-Cache:
+      - MISS
+      X-Cache-Hits:
+      - '0'
+      X-Content-Type-Options:
+      - nosniff
+      X-Fastly-Request-ID:
+      - 94cbb9a225648c67719bcfbec391fbaca1a3d23f
+      X-Frame-Options:
+      - deny
+      X-GitHub-Request-Id:
+      - EAB9:3E4AE5:1F1A337:23C39AB:67C486C5
+      X-Served-By:
+      - cache-par-lfpg1960053-PAR
+      X-Timer:
+      - S1740932809.235891,VS0,VE217
       X-XSS-Protection:
       - 1; mode=block
     status:
