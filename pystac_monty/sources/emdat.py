@@ -2,6 +2,7 @@ from dataclasses import dataclass
 from datetime import datetime
 from typing import List, Optional, Union
 
+import numpy as np
 import pandas as pd
 import pytz
 from pystac import Item, Link
@@ -18,6 +19,7 @@ from pystac_monty.extension import (
 from pystac_monty.geocoding import MontyGeoCoder
 from pystac_monty.hazard_profiles import MontyHazardProfiles
 from pystac_monty.sources.common import MontyDataSource, MontyDataTransformer
+from pystac_monty.utils import rename_columns
 
 STAC_EVENT_ID_PREFIX = "emdat-event-"
 STAC_HAZARD_ID_PREFIX = "emdat-hazard-"
@@ -37,8 +39,13 @@ class EMDATDataSource(MontyDataSource):
             self.df = pd.read_excel(data)
         elif isinstance(data, pd.DataFrame):
             self.df = data
+        elif isinstance(data, dict):
+            # If data is a dict, assume it's Json content
+            data = data["data"]["public_emdat"]["data"]
+            df = pd.DataFrame(data)
+            self.df = rename_columns(df)
         else:
-            raise ValueError("Data must be either Excel content (str) or pandas DataFrame")
+            raise ValueError("Data must be either Excel content (str) or pandas DataFrame or Json")
 
     def get_data(self) -> pd.DataFrame:
         return self.df
@@ -109,7 +116,7 @@ class EMDATTransformer(MontyDataTransformer):
         bbox = None
 
         # 1. Try admin units first if geocoder is available
-        if self.geocoder and not pd.isna(row.get("Admin Units")):
+        if self.geocoder and np.any(pd.notna(row.get("Admin Units"))):
             geom_data = self.geocoder.get_geometry_from_admin_units(row.get("Admin Units"))
             if geom_data:
                 geometry = geom_data["geometry"]

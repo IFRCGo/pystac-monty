@@ -4,6 +4,7 @@ from abc import ABC, abstractmethod
 from typing import Any, Dict, List, Optional, Set, Union
 
 import fiona  # type: ignore
+import requests
 from shapely.geometry import mapping, shape  # type: ignore
 from shapely.ops import unary_union  # type: ignore
 
@@ -191,7 +192,7 @@ class GAULGeocoder(MontyGeoCoder):
     Loads features dynamically as needed.
     """
 
-    def __init__(self, gpkg_path: str, simplify_tolerance: float = 0.01) -> None:
+    def __init__(self, gpkg_path: Optional[str], service_base_url: Optional[str], simplify_tolerance: float = 0.01) -> None:
         """
         Initialize GAULGeocoder
 
@@ -206,8 +207,16 @@ class GAULGeocoder(MontyGeoCoder):
         self._simplify_tolerance = simplify_tolerance
         self._cache: Dict[str, Union[Dict[str, Any], int, None]] = {}  # Cache for frequently accessed geometries
         self._file_handle = None
-        self._initialize_path()
-        self._open_file()
+        
+        if not gpkg_path and not service_base_url:
+            raise ValueError("At least the gpkg_path or service_base_url should be set.")
+
+        if self.gpkg_path:
+            self._initialize_path()
+            self._open_file()
+        else:
+            self.service_base_url = service_base_url
+            self.request_timeout = 30
 
     def __enter__(self) -> "GAULGeocoder":
         """Context manager entry point"""
@@ -380,6 +389,12 @@ class GAULGeocoder(MontyGeoCoder):
                 return adm0_code
         return None
 
+    def _service_request_handler(self, service_url: str, params: dict):
+        response = requests.get(service_url, params=params, timeout=self.request_timeout)
+        if response.status_code == 200:
+            return response.json()
+        return None
+
     def get_geometry_from_admin_units(self, admin_units: str) -> Optional[Dict[str, Any]]:
         """
         Get geometry from admin units JSON string
@@ -453,6 +468,12 @@ class GAULGeocoder(MontyGeoCoder):
         Returns:
             Dictionary containing geometry and bbox if found
         """
+
+        if not self.gpkg_path:
+            params = {"country_name": country_name}
+            service_url = f"{self.service_base_url}/by_country_name"
+            return self._service_request_handler(service_url=service_url, params=params)
+
         if not country_name or not self._path:
             return None
 

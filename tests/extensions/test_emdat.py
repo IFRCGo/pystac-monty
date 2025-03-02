@@ -3,6 +3,7 @@
 import json
 import unittest
 from os import makedirs
+from typing import Union
 
 import pandas as pd
 import pytest
@@ -17,9 +18,167 @@ from tests.extensions.test_monty import CustomValidator
 CURRENT_SCHEMA_URI = "https://ifrcgo.github.io/monty/v0.1.0/schema.json"
 CURRENT_SCHEMA_MAPURL = "https://raw.githubusercontent.com/IFRCGo/monty-stac-extension/refs/heads/main/json-schema/schema.json"
 
+json_mock_data = {
+    "data": {
+        "api_version": "v1.1.1",
+        "public_emdat": {
+            "total_available": 595,
+            "info": {
+                "timestamp": "2025-02-27T08:03:24Z",
+                "filters": {"from": 2024, "include_hist": True, "to": 2025},
+                "cursor": {"offset": 590},
+                "version": "2025-02-26",
+            },
+            "data": [
+                {
+                    "disno": "2025-0101-USA",
+                    "classif_key": "tec-tra-air-air",
+                    "group": "Technological",
+                    "subgroup": "Transport",
+                    "type": "Air",
+                    "subtype": "Air",
+                    "external_ids": None,
+                    "name": None,
+                    "iso": "USA",
+                    "country": "United States of America",
+                    "subregion": "Northern America",
+                    "region": "Americas",
+                    "location": "Alaska",
+                    "origin": None,
+                    "associated_types": None,
+                    "ofda_response": False,
+                    "appeal": False,
+                    "declaration": False,
+                    "aid_contribution": None,
+                    "magnitude": None,
+                    "magnitude_scale": None,
+                    "latitude": None,
+                    "longitude": None,
+                    "river_basin": None,
+                    "start_year": 2025,
+                    "start_month": 2,
+                    "start_day": 6,
+                    "end_year": 2025,
+                    "end_month": 2,
+                    "end_day": 6,
+                    "total_deaths": 10,
+                    "no_injured": None,
+                    "no_affected": None,
+                    "no_homeless": None,
+                    "total_affected": None,
+                    "reconstr_dam": None,
+                    "reconstr_dam_adj": None,
+                    "insur_dam": None,
+                    "insur_dam_adj": None,
+                    "total_dam": None,
+                    "total_dam_adj": None,
+                    "cpi": None,
+                    "admin_units": None,
+                    "entry_date": "2025-02-17",
+                    "last_update": "2025-02-19",
+                },
+                {
+                    "disno": "2025-0102-NGA",
+                    "classif_key": "tec-mis-fir-fir",
+                    "group": "Technological",
+                    "subgroup": "Miscellaneous accident",
+                    "type": "Fire (Miscellaneous)",
+                    "subtype": "Fire (Miscellaneous)",
+                    "external_ids": None,
+                    "name": "School dormitory",
+                    "iso": "NGA",
+                    "country": "Nigeria",
+                    "subregion": "Sub-Saharan Africa",
+                    "region": "Africa",
+                    "location": "Kaura Namoda (Zamfara state)",
+                    "origin": None,
+                    "associated_types": None,
+                    "ofda_response": False,
+                    "appeal": False,
+                    "declaration": False,
+                    "aid_contribution": None,
+                    "magnitude": None,
+                    "magnitude_scale": None,
+                    "latitude": None,
+                    "longitude": None,
+                    "river_basin": None,
+                    "start_year": 2025,
+                    "start_month": 2,
+                    "start_day": 4,
+                    "end_year": 2025,
+                    "end_month": 2,
+                    "end_day": 5,
+                    "total_deaths": 17,
+                    "no_injured": 17,
+                    "no_affected": None,
+                    "no_homeless": None,
+                    "total_affected": 17,
+                    "reconstr_dam": None,
+                    "reconstr_dam_adj": None,
+                    "insur_dam": None,
+                    "insur_dam_adj": None,
+                    "total_dam": None,
+                    "total_dam_adj": None,
+                    "cpi": None,
+                    "admin_units": None,
+                    "entry_date": "2025-02-17",
+                    "last_update": "2025-02-19",
+                },
+                {
+                    "disno": "2025-0103-KEN",
+                    "classif_key": "tec-ind-col-col",
+                    "group": "Technological",
+                    "subgroup": "Industrial accident",
+                    "type": "Collapse (Industrial)",
+                    "subtype": "Collapse (Industrial)",
+                    "external_ids": None,
+                    "name": "Gold mine",
+                    "iso": "KEN",
+                    "country": "Kenya",
+                    "subregion": "Sub-Saharan Africa",
+                    "region": "Africa",
+                    "location": "Kakamega county",
+                    "origin": None,
+                    "associated_types": None,
+                    "ofda_response": False,
+                    "appeal": False,
+                    "declaration": False,
+                    "aid_contribution": None,
+                    "magnitude": None,
+                    "magnitude_scale": "m3",
+                    "latitude": None,
+                    "longitude": None,
+                    "river_basin": None,
+                    "start_year": 2025,
+                    "start_month": 2,
+                    "start_day": 3,
+                    "end_year": 2025,
+                    "end_month": 2,
+                    "end_day": 3,
+                    "total_deaths": 12,
+                    "no_injured": None,
+                    "no_affected": 8,
+                    "no_homeless": None,
+                    "total_affected": 8,
+                    "reconstr_dam": None,
+                    "reconstr_dam_adj": None,
+                    "insur_dam": None,
+                    "insur_dam_adj": None,
+                    "total_dam": None,
+                    "total_dam_adj": None,
+                    "cpi": None,
+                    "admin_units": None,
+                    "entry_date": "2025-02-17",
+                    "last_update": "2025-02-19",
+                },
+            ],
+        },
+    }
+}
+
 
 def load_scenarios(
-    scenarios: list[tuple[str, str]],
+    scenarios: Union[list[tuple[str, str]], dict],
 ) -> list[EMDATTransformer]:
     """Load test scenarios for EM-DAT transformation testing.
 
@@ -30,12 +189,16 @@ def load_scenarios(
         List of EMDATTransformer instances initialized with test data
     """
     transformers = []
-    for scenario in scenarios:
-        # Read Excel file using pandas
-        df = pd.read_excel(scenario[1])
-        emdat_data_source = EMDATDataSource(scenario[1], df)
-        geocoder = MockGeocoder()
-        transformers.append(EMDATTransformer(emdat_data_source, geocoder))
+    if isinstance(scenarios, dict):
+        emdat_data_source = EMDATDataSource(source_url="", data=scenarios)
+        transformers.append(EMDATTransformer(emdat_data_source))
+    else:
+        for scenario in scenarios:
+            # Read Excel file using pandas
+            df = pd.read_excel(scenario[1])
+            emdat_data_source = EMDATDataSource(scenario[1], df)
+            geocoder = MockGeocoder()
+            transformers.append(EMDATTransformer(emdat_data_source, geocoder))
     return transformers
 
 
@@ -119,3 +282,33 @@ class EMDATTest(unittest.TestCase):
             # Check data types
             self.assertTrue(pd.api.types.is_integer_dtype(df["Start Year"]))
             self.assertTrue(pd.api.types.is_string_dtype(df["ISO"]))
+
+    @parameterized.expand(load_scenarios(json_mock_data))
+    @pytest.mark.vcr()
+    def test_transformer_with_json_data(self, transformer: EMDATTransformer) -> None:
+        items = transformer.make_items()
+        self.assertTrue(len(items) > 0)
+
+        source_event_item = None
+        source_hazard_item = None
+
+        for item in items:
+            # Write pretty JSON in temporary folder for manual inspection
+            item_path = get_data_file(f"temp/emdat/{item.id}.json")
+            with open(item_path, "w", encoding="utf-8") as f:
+                # json.dump(item.to_dict(), f, indent=2, ensure_ascii=False)
+                json.dump(item.to_dict(), f, indent=2)
+
+            # Validate item against schema
+            item.validate(validator=self.validator)
+
+            # Check item type
+            monty_item_ext = MontyExtension.ext(item)
+            if monty_item_ext.is_source_event():
+                source_event_item = item
+            elif monty_item_ext.is_source_hazard():
+                source_hazard_item = item
+
+        # Verify required items were created
+        self.assertIsNotNone(source_event_item)
+        self.assertIsNotNone(source_hazard_item)
