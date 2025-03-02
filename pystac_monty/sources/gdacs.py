@@ -6,9 +6,8 @@ from enum import Enum
 from typing import Any, List
 
 import pytz
-import requests
 from markdownify import markdownify as md
-from pystac import Asset, Collection, Item, Link
+from pystac import Asset, Item, Link
 from shapely import simplify, to_geojson
 from shapely.geometry import shape
 from shapely.geometry.base import BaseGeometry
@@ -22,7 +21,7 @@ from pystac_monty.extension import (
     MontyImpactType,
 )
 from pystac_monty.hazard_profiles import MontyHazardProfiles
-from pystac_monty.sources.common import MontyDataSource
+from pystac_monty.sources.common import MontyDataSource, MontyDataTransformer
 
 # Constants
 
@@ -53,31 +52,17 @@ class GDACSDataSource(MontyDataSource):
         return self.type
 
 
-class GDACSTransformer:
+class GDACSTransformer(MontyDataTransformer):
     """
     Transforms GDACS event data into STAC Items
     see https://github.com/IFRCGo/monty-stac-extension/tree/main/model/sources/GDACS
     """
 
-    gdacs_events_collection_id = "gdacs-events"
-    gdacs_events_collection_url = (
-        "https://github.com/IFRCGo/monty-stac-extension/raw/refs/heads/main/examples/gdacs-events/gdacs-events.json"
-    )
-
-    gdacs_hazards_collection_id = "gdacs-hazards"
-    gdacs_hazards_collection_url = (
-        "https://github.com/IFRCGo/monty-stac-extension/raw/refs/heads/main/examples/gdacs-hazards/gdacs-hazards.json"
-    )
-
-    gdacs_impacts_collection_id = "gdacs-impacts"
-    gdacs_impacts_collection_url = (
-        "https://github.com/IFRCGo/monty-stac-extension/raw/refs/heads/main/examples/gdacs-impacts/gdacs-impacts.json"
-    )
-
     data: list[GDACSDataSource] = []
     hazard_profiles = MontyHazardProfiles()
 
     def __init__(self, data: list[GDACSDataSource]) -> None:
+        super().__init__("gdacs")
         self.data = data
 
     def make_items(self) -> list[Item]:
@@ -96,21 +81,6 @@ class GDACSTransformer:
         items.extend(impact_items)
 
         return items
-
-    def get_event_collection(self) -> Collection:
-        response = requests.get(self.gdacs_events_collection_url)
-        collection_dict = json.loads(response.text)
-        return Collection.from_dict(collection_dict)
-
-    def get_hazard_collection(self) -> Collection:
-        response = requests.get(self.gdacs_hazards_collection_url)
-        collection_dict = json.loads(response.text)
-        return Collection.from_dict(collection_dict)
-
-    def get_impact_collection(self) -> Collection:
-        response = requests.get(self.gdacs_impacts_collection_url)
-        collection_dict = json.loads(response.text)
-        return Collection.from_dict(collection_dict)
 
     def check_and_get_event_data(self) -> GDACSDataSource:
         # first check that the event data is present in the data

@@ -2,8 +2,7 @@ import json
 from datetime import datetime
 from typing import Any, Dict, List
 
-import requests
-from pystac import Collection, Item
+from pystac import Item
 
 from pystac_monty.extension import (
     ImpactDetail,
@@ -14,7 +13,7 @@ from pystac_monty.extension import (
 )
 from pystac_monty.geocoding import MontyGeoCoder
 from pystac_monty.hazard_profiles import MontyHazardProfiles
-from pystac_monty.sources.common import MontyDataSource
+from pystac_monty.sources.common import MontyDataSource, MontyDataTransformer
 
 STAC_EVENT_ID_PREFIX = "ifrcevent-event-"
 STAC_IMPACT_ID_PREFIX = "ifrcevent-impact-"
@@ -31,31 +30,15 @@ class IFRCEventDataSource(MontyDataSource):
         return self.data
 
 
-class IFRCEventTransformer:
-    ifrcevent_events_collection_id = "ifrcevent-events"
-    ifrcevent_events_collection_url = "https://raw.githubusercontent.com/IFRCGo/monty-stac-extension/refs/heads/feature/collection-ifrc-event/examples/ifrcevent-events/ifrcevent_events.json"  # noqa: E501
-    ifrcevent_impacts_collection_id = "ifrcevent-impacts"
-    ifrcevent_impacts_collection_url = "https://raw.githubusercontent.com/IFRCGo/monty-stac-extension/refs/heads/feature/collection-ifrc-event/examples/ifrcevent-impacts/ifrcevent_impacts.json"  # noqa: E501
-
+class IFRCEventTransformer(MontyDataTransformer):
     hazard_profiles = MontyHazardProfiles()
 
     def __init__(self, data: IFRCEventDataSource, geocoder: MontyGeoCoder):
+        super().__init__("ifrcevent")
         self.data = data
         self.geocoder = geocoder
         if not self.geocoder:
             raise ValueError("Geocoder is required for IFRC events transformer")
-
-    def get_event_collection(self) -> Collection:
-        """Get event collection"""
-        response = requests.get(self.ifrcevent_events_collection_url)
-        collection_dict = json.loads(response.text)
-        return Collection.from_dict(collection_dict)
-
-    def get_impact_collection(self) -> Collection:
-        """Get event collection"""
-        response = requests.get(self.ifrcevent_impacts_collection_url)
-        collection_dict = json.loads(response.text)
-        return Collection.from_dict(collection_dict)
 
     def make_items(self) -> List[Item]:
         """Create items"""

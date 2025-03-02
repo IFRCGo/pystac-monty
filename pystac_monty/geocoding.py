@@ -37,7 +37,17 @@ class WorldAdministrativeBoundariesGeocoder(MontyGeoCoder):
         self._layer = "Layer1"
         self._simplify_tolerance = simplify_tolerance
         self._cache: Dict[str, Union[Dict[str, Any], int, None]] = {}
+        self._file_handle = None
         self._initialize_path()
+        self._open_file()
+
+    def __enter__(self) -> "WorldAdministrativeBoundariesGeocoder":
+        """Context manager entry point"""
+        return self
+
+    def __exit__(self, exc_type: Optional[type], exc_val: Optional[Exception], exc_tb: Optional[Any]) -> None:
+        """Context manager exit point"""
+        self.close()
 
     def _initialize_path(self) -> None:
         if self._is_zip_file(self.fgb_path):
@@ -47,6 +57,21 @@ class WorldAdministrativeBoundariesGeocoder(MontyGeoCoder):
             self._path = f"zip://{self.fgb_path}!/{fgb_name}"
         else:
             self._path = self.fgb_path
+
+    def _open_file(self) -> None:
+        """Open the file and keep the handle in memory"""
+        if self._path and not self._file_handle:
+            try:
+                self._file_handle = fiona.open(self._path, layer=self._layer)
+            except Exception as e:
+                print(f"Error opening file: {str(e)}")
+                self._file_handle = None
+
+    def close(self) -> None:
+        """Close the file handle if it's open"""
+        if self._file_handle:
+            self._file_handle.close()
+            self._file_handle = None
 
     def _is_zip_file(self, file_path: str) -> bool:
         """Check if a file is a ZIP file"""
@@ -69,12 +94,50 @@ class WorldAdministrativeBoundariesGeocoder(MontyGeoCoder):
         if not geometry or not self._path:
             return None
 
+        # Create a cache key based on the geometry
+        # Using a hash of the stringified geometry as the key
+        geom_str = json.dumps(mapping(shape(geometry)), sort_keys=True)
+        cache_key = f"geom_iso3_{hash(geom_str)}"
+
+        # Check cache first
+        cached_value = self._cache.get(cache_key)
+        if cached_value is not None:
+            return cached_value if cached_value else None  # Handle None values in cache
+
+        # Reopen file if handle is closed
+        if self._file_handle is None or self._file_handle.closed:
+            self._open_file()
+
+        if self._file_handle is None:
+            return None
+
         try:
+            # Convert input geometry to a shapely object
             point = shape(geometry)
-            with fiona.open(self._path, layer=self._layer) as src:
-                for feature in src:
-                    if shape(feature["geometry"]).contains(point):
-                        return feature["properties"]["iso3"]
+
+            # Use the spatial filter if available in the file handle
+            # This leverages FlatGeobuf's spatial indexing capabilities
+            if hasattr(self._file_handle, "filter") and callable(getattr(self._file_handle, "filter")):
+                # Get a small bounding box around the point to use for filtering
+                # This is more efficient than checking against all features
+                bbox = (point.x - 0.001, point.y - 0.001, point.x + 0.001, point.y + 0.001)
+                filtered_features = self._file_handle.filter(bbox=bbox)
+                features_to_check = filtered_features
+            else:
+                # Reset cursor to beginning of file if spatial filtering is not available
+                self._file_handle.reset()
+                features_to_check = self._file_handle
+
+            # Check each feature to see if it contains the point
+            for feature in features_to_check:
+                if shape(feature["geometry"]).contains(point):
+                    iso3 = feature["properties"]["iso3"]
+                    # Cache the result
+                    self._cache[cache_key] = iso3
+                    return iso3
+
+            # Cache negative result to avoid repeated lookups
+            self._cache[cache_key] = None
         except Exception as e:
             print(f"Error getting ISO3 from geometry: {str(e)}")
             return None
@@ -88,15 +151,31 @@ class WorldAdministrativeBoundariesGeocoder(MontyGeoCoder):
         raise NotImplementedError("Method not implemented")
 
     def get_geometry_from_iso3(self, iso3: str) -> Optional[Dict[str, Any]]:
+        # Check cache first
+        cache_key = f"iso3_geom_{iso3}"
+        cached_value = self._cache.get(cache_key)
+        if cached_value is not None and isinstance(cached_value, dict):
+            return cached_value
+
         if not iso3 or not self._path:
             return None
 
+        # Reopen file if handle is closed
+        if self._file_handle is None or self._file_handle.closed:
+            self._open_file()
+
+        if self._file_handle is None:
+            return None
+
         try:
-            with fiona.open(self._path, layer=self._layer) as src:
-                for feature in src:
-                    if feature["properties"]["iso3"] == iso3:
-                        geom = shape(feature["geometry"]).simplify(self._simplify_tolerance, preserve_topology=True)
-                        return {"geometry": mapping(geom), "bbox": list(geom.bounds)}
+            # Reset cursor to beginning of file
+            for feature in self._file_handle:
+                if feature["properties"]["iso3"] == iso3:
+                    geom = shape(feature["geometry"]).simplify(self._simplify_tolerance, preserve_topology=True)
+                    result = {"geometry": mapping(geom), "bbox": list(geom.bounds)}
+                    # Cache the result
+                    self._cache[cache_key] = result
+                    return result
         except Exception as e:
             print(f"Error getting geometry from ISO3: {str(e)}")
             return None
@@ -127,15 +206,25 @@ class GAULGeocoder(MontyGeoCoder):
         self._layer = "level2"
         self._simplify_tolerance = simplify_tolerance
         self._cache: Dict[str, Union[Dict[str, Any], int, None]] = {}  # Cache for frequently accessed geometries
+        self._file_handle = None
 
         if not gpkg_path and not service_base_url:
-            raise ValueError("Atleast the gpkg_path or service_base_url should be set.")
+            raise ValueError("At least the gpkg_path or service_base_url should be set.")
 
         if self.gpkg_path:
             self._initialize_path()
+            self._open_file()
         else:
             self.service_base_url = service_base_url
             self.request_timeout = 30
+
+    def __enter__(self) -> "GAULGeocoder":
+        """Context manager entry point"""
+        return self
+
+    def __exit__(self, exc_type: Optional[type], exc_val: Optional[Exception], exc_tb: Optional[Any]) -> None:
+        """Context manager exit point"""
+        self.close()
 
     def _initialize_path(self) -> None:
         """Set up the correct path for fiona to read"""
@@ -146,6 +235,21 @@ class GAULGeocoder(MontyGeoCoder):
             self._path = f"zip://{self.gpkg_path}!/{gpkg_name}"
         else:
             self._path = self.gpkg_path
+
+    def _open_file(self) -> None:
+        """Open the file and keep the handle in memory"""
+        if self._path and not self._file_handle:
+            try:
+                self._file_handle = fiona.open(self._path, layer=self._layer)
+            except Exception as e:
+                print(f"Error opening file: {str(e)}")
+                self._file_handle = None
+
+    def close(self) -> None:
+        """Close the file handle if it's open"""
+        if self._file_handle:
+            self._file_handle.close()
+            self._file_handle = None
 
     def _is_zip_file(self, file_path: str) -> bool:
         """Check if a file is a ZIP file"""
@@ -174,12 +278,20 @@ class GAULGeocoder(MontyGeoCoder):
         if not self._path:
             return None
 
-        with fiona.open(self._path, layer=self._layer) as src:
-            for feature in src:
-                if feature["properties"]["ADM2_CODE"] == adm2_code:
-                    adm1_code = int(feature["properties"]["ADM1_CODE"])
-                    self._cache[cache_key] = adm1_code
-                    return adm1_code
+        # Reopen file if handle is closed
+        if not self._file_handle:
+            self._open_file()
+
+        if not self._file_handle:
+            return None
+
+        # Reset cursor to beginning of file
+        self._file_handle.reset()
+        for feature in self._file_handle:
+            if feature["properties"]["ADM2_CODE"] == adm2_code:
+                adm1_code = int(feature["properties"]["ADM1_CODE"])
+                self._cache[cache_key] = adm1_code
+                return adm1_code
         return None
 
     def _get_admin1_geometry(self, adm1_code: int) -> Optional[Dict[str, Any]]:
@@ -192,11 +304,19 @@ class GAULGeocoder(MontyGeoCoder):
         if not self._path:
             return None
 
+        # Reopen file if handle is closed
+        if not self._file_handle:
+            self._open_file()
+
+        if not self._file_handle:
+            return None
+
         features = []
-        with fiona.open(self._path, layer=self._layer) as src:
-            for feature in src:
-                if feature["properties"]["ADM1_CODE"] == adm1_code:
-                    features.append(shape(feature["geometry"]))
+        # Reset cursor to beginning of file
+        self._file_handle.reset()
+        for feature in self._file_handle:
+            if feature["properties"]["ADM1_CODE"] == adm1_code:
+                features.append(shape(feature["geometry"]))
 
         if not features:
             return None
@@ -218,11 +338,19 @@ class GAULGeocoder(MontyGeoCoder):
         if not self._path:
             return None
 
+        # Reopen file if handle is closed
+        if not self._file_handle:
+            self._open_file()
+
+        if not self._file_handle:
+            return None
+
         features = []
-        with fiona.open(self._path, layer=self._layer) as src:
-            for feature in src:
-                if feature["properties"]["ADM0_CODE"] == adm0_code:
-                    features.append(shape(feature["geometry"]))
+        # Reset cursor to beginning of file
+        self._file_handle.reset()
+        for feature in self._file_handle:
+            if feature["properties"]["ADM0_CODE"] == adm0_code:
+                features.append(shape(feature["geometry"]))
 
         if not features:
             return None
@@ -244,13 +372,21 @@ class GAULGeocoder(MontyGeoCoder):
         if not self._path:
             return None
 
-        with fiona.open(self._path, layer=self._layer) as src:
-            # Check first few records until we find a match
-            for feature in src:
-                if feature["properties"].get("ADM0_NAME", "").lower() == name.lower():
-                    adm0_code = int(feature["properties"]["ADM0_CODE"])
-                    self._cache[cache_key] = adm0_code
-                    return adm0_code
+        # Reopen file if handle is closed
+        if not self._file_handle:
+            self._open_file()
+
+        if not self._file_handle:
+            return None
+
+        # Reset cursor to beginning of file
+        self._file_handle.reset()
+        # Check first few records until we find a match
+        for feature in self._file_handle:
+            if feature["properties"].get("ADM0_NAME", "").lower() == name.lower():
+                adm0_code = int(feature["properties"]["ADM0_CODE"])
+                self._cache[cache_key] = adm0_code
+                return adm0_code
         return None
 
     def _service_request_handler(self, service_url: str, params: dict):
@@ -269,13 +405,15 @@ class GAULGeocoder(MontyGeoCoder):
         Returns:
             Dictionary containing geometry and bbox if found
         """
-        if not self.gpkg_path:
-            params = {"admin_units": admin_units}
-            service_url = f"{self.service_base_url}/by_admin_units"
-            return self._service_request_handler(service_url=service_url, params=params)
-
+        # Check if we have a valid path and admin_units
         if not admin_units or not self._path:
             return None
+
+        # Create a cache key based on the admin_units string
+        cache_key = f"admin_units_{hash(admin_units)}"
+        cached_value = self._cache.get(cache_key)
+        if cached_value is not None and isinstance(cached_value, dict):
+            return cached_value
 
         try:
             # Parse admin units JSON
@@ -310,7 +448,11 @@ class GAULGeocoder(MontyGeoCoder):
             # Combine geometries and simplify
             combined = unary_union(geoms)
             simplified = combined.simplify(self._simplify_tolerance, preserve_topology=True)
-            return {"geometry": mapping(simplified), "bbox": list(simplified.bounds)}
+            result = {"geometry": mapping(simplified), "bbox": list(simplified.bounds)}
+
+            # Cache the result
+            self._cache[cache_key] = result
+            return result
 
         except Exception as e:
             print(f"Error getting geometry from admin units: {str(e)}")
@@ -335,6 +477,12 @@ class GAULGeocoder(MontyGeoCoder):
         if not country_name or not self._path:
             return None
 
+        # Create a cache key based on the country name
+        cache_key = f"country_geom_{country_name.lower()}"
+        cached_value = self._cache.get(cache_key)
+        if cached_value is not None and isinstance(cached_value, dict):
+            return cached_value
+
         try:
             # Get ADM0 code for the country name
             adm0_code = self._get_name_to_adm0_mapping(country_name)
@@ -342,7 +490,11 @@ class GAULGeocoder(MontyGeoCoder):
                 return None
 
             # Get country geometry
-            return self._get_country_geometry_by_adm0(adm0_code)
+            result = self._get_country_geometry_by_adm0(adm0_code)
+            if result:
+                # Cache the result
+                self._cache[cache_key] = result
+            return result
 
         except Exception as e:
             print(f"Error getting country geometry for {country_name}: {str(e)}")

@@ -5,8 +5,7 @@ from datetime import datetime
 from typing import List, Optional
 
 import pytz
-import requests
-from pystac import Asset, Collection, Item, Link
+from pystac import Asset, Item, Link
 from shapely.geometry import Point, mapping, shape
 
 from pystac_monty.extension import (
@@ -19,7 +18,7 @@ from pystac_monty.extension import (
 )
 from pystac_monty.geocoding import MontyGeoCoder
 from pystac_monty.hazard_profiles import MontyHazardProfiles
-from pystac_monty.sources.common import MontyDataSource
+from pystac_monty.sources.common import MontyDataSource, MontyDataTransformer
 
 STAC_EVENT_ID_PREFIX = "usgs-event-"
 STAC_HAZARD_ID_PREFIX = "usgs-hazard-"
@@ -50,18 +49,8 @@ class USGSDataSource(MontyDataSource):
         return self.losses_data
 
 
-class USGSTransformer:
+class USGSTransformer(MontyDataTransformer):
     """Transforms USGS earthquake event data into STAC Items."""
-
-    usgs_events_collection_url = (
-        "https://github.com/IFRCGo/monty-stac-extension/raw/refs/heads/usgs/examples/usgs-events/usgs-events.json"
-    )
-    usgs_hazards_collection_url = (
-        "https://github.com/IFRCGo/monty-stac-extension/raw/refs/heads/usgs/examples/usgs-hazards/usgs-hazards.json"
-    )
-    usgs_impacts_collection_url = (
-        "https://github.com/IFRCGo/monty-stac-extension/raw/refs/heads/usgs/examples/usgs-impacts/usgs-impacts.json"
-    )
 
     hazard_profiles = MontyHazardProfiles()
 
@@ -71,6 +60,7 @@ class USGSTransformer:
         Args:
             data: USGSDataSource containing event detail and optional losses data
         """
+        super().__init__("usgs")
         self.data = data
         self.geocoder = geocoder
         if not self.geocoder:
@@ -573,18 +563,3 @@ class USGSTransformer:
             impact_item.add_asset(key, Asset(**asset_info))
 
         return impact_item
-
-    def get_event_collection(self) -> Collection:
-        """Get event collection."""
-        response = requests.get(self.usgs_events_collection_url)
-        return Collection.from_dict(json.loads(response.text))
-
-    def get_hazard_collection(self) -> Collection:
-        """Get hazard collection."""
-        response = requests.get(self.usgs_hazards_collection_url)
-        return Collection.from_dict(json.loads(response.text))
-
-    def get_impact_collection(self) -> Collection:
-        """Get impact collection."""
-        response = requests.get(self.usgs_impacts_collection_url)
-        return Collection.from_dict(json.loads(response.text))

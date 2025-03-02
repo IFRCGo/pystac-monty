@@ -1,4 +1,3 @@
-import json
 from dataclasses import dataclass
 from datetime import datetime
 from typing import List, Optional, Union
@@ -6,8 +5,7 @@ from typing import List, Optional, Union
 import numpy as np
 import pandas as pd
 import pytz
-import requests
-from pystac import Collection, Item, Link
+from pystac import Item, Link
 from shapely.geometry import Point, mapping
 
 from pystac_monty.extension import (
@@ -20,7 +18,7 @@ from pystac_monty.extension import (
 )
 from pystac_monty.geocoding import MontyGeoCoder
 from pystac_monty.hazard_profiles import MontyHazardProfiles
-from pystac_monty.sources.common import MontyDataSource
+from pystac_monty.sources.common import MontyDataSource, MontyDataTransformer
 from pystac_monty.utils import rename_columns
 
 STAC_EVENT_ID_PREFIX = "emdat-event-"
@@ -53,25 +51,10 @@ class EMDATDataSource(MontyDataSource):
         return self.df
 
 
-class EMDATTransformer:
+class EMDATTransformer(MontyDataTransformer):
     """
     Transforms EM-DAT event data into STAC Items
     """
-
-    emdat_events_collection_id = "emdat-events"
-    emdat_events_collection_url = (
-        "https://raw.githubusercontent.com/IFRCGo/monty-stac-extension/refs/heads/EMDAT/examples/emdat-events/emdat-events.json"
-    )
-
-    emdat_hazards_collection_id = "emdat-hazards"
-    emdat_hazards_collection_url = (
-        "https://raw.githubusercontent.com/IFRCGo/monty-stac-extension/refs/heads/EMDAT/examples/emdat-hazards/emdat-hazards.json"
-    )
-
-    emdat_impacts_collection_id = "emdat-impacts"
-    emdat_impacts_collection_url = (
-        "https://raw.githubusercontent.com/IFRCGo/monty-stac-extension/refs/heads/EMDAT/examples/emdat-impacts/emdat-impacts.json"
-    )
 
     hazard_profiles = MontyHazardProfiles()
 
@@ -83,6 +66,7 @@ class EMDATTransformer:
             data: EMDATDataSource containing the EM-DAT data
             gaul_path: Path to the GAUL geopackage file or ZIP containing it
         """
+        super().__init__("emdat")
         self.data = data
         self.geocoder = geocoder
 
@@ -307,25 +291,7 @@ class EMDATTransformer:
         matching_rows = df[df["DisNo."] == disno]
         return matching_rows.iloc[0] if not matching_rows.empty else None
 
-    def get_event_collection(self) -> Collection:
-        """Get event collection"""
-        response = requests.get(self.emdat_events_collection_url)
-        collection_dict = json.loads(response.text)
-        return Collection.from_dict(collection_dict)
-
-    def get_hazard_collection(self) -> Collection:
-        """Get hazard collection"""
-        response = requests.get(self.emdat_hazards_collection_url)
-        collection_dict = json.loads(response.text)
-        return Collection.from_dict(collection_dict)
-
-    def get_impact_collection(self) -> Collection:
-        """Get impact collection"""
-        response = requests.get(self.emdat_impacts_collection_url)
-        collection_dict = json.loads(response.text)
-        return Collection.from_dict(collection_dict)
-
-    def _create_title_from_row(self, row: pd.Series) -> str | None:
+    def _create_title_from_row(self, row: pd.Series) -> Optional[str]:
         """Create a descriptive title from row data when Event Name is missing"""
         if not pd.isna(row.get("Event Name")):
             return str(row["Event Name"])

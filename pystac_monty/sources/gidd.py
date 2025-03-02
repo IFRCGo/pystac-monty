@@ -4,8 +4,7 @@ from datetime import datetime
 from typing import Any, Dict, List
 
 import pytz
-import requests
-from pystac import Asset, Collection, Item, Link
+from pystac import Asset, Item, Link
 
 from pystac_monty.extension import (
     ImpactDetail,
@@ -15,7 +14,7 @@ from pystac_monty.extension import (
     MontyImpactType,
 )
 from pystac_monty.hazard_profiles import MontyHazardProfiles
-from pystac_monty.sources.common import MontyDataSource
+from pystac_monty.sources.common import MontyDataSource, MontyDataTransformer
 
 STAC_EVENT_ID_PREFIX = "gidd-event-"
 STAC_IMPACT_ID_PREFIX = "idmc-gidd-impact-"
@@ -30,18 +29,9 @@ class GIDDDataSource(MontyDataSource):
         self.data = json.loads(data)
 
 
-class GIDDTransformer:
+class GIDDTransformer(MontyDataTransformer):
     """Transforms GIDD event data into STAC Items"""
 
-    gidd_events_collection_id = "gidd-events"
-    gidd_events_collection_url = (
-        "https://raw.githubusercontent.com/IFRCGo/monty-stac-extension/refs/heads/IDMC/" "examples/idmc-events/idmc-events.json"
-    )
-    gidd_hazards_collection_id = "idmc-gidd-impacts"
-    gidd_hazards_collection_url = (
-        "https://raw.githubusercontent.com/IFRCGo/monty-stac-extension/refs/heads/IDMC/"
-        "examples/idmc-gidd-impacts/idmc-gidd-impacts.json"
-    )
     hazard_profiles = MontyHazardProfiles()
 
     def __init__(self, data: GIDDDataSource) -> None:
@@ -51,6 +41,7 @@ class GIDDTransformer:
         Args:
             data: GIDDDataSource containing the gidd data
         """
+        super().__init__("idmc-gidd")
         self.data = data
 
     def get_data(self) -> dict:
@@ -68,22 +59,6 @@ class GIDDTransformer:
         items.extend(impact_items)
 
         return items
-
-    def get_event_collection(self, timeout: int = 30) -> Collection:
-        """Get the event collection"""
-        response = requests.get(self.gidd_events_collection_url, timeout=timeout)
-        if response.status_code == 200:
-            collection_dict = json.loads(response.text)
-            return Collection.from_dict(collection_dict)
-        return Collection.from_dict({})
-
-    def get_impact_collection(self, timeout: int = 30) -> Collection:
-        """Get the hazard collection"""
-        response = requests.get(self.gidd_hazards_collection_url, timeout=timeout)
-        if response.status_code == 200:
-            collection_dict = json.loads(response.text)
-            return Collection.from_dict(collection_dict)
-        return Collection.from_dict({})
 
     def make_source_event_items(self) -> List[Item]:
         """Create the source event items"""

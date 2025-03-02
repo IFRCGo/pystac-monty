@@ -3,13 +3,12 @@ import mimetypes
 from datetime import datetime
 from typing import Any, List
 
-import requests
-from pystac import Asset, Collection, Item, Link
+from pystac import Asset, Item, Link
 from shapely.geometry import Point, mapping
 
 from pystac_monty.extension import HazardDetail, MontyEstimateType, MontyExtension
 from pystac_monty.hazard_profiles import MontyHazardProfiles
-from pystac_monty.sources.common import MontyDataSource
+from pystac_monty.sources.common import MontyDataSource, MontyDataTransformer
 
 STAC_EVENT_ID_PREFIX = "glide-event-"
 STAC_HAZARD_ID_PREFIX = "glide-hazard-"
@@ -21,22 +20,15 @@ class GlideDataSource(MontyDataSource):
         self.data = json.loads(data)
 
 
-class GlideTransformer:
+class GlideTransformer(MontyDataTransformer):
     """
     Transforms Glide event data into STAC Items
     """
 
     hazard_profiles = MontyHazardProfiles()
 
-    glide_events_collection_url = (
-        "https://github.com/IFRCGo/monty-stac-extension/raw/refs/heads/main/examples/glide-events/glide-events.json"
-    )
-
-    glide_hazard_collection_url = (
-        "https://github.com/IFRCGo/monty-stac-extension/raw/refs/heads/main/examples/glide-hazards/glide-hazards.json"
-    )
-
     def __init__(self, data: GlideDataSource) -> None:
+        super().__init__("glide")
         self.data = data
 
     def make_items(self) -> list[Item]:
@@ -179,18 +171,6 @@ class GlideTransformer:
 
         date = datetime.fromisoformat(formatted_date.replace("Z", "+00:00"))
         return date
-
-    def get_event_collection(self, timeout: int = 30) -> Collection:
-        """Get event collection"""
-        response = requests.get(self.glide_events_collection_url, timeout=timeout)
-        collection_dict = json.loads(response.text)
-        return Collection.from_dict(collection_dict)
-
-    def get_hazard_collection(self, timeout: int = 30) -> Collection:
-        """Get hazard collection"""
-        response = requests.get(self.glide_hazard_collection_url, timeout=timeout)
-        collection_dict = json.loads(response.text)
-        return Collection.from_dict(collection_dict)
 
     def check_and_get_glide_events(self) -> list[Any]:
         """Validate the source fields"""
