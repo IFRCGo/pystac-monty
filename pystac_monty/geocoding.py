@@ -207,7 +207,7 @@ class GAULGeocoder(MontyGeoCoder):
         self._simplify_tolerance = simplify_tolerance
         self._cache: Dict[str, Union[Dict[str, Any], int, None]] = {}  # Cache for frequently accessed geometries
         self._file_handle = None
-        
+
         if not gpkg_path and not service_base_url:
             raise ValueError("At least the gpkg_path or service_base_url should be set.")
 
