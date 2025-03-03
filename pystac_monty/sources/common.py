@@ -22,9 +22,6 @@ class MontyDataSource:
         return self.data
 
 
-
-
-
 @dataclass
 class MontyDataTransformer:
     events_collection_id: str
@@ -40,9 +37,15 @@ class MontyDataTransformer:
         self.hazards_collection_id = f"{source_name}-hazards"
         self.impacts_collection_id = f"{source_name}-impacts"
 
-        self.events_collection_url = f"{MontyDataTransformer.base_collection_url}/{self.events_collection_id}/{self.events_collection_id}.json"
-        self.hazards_collection_url = f"{MontyDataTransformer.base_collection_url}/{self.hazards_collection_id}/{self.hazards_collection_id}.json"
-        self.impacts_collection_url = f"{MontyDataTransformer.base_collection_url}/{self.impacts_collection_id}/{self.impacts_collection_id}.json"
+        self.events_collection_url = (
+            f"{MontyDataTransformer.base_collection_url}/{self.events_collection_id}/{self.events_collection_id}.json"
+        )
+        self.hazards_collection_url = (
+            f"{MontyDataTransformer.base_collection_url}/{self.hazards_collection_id}/{self.hazards_collection_id}.json"
+        )
+        self.impacts_collection_url = (
+            f"{MontyDataTransformer.base_collection_url}/{self.impacts_collection_id}/{self.impacts_collection_id}.json"
+        )
 
     _event_collection_cache = None
     _hazard_collection_cache = None
