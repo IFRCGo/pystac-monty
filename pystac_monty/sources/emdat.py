@@ -56,15 +56,6 @@ class EMDATTransformer(MontyDataTransformer):
     Transforms EM-DAT event data into STAC Items
     """
 
-    emdat_events_collection_id = "emdat-events"
-    emdat_events_collection_url = "./monty-stac-extension/examples/emdat-events/emdat-events.json"
-
-    emdat_hazards_collection_id = "emdat-hazards"
-    emdat_hazards_collection_url = "./monty-stac-extension/examples/emdat-hazards/emdat-hazards.json"
-
-    emdat_impacts_collection_id = "emdat-impacts"
-    emdat_impacts_collection_url = "./monty-stac-extension/examples/emdat-impacts/emdat-impacts.json"
-
     hazard_profiles = MontyHazardProfiles()
 
     def __init__(self, data: EMDATDataSource, geocoder: MontyGeoCoder = None) -> None:

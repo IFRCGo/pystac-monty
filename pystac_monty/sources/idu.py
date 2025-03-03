@@ -44,11 +44,6 @@ class IDUDataSource(MontyDataSource):
 class IDUTransformer(MontyDataTransformer):
     """Transform the source data into the STAC items"""
 
-    idu_events_collection_id = "idu-events"
-    idu_events_collection_url = "./monty-stac-extension/examples/idmc-idu-events/idmc-idu-events.json"  # noqa
-    idu_impacts_collection_id = "idu-impacts"
-    idu_impacts_collection_url = "./monty-stac-extension/examples/idmc-idu-impacts/idmc-idu-impacts.json"  # noqa
-
     hazard_profiles = MontyHazardProfiles()
 
     def __init__(self, data: IDUDataSource):

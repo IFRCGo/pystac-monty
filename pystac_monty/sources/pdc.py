@@ -37,13 +37,6 @@ class PDCDataSource(MontyDataSource):
 class PDCTransformer(MontyDataTransformer):
     """Transform the source data into the STAC items"""
 
-    pdc_events_collection_id = "pdc-events"
-    pdc_events_collection_url = "./monty-stac-extension/examples/pdc-events/pdc-events.json"  # noqa
-    pdc_hazards_collection_id = "pdc-hazards"
-    pdc_hazards_collection_url = "./monty-stac-extension/examples/pdc-hazards/pdc-hazards.json"  # noqa
-    pdc_impacts_collection_id = "pdc-impacts"
-    pdc_impacts_collection_url = "./monty-stac-extension/examples/pdc-impacts/pdc-impacts.json"  # noqa
-
     hazard_profiles = MontyHazardProfiles()
 
     def __init__(self, pdc_data_src: PDCDataSource):

@@ -11,7 +11,7 @@ import pytz
 import requests
 from geopandas import gpd
 from lxml import etree
-from pystac import Collection, Link
+from pystac import Link
 from pystac.item import Item
 
 from pystac_monty.extension import (
@@ -237,23 +237,6 @@ class DesinventarTransformer(MontyDataTransformer):
     def __init__(self, data_source: DesinventarDataSource) -> None:
         super().__init__("desinventar")
         self.data_source = data_source
-        self.events_collection_id = "desinventar-events"
-        self.events_collection_url = "./monty-stac-extension/examples/desinventar-events/desinventar-events.json"  # noqa: E501
-
-        self.impacts_collection_id = "desinventar-impacts"
-        self.impacts_collection_url = "./monty-stac-extension/examples/desinventar-impacts/desinventar-impacts.json"  # noqa: E501
-
-    def get_event_collection(self) -> Collection:
-        """Get event collection"""
-        with open(self.events_collection_url, "r", encoding="utf-8") as f:
-            data = json.load(f)
-        return Collection.from_dict(data)
-
-    def get_impact_collection(self) -> Collection:
-        """Get impact collection"""
-        with open(self.impacts_collection_url, "r", encoding="utf-8") as f:
-            data = json.load(f)
-        return Collection.from_dict(data)
 
     def create_datetimes(self, row: DataRow) -> datetime | None:
         start_year = strtoi(row["year"], None)
