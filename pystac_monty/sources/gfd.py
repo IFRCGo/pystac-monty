@@ -34,15 +34,6 @@ class GFDDataSource(MontyDataSource):
 class GFDTransformer(MontyDataTransformer):
     """Transform the source data into the STAC items"""
 
-    gfd_events_collection_id = "gfd-events"
-    gfd_events_collection_url = "./monty-stac-extension/examples/gfd-events/gfd-events.json"  # noqa
-
-    gfd_hazards_collection_id = "gfd-hazards"
-    gfd_hazards_collection_url = "./monty-stac-extension/examples/gfd-hazards/gfd-hazards.json"  # noqa
-
-    gfd_impacts_collection_id = "gfd-impacts"
-    gfd_impacts_collection_url = "../../monty-stac-extension/examples/gfd-impacts/gfd-impacts.json"  # noqa
-
     hazard_profiles = MontyHazardProfiles()
 
     def __init__(self, data: GFDDataSource):

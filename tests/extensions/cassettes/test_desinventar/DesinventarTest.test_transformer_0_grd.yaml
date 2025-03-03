@@ -11,160 +11,6 @@ interactions:
       User-Agent:
       - python-requests/2.32.3
     method: GET
-    uri: https://raw.githubusercontent.com/IFRCGo/monty-stac-extension/refs/heads/main/examples/desinventar-events/desinventar-events.json
-  response:
-    body:
-      string: !!binary |
-        H4sIAAAAAAAAA7VTsU7DMBDd+xWW5yZ1EAPtCh3YmUAVcpNra3Bty3dUrar+O2cnlBTCgASRY+fe
-        e753ti7HkRCSDgHkTMhbby3UZLyT44SbJqENoHE7cKRjAWnFlkXS9fMOIiY966pSlaqleEsdTaCO
-        meddYhX9VtAGxB3gfZdRNAY1EkRhPaJoNOmlRmjTWONekRM8cSDEMc8MR7ApK4JdZV0GNxFWw9WW
-        L9gdKAs/DqtDsKbWqcZJVmTBaTzoFb2n715lOeEE2vr1X3gYgu2Ax2Qdm6KaXv+3xZVS/29R/c6C
-        50XuBDJks7DfOvNeM/JucJglIfoQDbDi0HKwJxYy1dYqMbCRtmeAoeXS78+Nlp7PLyGK6kaN+/H0
-        IvzCTtU5WIz6a3dhki8o+Hjpbxz/AruMDdcg2UUVquLxoNQsj0fZ93Vv1v7kPErv6R3k2Mz97AMA
-        AA==
-    headers:
-      Accept-Ranges:
-      - bytes
-      Access-Control-Allow-Origin:
-      - '*'
-      Cache-Control:
-      - max-age=300
-      Connection:
-      - keep-alive
-      Content-Encoding:
-      - gzip
-      Content-Length:
-      - '343'
-      Content-Security-Policy:
-      - default-src 'none'; style-src 'unsafe-inline'; sandbox
-      Content-Type:
-      - text/plain; charset=utf-8
-      Cross-Origin-Resource-Policy:
-      - cross-origin
-      Date:
-      - Tue, 25 Feb 2025 16:59:06 GMT
-      ETag:
-      - W/"b804bfc21a65b1f6566ca41bfe59779814cfea656fc637fe494af956a6290d30"
-      Expires:
-      - Tue, 25 Feb 2025 17:04:06 GMT
-      Source-Age:
-      - '29'
-      Strict-Transport-Security:
-      - max-age=31536000
-      Vary:
-      - Authorization,Accept-Encoding,Origin
-      Via:
-      - 1.1 varnish
-      X-Cache:
-      - HIT
-      X-Cache-Hits:
-      - '2'
-      X-Content-Type-Options:
-      - nosniff
-      X-Fastly-Request-ID:
-      - 4a03b3477f68fc73016253e3bb8c494cb22037a4
-      X-Frame-Options:
-      - deny
-      X-GitHub-Request-Id:
-      - 5E8D:37153E:31DCBF:36E3C3:67BDEFB9
-      X-Served-By:
-      - cache-mrs10538-MRS
-      X-Timer:
-      - S1740502747.515730,VS0,VE0
-      X-XSS-Protection:
-      - 1; mode=block
-    status:
-      code: 200
-      message: OK
-- request:
-    body: null
-    headers:
-      Accept:
-      - '*/*'
-      Accept-Encoding:
-      - gzip, deflate
-      Connection:
-      - keep-alive
-      User-Agent:
-      - python-requests/2.32.3
-    method: GET
-    uri: https://raw.githubusercontent.com/IFRCGo/monty-stac-extension/refs/heads/main/examples/desinventar-impacts/desinventar-impacts.json
-  response:
-    body:
-      string: !!binary |
-        H4sIAAAAAAAAA61SwW7CMAy98xVRzrSEnQbX7dL7TpvQFBoD2UISxR4CIf59TtqxssFh0qo0rZ+f
-        /Wwnx5EQkg4R5FzIh+ActGSDl+OMW5NRA2j9DjzpVNlt1C1h50bS7esOEuYAJk5rVavOxTFtspF6
-        T1PCRII2JINilcJW0AbEI2DTpxbGokaCJFxAFEaTXmqELp2z/h050QsbQhzLznACl7MjuFXhFXCT
-        YHWj7PoN+9YK86ttHaOzrc7FTgqjEE7jq2IpBPotVtcTTqBdWP+HhiXYXtGYrJOp7pSqDGja/LEb
-        3hdllmTJFeJw+M3wXDkcPBZOTCEmC0w5dD7YE0ewq6tZYmQl7c4AQ8tl2J/PKj/ff0JU03s1Htqz
-        C/OHd6bOxmI0/PaDkzyoGNKlvvV8i3YFu16DZBVVqSmvJ6XmZT3Loa7/cO6W8ii/p09cHf9jOAMA
-        AA==
-    headers:
-      Accept-Ranges:
-      - bytes
-      Access-Control-Allow-Origin:
-      - '*'
-      Cache-Control:
-      - max-age=300
-      Connection:
-      - keep-alive
-      Content-Encoding:
-      - gzip
-      Content-Length:
-      - '343'
-      Content-Security-Policy:
-      - default-src 'none'; style-src 'unsafe-inline'; sandbox
-      Content-Type:
-      - text/plain; charset=utf-8
-      Cross-Origin-Resource-Policy:
-      - cross-origin
-      Date:
-      - Tue, 25 Feb 2025 16:59:06 GMT
-      ETag:
-      - W/"fb2a370c71ed36c2211866965fea6d69331e08f27cf471fffb32b7b7496d22cc"
-      Expires:
-      - Tue, 25 Feb 2025 17:04:06 GMT
-      Source-Age:
-      - '29'
-      Strict-Transport-Security:
-      - max-age=31536000
-      Vary:
-      - Authorization,Accept-Encoding,Origin
-      Via:
-      - 1.1 varnish
-      X-Cache:
-      - HIT
-      X-Cache-Hits:
-      - '2'
-      X-Content-Type-Options:
-      - nosniff
-      X-Fastly-Request-ID:
-      - 4d5408ae0115b42c6c602b36d097fb79e313287f
-      X-Frame-Options:
-      - deny
-      X-GitHub-Request-Id:
-      - 99F8:359ABF:30B368:35BD5A:67BDEFB9
-      X-Served-By:
-      - cache-mrs1050108-MRS
-      X-Timer:
-      - S1740502747.636067,VS0,VE0
-      X-XSS-Protection:
-      - 1; mode=block
-    status:
-      code: 200
-      message: OK
-- request:
-    body: null
-    headers:
-      Accept:
-      - '*/*'
-      Accept-Encoding:
-      - gzip, deflate
-      Connection:
-      - keep-alive
-      User-Agent:
-      - python-requests/2.32.3
-    method: GET
     uri: https://raw.githubusercontent.com/IFRCGo/monty-stac-extension/refs/heads/main/json-schema/schema.json
   response:
     body:
@@ -219,13 +65,13 @@ interactions:
       Cross-Origin-Resource-Policy:
       - cross-origin
       Date:
-      - Tue, 25 Feb 2025 16:59:06 GMT
+      - Mon, 03 Mar 2025 13:51:44 GMT
       ETag:
       - W/"46b2d208ff47c76f665a58d5a9a82972e12d5066b8f0fcb6b2e3a510105e1d7a"
       Expires:
-      - Tue, 25 Feb 2025 17:04:06 GMT
+      - Mon, 03 Mar 2025 13:56:44 GMT
       Source-Age:
-      - '163'
+      - '0'
       Strict-Transport-Security:
       - max-age=31536000
       Vary:
@@ -233,21 +79,21 @@ interactions:
       Via:
       - 1.1 varnish
       X-Cache:
-      - HIT
+      - MISS
       X-Cache-Hits:
       - '0'
       X-Content-Type-Options:
       - nosniff
       X-Fastly-Request-ID:
-      - dfc5469c916b8ea6352697b29fb357b89978490a
+      - 52e516188d254f973af223361b12590d49224e2b
       X-Frame-Options:
       - deny
       X-GitHub-Request-Id:
-      - 22EF:359ABF:2A6C50:2ECB6E:67BDE95A
+      - 7236:1D364:F5EB3C:119482C:67C5B3EF
       X-Served-By:
-      - cache-mrs1050100-MRS
+      - cache-lis1490051-LIS
       X-Timer:
-      - S1740502747.934747,VS0,VE1
+      - S1741009904.896993,VS0,VE266
       X-XSS-Protection:
       - 1; mode=block
     status:

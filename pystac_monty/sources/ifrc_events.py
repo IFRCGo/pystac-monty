@@ -31,11 +31,6 @@ class IFRCEventDataSource(MontyDataSource):
 
 
 class IFRCEventTransformer(MontyDataTransformer):
-    ifrcevent_events_collection_id = "ifrcevent-events"
-    ifrcevent_events_collection_url = "./monty-stac-extension/examples/ifrcevent-events/ifrcevent-events.json"
-    ifrcevent_impacts_collection_id = "ifrcevent-impacts"
-    ifrcevent_impacts_collection_url = "./monty-stac-extension/examples/ifrcevent-impacts/ifrcevent-impacts.json"  # noqa: E501
-
     hazard_profiles = MontyHazardProfiles()
 
     def __init__(self, data: IFRCEventDataSource, geocoder: MontyGeoCoder):
