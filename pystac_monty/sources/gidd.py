@@ -16,7 +16,7 @@ from pystac_monty.extension import (
 from pystac_monty.hazard_profiles import MontyHazardProfiles
 from pystac_monty.sources.common import MontyDataSource, MontyDataTransformer
 
-STAC_EVENT_ID_PREFIX = "gidd-event-"
+STAC_EVENT_ID_PREFIX = "idmc-gidd-event-"
 STAC_IMPACT_ID_PREFIX = "idmc-gidd-impact-"
 
 
