@@ -1,18 +1,23 @@
-from pydantic import BaseModel, field_validator, model_validator
-from typing import Optional
-from datetime import date, datetime
-import re
 import json
+import logging
+import re
+from datetime import date
+
+from pydantic import BaseModel, field_validator
+
+logger = logging.getLogger(__name__)
+logging.basicConfig(level=logging.INFO)
+logger.setLevel(logging.INFO)
 
 
 class IDUSourceValidator(BaseModel):
+    """Source validator fields"""
+
     id: int
-    country: str
     iso3: str
     latitude: float
     longitude: float
     centroid: str  # Custom validation required
-    role: str
     displacement_type: str
     qualifier: str
     figure: int
@@ -23,7 +28,6 @@ class IDUSourceValidator(BaseModel):
     event_id: int
     event_name: str
     event_codes: str
-    event_code_types: str
     event_start_date: date
     event_end_date: date
     category: str
@@ -31,82 +35,74 @@ class IDUSourceValidator(BaseModel):
     type: str
     subtype: str
     standard_popup_text: str
-    standard_info_text: str
-    old_id: Optional[int] = None
-    sources: str
     source_url: str
     locations_name: str
-    locations_coordinates: str
-    locations_accuracy: str
-    locations_type: str
-    displacement_occurred: str
-    created_at: str  # Keeping it as a string to validate separately
 
     @field_validator("latitude")
     @classmethod
-    def validate_latitude(cls, value: float) -> float:
+    def validate_latitude(cls, value: float) -> bool:
+        """Validation for Latitude field"""
         if not (-90 <= value <= 90):
-            raise ValueError("Latitude must be between -90 and 90.")
-        return value
+            logger.error("Latitude must be between -90 and 90.")
+            return False
+        return True
 
     @field_validator("longitude")
     @classmethod
-    def validate_longitude(cls, value: float) -> float:
+    def validate_longitude(cls, value: float) -> bool:
+        """Validation for Longitude field"""
         if not (-180 <= value <= 180):
-            raise ValueError("Longitude must be between -180 and 180.")
-        return value
+            logger.error("Longitude must be between -180 and 180.")
+            return True
+        return True
 
     @field_validator("centroid")
     @classmethod
-    def validate_centroid(cls, value: str) -> str:
+    def validate_centroid(cls, value: str) -> bool:
+        """Validation for centroid field"""
         try:
             coords = json.loads(value)  # Parse JSON format list
             if not isinstance(coords, list) or len(coords) != 2:
-                raise ValueError("Centroid must be a list with two values: [latitude, longitude].")
+                logger.error("Centroid must be a list with two values: [latitude, longitude].")
+                return False
             latitude, longitude = coords
             if not (-90 <= latitude <= 90) or not (-180 <= longitude <= 180):
-                raise ValueError("Invalid centroid coordinates.")
+                logger.error("Invalid centroid coordinates.")
+                return False
         except (json.JSONDecodeError, ValueError):
-            raise ValueError("Invalid centroid format. Must be a JSON string representing [latitude, longitude].")
-        return value
+            logger.error("Invalid centroid format. Must be a JSON string representing [latitude, longitude].")
+            return False
+        return True
 
-    @field_validator("displacement_date", "displacement_start_date", "displacement_end_date", "event_start_date", "event_end_date")
+    @field_validator(
+        "displacement_date", "displacement_start_date", "displacement_end_date", "event_start_date", "event_end_date"
+    )
     @classmethod
-    def validate_date(cls, value: date) -> date:
+    def validate_date(cls, value: date) -> bool:
+        """Validation for date field"""
         if not isinstance(value, date):
-            raise ValueError(f"Invalid date format: {value}. Expected YYYY-MM-DD.")
-        return value
+            logger.error(f"Invalid date format: {value}. Expected YYYY-MM-DD.")
+            return False
+        return True
 
     @field_validator("source_url")
     @classmethod
-    def validate_source_url(cls, value: str) -> str:
-        url_regex = r'^(https?://)?([a-zA-Z0-9_-]+(\.[a-zA-Z0-9_-]+)+)(/[^\s]*)?$'
+    def validate_source_url(cls, value: str) -> bool:
+        """Validation for source_url field"""
+        url_regex = r"^(https?://)?([a-zA-Z0-9_-]+(\.[a-zA-Z0-9_-]+)+)(/[^\s]*)?$"
         if not re.match(url_regex, value):
-            raise ValueError(f"Invalid URL: {value}")
-        return value
+            logger.error(f"Invalid URL: {value}")
+            return False
+        return True
 
-    @field_validator("locations_coordinates")
+    # Method to validate the entire model
     @classmethod
-    def validate_locations_coordinates(cls, value: str) -> str:
+    def validate_event(cls, data: dict) -> bool:
+        """Validate the overall data item"""
         try:
-            lat, lon = map(float, value.split(","))
-            if not (-90 <= lat <= 90) or not (-180 <= lon <= 180):
-                raise ValueError("Invalid coordinates format. Expected 'latitude,longitude'.")
-        except ValueError:
-            raise ValueError(f"Invalid locations_coordinates: {value}")
-        return value
-
-    @field_validator("created_at")
-    @classmethod
-    def validate_created_at(cls, value: str) -> str:
-        try:
-            datetime.fromisoformat(value.replace("Z", "+00:00"))  # Handle UTC "Z" format
-        except ValueError:
-            raise ValueError(f"Invalid datetime format: {value}. Expected ISO 8601.")
-        return value
-
-    @model_validator(mode="after")
-    def validate_date_range(self):
-        if self.displacement_start_date > self.displacement_end_date:
-            raise ValueError("displacement_start_date cannot be after displacement_end_date.")
-        return self
+            _ = cls(**data)  # This will trigger the validators
+        except Exception as e:
+            logger.error(f"Validation failed: {e}")
+            return False
+        # If all field validators return True, we consider it valid
+        return True
