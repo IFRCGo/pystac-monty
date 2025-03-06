@@ -2290,7 +2290,7 @@ requires-dist = [
     { name = "lxml", specifier = ">=5.3.0" },
     { name = "markdownify", specifier = ">=0.14.1" },
     { name = "pandas", specifier = ">=2.2.0" },
-    { name = "pydantic" },
+    { name = "pydantic", specifier = ">=2.10.6" },
     { name = "pystac", specifier = ">=1.11.0" },
     { name = "python-dateutil", specifier = ">=2.7.0" },
     { name = "pytz", specifier = ">=2021.1" },

@@ -9,6 +9,7 @@ from shapely.geometry import Point, mapping
 from pystac_monty.extension import HazardDetail, MontyEstimateType, MontyExtension
 from pystac_monty.hazard_profiles import MontyHazardProfiles
 from pystac_monty.sources.common import MontyDataSource, MontyDataTransformer
+from pystac_monty.validators.glide import GlideSetValidator
 
 STAC_EVENT_ID_PREFIX = "glide-event-"
 STAC_HAZARD_ID_PREFIX = "glide-hazard-"
@@ -17,7 +18,19 @@ STAC_HAZARD_ID_PREFIX = "glide-hazard-"
 class GlideDataSource(MontyDataSource):
     def __init__(self, source_url: str, data: Any):
         super().__init__(source_url, data)
-        self.data = json.loads(data)
+        self.data = self.source_data_validator(json.loads(data))
+
+    def source_data_validator(self, data: dict[dict]):
+        """Validate the source data and collect only the success items"""
+        failed_items = []
+        success_items = []
+        for item in data["glideset"]:
+            is_valid = GlideSetValidator.validate_event(item)
+            if is_valid:
+                success_items.append(item)
+            else:
+                failed_items.append(item)
+        return {"glideset": success_items}
 
 
 class GlideTransformer(MontyDataTransformer[GlideDataSource]):
