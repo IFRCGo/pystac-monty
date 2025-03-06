@@ -39,21 +39,20 @@ class IDUDataSource(MontyDataSource):
 
     def __init__(self, source_url: str, data: Any):
         super().__init__(source_url, data)
-        self.data = json.loads(data)
-        self.source_data_validator()
+        self.data = self.source_data_validator(json.loads(data))
 
-    def source_data_validator(self):
+    def source_data_validator(self, data: list[dict]):
         """Validate the source data and collect only the success items"""
         # TODO Handle the failed_items
         failed_items = []
         success_items = []
-        for item in self.data:
+        for item in data:
             is_valid = IDUSourceValidator.validate_event(item)
             if is_valid:
                 success_items.append(item)
             else:
                 failed_items.append(item)
-        self.data = success_items
+        return success_items
 
 
 class IDUTransformer(MontyDataTransformer):
