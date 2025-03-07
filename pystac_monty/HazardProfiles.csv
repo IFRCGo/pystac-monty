@@ -49,6 +49,7 @@ MH0047,Heatwave,hazhmtemp,haztypehydromet,HT,nat-met-ext-hea
 MH0048,Icing (including Ice),hazhmtemp,haztypehydromet,OT,nat-met-ext-sev
 MH0049,Thaw,hazhmtemp,haztypehydromet,OT,nat-met-ext-sev
 MH0050,Avalanche,hazhmterr,haztypehydromet,AV,nat-geo-mmd-ava
+MH0050,Avalanche,hazhmterr,haztypehydromet,AV,nat-hyd-mmw-ava
 MH0051,Mud Flow,hazhmterr,haztypehydromet,MS,nat-hyd-mmw-mud
 MH0052,Rock Slide,hazhmterr,haztypehydromet,OT,
 MH0053,Derecho,hazhmwind,haztypehydromet,VW,nat-met-sto-der
@@ -117,6 +118,8 @@ EN0010,Forest Declines and Diebacks,hazenvenvdeg,haztypeenviron,OT,
 EN0011,Forest Disturbances,hazenvenvdeg,haztypeenviron,OT,
 EN0012,Forest Invasive Species,hazenvenvdeg,haztypeenviron,OT,
 EN0013,Wildfires,hazenvenvdeg,haztypeenviron,WF,nat-cli-wil-wil
+EN0013,Forest fire,hazenvenvdeg,haztypeenviron,WF,nat-cli-wil-for
+EN0013,Land fire,hazenvenvdeg,haztypeenviron,WF,nat-cli-wil-lan
 EN0014,Desertification,hazenvenvdeg,haztypeenviron,OT,nat-geo-env-des
 EN0015,Loss of Mangroves,hazenvenvdeg,haztypeenviron,OT,
 EN0016,Wetland Loss/Degradation,hazenvenvdeg,haztypeenviron,OT,
