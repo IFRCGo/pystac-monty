@@ -192,6 +192,7 @@ SO0005,Environmental Degradation from Conflict,hazsocpostconf,haztypesoc,CE,
 SO0006,Violence,hazsocbeh,haztypesoc,OT,
 SO0007,Stampede or Crushing (Human),hazsocbeh,haztypesoc,OT,
 SO0008,Financial shock,hazsoceco,haztypesoc,OT,
+,Sedimentation,hazenvenvdeg,haztypeenviron,OT,nat-geo-env-sed
 ,Mixed Hazards,hazmixed,haztypeother,OT,mix-mix-mix-mix
 ,General Flood,hazhmflood,haztypehydromet,FL,nat-hyd-flo-flo
 ,General Earthquake,hazgeoseis,haztypegeohaz,EQ,nat-geo-ear-gro
