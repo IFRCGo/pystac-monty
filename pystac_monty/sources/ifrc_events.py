@@ -55,7 +55,7 @@ class IFRCEventTransformer(MontyDataTransformer):
     def make_source_event_items(self) -> List[Item]:
         """Create ifrc event item"""
         items = []
-        ifrc_data: List[Dict[str, Any]] = self.data.get_data()
+        ifrc_data = self.check_and_get_ifrcevent_data()
 
         for data in ifrc_data:
             item = self.make_source_event_item(data=data)
@@ -123,8 +123,8 @@ class IFRCEventTransformer(MontyDataTransformer):
             "Volcanic Eruption": ["GH009", "GH0013", "GH0014", "GH0015", "GH0016"],
             "Tsunami": ["MH0029", "GH0006"],
             "Flood": ["FL"],  # General flood
-            "Cold Wave": "MH0040",
-            "Fire": ["FR"],
+            "Cold Wave": ["MH0040"],
+            "Fire": ["FR", "tec-ind-fir-fir"],
             "Heat Wave": ["MH0047"],
             "Drought": ["MH0035"],
             "Storm Surge": ["MH0027"],
@@ -190,7 +190,7 @@ class IFRCEventTransformer(MontyDataTransformer):
                 # only save impact value if not null
                 value = None
                 for field in impact_field:
-                    if src_data["field_reports"][0][field]:  # take impact value from latest field report
+                    if len(src_data["field_reports"]) and src_data["field_reports"][0][field]:
                         value = src_data["field_reports"][0][field]
                         break
 
@@ -227,6 +227,7 @@ class IFRCEventTransformer(MontyDataTransformer):
             "Storm Surge",
             "Landslide",
             "Flash Flood",
+            "Epidemic",
         ]
         return disaster in monty_accepted_disaster_types
 
