@@ -95,14 +95,17 @@ hazard_mapping = {
     "BIOLOGICAL": ["nat-bio-epi-dis"],  # Epidemic
     "BOAT CAPSIZE": ["tec-tra-wat-wat", "TL0050"],
     "COASTAL EROSION": ["EN0020", "nat-geo-env-coa "],  # Coastal erosion
+    "COASTLINE": ["EN0020", "nat-geo-env-coa"],  # Coastal erosion
     "COLD WAVE": ["MH0049", "nat-met-ext-col"],  # Cold wave
     "CYCLONE": ["MH0057", "nat-met-tro-tro"],  # Tropical cyclone
     "DROUGHT": ["MH0035", "nat-met-dro-dro"],  # Drought
     "EARTHQUAKE": ["GH0001", "nat-geo-ear-grd"],  # Earthquake
     "ELECTRIC STORM": ["MH0002", "nat-met-sto-sto"],  # Thunderstorm
+    "ELECTRICSTORM": ["MH0002", "nat-met-sto-sto"],  # Thunderstorm
     "EPIDEMIC": ["nat-bio-epi-dis"],  # Epidemic
     "EPIZOOTIC": ["BI0027", "nat-bio-ani-ani"],  # Animal Diseases (Not Zoonoses)
     "EROSION": ["EN0019"],  # Soil erosion
+    "Erosión": ["EN0019"],  # Soil erosion
     "ERUPTION": ["VO", "nat-geo-vol-vol"],  # Volcanic eruption
     "EXPLOSION": ["tec-mis-exp-exp"],  # Explosion
     "FAMINE": None,
@@ -110,15 +113,18 @@ hazard_mapping = {
     "FLASH FLOOD": ["MH0006", "nat-hyd-flo-fla"],  # Flash flood
     "FLOOD": ["nat-hyd-flo-flo"],  # Flood
     "FOG": ["MH0016", "nat-met-fog-fog"],  # Fog
-    "FOREST FIRE": ["nat-cli-wil-for"],  # Forest fire
+    "FORESTFIRE": ["nat-cli-wil-for"],  # Forest fire
     "FROST": ["MH0043", "nat-met-ext-sev"],  # Severe frost
     "HAIL STORM": ["MH0036", "nat-met-sto-hai"],  # Hailstorm
     "HAILSTORM": ["MH0036", "nat-met-sto-hai"],  # Hailstorm
     "HEAT WAVE": ["MH0047", "nat-met-ext-hea"],  # Heat wave
+    "HEATWAVE": ["MH0047", "nat-met-ext-hea"],  # Heat wave
+    "INTOXICACION": ["tec-ind-che-che"],  # Chemical intoxication
     "LAHAR": ["GH0013", "nat-geo-vol-lah"],  # Lahar
     "LANDSLIDE": ["GH0007", "nat-hyd-mmw-lan"],  # Landslide
     "LEAK": ["TL0030", "tec-ind-che-che"],  # Chemical leak
     "LIQUEFACTION": ["GH0003", "nat-geo-ear-gro"],  # Ground liquefaction
+    "Naufragio": ["tec-tra-wat-wat", "TL0050"],  # Shipwreck
     "OTHER": ["OT"],  # Other
     "PANIC": None,
     "PLAGUE": None,
@@ -129,9 +135,12 @@ hazard_mapping = {
     "SEDIMENTATION": ["nat-geo-env-sed"],  # Sedimentation
     "SNOW STORM": ["MH0039", "nat-met-sto-sto"],  # Snow Storm
     "SNOWSTORM": ["MH0039", "nat-met-sto-sto"],  # Snow Storm
+    "SPATE": ["MH0006", "nat-hyd-flo-fla"],  # Flash flood
     "STORM": ["nat-met-sto-sto"],  # Storm
     "STRONG WIND": ["MH0060", "nat-met-sto-sto"],  # Strong wind
+    "STRONGWIND": ["MH0060", "nat-met-sto-sto"],  # Strong wind
     "STRUCT.COLLAPSE": ["TL0005", "tec-mis-col-col"],  # Structural collapse
+    "STRUCTURE": ["TL0005", "tec-mis-col-col"],  # Structural collapse
     "SUBSIDENCE": ["GH0005", "nat-geo-mmd-sub"],  # Subsidence
     "SURGE": ["MH0027", "nat-met-sto-sur"],  # Storm surge
     "THUNDERSTORM": ["MH0003", "nat-met-sto-sto"],  # Thunderstorm
@@ -552,10 +561,11 @@ class DesinventarTransformer(MontyDataTransformer):
             return (None, None)
 
         code = self.geo_data_mapping[level]["property_code"]
+        # code = row[level]
         if code is None:
             return (None, None)
 
-        cached_data = self.geo_data_cache.get(f"{level}:{code}", None)
+        cached_data = self.geo_data_cache.get(f"{level}:{row[level]}", None)
         if cached_data is not None:
             return cached_data
 
@@ -563,7 +573,10 @@ class DesinventarTransformer(MontyDataTransformer):
         if gfd is None:
             return (None, None)
 
-        filtered_gfd = gfd[gfd[code] == row[level]].copy()
+        try:
+            filtered_gfd = gfd[gfd[code] == row[level]].copy()
+        except KeyError:
+            return (None, None)
         if isinstance(filtered_gfd, gpd.GeoDataFrame):
             # Use a tolerance value for simplification (smaller values will keep more detail)
             filtered_gfd["geometry"] = filtered_gfd["geometry"].apply(
