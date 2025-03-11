@@ -77,11 +77,12 @@ class MontyHazardProfiles(HazardProfiles):
                     pass
             if cluster_code:
                 cluster_codes.append(cluster_code)
-        if not cluster_codes:
-            raise ValueError("No cluster code found for hazard codes {}".format(monty.hazard_codes))
 
         # Remove the nan items
         cluster_codes = pd.Series(cluster_codes).dropna().tolist()
+
+        if not cluster_codes:
+            raise ValueError("No cluster code found for hazard codes {}".format(monty.hazard_codes))
         # In case of a tie, return the first item alphabetically
         count_dict = {code: cluster_codes.count(code) for code in set(cluster_codes)}
         max_count = max(count_dict.values())
