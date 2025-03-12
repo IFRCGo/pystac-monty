@@ -394,7 +394,7 @@ class ImpactDetail(ABC):
             self.estimate_type = estimate_type
 
     @property
-    def category(self) -> str:
+    def category(self) -> MontyImpactExposureCategory:
         """The cluster of the hazard."""
         return get_required(
             self.properties.get(IMPDET_CATEGORY_PROP),
@@ -403,11 +403,11 @@ class ImpactDetail(ABC):
         )
 
     @category.setter
-    def category(self, v: str) -> None:
+    def category(self, v: MontyImpactExposureCategory) -> None:
         self.properties[IMPDET_CATEGORY_PROP] = v
 
     @property
-    def type(self) -> str:
+    def type(self) -> MontyImpactType:
         """The cluster of the impact."""
         return get_required(
             self.properties.get(IMPDET_TYPE_PROP),
@@ -416,7 +416,7 @@ class ImpactDetail(ABC):
         )
 
     @type.setter
-    def type(self, v: str) -> None:
+    def type(self, v: MontyImpactType) -> None:
         self.properties[IMPDET_TYPE_PROP] = v
 
     @property

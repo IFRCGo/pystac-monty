@@ -89,41 +89,41 @@ class DataRow(TypedDict):
 
 # TODO: complete this mapping
 hazard_mapping = {
-    "ALLUVION": ["MH0051", "nat-hyd-mmw-mud"],  # Mud flow
-    "AVALANCHE": ["MH0050", "nat-hyd-mmw-ava"],  # Avalanche
+    "ALLUVION": ["nat-hyd-mmw-mud", "MH0051"],  # Mud flow
+    "AVALANCHE": ["nat-hyd-mmw-ava", "MH0050"],  # Avalanche
     "ACCIDENT": ["tec-mis-col-col"],
     "BIOLOGICAL": ["nat-bio-epi-dis"],  # Epidemic
     "BOAT CAPSIZE": ["tec-tra-wat-wat", "TL0050"],
-    "COASTAL EROSION": ["EN0020", "nat-geo-env-coa "],  # Coastal erosion
-    "COASTLINE": ["EN0020", "nat-geo-env-coa"],  # Coastal erosion
-    "COLD WAVE": ["MH0049", "nat-met-ext-col"],  # Cold wave
-    "CYCLONE": ["MH0057", "nat-met-tro-tro"],  # Tropical cyclone
-    "DROUGHT": ["MH0035", "nat-met-dro-dro"],  # Drought
-    "EARTHQUAKE": ["GH0001", "nat-geo-ear-grd"],  # Earthquake
-    "ELECTRIC STORM": ["MH0002", "nat-met-sto-sto"],  # Thunderstorm
-    "ELECTRICSTORM": ["MH0002", "nat-met-sto-sto"],  # Thunderstorm
+    "COASTAL EROSION": ["nat-geo-env-coa ", "EN0020"],  # Coastal erosion
+    "COASTLINE": ["nat-geo-env-coa", "EN0020"],  # Coastal erosion
+    "COLD WAVE": ["nat-met-ext-col", "MH0049"],  # Cold wave
+    "CYCLONE": ["nat-met-tro-tro", "MH0057"],  # Tropical cyclone
+    "DROUGHT": ["nat-met-dro-dro", "MH0035"],  # Drought
+    "EARTHQUAKE": ["nat-geo-ear-grd", "GH0001"],  # Earthquake
+    "ELECTRIC STORM": ["nat-met-sto-sto", "MH0002"],  # Thunderstorm
+    "ELECTRICSTORM": ["nat-met-sto-sto", "MH0002"],  # Thunderstorm
     "EPIDEMIC": ["nat-bio-epi-dis"],  # Epidemic
-    "EPIZOOTIC": ["BI0027", "nat-bio-ani-ani"],  # Animal Diseases (Not Zoonoses)
+    "EPIZOOTIC": ["nat-bio-ani-ani", "BI0027"],  # Animal Diseases (Not Zoonoses)
     "EROSION": ["EN0019"],  # Soil erosion
     "Erosión": ["EN0019"],  # Soil erosion
-    "ERUPTION": ["VO", "nat-geo-vol-vol"],  # Volcanic eruption
+    "ERUPTION": ["nat-geo-vol-vol", "VO"],  # Volcanic eruption
     "EXPLOSION": ["tec-mis-exp-exp"],  # Explosion
     "FAMINE": None,
-    "FIRE": ["EN0013", "nat-cli-wil-wil"],  # Fire
-    "FLASH FLOOD": ["MH0006", "nat-hyd-flo-fla"],  # Flash flood
+    "FIRE": ["nat-cli-wil-wil", "EN0013"],  # Fire
+    "FLASH FLOOD": ["nat-hyd-flo-fla", "MH0006"],  # Flash flood
     "FLOOD": ["nat-hyd-flo-flo"],  # Flood
-    "FOG": ["MH0016", "nat-met-fog-fog"],  # Fog
+    "FOG": ["nat-met-fog-fog", "MH0016"],  # Fog
     "FORESTFIRE": ["nat-cli-wil-for"],  # Forest fire
-    "FROST": ["MH0043", "nat-met-ext-sev"],  # Severe frost
-    "HAIL STORM": ["MH0036", "nat-met-sto-hai"],  # Hailstorm
-    "HAILSTORM": ["MH0036", "nat-met-sto-hai"],  # Hailstorm
-    "HEAT WAVE": ["MH0047", "nat-met-ext-hea"],  # Heat wave
-    "HEATWAVE": ["MH0047", "nat-met-ext-hea"],  # Heat wave
+    "FROST": ["nat-met-ext-sev", "MH0043"],  # Severe frost
+    "HAIL STORM": ["nat-met-sto-hai", "MH0036"],  # Hailstorm
+    "HAILSTORM": ["nat-met-sto-hai", "MH0036"],  # Hailstorm
+    "HEAT WAVE": ["nat-met-ext-hea", "MH0047"],  # Heat wave
+    "HEATWAVE": ["nat-met-ext-hea", "MH0047"],  # Heat wave
     "INTOXICACION": ["tec-ind-che-che"],  # Chemical intoxication
-    "LAHAR": ["GH0013", "nat-geo-vol-lah"],  # Lahar
-    "LANDSLIDE": ["GH0007", "nat-hyd-mmw-lan"],  # Landslide
-    "LEAK": ["TL0030", "tec-ind-che-che"],  # Chemical leak
-    "LIQUEFACTION": ["GH0003", "nat-geo-ear-gro"],  # Ground liquefaction
+    "LAHAR": ["nat-geo-vol-lah", "GH0013"],  # Lahar
+    "LANDSLIDE": ["nat-hyd-mmw-lan", "GH0007"],  # Landslide
+    "LEAK": ["tec-ind-che-che", "TL0030"],  # Chemical leak
+    "LIQUEFACTION": ["nat-geo-ear-gro", "GH0003"],  # Ground liquefaction
     "Naufragio": ["tec-tra-wat-wat", "TL0050"],  # Shipwreck
     "OTHER": ["OT"],  # Other
     "PANIC": None,
@@ -131,26 +131,26 @@ hazard_mapping = {
     "POLLUTION": None,
     "RAIN": ["nat-met-sto-sto"],  # Storm
     "RAINS": ["nat-met-sto-sto"],  # Storm
-    "SANDSTORM": ["MH0015", "nat-met-sto-san"],  # Sandstorm
+    "SANDSTORM": ["nat-met-sto-san", "MH0015"],  # Sandstorm
     "SEDIMENTATION": ["nat-geo-env-sed"],  # Sedimentation
-    "SNOW STORM": ["MH0039", "nat-met-sto-sto"],  # Snow Storm
-    "SNOWSTORM": ["MH0039", "nat-met-sto-sto"],  # Snow Storm
-    "SPATE": ["MH0006", "nat-hyd-flo-fla"],  # Flash flood
+    "SNOW STORM": ["nat-met-sto-sto", "MH0039"],  # Snow Storm
+    "SNOWSTORM": ["nat-met-sto-sto", "MH0039"],  # Snow Storm
+    "SPATE": ["nat-hyd-flo-fla", "MH0006"],  # Flash flood
     "STORM": ["nat-met-sto-sto"],  # Storm
-    "STRONG WIND": ["MH0060", "nat-met-sto-sto"],  # Strong wind
-    "STRONGWIND": ["MH0060", "nat-met-sto-sto"],  # Strong wind
-    "STRUCT.COLLAPSE": ["TL0005", "tec-mis-col-col"],  # Structural collapse
-    "STRUCTURE": ["TL0005", "tec-mis-col-col"],  # Structural collapse
-    "SUBSIDENCE": ["GH0005", "nat-geo-mmd-sub"],  # Subsidence
-    "SURGE": ["MH0027", "nat-met-sto-sur"],  # Storm surge
-    "THUNDERSTORM": ["MH0003", "nat-met-sto-sto"],  # Thunderstorm
-    "TORNADO": ["MH0059", "nat-met-sto-tor"],  # Tornado
-    "TSUNAMI": ["MH0029", "nat-geo-ear-tsu"],  # Tsunami
-    "WINDSTORM": ["MH0060", "nat-met-sto-sto"],  # Strong wind
+    "STRONG WIND": ["nat-met-sto-sto", "MH0060"],  # Strong wind
+    "STRONGWIND": ["nat-met-sto-sto", "MH0060"],  # Strong wind
+    "STRUCT.COLLAPSE": ["tec-mis-col-col", "TL0005"],  # Structural collapse
+    "STRUCTURE": ["tec-mis-col-col", "TL0005"],  # Structural collapse
+    "SUBSIDENCE": ["nat-geo-mmd-sub", "GH0005"],  # Subsidence
+    "SURGE": ["nat-met-sto-sur", "MH0027"],  # Storm surge
+    "THUNDERSTORM": ["nat-met-sto-sto", "MH0003"],  # Thunderstorm
+    "TORNADO": ["nat-met-sto-tor", "MH0059"],  # Tornado
+    "TSUNAMI": ["nat-geo-ear-tsu", "MH0029"],  # Tsunami
+    "WINDSTORM": ["nat-met-sto-sto", "MH0060"],  # Strong wind
     "Inundación": ["nat-hyd-flo-flo"],  # Flood
-    "HURRICANE": ["MH0057", "nat-met-sto-tro"],  # Tropical cyclone
+    "HURRICANE": ["nat-met-sto-tro", "MH0057"],  # Tropical cyclone
     "VOLCANO": ["nat-geo-vol-vol"],  # Volcanic eruption
-    "COASTAL FLOOD": ["MH0004", "nat-hyd-flo-coa"],  # Coastal flood
+    "COASTAL FLOOD": ["nat-hyd-flo-coa", "MH0004"],  # Coastal flood
 }
 
 
