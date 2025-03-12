@@ -56,13 +56,13 @@ class PDCTransformer(MontyDataTransformer):
                 self.exposure_detail = json.loads(f.read())
 
         self.uuid = self.config_data.get("uuid", None)
-        # Note: We might need to handle this differently if the exposure_timestamp
-        # is other than numeric (e.g. alphabetic)
-        # For now, we have assigned 0 to the episode_number
+
+        # NOTE Assigning -1 to episode_number incase of failure just to ignore the item formation (see make_items method)
         try:
-            self.episode_number = int(float(self.config_data.get("exposure_timestamp", 0)))
+            self.episode_number = int(float(self.config_data.get("exposure_timestamp", -1)))
         except ValueError:
-            self.episode_number = 0
+            self.episode_number = -1
+
         if "geojson_file_path" in self.config_data and os.path.exists(self.config_data["geojson_file_path"]):
             with open(self.config_data["geojson_file_path"], "r", encoding="utf-8") as f:
                 self.geojson_data = json.loads(f.read())
@@ -80,6 +80,9 @@ class PDCTransformer(MontyDataTransformer):
         """Create items"""
         items = []
 
+        if self.episode_number <= 0:
+            return items
+
         event_item = self.make_source_event_item()
         items.append(event_item)
 
@@ -89,7 +92,7 @@ class PDCTransformer(MontyDataTransformer):
         impact_items = self.make_impact_items()
         items.extend(impact_items)
 
-        return items
+        return list(filter(lambda x: x is not None, items))
 
     def make_source_event_item(self) -> Optional[Item]:
         """Create an Event Item"""
@@ -132,11 +135,14 @@ class PDCTransformer(MontyDataTransformer):
 
         all_iso3 = []
         all_iso3.extend([i["country"] for i in self.exposure_detail["totalByCountry"]])
+        if not all_iso3:
+            return None
 
         MontyExtension.add_to(item)
         monty = MontyExtension.ext(item)
         monty.episode_number = self.episode_number
         monty.country_codes = list(set(all_iso3))
+
         monty.hazard_codes = self._map_pdc_to_hazard_codes(hazard=self.hazard_data["type_ID"])
         # TODO: Deal with correlation id if country_codes is a empty list
         if monty.country_codes:
@@ -161,7 +167,7 @@ class PDCTransformer(MontyDataTransformer):
             "TORNADO": ["nat-met-sto-tor"],
             "CYCLONE": ["nat-met-sto-tro"],
             "TSUNAMI": ["MH0029", "nat-geo-ear-tsu"],
-            "VOLCANO": ["GH0020"],
+            "VOLCANO": ["GH0020", "nat-geo-vol-vol"],
             "WILDFIRE": ["EN0013", "nat-cli-wil-for"],
             "WINTERSTORM": ["nat-met-sto-bli"],
             "STORMSURGE": ["MH0027", "nat-met-sto-sur"],
@@ -175,6 +181,8 @@ class PDCTransformer(MontyDataTransformer):
     def make_hazard_item(self) -> Item:
         """Create Hazard Item"""
         event_item = self.make_source_event_item()
+        if not event_item:
+            return None
 
         hazard_item = event_item.clone()
         hazard_item.id = event_item.id.replace(STAC_EVENT_ID_PREFIX, STAC_HAZARD_ID_PREFIX)
@@ -226,6 +234,8 @@ class PDCTransformer(MontyDataTransformer):
             ("capital", "hospital", "value"): (MontyImpactExposureCategory.HOSPITALS, MontyImpactType.TOTAL_AFFECTED),
         }
         event_item = self.make_source_event_item()
+        if not event_item:
+            return None
 
         impact_items = []
         for field_key, field_values in impact_fields.items():

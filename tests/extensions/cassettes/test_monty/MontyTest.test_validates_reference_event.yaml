@@ -24,7 +24,7 @@ interactions:
       - '0'
       Content-Security-Policy:
       - 'default-src ''none''; base-uri ''self''; child-src github.githubassets.com
-        github.com/assets-cdn/worker/ github.com/webpack/ github.com/assets/ gist.github.com/assets-cdn/worker/;
+        github.com/assets-cdn/worker/ github.com/assets/ gist.github.com/assets-cdn/worker/;
         connect-src ''self'' uploads.github.com www.githubstatus.com collector.github.com
         raw.githubusercontent.com api.github.com github-cloud.s3.amazonaws.com github-production-repository-file-5c1aeb.s3.amazonaws.com
         github-production-upload-manifest-file-7fdce7.s3.amazonaws.com github-production-user-asset-6210df.s3.amazonaws.com
@@ -59,11 +59,11 @@ interactions:
         github-production-user-asset-6210df.s3.amazonaws.com gist.github.com; script-src
         github.githubassets.com; style-src ''unsafe-inline'' github.githubassets.com;
         upgrade-insecure-requests; worker-src github.githubassets.com github.com/assets-cdn/worker/
-        github.com/webpack/ github.com/assets/ gist.github.com/assets-cdn/worker/'
+        github.com/assets/ gist.github.com/assets-cdn/worker/'
       Content-Type:
       - text/html; charset=utf-8
       Date:
-      - Mon, 03 Mar 2025 13:52:26 GMT
+      - Fri, 14 Mar 2025 06:42:19 GMT
       Location:
       - https://raw.githubusercontent.com/IFRCGo/monty-stac-extension/refs/heads/main/examples/reference-events/20241027T150000-ESP-HM-FLOOD-001-GCDB.json
       Referrer-Policy:
@@ -80,7 +80,7 @@ interactions:
       X-Frame-Options:
       - deny
       X-GitHub-Request-Id:
-      - 9894:3FB1E9:63D6BA1:6722F8D:67C5B41A
+      - 8DE8:70DAD:51C36B:5E484B:67D3CFCA
       X-XSS-Protection:
       - '0'
     status:
@@ -132,11 +132,11 @@ interactions:
       Cross-Origin-Resource-Policy:
       - cross-origin
       Date:
-      - Mon, 03 Mar 2025 13:52:27 GMT
+      - Fri, 14 Mar 2025 06:42:20 GMT
       ETag:
       - W/"9ea00a9c7f61dc2525a639d3eb02e28ad07aa9640d8cd88adb98221401aced31"
       Expires:
-      - Mon, 03 Mar 2025 13:57:27 GMT
+      - Fri, 14 Mar 2025 06:47:20 GMT
       Source-Age:
       - '0'
       Strict-Transport-Security:
@@ -146,21 +146,21 @@ interactions:
       Via:
       - 1.1 varnish
       X-Cache:
-      - MISS
+      - HIT
       X-Cache-Hits:
       - '0'
       X-Content-Type-Options:
       - nosniff
       X-Fastly-Request-ID:
-      - 0d6d1236d72eaf3afc95a73b6a88e73b86a44ead
+      - 6b4f4d1fc5835c5fd4cf8b335045df1e82449703
       X-Frame-Options:
       - deny
       X-GitHub-Request-Id:
-      - 7E5D:30A02E:2CBE18E:3354AEF:67C5B41A
+      - 1566:338C54:4A69D:11847C:67D3C397
       X-Served-By:
-      - cache-lis1490039-LIS
+      - cache-del21736-DEL
       X-Timer:
-      - S1741009947.976895,VS0,VE214
+      - S1741934540.983223,VS0,VE250
       X-XSS-Protection:
       - 1; mode=block
     status:
