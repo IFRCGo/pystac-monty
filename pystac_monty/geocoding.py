@@ -504,6 +504,10 @@ class GAULGeocoder(MontyGeoCoder):
         raise NotImplementedError("Method not implemented")
 
     def get_geometry_from_iso3(self, iso3: str) -> Optional[Dict[str, Any]]:
+        if not self.gpkg_path and self.service_base_url:
+            params = {"iso3": iso3}
+            service_url = f"{self.service_base_url}/by_iso3"
+            return self._service_request_handler(service_url=service_url, params=params)
         raise NotImplementedError("Method not implemented")
 
 
