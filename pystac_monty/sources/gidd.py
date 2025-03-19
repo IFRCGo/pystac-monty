@@ -41,7 +41,7 @@ class GIDDDataSource(MontyDataSource):
                 new_data[key] = [
                     feature
                     for feature in value
-                    if feature.get("properties", {}).get("Figure cause") != "Conflict" and GiddValidator.validate_event(feature)
+                    if GiddValidator.validate_event(feature)
                 ]
             else:
                 # Keep normal key-value pairs unchanged
