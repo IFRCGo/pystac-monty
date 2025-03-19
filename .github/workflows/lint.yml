@@ -14,4 +14,13 @@ jobs:
 
     steps:
       - uses: actions/checkout@main
+        with:
+          submodules: true
+
+      - uses: actions/setup-python@v5
+      - uses: astral-sh/setup-uv@v5
+        with:
+          enable-cache: true
+      - name: Sync
+        run: uv sync --all-extras
       - uses: pre-commit/action@main
