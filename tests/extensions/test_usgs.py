@@ -41,7 +41,7 @@ def load_scenarios(scenarios: list[tuple[str, str, str]]) -> list[USGSTransforme
         losses_data = None
         if losses_url:
             losses_response = requests.get(losses_url)
-            losses_data = losses_response.text
+            losses_data = json.dumps([losses_response.json()])
 
         # Create data source and transformer
         data_source = USGSDataSource(event_url, event_data, losses_data)
