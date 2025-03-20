@@ -19,7 +19,9 @@ from pystac_monty.extension import (
     MontyEstimateType,
     MontyExtension,
     MontyImpactExposureCategory,
+    MontyImpactExposureCatgoryLabel,
     MontyImpactType,
+    MontyImpactTypeLabel,
 )
 from pystac_monty.hazard_profiles import MontyHazardProfiles
 from pystac_monty.sources.common import MontyDataTransformer
@@ -280,8 +282,19 @@ class DesinventarTransformer(MontyDataTransformer):
             if item is not None
         ]
 
+        # Remove duplicate items by using a dictionary with item ID as key
+        unique_items = {}
+        for item in items:
+            unique_items[item.id] = item
+        
+        # Convert back to list
+        deduplicated_items = list(unique_items.values())
+        
+        if len(items) != len(deduplicated_items):
+            print(f"\nNOTE: Removed {len(items) - len(deduplicated_items)} duplicate items")
+
         print("\nNOTE: cannot map events for:\n", json.dumps(self.errored_events, indent=2, ensure_ascii=False))
-        return items
+        return deduplicated_items
 
     def create_event_item_from_row(self, row: DataRow) -> Optional[Item]:
         if not row["serial"]:
@@ -302,6 +315,12 @@ class DesinventarTransformer(MontyDataTransformer):
         else:
             geometry = None
             # properties = None
+            
+        title = f"{row['event']}"
+        if row["location"]:
+            title += f" in {row['location']}"
+        if start_date:
+            title += f" on {start_date.strftime('%Y-%m-%d')}"
 
         item = Item(
             id=f"{STAC_EVENT_ID_PREFIX}{self.data_source.iso3}-{row['serial']}",
@@ -312,11 +331,11 @@ class DesinventarTransformer(MontyDataTransformer):
             # FIXME: calculate end date
             end_datetime=start_date,
             properties={
-                "title": f"{row['event']} in {row['location']} on {start_date}",
-                "description": f"{row['event']} in {row['location']}: {row['comment']}",
+                "title": title,
+                "description": f"{row['comment']}",
             },
         )
-
+        
         MontyExtension.add_to(item)
         monty = MontyExtension.ext(item)
         monty.episode_number = 1  # Desinventar doesn't have episodes
@@ -342,13 +361,18 @@ class DesinventarTransformer(MontyDataTransformer):
 
         item.set_collection(self.get_event_collection())
         item.properties["roles"] = ["source", "event"]
+        
+        keywords = [event, "desinventar"]
+        if row["location"]:
+            keywords.append(row["location"])
+        item.properties["keywords"] = keywords
 
         # Add source link
         item.add_link(
             Link(
                 "via",
                 self.data_source.source_url,
-                "application/zip",
+                "application/octet-stream",
                 "DesInventar export zip file for {}".format(self.data_source.iso3),
             )
         )
@@ -369,7 +393,7 @@ class DesinventarTransformer(MontyDataTransformer):
 
     def create_impact_item(
         self,
-        base_item: Item,
+        event_item: Item,
         row_id: str,
         field: str,
         value: str | None,
@@ -382,10 +406,10 @@ class DesinventarTransformer(MontyDataTransformer):
         if value is None or value == "0":
             return None
 
-        impact_item = base_item.clone()
+        impact_item = event_item.clone()
 
         # TODO: We should make a util function for this
-        impact_item.properties["title"] = f"{base_item.properties['title']} - {field}"
+        impact_item.properties["title"] = f"{event_item.properties['title']} - {field}"
         impact_item.id = f"{STAC_IMPACT_ID_PREFIX}{row_id}-{field}"
 
         impact_item.set_collection(self.get_impact_collection())
@@ -394,6 +418,18 @@ class DesinventarTransformer(MontyDataTransformer):
         monty = MontyExtension.ext(impact_item)
         monty.impact_detail = ImpactDetail(
             category=category, type=impact_type, value=float(value), unit=unit, estimate_type=MontyEstimateType.PRIMARY
+        )
+        
+        keywords = impact_item.properties.get("keywords", [])   
+        keywords.append(field)
+        keywords.append(MontyImpactTypeLabel()[impact_type])
+        keywords.append(MontyImpactExposureCatgoryLabel()[category])
+        impact_item.properties["keywords"] = keywords
+        
+        # add a link to the event item
+        impact_item.add_link(
+            Link("related", f'../{self.get_event_collection().id}/{event_item.id}',
+                 "application/json", event_item.properties["title"])
         )
 
         return impact_item

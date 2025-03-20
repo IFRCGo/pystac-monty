@@ -4,8 +4,9 @@ from __future__ import annotations
 
 from abc import ABC
 from collections.abc import Mapping
-from typing import Any, Generic, Iterator, Literal, TypeVar, Union, cast
+from typing import Any, Dict, Generic, Iterator, List, Literal, TypeVar, Union, cast
 
+import pandas as pd
 import pystac
 import pystac.extensions
 import pystac.extensions.ext
@@ -145,6 +146,8 @@ class MontyImpactExposureCatgoryLabel(Mapping[MontyImpactExposureCategory, str])
             MontyImpactExposureCategory.ADULT_55_59: "Adult (55-59)",
             MontyImpactExposureCategory.ADULT_60_64: "Adult (60-64)",
             MontyImpactExposureCategory.ELDERLY: "Elderly (Over 65)",
+            MontyImpactExposureCategory.CHILDREN_UNDER_14: "Children (Under 14)",
+            MontyImpactExposureCategory.CHILDREN_UNDER_18: "Children (Under 18)",
             MontyImpactExposureCategory.WHEELCHAIR_USERS: "Wheelchair Users",
             MontyImpactExposureCategory.ROADS: "Road",
             MontyImpactExposureCategory.RAIL_WAYS: "Rail ways",
@@ -696,3 +699,73 @@ class MontyExtensionHooks(ExtensionHooks):
 
 
 MONTY_EXTENSION_HOOKS: ExtensionHooks = MontyExtensionHooks()
+
+
+def extract_hazard_keywords(
+    hazard_codes: List[str], 
+    hazard_profiles: HazardProfiles = None
+) -> Dict[str, Dict[str, str]]:
+    """Extract keywords and metadata from a list of hazard codes using HazardProfiles.csv.
+    
+    Args:
+        hazard_codes: A list of hazard codes (undrr_key, glide_code, or emdat_key)
+        hazard_profiles: Optional HazardProfiles instance. If None, uses MontyHazardProfiles.
+        
+    Returns:
+        A dictionary mapping each hazard code to its metadata including label, 
+        link_group, link_maingroup, glide_code, and emdat_key where available.
+        
+    Example:
+        >>> extract_hazard_keywords(['MH0001', 'FL'])
+        {
+            'MH0001': {
+                'label': 'Downburst',
+                'link_group': 'hazhmconv',
+                'link_maingroup': 'haztypehydromet',
+                'glide_code': 'ST',
+                'emdat_key': 'nat-met-sto-sev'
+            },
+            'FL': {
+                'label': 'Fluvial (Riverine) Flood',
+                'link_group': 'hazhmflood',
+                'link_maingroup': 'haztypehydromet',
+                'undrr_key': 'MH0007',
+                'emdat_key': 'nat-hyd-flo-riv'
+            }
+        }
+    """
+    if hazard_profiles is None:
+        hazard_profiles = MontyHazardProfiles()
+    
+    profiles_df = hazard_profiles.get_profiles()
+    result = {}
+    
+    for code in hazard_codes:
+        # Try to match the code against different columns
+        matched_rows = None
+        
+        # Check if it's an undrr_key
+        if matched_rows is None or len(matched_rows) == 0:
+            matched_rows = profiles_df[profiles_df['undrr_key'] == code]
+        
+        # Check if it's a glide_code
+        if matched_rows is None or len(matched_rows) == 0:
+            matched_rows = profiles_df[profiles_df['glide_code'] == code]
+        
+        # Check if it's an emdat_key
+        if matched_rows is None or len(matched_rows) == 0:
+            matched_rows = profiles_df[profiles_df['emdat_key'] == code]
+        
+        if matched_rows is not None and len(matched_rows) > 0:
+            # Take the first match if multiple matches found
+            row = matched_rows.iloc[0]
+            
+            # Create a dictionary with all available metadata
+            metadata = {}
+            for col in profiles_df.columns:
+                if pd.notna(row[col]):
+                    metadata[col] = row[col]
+            
+            result[code] = metadata
+    
+    return result
