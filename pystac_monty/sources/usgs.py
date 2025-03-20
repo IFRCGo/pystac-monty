@@ -1,6 +1,7 @@
 """USGS data transformer for STAC Items."""
 
 import json
+import math
 from datetime import datetime
 from typing import List, Optional
 
@@ -46,7 +47,7 @@ class USGSDataSource(MontyDataSource):
 
     def get_losses_data(self) -> Optional[dict]:
         """Get the PAGER losses data if available."""
-        return self.losses_data
+        return self.losses_data if self.losses_data else None
 
 
 class USGSTransformer(MontyDataTransformer):
@@ -372,7 +373,7 @@ class USGSTransformer(MontyDataTransformer):
         monty.hazard_codes = ["GH0004"]  # Earthquake surface rupture code
 
         # TODO Get country code from event data or geometry
-        country_codes = [self.geocoder.get_iso3_from_geometry(point)]
+        country_codes = ["UNK"]  # [self.geocoder.get_iso3_from_geometry(point)]
         monty.country_codes = country_codes
 
         # Compute correlation ID
@@ -403,7 +404,13 @@ class USGSTransformer(MontyDataTransformer):
         hazard_item.id = f"{STAC_HAZARD_ID_PREFIX}{hazard_item.id.replace(STAC_EVENT_ID_PREFIX, '')}-shakemap"
 
         # extent the hazard zone with the shakemap extent
-        shakemap = self.data.get_data()["properties"].get("products", {}).get("shakemap", [])[0]
+        shakemap = self.data.get_data()["properties"].get("products", {}).get("shakemap", [])
+
+        if not shakemap:
+            shakemap = {}
+        else:
+            shakemap = shakemap[0]
+
         extent = [
             float(shakemap.get("properties", {}).get("minimum-longitude", 0)),
             float(shakemap.get("properties", {}).get("minimum-latitude", 0)),
@@ -453,9 +460,9 @@ class USGSTransformer(MontyDataTransformer):
                 "roles": ["overview"],
             }
         }
-
-        for key, asset_info in shakemap_assets.items():
-            hazard_item.add_asset(key, Asset(**asset_info))
+        if shakemap_assets["intensity_map"]["href"]:
+            for key, asset_info in shakemap_assets.items():
+                hazard_item.add_asset(key, Asset(**asset_info))
 
         return hazard_item
 
@@ -468,36 +475,37 @@ class USGSTransformer(MontyDataTransformer):
             return impact_items
 
         # Create fatalities impact item
-        if "empirical_fatality" in losses_data:
-            for country in losses_data["empirical_fatality"]["country_fatalities"]:
-                if country["fatalities"] == 0:
-                    continue
-                fatalities_item = self._create_impact_item_from_losses(
-                    "fatalities",
-                    MontyImpactExposureCategory.ALL_PEOPLE,
-                    MontyImpactType.DEATH,
-                    country["fatalities"],
-                    "people",
-                    country["country_code"],
-                    hazard_item,
-                )
-                impact_items.append(fatalities_item)
+        for loss_data in losses_data:
+            if "empirical_fatality" in loss_data:
+                for country in loss_data["empirical_fatality"]["country_fatalities"]:
+                    if country["fatalities"] == 0:
+                        continue
+                    fatalities_item = self._create_impact_item_from_losses(
+                        "fatalities",
+                        MontyImpactExposureCategory.ALL_PEOPLE,
+                        MontyImpactType.DEATH,
+                        country["fatalities"],
+                        "people",
+                        country["country_code"],
+                        hazard_item,
+                    )
+                    impact_items.append(fatalities_item)
 
-        # Create economic losses impact item
-        if "empirical_economic" in losses_data:
-            for country in losses_data["empirical_economic"]["country_dollars"]:
-                if country["us_dollars"] == 0:
-                    continue
-                economic_item = self._create_impact_item_from_losses(
-                    "economic",
-                    MontyImpactExposureCategory.BUILDINGS,
-                    MontyImpactType.LOSS_COST,
-                    country["us_dollars"],
-                    "usd",
-                    country["country_code"],
-                    hazard_item,
-                )
-                impact_items.append(economic_item)
+            # Create economic losses impact item
+            if "empirical_economic" in loss_data:
+                for country in loss_data["empirical_economic"]["country_dollars"]:
+                    if country["us_dollars"] == 0:
+                        continue
+                    economic_item = self._create_impact_item_from_losses(
+                        "economic",
+                        MontyImpactExposureCategory.BUILDINGS,
+                        MontyImpactType.LOSS_COST,
+                        country["us_dollars"],
+                        "usd",
+                        country["country_code"],
+                        hazard_item,
+                    )
+                    impact_items.append(economic_item)
 
         return impact_items
 
@@ -531,11 +539,21 @@ class USGSTransformer(MontyDataTransformer):
         monty.impact_detail = ImpactDetail(
             category=category, type=imp_type, value=float(value), unit=unit, estimate_type=MontyEstimateType.MODELLED
         )
+
         geom = self.geocoder.get_geometry_from_iso3(monty.country_codes[0])
         # intersect with the hazard geometry
-        geom = shape(geom["geometry"]).intersection(shape(hazard_item.geometry))
-        impact_item.geometry = mapping(geom)
-        impact_item.bbox = geom.bounds
+
+        # TODO: Check the logic later
+        if "geometry" in geom:
+            geom = shape(geom["geometry"]).intersection(shape(hazard_item.geometry))
+            impact_item.geometry = mapping(geom)
+            impact_item.bbox = geom.bounds
+        else:
+            impact_item.geometry = {"type": "Polygon", "coordinates": {}}
+            impact_item.bbox = (0, 0, 0, 0)
+
+        if all(math.isnan(x) for x in impact_item.bbox):
+            impact_item.bbox = (0, 0, 0, 0)
 
         # Add PAGER assets
         pager_assets = {
