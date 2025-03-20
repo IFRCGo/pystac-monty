@@ -76,6 +76,10 @@ class IDUTransformer(MontyDataTransformer):
         items = []
 
         event_items = self.make_source_event_items()
+        # Get the latest item based on id(the last occurrence)
+        # and get rid of duplicate items at event level
+        event_items_unique = {item.id: item for item in event_items}
+        event_items = list(event_items_unique.values())
         items.extend(event_items)
 
         impact_items = self.make_impact_items()
