@@ -1,5 +1,7 @@
 import datetime
 import json
+import logging
+import re
 from dataclasses import dataclass
 from enum import Enum
 from typing import Any, Dict, List
@@ -19,6 +21,8 @@ from pystac_monty.extension import (
 from pystac_monty.hazard_profiles import MontyHazardProfiles
 from pystac_monty.sources.common import MontyDataSource, MontyDataTransformer
 
+logger = logging.getLogger(__name__)
+
 # Constants
 
 STAC_EVENT_ID_PREFIX = "idmc-idu-event-"
@@ -30,6 +34,23 @@ class DisplacementType(Enum):
 
     DISASTER_TYPE = "Disaster"
     CONFLICT_TYPE = "Conflict"
+    OTHER_TYPE = "Other"
+
+
+class ImpactMappings:
+    """All Impact Mappings"""
+
+    # TODO: For other types e.g. FORCED_TO_FLEE, IN_RELIEF_CAMP, DESTROYED_HOUSING,
+    # PARTIALLY_DESTROYED_HOUSING, UNINHABITABLE_HOUSING, RETURNS, MULTIPLE_OR_OTHER
+    # Handle them later.
+    mappings = {
+        "evacuated": (MontyImpactExposureCategory.ALL_PEOPLE, MontyImpactType.EVACUATED),
+        "displaced": (MontyImpactExposureCategory.ALL_PEOPLE, MontyImpactType.INTERNALLY_DISPLACED_PERSONS),
+        "relocated": (MontyImpactExposureCategory.ALL_PEOPLE, MontyImpactType.RELOCATED),
+        "sheltered": (MontyImpactExposureCategory.ALL_PEOPLE, MontyImpactType.EMERGENCY_SHELTERED),
+        "homeless": (MontyImpactExposureCategory.ALL_PEOPLE, MontyImpactType.HOMELESS),
+        "affected": (MontyImpactExposureCategory.ALL_PEOPLE, MontyImpactType.TOTAL_AFFECTED),
+    }
 
 
 @dataclass
@@ -76,8 +97,8 @@ class IDUTransformer(MontyDataTransformer):
 
     def make_source_event_item(self, data: dict) -> Item:
         """Create an Event Item"""
-        latitude = float(data.get("latitude"))
-        longitude = float(data.get("longitude"))
+        latitude = float(data.get("latitude") or 0)
+        longitude = float(data.get("longitude") or 0)
         # Create the geojson point
         point = Point(longitude, latitude)
         geometry = mapping(point)
@@ -161,6 +182,17 @@ class IDUTransformer(MontyDataTransformer):
             raise KeyError(f"Hazard {hazard} not found.")
         return hazard_mapping.get(hazard)
 
+    def _get_impact_type_from_desc(self, description: str):
+        """Get impact type from description using regex"""
+        keywords = list(ImpactMappings.mappings.keys())
+        # Get the first match
+        match = re.findall(r"\((.*?)\)", description)
+        # Use the first item only
+        if match and match[0] in keywords:
+            return match[0]
+        logger.warning(f"Match {match} not found. Using the default value.")
+        return "displaced"
+
     def make_impact_items(self) -> List[Item]:
         """Create impact items"""
         items = []
@@ -174,7 +206,12 @@ class IDUTransformer(MontyDataTransformer):
             startdate = pytz.utc.localize(datetime.datetime.fromisoformat(startdate_str))
             enddate = pytz.utc.localize(datetime.datetime.fromisoformat(enddate_str))
 
-            impact_item.id = f"{STAC_IMPACT_ID_PREFIX}{impact_item.id.replace(STAC_EVENT_ID_PREFIX, '')}-displacement"
+            description = src_data["standard_popup_text"]
+            impact_type = self._get_impact_type_from_desc(description=description)
+
+            impact_item.id = (
+                f"{impact_item.id.replace(STAC_EVENT_ID_PREFIX, STAC_IMPACT_ID_PREFIX)}{src_data['id']}-{impact_type}"
+            )
             impact_item.startdate = startdate
             impact_item.properties["start_datetime"] = startdate.isoformat()
             impact_item.properties["end_datetime"] = enddate.isoformat()
@@ -182,16 +219,23 @@ class IDUTransformer(MontyDataTransformer):
             impact_item.set_collection(self.get_impact_collection())
 
             monty = MontyExtension.ext(impact_item)
-            monty.impact_detail = self.get_impact_details(src_data)
+            monty.impact_detail = self.get_impact_details(idu_src_item=src_data, impact_type=impact_type)
 
             items.append(impact_item)
         return items
 
-    def get_impact_details(self, idu_src_item: dict):
+    def _get_impact_type(self, impact_type: str):
+        """Get the impact related details"""
+        return ImpactMappings.mappings.get(
+            impact_type, (MontyImpactExposureCategory.ALL_PEOPLE, MontyImpactType.INTERNALLY_DISPLACED_PERSONS)
+        )
+
+    def get_impact_details(self, idu_src_item: dict, impact_type: str):
         """Returns the impact details related to displacement"""
+        category, category_type = self._get_impact_type(impact_type=impact_type)
         return ImpactDetail(
-            category=MontyImpactExposureCategory.ALL_PEOPLE,
-            type=MontyImpactType.INTERNALLY_DISPLACED_PERSONS,
+            category=category,
+            type=category_type,
             value=idu_src_item["figure"],
             unit="count",
             estimate_type=MontyEstimateType.PRIMARY,
@@ -204,10 +248,13 @@ class IDUTransformer(MontyDataTransformer):
 
         filtered_idu_data = []
         if not idu_data:
-            print(f"No IDU data found in {self.data.get_source_url()}")
+            logger.warning(f"No IDU data found in {self.data.get_source_url()}")
             return []
 
         for item in idu_data:
+            if item["displacement_type"] not in DisplacementType._value2member_map_:
+                logging.error("Unknown displacement type: {item['displacement_type']} found. Ignore the datapoint.")
+                continue
             # Get the Disaster type data only
             if DisplacementType(item["displacement_type"]) == DisplacementType.DISASTER_TYPE:
                 missing_fields = [field for field in required_fields if field not in item]
