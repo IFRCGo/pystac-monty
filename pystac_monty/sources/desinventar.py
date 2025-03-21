@@ -19,7 +19,9 @@ from pystac_monty.extension import (
     MontyEstimateType,
     MontyExtension,
     MontyImpactExposureCategory,
+    MontyImpactExposureCatgoryLabel,
     MontyImpactType,
+    MontyImpactTypeLabel,
 )
 from pystac_monty.hazard_profiles import MontyHazardProfiles
 from pystac_monty.sources.common import MontyDataTransformer
@@ -89,59 +91,68 @@ class DataRow(TypedDict):
 
 # TODO: complete this mapping
 hazard_mapping = {
-    "ALLUVION": ["MH0051", "nat-hyd-mmw-mud"],  # Mud flow
-    "AVALANCHE": ["MH0050", "nat-hyd-mmw-ava"],  # Avalanche
+    "ALLUVION": ["nat-hyd-mmw-mud", "MH0051"],  # Mud flow
+    "AVALANCHE": ["nat-hyd-mmw-ava", "MH0050"],  # Avalanche
     "ACCIDENT": ["tec-mis-col-col"],
     "BIOLOGICAL": ["nat-bio-epi-dis"],  # Epidemic
     "BOAT CAPSIZE": ["tec-tra-wat-wat", "TL0050"],
-    "COASTAL EROSION": ["EN0020", "nat-geo-env-coa "],  # Coastal erosion
-    "COLD WAVE": ["MH0049", "nat-met-ext-col"],  # Cold wave
-    "CYCLONE": ["MH0057", "nat-met-tro-tro"],  # Tropical cyclone
-    "DROUGHT": ["MH0035", "nat-met-dro-dro"],  # Drought
-    "EARTHQUAKE": ["GH0001", "nat-geo-ear-grd"],  # Earthquake
-    "ELECTRIC STORM": ["MH0002", "nat-met-sto-sto"],  # Thunderstorm
+    "COASTAL EROSION": ["nat-geo-env-coa ", "EN0020"],  # Coastal erosion
+    "COASTLINE": ["nat-geo-env-coa", "EN0020"],  # Coastal erosion
+    "COLD WAVE": ["nat-met-ext-col", "MH0049"],  # Cold wave
+    "CYCLONE": ["nat-met-tro-tro", "MH0057"],  # Tropical cyclone
+    "DROUGHT": ["nat-met-dro-dro", "MH0035"],  # Drought
+    "EARTHQUAKE": ["nat-geo-ear-grd", "GH0001"],  # Earthquake
+    "ELECTRIC STORM": ["nat-met-sto-sto", "MH0002"],  # Thunderstorm
+    "ELECTRICSTORM": ["nat-met-sto-sto", "MH0002"],  # Thunderstorm
     "EPIDEMIC": ["nat-bio-epi-dis"],  # Epidemic
-    "EPIZOOTIC": ["BI0027", "nat-bio-ani-ani"],  # Animal Diseases (Not Zoonoses)
+    "EPIZOOTIC": ["nat-bio-ani-ani", "BI0027"],  # Animal Diseases (Not Zoonoses)
     "EROSION": ["EN0019"],  # Soil erosion
-    "ERUPTION": ["VO", "nat-geo-vol-vol"],  # Volcanic eruption
+    "Erosión": ["EN0019"],  # Soil erosion
+    "ERUPTION": ["nat-geo-vol-vol", "VO"],  # Volcanic eruption
     "EXPLOSION": ["tec-mis-exp-exp"],  # Explosion
     "FAMINE": None,
-    "FIRE": ["EN0013", "nat-cli-wil-wil"],  # Fire
-    "FLASH FLOOD": ["MH0006", "nat-hyd-flo-fla"],  # Flash flood
+    "FIRE": ["nat-cli-wil-wil", "EN0013"],  # Fire
+    "FLASH FLOOD": ["nat-hyd-flo-fla", "MH0006"],  # Flash flood
     "FLOOD": ["nat-hyd-flo-flo"],  # Flood
-    "FOG": ["MH0016", "nat-met-fog-fog"],  # Fog
-    "FOREST FIRE": ["nat-cli-wil-for"],  # Forest fire
-    "FROST": ["MH0043", "nat-met-ext-sev"],  # Severe frost
-    "HAIL STORM": ["MH0036", "nat-met-sto-hai"],  # Hailstorm
-    "HAILSTORM": ["MH0036", "nat-met-sto-hai"],  # Hailstorm
-    "HEAT WAVE": ["MH0047", "nat-met-ext-hea"],  # Heat wave
-    "LAHAR": ["GH0013", "nat-geo-vol-lah"],  # Lahar
-    "LANDSLIDE": ["GH0007", "nat-hyd-mmw-lan"],  # Landslide
-    "LEAK": ["TL0030", "tec-ind-che-che"],  # Chemical leak
-    "LIQUEFACTION": ["GH0003", "nat-geo-ear-gro"],  # Ground liquefaction
+    "FOG": ["nat-met-fog-fog", "MH0016"],  # Fog
+    "FORESTFIRE": ["nat-cli-wil-for"],  # Forest fire
+    "FROST": ["nat-met-ext-sev", "MH0043"],  # Severe frost
+    "HAIL STORM": ["nat-met-sto-hai", "MH0036"],  # Hailstorm
+    "HAILSTORM": ["nat-met-sto-hai", "MH0036"],  # Hailstorm
+    "HEAT WAVE": ["nat-met-ext-hea", "MH0047"],  # Heat wave
+    "HEATWAVE": ["nat-met-ext-hea", "MH0047"],  # Heat wave
+    "INTOXICACION": ["tec-ind-che-che"],  # Chemical intoxication
+    "LAHAR": ["nat-geo-vol-lah", "GH0013"],  # Lahar
+    "LANDSLIDE": ["nat-hyd-mmw-lan", "GH0007"],  # Landslide
+    "LEAK": ["tec-ind-che-che", "TL0030"],  # Chemical leak
+    "LIQUEFACTION": ["nat-geo-ear-gro", "GH0003"],  # Ground liquefaction
+    "Naufragio": ["tec-tra-wat-wat", "TL0050"],  # Shipwreck
     "OTHER": ["OT"],  # Other
     "PANIC": None,
     "PLAGUE": None,
     "POLLUTION": None,
     "RAIN": ["nat-met-sto-sto"],  # Storm
     "RAINS": ["nat-met-sto-sto"],  # Storm
-    "SANDSTORM": ["MH0015", "nat-met-sto-san"],  # Sandstorm
+    "SANDSTORM": ["nat-met-sto-san", "MH0015"],  # Sandstorm
     "SEDIMENTATION": ["nat-geo-env-sed"],  # Sedimentation
-    "SNOW STORM": ["MH0039", "nat-met-sto-sto"],  # Snow Storm
-    "SNOWSTORM": ["MH0039", "nat-met-sto-sto"],  # Snow Storm
+    "SNOW STORM": ["nat-met-sto-sto", "MH0039"],  # Snow Storm
+    "SNOWSTORM": ["nat-met-sto-sto", "MH0039"],  # Snow Storm
+    "SPATE": ["nat-hyd-flo-fla", "MH0006"],  # Flash flood
     "STORM": ["nat-met-sto-sto"],  # Storm
-    "STRONG WIND": ["MH0060", "nat-met-sto-sto"],  # Strong wind
-    "STRUCT.COLLAPSE": ["TL0005", "tec-mis-col-col"],  # Structural collapse
-    "SUBSIDENCE": ["GH0005", "nat-geo-mmd-sub"],  # Subsidence
-    "SURGE": ["MH0027", "nat-met-sto-sur"],  # Storm surge
-    "THUNDERSTORM": ["MH0003", "nat-met-sto-sto"],  # Thunderstorm
-    "TORNADO": ["MH0059", "nat-met-sto-tor"],  # Tornado
-    "TSUNAMI": ["MH0029", "nat-geo-ear-tsu"],  # Tsunami
-    "WINDSTORM": ["MH0060", "nat-met-sto-sto"],  # Strong wind
+    "STRONG WIND": ["nat-met-sto-sto", "MH0060"],  # Strong wind
+    "STRONGWIND": ["nat-met-sto-sto", "MH0060"],  # Strong wind
+    "STRUCT.COLLAPSE": ["tec-mis-col-col", "TL0005"],  # Structural collapse
+    "STRUCTURE": ["tec-mis-col-col", "TL0005"],  # Structural collapse
+    "SUBSIDENCE": ["nat-geo-mmd-sub", "GH0005"],  # Subsidence
+    "SURGE": ["nat-met-sto-sur", "MH0027"],  # Storm surge
+    "THUNDERSTORM": ["nat-met-sto-sto", "MH0003"],  # Thunderstorm
+    "TORNADO": ["nat-met-sto-tor", "MH0059"],  # Tornado
+    "TSUNAMI": ["nat-geo-ear-tsu", "MH0029"],  # Tsunami
+    "WINDSTORM": ["nat-met-sto-sto", "MH0060"],  # Strong wind
     "Inundación": ["nat-hyd-flo-flo"],  # Flood
-    "HURRICANE": ["MH0057", "nat-met-sto-tro"],  # Tropical cyclone
+    "HURRICANE": ["nat-met-sto-tro", "MH0057"],  # Tropical cyclone
     "VOLCANO": ["nat-geo-vol-vol"],  # Volcanic eruption
-    "COASTAL FLOOD": ["MH0004", "nat-hyd-flo-coa"],  # Coastal flood
+    "COASTAL FLOOD": ["nat-hyd-flo-coa", "MH0004"],  # Coastal flood
 }
 
 
@@ -271,8 +282,19 @@ class DesinventarTransformer(MontyDataTransformer):
             if item is not None
         ]
 
+        # Remove duplicate items by using a dictionary with item ID as key
+        unique_items = {}
+        for item in items:
+            unique_items[item.id] = item
+        
+        # Convert back to list
+        deduplicated_items = list(unique_items.values())
+        
+        if len(items) != len(deduplicated_items):
+            print(f"\nNOTE: Removed {len(items) - len(deduplicated_items)} duplicate items")
+
         print("\nNOTE: cannot map events for:\n", json.dumps(self.errored_events, indent=2, ensure_ascii=False))
-        return items
+        return deduplicated_items
 
     def create_event_item_from_row(self, row: DataRow) -> Optional[Item]:
         if not row["serial"]:
@@ -293,6 +315,12 @@ class DesinventarTransformer(MontyDataTransformer):
         else:
             geometry = None
             # properties = None
+            
+        title = f"{row['event']}"
+        if row["location"]:
+            title += f" in {row['location']}"
+        if start_date:
+            title += f" on {start_date.strftime('%Y-%m-%d')}"
 
         item = Item(
             id=f"{STAC_EVENT_ID_PREFIX}{self.data_source.iso3}-{row['serial']}",
@@ -303,11 +331,11 @@ class DesinventarTransformer(MontyDataTransformer):
             # FIXME: calculate end date
             end_datetime=start_date,
             properties={
-                "title": f"{row['event']} in {row['location']} on {start_date}",
-                "description": f"{row['event']} in {row['location']}: {row['comment']}",
+                "title": title,
+                "description": f"{row['comment']}",
             },
         )
-
+        
         MontyExtension.add_to(item)
         monty = MontyExtension.ext(item)
         monty.episode_number = 1  # Desinventar doesn't have episodes
@@ -333,13 +361,18 @@ class DesinventarTransformer(MontyDataTransformer):
 
         item.set_collection(self.get_event_collection())
         item.properties["roles"] = ["source", "event"]
+        
+        keywords = [event, "desinventar"]
+        if row["location"]:
+            keywords.append(row["location"])
+        item.properties["keywords"] = keywords
 
         # Add source link
         item.add_link(
             Link(
                 "via",
                 self.data_source.source_url,
-                "application/zip",
+                "application/octet-stream",
                 "DesInventar export zip file for {}".format(self.data_source.iso3),
             )
         )
@@ -360,7 +393,7 @@ class DesinventarTransformer(MontyDataTransformer):
 
     def create_impact_item(
         self,
-        base_item: Item,
+        event_item: Item,
         row_id: str,
         field: str,
         value: str | None,
@@ -373,10 +406,10 @@ class DesinventarTransformer(MontyDataTransformer):
         if value is None or value == "0":
             return None
 
-        impact_item = base_item.clone()
+        impact_item = event_item.clone()
 
         # TODO: We should make a util function for this
-        impact_item.properties["title"] = f"{base_item.properties['title']} - {field}"
+        impact_item.properties["title"] = f"{event_item.properties['title']} - {field}"
         impact_item.id = f"{STAC_IMPACT_ID_PREFIX}{row_id}-{field}"
 
         impact_item.set_collection(self.get_impact_collection())
@@ -385,6 +418,18 @@ class DesinventarTransformer(MontyDataTransformer):
         monty = MontyExtension.ext(impact_item)
         monty.impact_detail = ImpactDetail(
             category=category, type=impact_type, value=float(value), unit=unit, estimate_type=MontyEstimateType.PRIMARY
+        )
+        
+        keywords = impact_item.properties.get("keywords", [])   
+        keywords.append(field)
+        keywords.append(MontyImpactTypeLabel()[impact_type])
+        keywords.append(MontyImpactExposureCatgoryLabel()[category])
+        impact_item.properties["keywords"] = keywords
+        
+        # add a link to the event item
+        impact_item.add_link(
+            Link("related", f'../{self.get_event_collection().id}/{event_item.id}',
+                 "application/json", event_item.properties["title"])
         )
 
         return impact_item
@@ -552,10 +597,11 @@ class DesinventarTransformer(MontyDataTransformer):
             return (None, None)
 
         code = self.geo_data_mapping[level]["property_code"]
+        # code = row[level]
         if code is None:
             return (None, None)
 
-        cached_data = self.geo_data_cache.get(f"{level}:{code}", None)
+        cached_data = self.geo_data_cache.get(f"{level}:{row[level]}", None)
         if cached_data is not None:
             return cached_data
 
@@ -563,7 +609,10 @@ class DesinventarTransformer(MontyDataTransformer):
         if gfd is None:
             return (None, None)
 
-        filtered_gfd = gfd[gfd[code] == row[level]].copy()
+        try:
+            filtered_gfd = gfd[gfd[code] == row[level]].copy()
+        except KeyError:
+            return (None, None)
         if isinstance(filtered_gfd, gpd.GeoDataFrame):
             # Use a tolerance value for simplification (smaller values will keep more detail)
             filtered_gfd["geometry"] = filtered_gfd["geometry"].apply(

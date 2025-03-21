@@ -45,31 +45,31 @@ class GlideTransformer(MontyDataTransformer):
 
     def get_hazard_codes(self, hazard: str) -> List[str]:
         hazard_mapping = {
-            "EQ": ["GH0001", "GH0002", "GH0003", "GH0004", "GH0005"],
-            "TC": ["MH0030", "MH0031", "MH0032"],
-            "FL": ["nat-hyd-flo-flo"],
-            "DR": ["MH0035"],
-            "WF": ["EN0013"],
-            "VO": ["GH009", "GH0013", "GH0014", "GH0015", "GH0016"],
-            "TS": ["MH0029", "GH0006"],
-            "CW": ["MH0040"],
-            "EP": ["nat-bio-epi-dis"],
-            "EC": ["MH0031"],
-            "ET": ["nat-met-ext-col", "nat-met-ext-hea", "nat-met-ext-sev"],
-            "FR": ["tec-ind-fir-fir"],
-            "FF": ["MH0006"],
-            "HT": ["MH0047"],
-            "IN": ["BI0002", "BI0003"],
-            "LS": ["nat-hyd-mmw-lan"],
-            "MS": ["MH0051"],
-            "ST": ["MH0003"],
-            "SL": ["nat-hyd-mmw-lan"],
-            "AV": ["nat-geo-mmd-ava"],
-            "SS": ["MH0027"],
+            "EQ": ["nat-gem-ear-gro", "EQ"],
+            "TC": ["nat-met-sto-tro", "TC"],
+            "FL": ["nat-hyd-flo-flo", "FL"],
+            "DR": ["nat-cli-dro-dro", "DR"],
+            "WF": ["nat-cli-wil-wil", "WF"],
+            "VO": ["nat-geo-vol-vol", "VO"],
+            "TS": ["nat-geo-ear-tsu", "TS"],
+            "CW": ["nat-met-ext-col", "CW"],
+            "EP": ["nat-bio-epi-dis", "EP"],
+            "EC": ["nat-met-sto-ext", "EC"],
+            "ET": ["nat-met-ext-col", "ET"],
+            "FR": ["nat-cli-fir-fir", "FR"],
+            "FF": ["nat-hyd-flo-fla", "FF"],
+            "HT": ["nat-met-ext-hea", "HT"],
+            "IN": ["nat-bio-inf-inf", "IN"],
+            "LS": ["nat-hyd-mmw-lan", "LS"],
+            "MS": ["nat-hyd-mmw-mud", "MS"],
+            "ST": ["nat-met-sto-sto", "ST"],
+            "SL": ["nat-hyd-mmw-lan", "SL"],
+            "AV": ["nat-geo-mmd-ava", "AV"],
+            "SS": ["nat-met-sto-sur", "SS"],
             "AC": ["AC"],
-            "TO": ["MH0059"],
-            "VW": ["MH0060"],
-            "WV": ["MH0029", "GH0006"],
+            "TO": ["nat-met-sto-tor", "TO"],
+            "VW": ["nat-met-sto-tor", "VW"],
+            "WV": ["nat-hyd-wav-rog", "WV"],
         }
         if hazard not in hazard_mapping:
             raise KeyError(f"Hazard {hazard} not found.")
@@ -110,6 +110,14 @@ class GlideTransformer(MontyDataTransformer):
                         "status": data.get("status", ""),
                     },
                 )
+                
+                # Add keywords
+                keywords = [data.get("event", ""), "glide"]
+                if data.get("geocode"):
+                    keywords.append(data.get("geocode"))
+                if data.get("title"):
+                    keywords.append(data.get("title"))
+                item.properties["keywords"] = keywords
 
                 item.set_collection(self.get_event_collection())
                 item.properties["roles"] = ["source", "event"]
@@ -150,6 +158,17 @@ class GlideTransformer(MontyDataTransformer):
 
             monty = MontyExtension.ext(item)
             monty.hazard_detail = self.get_hazard_detail(item)
+            monty.hazard_codes = monty.hazard_detail.cluster
+            
+            # Add hazard-specific keywords
+            keywords = item.properties.get("keywords", [])
+            keywords.append("hazard")
+            if monty.hazard_detail and monty.hazard_detail.cluster:
+                keywords.append(monty.hazard_detail.cluster)
+            if monty.hazard_detail and monty.hazard_detail.severity_unit:
+                keywords.append(monty.hazard_detail.severity_unit)
+            item.properties["keywords"] = keywords
+            
             hazard_items.append(item)
 
         return hazard_items

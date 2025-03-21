@@ -327,8 +327,11 @@ class USGSTransformer(MontyDataTransformer):
         items.append(event_item)
 
         # Create hazard item (ShakeMap)
-        hazard_item = self.make_hazard_event_item()
-        items.append(hazard_item)
+        try:
+            hazard_item = self.make_hazard_event_item()
+            items.append(hazard_item)
+        except Exception as e:
+            print(f"Error creating hazard item: {e}")
 
         # Create impact items (PAGER)
         if self.data.get_losses_data():
