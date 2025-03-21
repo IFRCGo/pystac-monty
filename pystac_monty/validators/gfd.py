@@ -1,13 +1,16 @@
-from pydantic import BaseModel, Field, field_validator, ConfigDict
-from typing import List, Dict, Union, Tuple
 import logging
+from typing import List, Tuple, Union
+
+from pydantic import BaseModel, ConfigDict, Field, field_validator
 
 logger = logging.getLogger(__name__)
 logging.basicConfig(level=logging.INFO)
 logger.setLevel(logging.INFO)
 
+
 class BaseModelWithExtra(BaseModel):
     model_config = ConfigDict(extra="ignore")
+
 
 class PixelType(BaseModelWithExtra):
     type: str
@@ -15,16 +18,19 @@ class PixelType(BaseModelWithExtra):
     min: Union[int, None] = None
     max: Union[int, None] = None
 
+
 class Band(BaseModelWithExtra):
     id: str
     data_type: PixelType
     dimensions: Tuple[int, int]
     crs: str
-    crs_transform: List[Union[int,float]]
+    crs_transform: List[Union[int, float]]
+
 
 class Footprint(BaseModelWithExtra):
     type: str
     coordinates: List[List[float]]
+
 
 class Properties(BaseModelWithExtra):
     dfo_centroid_y: float
@@ -54,19 +60,20 @@ class Properties(BaseModelWithExtra):
     system_asset_size: int = Field(alias="system:asset_size")
     system_index: str = Field(alias="system:index")
 
+
 class GFDSourceValidator(BaseModelWithExtra):
     type: str
     bands: List[Band]
     version: int
     id: str
     properties: Properties
-    
+
     @field_validator("type")
     def validate_type(cls, v):
         if v != "Image":
             raise ValueError("Type must be 'Image'")
         return v
-    
+
     @classmethod
     def validate_event(cls, data) -> bool:
         """Validate the overall data item"""
@@ -76,6 +83,3 @@ class GFDSourceValidator(BaseModelWithExtra):
             logger.error(f"Validation failed: {e}")
             return False
         return True
-
-    
-

@@ -16,6 +16,7 @@ from pystac_monty.extension import (
 from pystac_monty.hazard_profiles import MontyHazardProfiles
 from pystac_monty.sources.common import MontyDataSource, MontyDataTransformer
 from pystac_monty.validators.gfd import GFDSourceValidator
+
 # Constants
 
 STAC_EVENT_ID_PREFIX = "gfd-event-"
@@ -36,13 +37,13 @@ class GFDDataSource(MontyDataSource):
         failed_items = []
         success_items = []
         for item in data:
-            is_valid = GFDSourceValidator.validate_event(item)    
+            is_valid = GFDSourceValidator.validate_event(item)
             if is_valid:
                 success_items.append(item)
             else:
                 failed_items.append(item)
         return success_items
-        
+
 
 class GFDTransformer(MontyDataTransformer):
     """Transform the source data into the STAC items"""

@@ -27,17 +27,16 @@ class IFRCEventDataSource(MontyDataSource):
         self.data = self.source_data_validator(json.loads(data))
 
     def source_data_validator(self, data: list[dict]):
-    # TODO Handle the failed_items
+        # TODO Handle the failed_items
         failed_items = []
         success_items = []
         for item in data:
-            is_valid = IFRCsourceValidator.validate_event(item)    
+            is_valid = IFRCsourceValidator.validate_event(item)
             if is_valid:
                 success_items.append(item)
             else:
                 failed_items.append(item)
         return success_items
-
 
     def get_data(self) -> dict:
         """Get the event detail data."""

@@ -38,11 +38,7 @@ class GIDDDataSource(MontyDataSource):
         for key, value in data.items():
             if key == "features" and isinstance(value, list):
                 # Validate each feature in the list and skip the ones with 'Figure cause' = 'Conflict'
-                new_data[key] = [
-                    feature
-                    for feature in value
-                    if GiddValidator.validate_event(feature)
-                ]
+                new_data[key] = [feature for feature in value if GiddValidator.validate_event(feature)]
             else:
                 # Keep normal key-value pairs unchanged
                 new_data[key] = value

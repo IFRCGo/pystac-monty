@@ -32,6 +32,7 @@ class PDCDataSource(MontyDataSource):
     def __init__(self, source_url: str, data: Any):
         super().__init__(source_url, data)
         self.data = json.loads(data)
+        print(self.data)
 
 
 class PDCTransformer(MontyDataTransformer):

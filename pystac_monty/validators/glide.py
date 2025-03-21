@@ -1,11 +1,12 @@
 import logging
 from typing import Optional
 
-from pydantic import BaseModel, Field, ConfigDict
+from pydantic import BaseModel, ConfigDict, Field, field_validator
 
 logger = logging.getLogger(__name__)
 logging.basicConfig(level=logging.INFO)
 logger.setLevel(logging.INFO)
+
 
 class BaseModelWithExtra(BaseModel):
     model_config = ConfigDict(extra="ignore")
@@ -13,7 +14,7 @@ class BaseModelWithExtra(BaseModel):
 
 class GlideSetValidator(BaseModelWithExtra):
     comments: Optional[str]
-    year: int   # Restricting reasonable year range
+    year: int  # Restricting reasonable year range
     docid: int
     latitude: float = Field(..., ge=-90, le=90)
     longitude: float = Field(..., ge=-180, le=180)
@@ -31,9 +32,15 @@ class GlideSetValidator(BaseModelWithExtra):
     magnitude: str
     time: Optional[str]
     id: Optional[str]
-    event: str   # Ensuring event is uppercase letters
+    event: str  # Ensuring event is uppercase letters
     day: int = Field(..., ge=1, le=31)
-    status: str 
+    status: str
+
+    @field_validator("event")
+    def validate_enum(cls, value):
+        if not value in ["EQ", "TC", "FL", "DR", "WF", "VO", "TS", "CW", "EP", "EC", "ET", "FR", "FF", "HT", "IN","LS","MS","ST","SL","AV","SS","AC","TO","VW","WV"]:
+            raise ValueError(f"Event type {value} is not valid.")
+        return value
 
     @classmethod
     def validate_event(cls, data: dict) -> bool:

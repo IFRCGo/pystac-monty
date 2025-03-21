@@ -2,11 +2,12 @@ import logging
 from datetime import datetime
 from typing import List, Union
 
-from pydantic import BaseModel, HttpUrl, field_validator, ConfigDict
+from pydantic import BaseModel, ConfigDict, HttpUrl, field_validator
 
 logger = logging.getLogger(__name__)
 logging.basicConfig(level=logging.INFO)
 logger.setLevel(logging.INFO)
+
 
 class BaseModelWithExtra(BaseModel):
     model_config = ConfigDict(extra="ignore")

@@ -3,14 +3,18 @@ import logging
 import re
 from datetime import date
 
-from pydantic import BaseModel, field_validator
+from pydantic import BaseModel, ConfigDict, field_validator
 
 logger = logging.getLogger(__name__)
 logging.basicConfig(level=logging.INFO)
 logger.setLevel(logging.INFO)
 
 
-class IDUSourceValidator(BaseModel):
+class BaseModelWithExtra(BaseModel):
+    model_config = ConfigDict(extra="ignore")
+
+
+class IDUSourceValidator(BaseModelWithExtra):
     """Source validator fields"""
 
     id: int

@@ -76,28 +76,20 @@ class Properties(BaseModelWithExtra):
     eventtype: str
     eventid: int
     episodeid: int
-    eventname: str
     glide: str
     name: str
     description: str
     htmldescription: str
     icon: Union[str, HttpUrl]
-    iconoverall: Optional[HttpUrl] = None
     url: URLLinks
     alertlevel: str
-    alertscore: Union[float, int]
     episodealertlevel: str
-    episodealertscore: float
-    istemporary: str
-    iscurrent: str
     country: str
     fromdate: Union[str, datetime]
     todate: Union[str, datetime]
-    datemodified: Union[str, datetime]
     iso3: str
     source: str
     sourceid: str
-    polygonlabel: str
     Class: str
     affectedcountries: List[AffectedCountry]
     severitydata: SeverityData
@@ -121,7 +113,6 @@ class GdacsDataValidatorEvents(BaseModelWithExtra):
         if len(value) < 4:
             raise ValueError("Bounding box must have at least four coordinates.")
         return value
-
 
     @classmethod
     def validate_event(cls, data) -> bool:

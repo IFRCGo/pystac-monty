@@ -1,6 +1,6 @@
 import logging
 from datetime import date
-from typing import List, Optional, Union
+from typing import List, Optional
 
 from pydantic import BaseModel, ConfigDict, Field, field_validator
 
@@ -57,13 +57,14 @@ class Properties(BaseModelWithExtra):
     Locations_accuracy: List[str] = Field(..., alias="Locations accuracy")
     Locations_type: List[str] = Field(..., alias="Locations type")
     Displacement_occurred: Optional[str] = None
-    
+
     @field_validator("Figure_cause")
-    def check_figure_cause(cls, value:str) -> bool:
-        if value not in ["Conflict","Disaster"]:
-            logger.error(f"Figure cause must be either 'Conflict' or 'Disaster'.")
+    def check_figure_cause(cls, value: str) -> bool:
+        if value not in ["Conflict", "Disaster"]:
+            logger.error("Figure cause must be either 'Conflict' or 'Disaster'.")
             return False
         return True
+
 
 class GiddValidator(BaseModelWithExtra):
     geometry: Geometry

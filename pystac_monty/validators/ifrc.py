@@ -1,8 +1,9 @@
-from pydantic import BaseModel, field_validator
-from typing import List, Optional
-from datetime import datetime
-
 import logging
+from datetime import datetime
+from typing import List, Optional
+
+from pydantic import BaseModel, field_validator
+
 logger = logging.getLogger(__name__)
 logging.basicConfig(level=logging.INFO)
 logger.setLevel(logging.INFO)
@@ -13,6 +14,7 @@ class DisasterType(BaseModel):
     name: str
     summary: str
     translation_module_original_language: str
+
 
 class Country(BaseModel):
     iso: str
@@ -29,6 +31,7 @@ class Country(BaseModel):
     name: str
     translation_module_original_language: str
 
+
 class Appeal(BaseModel):
     aid: str
     num_beneficiaries: int
@@ -43,6 +46,7 @@ class Appeal(BaseModel):
     id: int
     translation_module_original_language: str
 
+
 class Contact(BaseModel):
     ctype: str
     name: str
@@ -50,6 +54,7 @@ class Contact(BaseModel):
     email: str
     phone: str
     id: int
+
 
 class FieldReport(BaseModel):
     status: int
@@ -71,6 +76,7 @@ class FieldReport(BaseModel):
     description: str
     summary: str
     translation_module_original_language: str
+
 
 class IFRCsourceValidator(BaseModel):
     dtype: DisasterType
@@ -104,7 +110,7 @@ class IFRCsourceValidator(BaseModel):
         if value not in range(0, 4):
             raise ValueError("Invalid severity level, must be between 0 and 3")
         return value
-    
+
     @classmethod
     def validate_event(cls, data: dict) -> bool:
         """Validate the overall data item"""
@@ -115,5 +121,3 @@ class IFRCsourceValidator(BaseModel):
             return False
         # If all field validators return True, we consider it valid
         return True
-
-
