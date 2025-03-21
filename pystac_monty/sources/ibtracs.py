@@ -268,7 +268,7 @@ class IBTrACSTransformer(MontyDataTransformer):
             )
 
             # Set collection
-            item.collection = self.get_event_collection()
+            item.set_collection(self.get_event_collection())
 
             # Add Monty extension
             MontyExtension.add_to(item)
@@ -469,7 +469,7 @@ class IBTrACSTransformer(MontyDataTransformer):
                 )
 
                 # Set collection
-                item.collection = self.get_hazard_collection()
+                item.set_collection(self.get_hazard_collection())
 
                 # Add Monty extension
                 MontyExtension.add_to(item)
@@ -610,13 +610,15 @@ class IBTrACSTransformer(MontyDataTransformer):
             if isinstance(track_geometry, LineString):
                 for point in track_geometry.coords:
                     lon, lat = point
-                    country_code = self.geocoder.get_iso3_from_geometry(Point(lon, lat))
+                    # country_code = self.geocoder.get_iso3_from_geometry(Point(lon, lat))
+                    country_code = "UNK"
                     if country_code:
                         countries.append(country_code)
             # For Point, check the single point
             elif isinstance(track_geometry, Point):
                 lon, lat = track_geometry.x, track_geometry.y
-                country_code = self.geocoder.get_iso3_from_geometry(track_geometry)
+                # country_code = self.geocoder.get_iso3_from_geometry(track_geometry)
+                country_code = "UNK"
                 if country_code:
                     countries.append(country_code)
         except Exception as e:
