@@ -207,3 +207,4 @@ SO0008,Financial shock,hazsoceco,haztypesoc,OT,
 ,Landslide,hazgeoother,haztypegeohaz,LS,nat-hyd-mmw-lan
 ,Fire (Miscellaneous),haztechindfail,haztypetech,OT,tec-mis-fir-fir
 ,Collapse (Industrial),haztechstrfail,haztypetech,AC,tec-ind-col-col
+,Insect Infestation,hazsocbio,haztypesoc,IN,nat-bio-inf-inf
