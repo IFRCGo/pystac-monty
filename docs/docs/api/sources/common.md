@@ -24,12 +24,12 @@ Example implementation:
 class MySourceTransformer(BaseTransformer):
     def __init__(self, data: MontyDataSource):
         self.data = data
-    
+
     def transform(self, data: Any) -> pystac.Item:
         # Validate input data
         if not self._validate_data(data):
             raise ValueError("Invalid data format")
-            
+
         # Transform data into STAC Item
         item = pystac.Item(
             id="unique-id",
@@ -38,7 +38,7 @@ class MySourceTransformer(BaseTransformer):
             datetime=self._extract_datetime(data),
             properties=self._extract_properties(data)
         )
-        
+
         # Add any extensions or additional metadata
         return item
 ```

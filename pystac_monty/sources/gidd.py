@@ -111,7 +111,7 @@ class GIDDTransformer(MontyDataTransformer):
         enddate = pytz.utc.localize(datetime.fromisoformat(enddate_str))
 
         item = Item(
-            id=f'{STAC_EVENT_ID_PREFIX}{properties["ID"]}',
+            id=f"{STAC_EVENT_ID_PREFIX}{properties['ID']}",
             geometry=geometry,
             bbox=bbox,
             datetime=startdate,
@@ -181,7 +181,7 @@ class GIDDTransformer(MontyDataTransformer):
 
             impact_item.datetime = startdate
             impact_item.properties["title"] = (
-                f"{properties.get('Figure category')}-{properties.get('Figure unit')} " f"for {properties.get('Event name')}"
+                f"{properties.get('Figure category')}-{properties.get('Figure unit')} for {properties.get('Event name')}"
             )
             impact_item.properties.update(
                 {

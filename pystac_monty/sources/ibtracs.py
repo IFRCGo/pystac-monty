@@ -247,7 +247,7 @@ class IBTrACSTransformer(MontyDataTransformer):
             )
 
             # Set collection
-            item.collection = self.get_event_collection()
+            item.set_collection(self.get_event_collection())
 
             # Add Monty extension
             MontyExtension.add_to(item)
@@ -448,7 +448,7 @@ class IBTrACSTransformer(MontyDataTransformer):
                 )
 
                 # Set collection
-                item.collection = self.get_hazard_collection()
+                item.set_collection(self.get_hazard_collection())
 
                 # Add Monty extension
                 MontyExtension.add_to(item)
