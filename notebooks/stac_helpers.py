@@ -210,7 +210,8 @@ def add_items_to_collection(api_url, collection_id, items, overwrite=False, batc
                 # If successful, count all items as successful
                 successful_items += len(batch)
                 print(f"Bulk loaded {len(batch)} items successfully")
-                continue
+                
+            continue
             
         except requests.exceptions.RequestException as e:
             print(f"Error during bulk loading attempt: {e}. Falling back to individual processing.")
