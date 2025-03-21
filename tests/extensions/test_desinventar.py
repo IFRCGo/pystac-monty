@@ -66,7 +66,8 @@ class DesinventarTest(TestCase):
     @parameterized.expand(load_scenarios(scenarios))  # type: ignore[misc]
     @pytest.mark.vcr()
     def test_transformer(self, country_code: str, transformer: DesinventarTransformer) -> None:
-        items = transformer.get_items()
+        items = list(transformer.get_stac_items())
+        print(items)
         self.assertTrue(len(items) > 0)
 
         source_event_items = []

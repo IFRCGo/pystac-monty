@@ -30,6 +30,10 @@ class MontyDataTransformer:
     hazards_collection_url: str
     impacts_collection_id: str
     impacts_collection_url: str
+    _event_collection_cache: Collection | None = None
+    _hazard_collection_cache: Collection | None = None
+    _impact_collection_cache: Collection | None = None
+    base_collection_url = "https://github.com/IFRCGo/monty-stac-extension/raw/refs/heads/main/examples"
 
     # FIXME: we might have to get ids and urls manually
     def __init__(self, source_name: str):
@@ -46,11 +50,6 @@ class MontyDataTransformer:
         self.impacts_collection_url = (
             f"{MontyDataTransformer.base_collection_url}/{self.impacts_collection_id}/{self.impacts_collection_id}.json"
         )
-
-    _event_collection_cache = None
-    _hazard_collection_cache = None
-    _impact_collection_cache = None
-    base_collection_url = "https://github.com/IFRCGo/monty-stac-extension/raw/refs/heads/main/examples"
 
     def get_event_collection(self) -> Collection:
         """Get event collection"""
