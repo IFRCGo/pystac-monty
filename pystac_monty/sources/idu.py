@@ -117,7 +117,7 @@ class IDUTransformer(MontyDataTransformer[IDUDataSource]):
         enddate = pytz.utc.localize(datetime.datetime.fromisoformat(enddate_str))
 
         item = Item(
-            id=f'{STAC_EVENT_ID_PREFIX}{data["event_id"]}',
+            id=f"{STAC_EVENT_ID_PREFIX}{data['event_id']}",
             geometry=geometry,
             bbox=bbox,
             datetime=startdate,

@@ -85,7 +85,7 @@ class GFDTransformer(MontyDataTransformer[GFDDataSource]):
         enddate = pytz.utc.localize(datetime.fromtimestamp(data["system:time_end"] / 1000))
 
         item = Item(
-            id=f'{STAC_EVENT_ID_PREFIX}{data["id"]}',
+            id=f"{STAC_EVENT_ID_PREFIX}{data['id']}",
             geometry=geometry,
             bbox=bbox,
             datetime=startdate,
