@@ -191,7 +191,8 @@ def load_scenarios(
     transformers = []
     if isinstance(scenarios, dict):
         emdat_data_source = EMDATDataSource(source_url="", data=scenarios)
-        transformers.append(EMDATTransformer(emdat_data_source))
+        geocoder = MockGeocoder()
+        transformers.append(EMDATTransformer(emdat_data_source, geocoder))
     else:
         for scenario in scenarios:
             # Read Excel file using pandas

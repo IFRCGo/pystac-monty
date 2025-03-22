@@ -9,6 +9,7 @@ import requests
 from parameterized import parameterized
 
 from pystac_monty.extension import MontyExtension
+from pystac_monty.geocoding import MockGeocoder
 from pystac_monty.sources.glide import GlideDataSource, GlideTransformer
 from tests.conftest import get_data_file
 from tests.extensions.test_monty import CustomValidator
@@ -24,7 +25,8 @@ def load_scenarios(
     for scenario in scenarios:
         data = requests.get(scenario[1]).text
         glide_data_source = GlideDataSource(scenario[1], data)
-        transformers.append(GlideTransformer(glide_data_source))
+        geocoder = MockGeocoder()
+        transformers.append(GlideTransformer(glide_data_source, geocoder))
     return transformers
 
 

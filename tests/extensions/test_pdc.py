@@ -7,6 +7,7 @@ import pytest
 from parameterized import parameterized
 
 from pystac_monty.extension import MontyExtension
+from pystac_monty.geocoding import MockGeocoder
 from pystac_monty.sources.pdc import PDCDataSource, PDCTransformer
 from tests.conftest import get_data_file
 from tests.extensions.test_monty import CustomValidator
@@ -20,7 +21,8 @@ def load_scenarios(scenarios: List[dict]) -> List[PDCTransformer]:
     transformers = []
     for scenario_item in scenarios:
         idu_data_source = PDCDataSource(source_url=scenario_item[0], data=json.dumps(scenario_item[1]))
-        transformers.append(PDCTransformer(idu_data_source))
+        geocoder = MockGeocoder()
+        transformers.append(PDCTransformer(idu_data_source, geocoder))
     return transformers
 
 

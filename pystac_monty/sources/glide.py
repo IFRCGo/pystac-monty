@@ -20,16 +20,13 @@ class GlideDataSource(MontyDataSource):
         self.data = json.loads(data)
 
 
-class GlideTransformer(MontyDataTransformer):
+class GlideTransformer(MontyDataTransformer[GlideDataSource]):
     """
     Transforms Glide event data into STAC Items
     """
 
     hazard_profiles = MontyHazardProfiles()
-
-    def __init__(self, data: GlideDataSource) -> None:
-        super().__init__("glide")
-        self.data = data
+    source_name = 'glide'
 
     def make_items(self) -> list[Item]:
         """Create Glide Items"""
@@ -125,7 +122,7 @@ class GlideTransformer(MontyDataTransformer):
 
                 monty.compute_and_set_correlation_id(hazard_profiles=self.hazard_profiles)
 
-                item.add_link(Link("via", self.data.get_source_url(), "application/json", "Glide Event Data"))
+                item.add_link(Link("via", self.data_source.get_source_url(), "application/json", "Glide Event Data"))
                 item.add_asset(
                     "report",
                     Asset(
@@ -174,9 +171,9 @@ class GlideTransformer(MontyDataTransformer):
 
     def check_and_get_glide_events(self) -> list[Any]:
         """Validate the source fields"""
-        glideset: list[Any] = self.data.get_data()["glideset"]
+        glideset: list[Any] = self.data_source.get_data()["glideset"]
         if glideset == []:
-            print(f"No Glide data found in {self.data.get_source_url()}")
+            print(f"No Glide data found in {self.data_source.get_source_url()}")
         for obj in glideset:
             required_fields = ["latitude", "longitude", "event", "number", "geocode"]
             missing_fields = [field for field in required_fields if field not in obj]

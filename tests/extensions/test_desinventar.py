@@ -9,12 +9,15 @@ import requests
 from parameterized import parameterized
 
 from pystac_monty.extension import MontyExtension
+from pystac_monty.geocoding import MockGeocoder
 from pystac_monty.sources.desinventar import (
     DesinventarDataSource,
     DesinventarTransformer,
 )
 from tests.conftest import get_data_file
 from tests.extensions.test_monty import CustomValidator
+
+geocoder = MockGeocoder()
 
 
 class DesinventarData(TypedDict):
@@ -49,7 +52,7 @@ def load_scenarios(
         tmp_zip_file = tempfile.NamedTemporaryFile(suffix=".zip", delete=False)
         tmp_zip_file.write(response.content)
         data_source = DesinventarDataSource(tmp_zip_file, data["country_code"], data["iso3"], data["zip_file_url"])
-        transformers.append((data["country_code"], DesinventarTransformer(data_source)))
+        transformers.append((data["country_code"], DesinventarTransformer(data_source, geocoder)))
     return transformers
 
 

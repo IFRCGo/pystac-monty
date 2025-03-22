@@ -48,19 +48,11 @@ class USGSDataSource(MontyDataSource):
         return self.losses_data
 
 
-class USGSTransformer(MontyDataTransformer):
+class USGSTransformer(MontyDataTransformer[USGSDataSource]):
     """Transforms USGS earthquake event data into STAC Items."""
 
     hazard_profiles = MontyHazardProfiles()
-
-    def __init__(self, data: USGSDataSource) -> None:
-        """Initialize USGS transformer.
-
-        Args:
-            data: USGSDataSource containing event detail and optional losses data
-        """
-        super().__init__("usgs")
-        self.data = data
+    source_name = 'usgs'
 
     @staticmethod
     def iso2_to_iso3(iso2: str) -> str:
@@ -327,7 +319,7 @@ class USGSTransformer(MontyDataTransformer):
         items.append(hazard_item)
 
         # Create impact items (PAGER)
-        if self.data.get_losses_data():
+        if self.data_source.get_losses_data():
             impact_items = self.make_impact_items(hazard_item)
             items.extend(impact_items)
 
@@ -335,7 +327,7 @@ class USGSTransformer(MontyDataTransformer):
 
     def make_source_event_item(self) -> Item:
         """Create source event item from USGS data."""
-        event_data = self.data.get_data()
+        event_data = self.data_source.get_data()
 
         # Create geometry from coordinates
         longitude = event_data["geometry"]["coordinates"][0]
@@ -379,11 +371,11 @@ class USGSTransformer(MontyDataTransformer):
         item.properties["roles"] = ["source", "event"]
 
         # Add source link and assets
-        item.add_link(Link("via", self.data.get_source_url(), "application/json", "USGS Event Data"))
+        item.add_link(Link("via", self.data_source.get_source_url(), "application/json", "USGS Event Data"))
         item.add_asset(
             "source",
             Asset(
-                href=self.data.get_source_url(),
+                href=self.data_source.get_source_url(),
                 media_type="application/geo+json",
                 title="USGS GeoJSON Source",
                 roles=["source"],
@@ -399,7 +391,7 @@ class USGSTransformer(MontyDataTransformer):
         hazard_item.id = f"{STAC_HAZARD_ID_PREFIX}{hazard_item.id.replace(STAC_EVENT_ID_PREFIX, '')}-shakemap"
 
         # extent the hazard zone with the shakemap extent
-        shakemap = self.data.get_data()["properties"].get("products", {}).get("shakemap", [])[0]
+        shakemap = self.data_source.get_data()["properties"].get("products", {}).get("shakemap", [])[0]
         extent = [
             float(shakemap.get("properties", {}).get("minimum-longitude", 0)),
             float(shakemap.get("properties", {}).get("minimum-latitude", 0)),
@@ -458,7 +450,7 @@ class USGSTransformer(MontyDataTransformer):
     def make_impact_items(self, hazard_item: Item) -> List[Item]:
         """Create impact items (PAGER) from USGS data."""
         impact_items = []
-        losses_data = self.data.get_losses_data()
+        losses_data = self.data_source.get_losses_data()
 
         if not losses_data:
             return impact_items
@@ -536,19 +528,19 @@ class USGSTransformer(MontyDataTransformer):
         # Add PAGER assets
         pager_assets = {
             "pager_onepager": {
-                "href": f"{self.data.get_source_url()}/onepager.pdf",
+                "href": f"{self.data_source.get_source_url()}/onepager.pdf",
                 "media_type": "application/pdf",
                 "title": "PAGER One-Pager Report",
                 "roles": ["data"],
             },
             "pager_exposure": {
-                "href": f"{self.data.get_source_url()}/json/exposures.json",
+                "href": f"{self.data_source.get_source_url()}/json/exposures.json",
                 "media_type": "application/json",
                 "title": "PAGER Exposure Data",
                 "roles": ["data"],
             },
             "pager_alert": {
-                "href": f"{self.data.get_source_url()}/alert{impact_type}.pdf",
+                "href": f"{self.data_source.get_source_url()}/alert{impact_type}.pdf",
                 "media_type": "application/pdf",
                 "title": f"PAGER {impact_type.title()} Alert",
                 "roles": ["data"],

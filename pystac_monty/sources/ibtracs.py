@@ -59,31 +59,11 @@ class IBTrACSDataSource(MontyDataSource):
         return [row for row in data if row.get("SID", "").strip() == storm_id]
 
 
-class IBTrACSTransformer(MontyDataTransformer):
+class IBTrACSTransformer(MontyDataTransformer[IBTrACSDataSource]):
     """Transforms IBTrACS tropical cyclone data into STAC Items."""
 
-    ibtracs_events_collection_id = "ibtracs-events"
-    ibtracs_events_collection_url = "https://raw.githubusercontent.com/IFRCGo/monty-stac-extension/refs/heads/main/examples/ibtracs-events/ibtracs-events.json"  # noqa
-
-    ibtracs_hazards_collection_id = "ibtracs-hazards"
-    ibtracs_hazards_collection_url = "https://raw.githubusercontent.com/IFRCGo/monty-stac-extension/refs/heads/main/examples/ibtracs-hazards/ibtracs-hazards.json"  # noqa
-
     hazard_profiles = MontyHazardProfiles()
-
-    def __init__(self, data_source: IBTrACSDataSource):
-        """Initialize IBTrACS transformer.
-
-        Args:
-            data_source: IBTrACS data source
-            geocoder: Geocoder for determining affected countries
-        """
-        super().__init__("ibtracs")
-        self.events_collection_id = self.ibtracs_events_collection_id
-        self.events_collection_url = self.ibtracs_events_collection_url
-        self.hazards_collection_id = self.ibtracs_hazards_collection_id
-        self.hazards_collection_url = self.ibtracs_hazards_collection_url
-
-        self.data_source = data_source
+    source_name = 'ibtracs'
 
     def make_items(self) -> List[Item]:
         """Create STAC Items from IBTrACS data.

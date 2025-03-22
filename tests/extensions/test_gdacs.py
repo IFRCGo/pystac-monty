@@ -9,6 +9,7 @@ import requests
 from parameterized import parameterized
 
 from pystac_monty.extension import MontyExtension
+from pystac_monty.geocoding import MockGeocoder
 from pystac_monty.sources.gdacs import (
     GDACSDataSource,
     GDACSDataSourceType,
@@ -31,7 +32,8 @@ def load_scenarios(
         for item in items:
             data = requests.get(item[1]).text
             gdacs_data_sources.append(GDACSDataSource(item[1], data, item[0]))
-        transformers.append(GDACSTransformer(gdacs_data_sources))
+        geocoder = MockGeocoder()
+        transformers.append(GDACSTransformer(gdacs_data_sources, geocoder))
     return transformers
 
 

@@ -313,15 +313,13 @@ class DesinventarDataSource:
 class DesinventarTransformer(MontyDataTransformer):
     """Transform DesInventar data to STAC items"""
 
+    source_name = 'desinventar'
+
     data_source: DesinventarDataSource
     hazard_profiles = MontyHazardProfiles()
     geo_data_mapping: Dict[str, GeoDataEntry] = {}
     geo_data_cache: Dict[str, Tuple[Dict[str, Any], List[float]]] = {}
     errored_events: Dict[str, int] = {}
-
-    def __init__(self, data_source: DesinventarDataSource) -> None:
-        super().__init__("desinventar")
-        self.data_source = data_source
 
     def _create_event_item_from_row(self, row: DataRow) -> Optional[Item]:
         # FIXME: Do we treat this as error or noise

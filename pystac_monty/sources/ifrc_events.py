@@ -20,21 +20,13 @@ STAC_IMPACT_ID_PREFIX = "ifrcevent-impact-"
 
 class IFRCEventDataSource(MontyDataSource):
     def __init__(self, source_url: str, data: str):
-        super().__init__(source_url, data)
-        self.source_url = source_url
-        self.data = json.loads(data)
-
-    def get_data(self) -> dict:
-        """Get the event detail data."""
-        return self.data
+        # FIXME: Why do we load using json
+        super().__init__(source_url, json.loads(data))
 
 
-class IFRCEventTransformer(MontyDataTransformer):
+class IFRCEventTransformer(MontyDataTransformer[IFRCEventDataSource]):
     hazard_profiles = MontyHazardProfiles()
-
-    def __init__(self, data: IFRCEventDataSource):
-        super().__init__("ifrcevent")
-        self.data = data
+    source_name = "ifrcevent"
 
     def make_items(self) -> List[Item]:
         """Create items"""
@@ -229,11 +221,11 @@ class IFRCEventTransformer(MontyDataTransformer):
 
     def check_and_get_ifrcevent_data(self) -> list[Any]:
         """Validate the source fields"""
-        ifrcevent_data: List[Dict[str, Any]] = self.data.get_data()
+        ifrcevent_data: List[Dict[str, Any]] = self.data_source.get_data()
 
         filtered_ifrcevent_data = []
         if not ifrcevent_data:
-            print(f"No IFRC-Event data found in {self.data.get_source_url()}")
+            print(f"No IFRC-Event data found in {self.data_source.get_source_url()}")
             return []
 
         for item in ifrcevent_data:
