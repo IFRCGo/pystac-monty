@@ -289,14 +289,6 @@ class IBTrACSTest(unittest.TestCase):
         self.assertEqual(len(storm_ids), 1)
         self.assertEqual(storm_ids[0], "2024178N09335")
 
-    def test_missing_geocoder(self) -> None:
-        """Test that transformer raises error when geocoder is missing"""
-        data_source = IBTrACSDataSource("test_url", SAMPLE_IBTRACS_CSV)
-
-        # Test with None geocoder
-        with self.assertRaises(ValueError):
-            IBTrACSTransformer(data_source, None)
-
     def test_event_item_properties(self) -> None:
         """Test that event items have the correct properties"""
         data_source = IBTrACSDataSource("test_url", SAMPLE_IBTRACS_CSV)

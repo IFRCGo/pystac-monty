@@ -29,24 +29,15 @@ class GIDDDataSource(MontyDataSource):
         self.data = json.loads(data)
 
 
-class GIDDTransformer(MontyDataTransformer):
+class GIDDTransformer(MontyDataTransformer[GIDDDataSource]):
     """Transforms GIDD event data into STAC Items"""
 
     hazard_profiles = MontyHazardProfiles()
-
-    def __init__(self, data: GIDDDataSource) -> None:
-        """
-        Initialize GIDDTransformer
-
-        Args:
-            data: GIDDDataSource containing the gidd data
-        """
-        super().__init__("idmc-gidd")
-        self.data = data
+    source_name = 'idmc-gidd'
 
     def get_data(self) -> dict:
         """Get the event detail data."""
-        return self.data
+        return self.data_source
 
     def make_items(self) -> List[Item]:
         """Create all STAC items from GIDD data"""
@@ -149,11 +140,11 @@ class GIDDTransformer(MontyDataTransformer):
         item.add_asset(
             "source",
             Asset(
-                href=self.data.get_source_url(), media_type="application/geo+json", title="GIDD GeoJson Source", roles=["source"]
+                href=self.data_source.get_source_url(), media_type="application/geo+json", title="GIDD GeoJson Source", roles=["source"]
             ),
         )
 
-        item.add_link(Link("via", self.data.get_source_url(), "application/json", "GIDD Event Data"))
+        item.add_link(Link("via", self.data_source.get_source_url(), "application/json", "GIDD Event Data"))
 
         return item
 
@@ -261,9 +252,9 @@ class GIDDTransformer(MontyDataTransformer):
         Returns:
             List of validated GIDD data dictionaries
         """
-        gidd_data: List[Dict[str, Any]] = self.data.get_data()
+        gidd_data: List[Dict[str, Any]] = self.data_source.get_data()
         if not gidd_data:
-            print(f"No gidd data found in {self.data.get_source_url()}")
+            print(f"No gidd data found in {self.data_source.get_source_url()}")
             return []
 
         data = gidd_data.get("features")

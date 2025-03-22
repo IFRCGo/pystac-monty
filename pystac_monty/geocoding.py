@@ -37,7 +37,7 @@ class WorldAdministrativeBoundariesGeocoder(MontyGeoCoder):
         self._layer = "Layer1"
         self._simplify_tolerance = simplify_tolerance
         self._cache: Dict[str, Union[Dict[str, Any], int, None]] = {}
-        self._file_handle = None
+        self._file_handle: fiona.Collection | None = None
         self._initialize_path()
         self._open_file()
 

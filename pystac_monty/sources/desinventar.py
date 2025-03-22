@@ -1,12 +1,13 @@
-import json
-import re
+import logging
 import tempfile
+import typing
 from contextlib import contextmanager
 from datetime import datetime
 from pathlib import Path
 from typing import Any, Dict, List, Optional, Tuple, TypedDict
 from zipfile import ZipFile
 
+import pydantic
 import pytz
 import requests
 from geopandas import gpd
@@ -28,13 +29,9 @@ STAC_EVENT_ID_PREFIX = "desinventar-event-"
 STAC_HAZARD_ID_PREFIX = "desinventar-hazard-"
 STAC_IMPACT_ID_PREFIX = "desinventar-impact-"
 
+logger = logging.getLogger(__name__)
 
-# TODO: move to common utils
-def get_list_item_safe(list, index, default_value=None):
-    try:
-        return list[index]
-    except IndexError:
-        return default_value
+T = typing.TypeVar("T")
 
 
 class GeoDataEntry(TypedDict):
@@ -43,48 +40,160 @@ class GeoDataEntry(TypedDict):
     shapefile_data: Optional[gpd.GeoDataFrame]
 
 
-class DataRow(TypedDict):
-    # Properties extracted from desinventar
-
+# Properties extracted from desinventar
+class DataRow(pydantic.BaseModel):
     serial: str
-    comment: Optional[str]
-    source: Optional[str]
+    comment: str | None
+    # source: str | None
 
-    deaths: Optional[str]
-    injured: Optional[str]
-    missing: Optional[str]
-    houses_destroyed: Optional[str]
-    houses_damaged: Optional[str]
-    directly_affected: Optional[str]
-    indirectly_affected: Optional[str]
-    relocated: Optional[str]
-    evacuated: Optional[str]
-    losses_in_dollar: Optional[str]
-    losses_local_currency: Optional[str]
-    education_centers: Optional[str]
-    hospitals: Optional[str]
-    damages_in_crops_ha: Optional[str]
-    lost_cattle: Optional[str]
-    damages_in_roads_mts: Optional[str]
+    deaths: float | None
+    injured: float | None
+    missing: float | None
+    houses_destroyed: float | None
+    houses_damaged: float | None
+    directly_affected: float | None
+    indirectly_affected: float | None
+    relocated: float | None
+    evacuated: float | None
+    losses_in_dollar: float | None
+    losses_local_currency: float | None
+    # education_centers: str | None
+    # hospitals: str | None
+    damages_in_crops_ha: float | None
+    lost_cattle: float | None
+    damages_in_roads_mts: float | None
 
-    level0: Optional[str]
-    level1: Optional[str]
-    level2: Optional[str]
-    name0: Optional[str]
-    name1: Optional[str]
-    name2: Optional[str]
-    latitude: Optional[str]
-    longitude: Optional[str]
+    level0: str | None
+    level1: str | None
+    level2: str | None
+    # name0: str | None
+    # name1: str | None
+    # name2: str | None
+    # latitude: str | None
+    # longitude: str | None
 
-    haz_maxvalue: Optional[str]
-    event: Optional[str]
-    glide: Optional[str]
-    location: Optional[str]
+    # haz_maxvalue: str | None
+    event: str | None
+    # glide: str | None
+    location: str | None
 
-    duration: Optional[str]
-    year: Optional[str]
-    month: Optional[str]
-    day: Optional[str]
+    # duration: str | None
+    year: int
+    month: int | None
+    day: int | None
+
+    # Added fields
+
+    iso3: str
+    data_source_url: str | None
+
+    @property
+    def event_stac_id(self):
+        return f"{STAC_EVENT_ID_PREFIX}{self.iso3}-{self.serial}"
+
+    @property
+    def event_title(self):
+        return f"{self.event} in {self.location} on {self.event_start_date}"
+
+    @property
+    def event_description(self):
+        return f"{self.event} in {self.location}: {self.comment}"
+
+    @property
+    def event_start_date(self):
+        if self.year is None:
+            return
+
+        start_year = self.year
+        start_month = self.month or 1
+        start_day = self.day or 1
+
+        try:
+            start_dt = datetime(start_year, start_month, start_day)
+            return pytz.utc.localize(start_dt)
+        except Exception:
+            return None
+
+    @property
+    def lowest_level(self):
+        if self.level2 is not None:
+            return 'level2'
+        if self.level1 is not None:
+            return 'level1'
+        if self.level0 is not None:
+            return 'level0'
+        return None
+
+
+# TODO: move to common utils
+def get_list_item_safe(lst: list[T], index: int, default_value: T | None = None) -> T | None:
+    try:
+        return lst[index]
+    except IndexError:
+        return default_value
+
+
+def extract_value_from_xml(obj: etree._Element, key: str) -> Any:
+    (xpath_value,) = (obj.xpath(f"{key}/text()"),)
+    value = get_list_item_safe(xpath_value, 0)
+    return value
+
+
+def parse_row_data(
+    xml_row_data: etree._Element,
+    hazard_name_mapping: dict[str, str],
+    iso3: str,
+    data_source_url: str | None,
+):
+    serial = extract_value_from_xml(xml_row_data, "serial")
+    # FIXME: Do we handle this as failure?
+    if serial is None:
+        return
+
+    evento = extract_value_from_xml(xml_row_data, "evento")
+    # FIXME: Do we handle this as failure?
+    if evento is None:
+        return
+
+    return DataRow(
+        serial=serial,
+        event=hazard_name_mapping[evento],
+        comment=extract_value_from_xml(xml_row_data, "di_comments"),
+        # source=extract_value(xml_row_data, "fuentes"),
+        deaths=extract_value_from_xml(xml_row_data, "muertos"),
+        injured=extract_value_from_xml(xml_row_data, "heridos"),
+        missing=extract_value_from_xml(xml_row_data, "desaparece"),
+        houses_destroyed=extract_value_from_xml(xml_row_data, "vivdest"),
+        houses_damaged=extract_value_from_xml(xml_row_data, "vivafec"),
+        directly_affected=extract_value_from_xml(xml_row_data, "damnificados"),
+        indirectly_affected=extract_value_from_xml(xml_row_data, "afectados"),
+        relocated=extract_value_from_xml(xml_row_data, "reubicados"),
+        evacuated=extract_value_from_xml(xml_row_data, "evacuados"),
+        losses_in_dollar=extract_value_from_xml(xml_row_data, "valorus"),
+        losses_local_currency=extract_value_from_xml(xml_row_data, "valorloc"),
+        # education_centers=extract_value(xml_row_data, "nescuelas"),
+        # hospitals=extract_value(xml_row_data, "nhospitales"),
+        damages_in_crops_ha=extract_value_from_xml(xml_row_data, "nhectareas"),
+        lost_cattle=extract_value_from_xml(xml_row_data, "cabezas"),
+        damages_in_roads_mts=extract_value_from_xml(xml_row_data, "kmvias"),
+        level0=extract_value_from_xml(xml_row_data, "level0"),
+        level1=extract_value_from_xml(xml_row_data, "level1"),
+        level2=extract_value_from_xml(xml_row_data, "level2"),
+        # name0=extract_value(xml_row_data, "name0"),
+        # name1=extract_value(xml_row_data, "name1"),
+        # name2=extract_value(xml_row_data, "name2"),
+        # latitude=extract_value(xml_row_data, "latitude"),
+        # longitude=extract_value(xml_row_data, "longitude"),
+        # haz_maxvalue=extract_value(xml_row_data, "magnitud2"),
+        # glide=extract_value(xml_row_data, "glide"),
+        location=extract_value_from_xml(xml_row_data, "lugar"),
+        # duration=extract_value(xml_row_data, "duracion"),
+        year=extract_value_from_xml(xml_row_data, "fechano"),
+        month=extract_value_from_xml(xml_row_data, "fechames"),
+        day=extract_value_from_xml(xml_row_data, "fechadia"),
+        iso3=iso3,
+        data_source_url=data_source_url,
+    )
 
 
 # TODO: complete this mapping
@@ -145,37 +254,14 @@ hazard_mapping = {
 }
 
 
-def strtoi(s: str | None, default: str | int | None = None):
-    if s is None:
-        return default or s
-
-    try:
-        return int(s)
-    except ValueError:
-        return default or s
-
-
-def natural_keys(text):
-    return [strtoi(c) for c in re.split(r"(\d+)", text)]
-
-
-def get_lowest_level(all_levels_in_order: List[str], row_data: DataRow):
-    for level in all_levels_in_order:
-        if row_data[level] is not None:
-            return level
-
-    return None
-
-
+# FIXME: cleanup named temporary file
 class DesinventarDataSource:
     tmp_zip_file: tempfile._TemporaryFileWrapper
-    source_url: str
+    source_url: str | None
     country_code: str
     iso3: str
 
-    def __init__(self, tmp_zip_file: tempfile._TemporaryFileWrapper, country_code: str, iso3: str, source_url: str = None):
-        # self.tmp_zip_file = tempfile.NamedTemporaryFile(suffix=".zip")
-
+    def __init__(self, tmp_zip_file: tempfile._TemporaryFileWrapper, country_code: str, iso3: str, source_url: str | None = None):
         self.tmp_zip_file = tmp_zip_file
         self.country_code = country_code
         self.iso3 = iso3
@@ -185,7 +271,7 @@ class DesinventarDataSource:
     def from_zip_file(cls, zip_file: ZipFile, country_code: str, iso3: str):
         fp = zip_file.fp
         if fp is None:
-            raise Exception("failed to process the zip file")
+            raise Exception("Failed to process the zip file")
 
         content = fp.read()
         tmp_zip_file = tempfile.NamedTemporaryFile(suffix=".zip", delete=False)
@@ -211,7 +297,7 @@ class DesinventarDataSource:
         return cls(tmp_zip_file, country_code, iso3)
 
     @contextmanager
-    def with_xml_file(self):
+    def with_xml_file(self) -> typing.Generator[typing.IO[bytes], None, None]:
         xml_file = None
         try:
             with ZipFile(self.tmp_zip_file.name, "r") as zf_ref:
@@ -227,127 +313,76 @@ class DesinventarDataSource:
 class DesinventarTransformer(MontyDataTransformer):
     """Transform DesInventar data to STAC items"""
 
+    source_name = 'desinventar'
+
     data_source: DesinventarDataSource
     hazard_profiles = MontyHazardProfiles()
-    hazard_name_mapping: Dict[str, str] = {}
     geo_data_mapping: Dict[str, GeoDataEntry] = {}
     geo_data_cache: Dict[str, Tuple[Dict[str, Any], List[float]]] = {}
     errored_events: Dict[str, int] = {}
 
-    def __init__(self, data_source: DesinventarDataSource) -> None:
-        super().__init__("desinventar")
-        self.data_source = data_source
-
-    def create_datetimes(self, row: DataRow) -> datetime | None:
-        start_year = strtoi(row["year"], None)
-        start_month = strtoi(row["month"], 1)
-        start_day = strtoi(row["day"], 1)
-
-        if start_year and start_month and start_day:
-            # Note: the int cast here is safe
-            try:
-                start_dt = datetime(int(start_year), int(start_month), int(start_day))
-                return pytz.utc.localize(start_dt)
-            except Exception:
-                return None
-
-        return None
-
-    def get_items(self) -> List[Item]:
-        data_list = self.load_data()
-
-        if data_list is None or len(data_list) == 0:
-            return []
-
-        items = [
-            item
-            for row in data_list
-            for item in [
-                self.create_event_item_from_row(row),
-                # No need to create hazard items for now
-                # self.create_hazard_item_from_row(row),
-                *self.create_impact_items_from_row(row),
-            ]
-            if item is not None
-        ]
-
-        print("\nNOTE: cannot map events for:\n", json.dumps(self.errored_events, indent=2, ensure_ascii=False))
-        return items
-
-    def create_event_item_from_row(self, row: DataRow) -> Optional[Item]:
-        if not row["serial"]:
+    def _create_event_item_from_row(self, row: DataRow) -> Optional[Item]:
+        # FIXME: Do we treat this as error or noise
+        if not row.event_start_date:
             return None
 
-        start_date = self.create_datetimes(row)
-
-        if not start_date:
+        # FIXME: Do we treat this as error or noise
+        if row.event is None:
             return None
 
-        geojson, bbox = self.get_geojson_and_bbox_from_row(row)
+        # FIXME: Do we treat this as error or noise
+        if (hazard_codes := hazard_mapping.get(row.event)) is None:
+            return None
+
+        geojson, bbox = self._get_geojson_and_bbox_from_row(row)
         geojson_features = geojson.get("features", None) if geojson is not None else None
 
+        geometry: dict[str, Any] | None = None
         if geojson_features is not None and len(geojson_features) > 0:
             geometry = geojson_features[0].get("geometry", None)
             # TODO: investigate if properties can be added to keywords
             # properties = geojson_features[0].get('properties', None)
-        else:
-            geometry = None
-            # properties = None
 
         item = Item(
-            id=f"{STAC_EVENT_ID_PREFIX}{self.data_source.iso3}-{row['serial']}",
+            id=row.event_stac_id,
             geometry=geometry,
             bbox=bbox,
-            datetime=start_date,
-            start_datetime=start_date,
+            datetime=row.event_start_date,
+            start_datetime=row.event_start_date,
             # FIXME: calculate end date
-            end_datetime=start_date,
+            end_datetime=row.event_start_date,
             properties={
-                "title": f"{row['event']} in {row['location']} on {start_date}",
-                "description": f"{row['event']} in {row['location']}: {row['comment']}",
+                "title": row.event_title,
+                "description": row.event_description
             },
         )
 
         MontyExtension.add_to(item)
         monty = MontyExtension.ext(item)
+
         monty.episode_number = 1  # Desinventar doesn't have episodes
-
-        if row["event"] is None:
-            return None
-
-        event = row["event"]
-        try:
-            hazard_codes = hazard_mapping[event]
-        except KeyError:
-            hazard_codes = None
-            count = self.errored_events.get(event, 0)
-            self.errored_events[event] = count + 1
-
-        if not hazard_codes:
-            return None
-
         monty.hazard_codes = hazard_codes
-
-        monty.country_codes = [self.data_source.iso3.upper()]
+        monty.country_codes = [row.iso3.upper()]
         monty.compute_and_set_correlation_id(hazard_profiles=self.hazard_profiles)
 
         item.set_collection(self.get_event_collection())
         item.properties["roles"] = ["source", "event"]
-
         # Add source link
-        item.add_link(
-            Link(
-                "via",
-                self.data_source.source_url,
-                "application/zip",
-                "DesInventar export zip file for {}".format(self.data_source.iso3),
+        if row.data_source_url:
+            item.add_link(
+                Link(
+                    "via",
+                    row.data_source_url,
+                    "application/zip",
+                    f"DesInventar export zip file for {self.data_source.iso3}",
+                )
             )
-        )
 
         return item
 
-    def create_hazard_item_from_row(self, row: DataRow) -> Optional[Item]:
-        event_item = self.create_event_item_from_row(row)
+    # FIXME: This is not used anymore
+    def _create_hazard_item_from_row(self, row: DataRow) -> Optional[Item]:
+        event_item = self._create_event_item_from_row(row)
 
         if event_item is None:
             return None
@@ -358,19 +393,19 @@ class DesinventarTransformer(MontyDataTransformer):
         # TODO: set collection and roles
         return hazard_item
 
-    def create_impact_item(
+    def _create_impact_item(
         self,
         base_item: Item,
         row_id: str,
         field: str,
-        value: str | None,
+        value: float | None,
         category: MontyImpactExposureCategory,
         impact_type: MontyImpactType,
         unit: str,
     ) -> Optional[Item]:
         """Create an impact item from a base item and a row data"""
 
-        if value is None or value == "0":
+        if value is None or value == 0:
             return None
 
         impact_item = base_item.clone()
@@ -384,113 +419,112 @@ class DesinventarTransformer(MontyDataTransformer):
 
         monty = MontyExtension.ext(impact_item)
         monty.impact_detail = ImpactDetail(
-            category=category, type=impact_type, value=float(value), unit=unit, estimate_type=MontyEstimateType.PRIMARY
+            category=category,
+            type=impact_type,
+            value=value,
+            unit=unit,
+            estimate_type=MontyEstimateType.PRIMARY
         )
 
         return impact_item
 
-    def create_impact_items_from_row(self, row: DataRow) -> List[Item]:
-        event_item = self.create_event_item_from_row(row)
-
-        if event_item is None:
-            return []
-
+    def _create_impact_items_from_row(self, row: DataRow, event_item: Item) -> List[Item]:
         impact_items = [
-            self.create_impact_item(
+            self._create_impact_item(
                 event_item,
-                row["serial"],
+                row.serial,
                 "deaths",
-                row["deaths"],
+                row.deaths,
                 MontyImpactExposureCategory.ALL_PEOPLE,
                 MontyImpactType.DEATH,
                 "count",
             ),
-            self.create_impact_item(
+            self._create_impact_item(
                 event_item,
-                row["serial"],
+                row.serial,
                 "injured",
-                row["injured"],
+                row.injured,
                 MontyImpactExposureCategory.ALL_PEOPLE,
                 MontyImpactType.INJURED,
                 "count",
             ),
-            self.create_impact_item(
+            self._create_impact_item(
                 event_item,
-                row["serial"],
+                row.serial,
                 "missing",
-                row["missing"],
+                row.missing,
                 MontyImpactExposureCategory.ALL_PEOPLE,
                 MontyImpactType.MISSING,
                 "count",
             ),
-            self.create_impact_item(
+            self._create_impact_item(
                 event_item,
-                row["serial"],
+                row.serial,
                 "houses_destroyed",
-                row["houses_destroyed"],
+                row.houses_destroyed,
                 MontyImpactExposureCategory.BUILDINGS,
                 MontyImpactType.DESTROYED,
                 "count",
             ),
-            self.create_impact_item(
+            self._create_impact_item(
                 event_item,
-                row["serial"],
+                row.serial,
                 "houses_damaged",
-                row["houses_damaged"],
+                row.houses_damaged,
                 MontyImpactExposureCategory.BUILDINGS,
                 MontyImpactType.DAMAGED,
                 "count",
             ),
-            self.create_impact_item(
+            self._create_impact_item(
                 event_item,
-                row["serial"],
+                row.serial,
                 "directly_affected",
-                row["directly_affected"],
+                row.directly_affected,
                 MontyImpactExposureCategory.ALL_PEOPLE,
                 MontyImpactType.DIRECTLY_AFFECTED,
                 "count",
             ),
-            self.create_impact_item(
+            self._create_impact_item(
                 event_item,
-                row["serial"],
+                row.serial,
                 "indirectly_affected",
-                row["indirectly_affected"],
+                row.indirectly_affected,
                 MontyImpactExposureCategory.ALL_PEOPLE,
                 MontyImpactType.INDIRECTLY_AFFECTED,
                 "count",
             ),
-            self.create_impact_item(
+            self._create_impact_item(
                 event_item,
-                row["serial"],
+                row.serial,
                 "relocated",
-                row["relocated"],
+                row.relocated,
                 MontyImpactExposureCategory.ALL_PEOPLE,
                 MontyImpactType.RELOCATED,
                 "count",
             ),
-            self.create_impact_item(
+            self._create_impact_item(
                 event_item,
-                row["serial"],
+                row.serial,
                 "evacuated",
-                row["evacuated"],
+                row.evacuated,
                 MontyImpactExposureCategory.ALL_PEOPLE,
                 MontyImpactType.EVACUATED,
                 "count",
             ),
-            self.create_impact_item(
+            self._create_impact_item(
                 event_item,
-                row["serial"],
+                row.serial,
                 "losses_in_dollar",
-                row["losses_in_dollar"],
+                row.losses_in_dollar,
                 MontyImpactExposureCategory.USD_UNSURE,
                 MontyImpactType.LOSS_COST,
                 "USD",
             ),
-            self.create_impact_item(
+            self._create_impact_item(
                 event_item,
-                row["serial"],
+                row.serial,
                 "losses_local_currency",
-                row["losses_local_currency"],
+                row.losses_local_currency,
                 MontyImpactExposureCategory.LOCAL_CURRENCY,
                 MontyImpactType.LOSS_COST,
                 "Unknown",
@@ -498,44 +532,45 @@ class DesinventarTransformer(MontyDataTransformer):
             # TODO: verify what the value represents and probaly move to response
             # self.create_impact_item(
             #     event_item,
-            #     row['serial'],
+            #     row.serial,
             #     'education_centers',
-            #     row['education_centers'],
+            #     row.education_centers,
             #     MontyImpactExposureCategory.EDUCATION_CENTERS,
             #     MontyImpactType.UNDEFINED,
             #     'count'
             # ),
             # self.create_impact_item(
-            #     event_item, row['serial'],
+            #     event_item,
+            #     row.serial,
             #     'hospitals',
-            #     row['hospitals'],
+            #     row.hospitals,
             #     MontyImpactExposureCategory.HOSPITALS,
             #     MontyImpactType.UNDEFINED,
             #     'count'
             # ),
-            self.create_impact_item(
+            self._create_impact_item(
                 event_item,
-                row["serial"],
+                row.serial,
                 "damages_in_crops_ha",
-                row["damages_in_crops_ha"],
+                row.damages_in_crops_ha,
                 MontyImpactExposureCategory.CROPS,
                 MontyImpactType.DAMAGED,
                 "hectare",
             ),
-            self.create_impact_item(
+            self._create_impact_item(
                 event_item,
-                row["serial"],
+                row.serial,
                 "lost_cattle",
-                row["lost_cattle"],
+                row.lost_cattle,
                 MontyImpactExposureCategory.CATTLE,
                 MontyImpactType.MISSING,
                 "count",
             ),
-            self.create_impact_item(
+            self._create_impact_item(
                 event_item,
-                row["serial"],
+                row.serial,
                 "damages_in_roads_mts",
-                row["damages_in_roads_mts"],
+                row.damages_in_roads_mts,
                 MontyImpactExposureCategory.ALL_PEOPLE,
                 MontyImpactType.DAMAGED,
                 "m",
@@ -544,9 +579,8 @@ class DesinventarTransformer(MontyDataTransformer):
 
         return [item for item in impact_items if item is not None]
 
-    def get_geojson_and_bbox_from_row(self, row: DataRow) -> Tuple[Dict[str, Any] | None, List[float] | None]:
-        applicable_geo_levels = ["level2", "level1", "level0"]
-        level = get_lowest_level(applicable_geo_levels, row)
+    def _get_geojson_and_bbox_from_row(self, row: DataRow) -> Tuple[Dict[str, Any] | None, List[float] | None]:
+        level = row.lowest_level
 
         if level is None:
             return (None, None)
@@ -563,7 +597,10 @@ class DesinventarTransformer(MontyDataTransformer):
         if gfd is None:
             return (None, None)
 
-        filtered_gfd = gfd[gfd[code] == row[level]].copy()
+        # FIXME: confirm with frozenhelium
+        # filtered_gfd = gfd[gfd[code] == row[level]].copy()
+        filtered_gfd = gfd[gfd[code] == getattr(row, level)].copy()
+        # FIXME: confirm if we need to check this datatype
         if isinstance(filtered_gfd, gpd.GeoDataFrame):
             # Use a tolerance value for simplification (smaller values will keep more detail)
             filtered_gfd["geometry"] = filtered_gfd["geometry"].apply(
@@ -571,19 +608,22 @@ class DesinventarTransformer(MontyDataTransformer):
             )
 
             geojson = filtered_gfd.to_geo_dict()
-            bbox = filtered_gfd.total_bounds.tolist()
+            bbox = typing.cast(
+                List[float],
+                filtered_gfd.total_bounds.tolist(),
+            )
 
-            self.geo_data_cache[f"{level}:{code}"] = (geojson, bbox)
+            response = (geojson, bbox)
+            self.geo_data_cache[f"{level}:{code}"] = response
 
-            return (geojson, bbox)
+            return response
 
         return (None, None)
 
-    def _generate_geo_data_mapping(self, root: etree._Element):
-        level_maps = root.xpath("//level_maps/TR")
-
+    def _generate_geo_data_mapping(self, root: etree._Element) -> Dict[str, GeoDataEntry]:
         geo_data: Dict[str, GeoDataEntry] = {}
 
+        level_maps = root.xpath("//level_maps/TR")
         for level_row in level_maps:
             file_path = get_list_item_safe(level_row.xpath("filename/text()"), 0)
             level = get_list_item_safe(level_row.xpath("map_level/text()"), 0)
@@ -591,91 +631,67 @@ class DesinventarTransformer(MontyDataTransformer):
 
             if file_path is not None:
                 shp_file_name = Path(str(file_path)).name
-                shapefile_data = gpd.read_file(f"zip://{self.data_source.tmp_zip_file.name}!{shp_file_name}")
+                shapefile_data = typing.cast(
+                    gpd.GeoDataFrame,
+                    gpd.read_file(f"zip://{self.data_source.tmp_zip_file.name}!{shp_file_name}"),
+                )
             else:
                 shapefile_data = None
 
             geo_data[f"level{level}"] = {
                 "level": str(level) if level is not None else None,
                 "property_code": str(property_code) if property_code is not None else None,
-                "shapefile_data": shapefile_data,
+                "shapefile_data": shapefile_data
             }
 
-        self.geo_data_mapping = geo_data
+        print(geo_data)
+        return geo_data
 
-    def _generate_hazard_name_mapping(self, root: etree._Element):
+    @staticmethod
+    def _generate_hazard_name_mapping(root: etree._Element):
+        hazard_name_mapping: Dict[str, str] = {}
+
         hazard_details = root.xpath("//eventos/TR")
-
         for hazard_detail in hazard_details:
             key = get_list_item_safe(hazard_detail.xpath("nombre/text()"), 0)
             value = get_list_item_safe(hazard_detail.xpath("nombre_en/text()"), 0)
 
-            self.hazard_name_mapping[str(key)] = str(value)
+            hazard_name_mapping[str(key)] = str(value)
 
-    def load_data(self):
+        return hazard_name_mapping
+
+    def get_stac_items(self) -> typing.Generator[Item, None, None]:
+        # TODO: Use sax xml parser for memory efficient usage
         with self.data_source.with_xml_file() as xml_file:
             tree = etree.parse(xml_file)
             root = tree.getroot()
 
-            self._generate_geo_data_mapping(root)
-            self._generate_hazard_name_mapping(root)
+            self.geo_data_mapping = self._generate_geo_data_mapping(root)
+            hazard_name_mapping = self._generate_hazard_name_mapping(root)
 
             events = root.xpath("//fichas/TR")
-            data: List[DataRow] = []
 
-            def extract_value(obj: etree._Element, key: str, default: str | None = None):
-                (xpath_value,) = (obj.xpath(f"{key}/text()"),)
-                value = get_list_item_safe(xpath_value, 0)
-
-                return str(value) if value is not None else default
+            failed_items_count = 0
+            total_items_count = 0
 
             for event_row in events:
-                serial = extract_value(event_row, "serial")
-                if serial is None:
-                    continue
+                total_items_count += 1
+                try:
+                    if row_data := parse_row_data(
+                        event_row,
+                        hazard_name_mapping,
+                        self.data_source.iso3,
+                        self.data_source.source_url,
+                    ):
+                        if event_item := self._create_event_item_from_row(row_data):
+                            yield event_item
+                            yield from self._create_impact_items_from_row(row_data, event_item)
+                except Exception:
+                    failed_items_count += 1
+                    logger.error('Failed to process desinventar', exc_info=True)
 
-                evento = extract_value(event_row, "evento")
-                if evento is None:
-                    continue
+            print(failed_items_count)
 
-                row_data: DataRow = {
-                    "serial": serial,
-                    "comment": extract_value(event_row, "di_comments"),
-                    "source": extract_value(event_row, "fuentes"),
-                    "deaths": extract_value(event_row, "muertos"),
-                    "injured": extract_value(event_row, "heridos"),
-                    "missing": extract_value(event_row, "desaparece"),
-                    "houses_destroyed": extract_value(event_row, "vivdest"),
-                    "houses_damaged": extract_value(event_row, "vivafec"),
-                    "directly_affected": extract_value(event_row, "damnificados"),
-                    "indirectly_affected": extract_value(event_row, "afectados"),
-                    "relocated": extract_value(event_row, "reubicados"),
-                    "evacuated": extract_value(event_row, "evacuados"),
-                    "losses_in_dollar": extract_value(event_row, "valorus"),
-                    "losses_local_currency": extract_value(event_row, "valorloc"),
-                    "education_centers": extract_value(event_row, "nescuelas"),
-                    "hospitals": extract_value(event_row, "nhospitales"),
-                    "damages_in_crops_ha": extract_value(event_row, "nhectareas"),
-                    "lost_cattle": extract_value(event_row, "cabezas"),
-                    "damages_in_roads_mts": extract_value(event_row, "kmvias"),
-                    "level0": extract_value(event_row, "level0"),
-                    "level1": extract_value(event_row, "level1"),
-                    "level2": extract_value(event_row, "level2"),
-                    "name0": extract_value(event_row, "name0"),
-                    "name1": extract_value(event_row, "name1"),
-                    "name2": extract_value(event_row, "name2"),
-                    "latitude": extract_value(event_row, "latitude"),
-                    "longitude": extract_value(event_row, "longitude"),
-                    "haz_maxvalue": extract_value(event_row, "magnitud2"),
-                    "event": self.hazard_name_mapping[evento],
-                    "glide": extract_value(event_row, "glide"),
-                    "location": extract_value(event_row, "lugar"),
-                    "duration": extract_value(event_row, "duracion"),
-                    "year": extract_value(event_row, "fechano"),
-                    "month": extract_value(event_row, "fechames"),
-                    "day": extract_value(event_row, "fechadia"),
-                }
-
-                data.append(row_data)
-
-            return data
+    # FIXME: This is deprecated
+    def make_items(self):
+        return list(self.get_stac_items())

@@ -7,6 +7,7 @@ import pytest
 from parameterized import parameterized
 
 from pystac_monty.extension import MontyExtension
+from pystac_monty.geocoding import MockGeocoder
 from pystac_monty.sources.gfd import GFDDataSource, GFDTransformer
 from tests.conftest import get_data_file
 from tests.extensions.test_monty import CustomValidator
@@ -18,8 +19,10 @@ CURRENT_SCHEMA_MAPURL = "https://raw.githubusercontent.com/IFRCGo/monty-stac-ext
 def load_scenarios(data: List[dict]):
     transformers = []
 
+    geocoder = MockGeocoder()
+
     gfd_data_source = GFDDataSource(source_url="", data=json.dumps(data))
-    transformers.append(GFDTransformer(gfd_data_source))
+    transformers.append(GFDTransformer(gfd_data_source, geocoder))
     return transformers
 
 

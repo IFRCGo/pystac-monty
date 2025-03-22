@@ -1,41 +1,52 @@
+import abc
 import json
+import typing
 from dataclasses import dataclass
-from typing import Any
 
 import requests
-from pystac import Collection
+from pystac import Collection, Item
+
+from pystac_monty.geocoding import MontyGeoCoder
 
 
 @dataclass
 class MontyDataSource:
     source_url: str
-    data: Any
+    data: typing.Any
 
-    def __init__(self, source_url: str, data: Any):
+    def __init__(self, source_url: str, data: typing.Any):
         self.source_url = source_url
         self.data = data
 
     def get_source_url(self) -> str:
         return self.source_url
 
-    def get_data(self) -> Any:
+    def get_data(self) -> typing.Any:
         return self.data
 
 
+DataSource = typing.TypeVar("DataSource")
+
+
 @dataclass
-class MontyDataTransformer:
-    events_collection_id: str
-    events_collection_url: str
-    hazards_collection_id: str
-    hazards_collection_url: str
-    impacts_collection_id: str
-    impacts_collection_url: str
+class MontyDataTransformer(typing.Generic[DataSource]):
+    # FIXME: Add a validation in subclass so that source_name is always defined
+    source_name: str
+
+    _event_collection_cache: Collection | None = None
+    _hazard_collection_cache: Collection | None = None
+    _impact_collection_cache: Collection | None = None
+
+    # FIXME: Get this from submodule
+    base_collection_url = "https://github.com/IFRCGo/monty-stac-extension/raw/refs/heads/main/examples"
 
     # FIXME: we might have to get ids and urls manually
-    def __init__(self, source_name: str):
-        self.events_collection_id = f"{source_name}-events"
-        self.hazards_collection_id = f"{source_name}-hazards"
-        self.impacts_collection_id = f"{source_name}-impacts"
+    def __init__(self, data_source: DataSource, geocoder: MontyGeoCoder):
+        self.events_collection_id = f"{self.source_name}-events"
+        self.hazards_collection_id = f"{self.source_name}-hazards"
+        self.impacts_collection_id = f"{self.source_name}-impacts"
+
+        self.data_source = data_source
 
         self.events_collection_url = (
             f"{MontyDataTransformer.base_collection_url}/{self.events_collection_id}/{self.events_collection_id}.json"
@@ -47,10 +58,7 @@ class MontyDataTransformer:
             f"{MontyDataTransformer.base_collection_url}/{self.impacts_collection_id}/{self.impacts_collection_id}.json"
         )
 
-    _event_collection_cache = None
-    _hazard_collection_cache = None
-    _impact_collection_cache = None
-    base_collection_url = "https://github.com/IFRCGo/monty-stac-extension/raw/refs/heads/main/examples"
+        self.geocoder = geocoder
 
     def get_event_collection(self) -> Collection:
         """Get event collection"""
@@ -99,3 +107,6 @@ class MontyDataTransformer:
             collection.set_self_href(self.impacts_collection_url)
             self._impact_collection_cache = collection
         return self._impact_collection_cache
+
+    @abc.abstractmethod
+    def make_items(self) -> list[Item]: ...

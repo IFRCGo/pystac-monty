@@ -10,6 +10,7 @@ import requests
 from parameterized import parameterized
 
 from pystac_monty.extension import MontyExtension
+from pystac_monty.geocoding import MockGeocoder
 from pystac_monty.sources.gidd import GIDDDataSource, GIDDTransformer
 from tests.conftest import get_data_file
 from tests.extensions.test_monty import CustomValidator
@@ -21,8 +22,10 @@ def load_scenarios(scenarios: List[str], timeout: int = 30) -> List[GIDDTransfor
         response = requests.get(scenario[1], timeout=timeout)
         response_data = response.json()
 
+        geocoder = MockGeocoder()
+
         idu_data_source = GIDDDataSource(source_url=scenario[1], data=json.dumps(response_data))
-        transformers.append(GIDDTransformer(idu_data_source))
+        transformers.append(GIDDTransformer(idu_data_source, geocoder))
     return transformers
 
 

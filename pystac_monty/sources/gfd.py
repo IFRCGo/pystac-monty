@@ -31,14 +31,11 @@ class GFDDataSource(MontyDataSource):
         self.data = json.loads(data)
 
 
-class GFDTransformer(MontyDataTransformer):
+class GFDTransformer(MontyDataTransformer[GFDDataSource]):
     """Transform the source data into the STAC items"""
 
     hazard_profiles = MontyHazardProfiles()
-
-    def __init__(self, data: GFDDataSource):
-        super().__init__("gfd")
-        self.data = data
+    source_name = "gfd"
 
     def make_items(self) -> List[Item]:
         """Create Items"""
@@ -175,4 +172,4 @@ class GFDTransformer(MontyDataTransformer):
 
     def check_and_get_gfd_data(self):
         """Get the GFD data"""
-        return [item["properties"] for item in self.data.get_data()]
+        return [item["properties"] for item in self.data_source.get_data()]

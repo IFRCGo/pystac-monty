@@ -16,7 +16,6 @@ from pystac_monty.extension import (
     MontyImpactExposureCategory,
     MontyImpactType,
 )
-from pystac_monty.geocoding import MontyGeoCoder
 from pystac_monty.hazard_profiles import MontyHazardProfiles
 from pystac_monty.sources.common import MontyDataSource, MontyDataTransformer
 from pystac_monty.utils import rename_columns
@@ -51,24 +50,13 @@ class EMDATDataSource(MontyDataSource):
         return self.df
 
 
-class EMDATTransformer(MontyDataTransformer):
+class EMDATTransformer(MontyDataTransformer[EMDATDataSource]):
     """
     Transforms EM-DAT event data into STAC Items
     """
 
     hazard_profiles = MontyHazardProfiles()
-
-    def __init__(self, data: EMDATDataSource, geocoder: MontyGeoCoder = None) -> None:
-        """
-        Initialize EMDATTransformer
-
-        Args:
-            data: EMDATDataSource containing the EM-DAT data
-            gaul_path: Path to the GAUL geopackage file or ZIP containing it
-        """
-        super().__init__("emdat")
-        self.data = data
-        self.geocoder = geocoder
+    source_name = 'emdat'
 
     def make_items(self) -> list[Item]:
         """Create all STAC items from EM-DAT data"""
@@ -91,7 +79,7 @@ class EMDATTransformer(MontyDataTransformer):
     def make_source_event_items(self) -> List[Item]:
         """Create source event items from EM-DAT data"""
         event_items = []
-        df = self.data.get_data()
+        df = self.data_source.get_data()
 
         for _, row in df.iterrows():
             try:
@@ -199,7 +187,7 @@ class EMDATTransformer(MontyDataTransformer):
     def make_impact_items(self) -> List[Item]:
         """Create impact items from EM-DAT data"""
         impact_items = []
-        df = self.data.get_data()
+        df = self.data_source.get_data()
 
         for _, row in df.iterrows():
             impact_items.extend(self._create_impact_items_from_row(row))
@@ -287,7 +275,7 @@ class EMDATTransformer(MontyDataTransformer):
 
     def _get_row_by_disno(self, disno: str) -> Optional[pd.Series]:
         """Get original DataFrame row by DisNo"""
-        df = self.data.get_data()
+        df = self.data_source.get_data()
         matching_rows = df[df["DisNo."] == disno]
         return matching_rows.iloc[0] if not matching_rows.empty else None
 

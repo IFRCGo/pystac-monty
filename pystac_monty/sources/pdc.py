@@ -16,6 +16,7 @@ from pystac_monty.extension import (
     MontyImpactExposureCategory,
     MontyImpactType,
 )
+from pystac_monty.geocoding import MontyGeoCoder
 from pystac_monty.hazard_profiles import MontyHazardProfiles
 from pystac_monty.sources.common import MontyDataSource, MontyDataTransformer
 
@@ -38,9 +39,10 @@ class PDCTransformer(MontyDataTransformer):
     """Transform the source data into the STAC items"""
 
     hazard_profiles = MontyHazardProfiles()
+    source_name = 'pdc'
 
-    def __init__(self, pdc_data_src: PDCDataSource):
-        super().__init__("pdc")
+    def __init__(self, pdc_data_src: PDCDataSource, geocoder: MontyGeoCoder):
+        super().__init__(pdc_data_src, geocoder)
         self.config_data = pdc_data_src.data
 
         self.hazards_data = []

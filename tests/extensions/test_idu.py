@@ -8,6 +8,7 @@ import requests
 from parameterized import parameterized
 
 from pystac_monty.extension import MontyExtension
+from pystac_monty.geocoding import MockGeocoder
 from pystac_monty.sources.idu import IDUDataSource, IDUTransformer
 from tests.conftest import get_data_file
 from tests.extensions.test_monty import CustomValidator
@@ -23,7 +24,8 @@ def load_scenarios(scenarios: List[str], timeout: int = 30) -> List[IDUTransform
         response_data = response.json()
 
         idu_data_source = IDUDataSource(source_url=scenario[1], data=json.dumps(response_data))
-        transformers.append(IDUTransformer(idu_data_source))
+        geocoder = MockGeocoder()
+        transformers.append(IDUTransformer(idu_data_source, geocoder))
     return transformers
 
 

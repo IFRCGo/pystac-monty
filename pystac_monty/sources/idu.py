@@ -62,14 +62,11 @@ class IDUDataSource(MontyDataSource):
         self.data = json.loads(data)
 
 
-class IDUTransformer(MontyDataTransformer):
+class IDUTransformer(MontyDataTransformer[IDUDataSource]):
     """Transform the source data into the STAC items"""
 
     hazard_profiles = MontyHazardProfiles()
-
-    def __init__(self, data: IDUDataSource):
-        super().__init__("idmc-idu")
-        self.data = data
+    source_name = 'idmc-idu'
 
     def make_items(self) -> List[Item]:
         """Create items"""
@@ -138,7 +135,7 @@ class IDUTransformer(MontyDataTransformer):
         item.properties["roles"] = ["source", "event"]
 
         item.add_asset("report", Asset(href=data["source_url"], media_type="application/pdf", title="Report"))
-        item.add_link(Link("via", self.data.get_source_url(), "application/json", "IDU Event Data"))
+        item.add_link(Link("via", self.data_source.get_source_url(), "application/json", "IDU Event Data"))
 
         hazard_tuple = (data["category"], data["subcategory"], data["type"], data["subtype"])
 
@@ -247,12 +244,12 @@ class IDUTransformer(MontyDataTransformer):
 
     def check_and_get_idu_data(self) -> list[Any]:
         """Validate the source fields"""
-        idu_data: List[Dict[str, Any]] = self.data.get_data()
+        idu_data: List[Dict[str, Any]] = self.data_source.get_data()
         required_fields = ["latitude", "longitude", "event_id"]
 
         filtered_idu_data = []
         if not idu_data:
-            logger.warning(f"No IDU data found in {self.data.get_source_url()}")
+            logger.warning(f"No IDU data found in {self.data_source.get_source_url()}")
             return []
 
         for item in idu_data:

@@ -52,18 +52,14 @@ class GDACSDataSource(MontyDataSource):
         return self.type
 
 
-class GDACSTransformer(MontyDataTransformer):
+class GDACSTransformer(MontyDataTransformer[list[GDACSDataSource]]):
     """
     Transforms GDACS event data into STAC Items
     see https://github.com/IFRCGo/monty-stac-extension/tree/main/model/sources/GDACS
     """
 
-    data: list[GDACSDataSource] = []
     hazard_profiles = MontyHazardProfiles()
-
-    def __init__(self, data: list[GDACSDataSource]) -> None:
-        super().__init__("gdacs")
-        self.data = data
+    source_name = 'gdacs'
 
     def make_items(self) -> list[Item]:
         items = []
@@ -84,7 +80,7 @@ class GDACSTransformer(MontyDataTransformer):
 
     def check_and_get_event_data(self) -> GDACSDataSource:
         # first check that the event data is present in the data
-        gdacs_event = next((x for x in self.data if x.get_type() == GDACSDataSourceType.EVENT), None)
+        gdacs_event = next((x for x in self.data_source if x.get_type() == GDACSDataSourceType.EVENT), None)
 
         if not gdacs_event:
             raise ValueError("no GDACS event data found")
@@ -105,7 +101,7 @@ class GDACSTransformer(MontyDataTransformer):
 
     def check_and_get_geometry_data(self) -> GDACSDataSource:
         # first check that the geometry data is present in the data
-        gdacs_geometry = next((x for x in self.data if x.get_type() == GDACSDataSourceType.GEOMETRY), None)
+        gdacs_geometry = next((x for x in self.data_source if x.get_type() == GDACSDataSourceType.GEOMETRY), None)
 
         if not gdacs_geometry:
             raise ValueError("no GDACS geometry data found")
