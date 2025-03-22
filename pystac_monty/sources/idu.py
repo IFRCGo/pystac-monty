@@ -194,7 +194,7 @@ class IDUTransformer(MontyDataTransformer):
 
         for item in idu_data:
             if item["displacement_type"] not in IDMCUtils.DisplacementType._value2member_map_:
-                logging.error("Unknown displacement type: {item['displacement_type']} found. Ignore the datapoint.")
+                logging.error(f"Unknown displacement type: {item['displacement_type']} found. Ignore the datapoint.")
                 continue
             # Get the Disaster type data only
             if IDMCUtils.DisplacementType(item["displacement_type"]) == IDMCUtils.DisplacementType.DISASTER_TYPE:

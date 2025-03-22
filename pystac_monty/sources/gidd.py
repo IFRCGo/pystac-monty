@@ -1,4 +1,5 @@
 import json
+import logging
 from dataclasses import dataclass
 from datetime import datetime
 from typing import Any, Dict, List
@@ -16,6 +17,8 @@ from pystac_monty.extension import (
 from pystac_monty.hazard_profiles import MontyHazardProfiles
 from pystac_monty.sources.common import MontyDataSource, MontyDataTransformer
 from pystac_monty.sources.utils import IDMCUtils
+
+logger = logging.getLogger(__name__)
 
 STAC_EVENT_ID_PREFIX = "idmc-gidd-event-"
 STAC_IMPACT_ID_PREFIX = "idmc-gidd-impact-"
@@ -236,6 +239,9 @@ class GIDDTransformer(MontyDataTransformer):
         disaster_data = []
         for item in data:
             item_properties = item.get("properties", {})
+            if item_properties.get("Figure cause") not in IDMCUtils.DisplacementType._value2member_map_:
+                logging.error(f"Unknown displacement type: {item_properties.get('Figure cause')} found. Ignore the datapoint.")
+                continue
             if (
                 IDMCUtils.DisplacementType(item_properties.get("Figure cause")) == IDMCUtils.DisplacementType.DISASTER_TYPE
             ):  # skip conflict data
