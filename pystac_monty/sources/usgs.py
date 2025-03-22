@@ -16,7 +16,6 @@ from pystac_monty.extension import (
     MontyImpactExposureCategory,
     MontyImpactType,
 )
-from pystac_monty.geocoding import MontyGeoCoder
 from pystac_monty.hazard_profiles import MontyHazardProfiles
 from pystac_monty.sources.common import MontyDataSource, MontyDataTransformer
 
@@ -54,7 +53,7 @@ class USGSTransformer(MontyDataTransformer):
 
     hazard_profiles = MontyHazardProfiles()
 
-    def __init__(self, data: USGSDataSource, geocoder: MontyGeoCoder) -> None:
+    def __init__(self, data: USGSDataSource) -> None:
         """Initialize USGS transformer.
 
         Args:
@@ -62,9 +61,6 @@ class USGSTransformer(MontyDataTransformer):
         """
         super().__init__("usgs")
         self.data = data
-        self.geocoder = geocoder
-        if not self.geocoder:
-            raise ValueError("Geocoder is required for USGS transformer")
 
     @staticmethod
     def iso2_to_iso3(iso2: str) -> str:

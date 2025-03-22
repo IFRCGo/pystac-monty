@@ -693,3 +693,7 @@ class DesinventarTransformer(MontyDataTransformer):
                     logger.error('Failed to process desinventar', exc_info=True)
 
             print(failed_items_count)
+
+    # FIXME: This is deprecated
+    def make_items(self):
+        return list(self.get_stac_items())

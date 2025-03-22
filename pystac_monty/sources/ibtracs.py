@@ -10,7 +10,6 @@ from pystac import Asset, Item, Link
 from shapely.geometry import LineString, Point, mapping
 
 from pystac_monty.extension import HazardDetail, MontyEstimateType, MontyExtension
-from pystac_monty.geocoding import MontyGeoCoder
 from pystac_monty.hazard_profiles import MontyHazardProfiles
 from pystac_monty.sources.common import MontyDataSource, MontyDataTransformer
 
@@ -71,7 +70,7 @@ class IBTrACSTransformer(MontyDataTransformer):
 
     hazard_profiles = MontyHazardProfiles()
 
-    def __init__(self, data_source: IBTrACSDataSource, geocoder: MontyGeoCoder):
+    def __init__(self, data_source: IBTrACSDataSource):
         """Initialize IBTrACS transformer.
 
         Args:
@@ -84,11 +83,7 @@ class IBTrACSTransformer(MontyDataTransformer):
         self.hazards_collection_id = self.ibtracs_hazards_collection_id
         self.hazards_collection_url = self.ibtracs_hazards_collection_url
 
-        if geocoder is None:
-            raise ValueError("Geocoder is required for IBTrACS transformer")
-
         self.data_source = data_source
-        self.geocoder = geocoder
 
     def make_items(self) -> List[Item]:
         """Create STAC Items from IBTrACS data.

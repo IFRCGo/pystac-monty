@@ -11,7 +11,6 @@ from pystac_monty.extension import (
     MontyImpactExposureCategory,
     MontyImpactType,
 )
-from pystac_monty.geocoding import MontyGeoCoder
 from pystac_monty.hazard_profiles import MontyHazardProfiles
 from pystac_monty.sources.common import MontyDataSource, MontyDataTransformer
 
@@ -33,12 +32,9 @@ class IFRCEventDataSource(MontyDataSource):
 class IFRCEventTransformer(MontyDataTransformer):
     hazard_profiles = MontyHazardProfiles()
 
-    def __init__(self, data: IFRCEventDataSource, geocoder: MontyGeoCoder):
+    def __init__(self, data: IFRCEventDataSource):
         super().__init__("ifrcevent")
         self.data = data
-        self.geocoder = geocoder
-        if not self.geocoder:
-            raise ValueError("Geocoder is required for IFRC events transformer")
 
     def make_items(self) -> List[Item]:
         """Create items"""

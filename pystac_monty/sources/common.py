@@ -1,9 +1,13 @@
+import abc
 import json
 from dataclasses import dataclass
 from typing import Any
 
 import requests
-from pystac import Collection
+from django.conf import settings
+from pystac import Collection, Item
+
+from pystac_monty.geocoding import GAULGeocoder
 
 
 @dataclass
@@ -30,9 +34,12 @@ class MontyDataTransformer:
     hazards_collection_url: str
     impacts_collection_id: str
     impacts_collection_url: str
+
     _event_collection_cache: Collection | None = None
     _hazard_collection_cache: Collection | None = None
     _impact_collection_cache: Collection | None = None
+
+    # FIXME: Get this from submodule
     base_collection_url = "https://github.com/IFRCGo/monty-stac-extension/raw/refs/heads/main/examples"
 
     # FIXME: we might have to get ids and urls manually
@@ -50,6 +57,9 @@ class MontyDataTransformer:
         self.impacts_collection_url = (
             f"{MontyDataTransformer.base_collection_url}/{self.impacts_collection_id}/{self.impacts_collection_id}.json"
         )
+
+        # NOTE: We are using an external geocoder service. This object only initializes the reference
+        self.geocoder = GAULGeocoder(gpkg_path=None, service_base_url=settings.GEOCODER_URL)
 
     def get_event_collection(self) -> Collection:
         """Get event collection"""
@@ -98,3 +108,6 @@ class MontyDataTransformer:
             collection.set_self_href(self.impacts_collection_url)
             self._impact_collection_cache = collection
         return self._impact_collection_cache
+
+    @abc.abstractmethod
+    def make_items(self) -> list[Item]: ...

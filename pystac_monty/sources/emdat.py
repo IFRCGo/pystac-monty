@@ -16,7 +16,6 @@ from pystac_monty.extension import (
     MontyImpactExposureCategory,
     MontyImpactType,
 )
-from pystac_monty.geocoding import MontyGeoCoder
 from pystac_monty.hazard_profiles import MontyHazardProfiles
 from pystac_monty.sources.common import MontyDataSource, MontyDataTransformer
 from pystac_monty.utils import rename_columns
@@ -58,7 +57,7 @@ class EMDATTransformer(MontyDataTransformer):
 
     hazard_profiles = MontyHazardProfiles()
 
-    def __init__(self, data: EMDATDataSource, geocoder: MontyGeoCoder = None) -> None:
+    def __init__(self, data: EMDATDataSource) -> None:
         """
         Initialize EMDATTransformer
 
@@ -68,7 +67,6 @@ class EMDATTransformer(MontyDataTransformer):
         """
         super().__init__("emdat")
         self.data = data
-        self.geocoder = geocoder
 
     def make_items(self) -> list[Item]:
         """Create all STAC items from EM-DAT data"""
