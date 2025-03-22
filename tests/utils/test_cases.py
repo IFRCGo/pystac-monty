@@ -196,4 +196,4 @@ class TestCases:
     @staticmethod
     def case_8() -> Collection:
         """Planet disaster data example catalog, 1.0.0-beta.2"""
-        return Collection.from_file(TestCases.get_path("data-files/catalogs/" "planet-example-v1.0.0-beta.2/collection.json"))
+        return Collection.from_file(TestCases.get_path("data-files/catalogs/planet-example-v1.0.0-beta.2/collection.json"))

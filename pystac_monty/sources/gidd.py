@@ -15,6 +15,7 @@ from pystac_monty.extension import (
 )
 from pystac_monty.hazard_profiles import MontyHazardProfiles
 from pystac_monty.sources.common import MontyDataSource, MontyDataTransformer
+from pystac_monty.validators.gidd import GiddValidator
 
 STAC_EVENT_ID_PREFIX = "idmc-gidd-event-"
 STAC_IMPACT_ID_PREFIX = "idmc-gidd-impact-"
@@ -27,6 +28,21 @@ class GIDDDataSource(MontyDataSource):
     def __init__(self, source_url: str, data: Any):
         super().__init__(source_url, data)
         self.data = json.loads(data)
+        self.data = self.source_data_validator(json.loads(data))
+
+    def source_data_validator(self, data: dict):
+        """Validate only the items inside 'features' while keeping other keys unchanged."""
+
+        new_data = {}  # Store the filtered dictionary
+
+        for key, value in data.items():
+            if key == "features" and isinstance(value, list):
+                # Validate each feature in the list and skip the ones with 'Figure cause' = 'Conflict'
+                new_data[key] = [feature for feature in value if GiddValidator.validate_event(feature)]
+            else:
+                # Keep normal key-value pairs unchanged
+                new_data[key] = value
+        return new_data
 
 
 class GIDDTransformer(MontyDataTransformer):
@@ -111,7 +127,7 @@ class GIDDTransformer(MontyDataTransformer):
         enddate = pytz.utc.localize(datetime.fromisoformat(enddate_str))
 
         item = Item(
-            id=f'{STAC_EVENT_ID_PREFIX}{properties["ID"]}',
+            id=f"{STAC_EVENT_ID_PREFIX}{properties['ID']}",
             geometry=geometry,
             bbox=bbox,
             datetime=startdate,
@@ -181,7 +197,7 @@ class GIDDTransformer(MontyDataTransformer):
 
             impact_item.datetime = startdate
             impact_item.properties["title"] = (
-                f"{properties.get('Figure category')}-{properties.get('Figure unit')} " f"for {properties.get('Event name')}"
+                f"{properties.get('Figure category')}-{properties.get('Figure unit')} for {properties.get('Event name')}"
             )
             impact_item.properties.update(
                 {
