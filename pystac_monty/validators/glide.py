@@ -38,7 +38,33 @@ class GlideSetValidator(BaseModelWithExtra):
 
     @field_validator("event")
     def validate_enum(cls, value):
-        if not value in ["EQ", "TC", "FL", "DR", "WF", "VO", "TS", "CW", "EP", "EC", "ET", "FR", "FF", "HT", "IN","LS","MS","ST","SL","AV","SS","AC","TO","VW","WV"]:
+        if value not in [
+            "EQ",
+            "TC",
+            "FL",
+            "DR",
+            "WF",
+            "VO",
+            "TS",
+            "CW",
+            "EP",
+            "EC",
+            "ET",
+            "FR",
+            "FF",
+            "HT",
+            "IN",
+            "LS",
+            "MS",
+            "ST",
+            "SL",
+            "AV",
+            "SS",
+            "AC",
+            "TO",
+            "VW",
+            "WV",
+        ]:
             raise ValueError(f"Event type {value} is not valid.")
         return value
 

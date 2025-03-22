@@ -2,6 +2,9 @@
 
 import csv
 import io
+import itertools
+import logging
+import typing
 from typing import Dict, List, Union
 
 import pytz
@@ -12,6 +15,10 @@ from pystac_monty.extension import HazardDetail, MontyEstimateType, MontyExtensi
 from pystac_monty.geocoding import MontyGeoCoder
 from pystac_monty.hazard_profiles import MontyHazardProfiles
 from pystac_monty.sources.common import MontyDataSource, MontyDataTransformer
+from pystac_monty.validators.ibtracs import IBTracsdataValidator
+
+logger = logging.getLogger(__name__)
+
 
 STAC_EVENT_ID_PREFIX = "ibtracs-event-"
 STAC_HAZARD_ID_PREFIX = "ibtracs-hazard-"
@@ -48,15 +55,14 @@ class IBTrACSDataSource(MontyDataSource):
             csv_data.append(row)
         return csv_data
 
-    def get_storm_ids(self) -> List[str]:
-        """Get a list of unique storm IDs from the data."""
-        data = self.get_data()
-        return list(set(row.get("SID", "").strip() for row in data if row.get("SID")))
+    def parse_row_data(self, rows: list[dict]):
+        validated_data = []
+        for row in rows:
+            obj = IBTracsdataValidator.validate_event(row)
+            if obj:
+                validated_data.append(obj)
 
-    def get_storm_data(self, storm_id: str) -> List[Dict[str, str]]:
-        """Get all data rows for a specific storm ID."""
-        data = self.get_data()
-        return [row for row in data if row.get("SID", "").strip() == storm_id]
+        return validated_data
 
 
 class IBTrACSTransformer(MontyDataTransformer):
@@ -89,37 +95,41 @@ class IBTrACSTransformer(MontyDataTransformer):
         self.data_source = data_source
         self.geocoder = geocoder
 
-    def make_items(self) -> List[Item]:
-        """Create STAC Items from IBTrACS data.
+    # FIXME: This is deprecated
+    def make_items(self):
+        return list(self.get_stac_items())
 
-        Returns:
-            List of STAC Items (events and hazards)
-        """
-        items = []
+    def get_stac_items(self) -> typing.Generator[Item, None, None]:
+        csv_data = self.data_source._parse_csv()
+        csv_data.sort(key=lambda x: x.get("SID"))
 
-        storm_ids = self.data_source.get_storm_ids()
+        grouped_rows = {}
+        for sid, group in itertools.groupby(csv_data, key=lambda x: x.get("SID")):
+            grouped_rows[sid] = list(group)
 
-        # Create event items (one per storm)
-        for storm_id in storm_ids:
+        # # TODO: Use sax xml parser for memory efficient usage
+        failed_items_count = 0
+        total_items_count = 0
+
+        for storm_id, storm_data in grouped_rows.items():
+            total_items_count += 1
             try:
-                event_hazard_items = []
-                event_item = self.make_source_event_items(storm_id)
-                event_hazard_items.append(event_item)
-                hazard_items = self.make_hazard_items(event_item)
-                event_hazard_items.extend(hazard_items)
-
-                yield event_hazard_items
+                storm_data = self.data_source.parse_row_data(storm_data)
+                if event_item := self.make_source_event_items(storm_id, storm_data):
+                    yield event_item
+                    yield from self.make_hazard_items(event_item, storm_data)
             except Exception:
-                logger.info("Transformation failed", exc_info=True)
+                failed_items_count += 1
+                logger.error("Failed to process desinventar", exc_info=True)
 
-    def make_source_event_items(self, storm_id) -> List[Item]:
+        print(failed_items_count)
+
+    def make_source_event_items(self, storm_id, storm_data) -> List[Item]:
         """Create source event items from IBTrACS data.
 
         Returns:
             List of event STAC Items
         """
-        storm_data = self.data_source.get_storm_data(storm_id)
-
         if not storm_data:
             return
 
@@ -312,7 +322,7 @@ class IBTrACSTransformer(MontyDataTransformer):
 
         return item
 
-    def make_hazard_items(self, event_item: Item) -> Item:
+    def make_hazard_items(self, event_item: Item, storm_data) -> list[Item] | None:
         """Create hazard items from IBTrACS data.
 
         Args:
@@ -324,7 +334,6 @@ class IBTrACSTransformer(MontyDataTransformer):
         hazard_items = []
 
         storm_id = event_item.id
-        storm_data = self.data_source.get_storm_data(storm_id)
 
         if not storm_data:
             return
@@ -384,6 +393,8 @@ class IBTrACSTransformer(MontyDataTransformer):
                     wind = row.WMO_WIND if row.WMO_WIND else 0
                 except (ValueError, TypeError):
                     wind = 0
+
+            wind = 0 if wind.strip() == "" else wind
 
             try:
                 pressure = float(row.USA_PRES if row.USA_PRES else 0)
@@ -584,14 +595,13 @@ class IBTrACSTransformer(MontyDataTransformer):
             if isinstance(track_geometry, LineString):
                 for point in track_geometry.coords:
                     lon, lat = point
-                    # country_code = self.geocoder.get_iso3_from_geometry(Point(lon, lat))
-                    country_code = "UNK"
+                    country_code = self.geocoder.get_iso3_from_geometry(Point(lon, lat))
                     if country_code:
                         countries.append(country_code)
             # For Point, check the single point
             elif isinstance(track_geometry, Point):
                 lon, lat = track_geometry.x, track_geometry.y
-                # country_code = self.geocoder.get_iso3_from_geometry(track_geometry)
+                country_code = self.geocoder.get_iso3_from_geometry(track_geometry)
                 country_code = "UNK"
                 if country_code:
                     countries.append(country_code)

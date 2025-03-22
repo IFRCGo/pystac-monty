@@ -307,7 +307,7 @@ class IBTrACSTest(unittest.TestCase):
         data_source = IBTrACSDataSource("test_url", SAMPLE_IBTRACS_CSV)
         transformer = IBTrACSTransformer(data_source, geocoder)
 
-        #items = list(transformer.make_items())
+        # items = list(transformer.make_items())
 
         # Find the event item
         event_items = [item for item in transformer.make_items() if "event" in item.properties.get("roles", [])]
@@ -336,8 +336,6 @@ class IBTrACSTest(unittest.TestCase):
         """Test that hazard items have the correct properties"""
         data_source = IBTrACSDataSource("test_url", SAMPLE_IBTRACS_CSV)
         transformer = IBTrACSTransformer(data_source, geocoder)
-
-        items = transformer.make_items()
 
         # Find hazard items
         hazard_items = [item for item in transformer.make_items() if "hazard" in item.properties.get("roles", [])]
