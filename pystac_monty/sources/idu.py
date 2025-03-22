@@ -3,7 +3,6 @@ import json
 import logging
 import re
 from dataclasses import dataclass
-from enum import Enum
 from typing import Any, Dict, List
 
 import pytz
@@ -20,6 +19,7 @@ from pystac_monty.extension import (
 )
 from pystac_monty.hazard_profiles import MontyHazardProfiles
 from pystac_monty.sources.common import MontyDataSource, MontyDataTransformer
+from pystac_monty.sources.utils import IDMCUtils
 
 logger = logging.getLogger(__name__)
 
@@ -27,30 +27,6 @@ logger = logging.getLogger(__name__)
 
 STAC_EVENT_ID_PREFIX = "idmc-idu-event-"
 STAC_IMPACT_ID_PREFIX = "idmc-idu-impact-"
-
-
-class DisplacementType(Enum):
-    """Displacement Types"""
-
-    DISASTER_TYPE = "Disaster"
-    CONFLICT_TYPE = "Conflict"
-    OTHER_TYPE = "Other"
-
-
-class ImpactMappings:
-    """All Impact Mappings"""
-
-    # TODO: For other types e.g. FORCED_TO_FLEE, IN_RELIEF_CAMP, DESTROYED_HOUSING,
-    # PARTIALLY_DESTROYED_HOUSING, UNINHABITABLE_HOUSING, RETURNS, MULTIPLE_OR_OTHER
-    # Handle them later.
-    mappings = {
-        "evacuated": (MontyImpactExposureCategory.ALL_PEOPLE, MontyImpactType.EVACUATED),
-        "displaced": (MontyImpactExposureCategory.ALL_PEOPLE, MontyImpactType.INTERNALLY_DISPLACED_PERSONS),
-        "relocated": (MontyImpactExposureCategory.ALL_PEOPLE, MontyImpactType.RELOCATED),
-        "sheltered": (MontyImpactExposureCategory.ALL_PEOPLE, MontyImpactType.EMERGENCY_SHELTERED),
-        "homeless": (MontyImpactExposureCategory.ALL_PEOPLE, MontyImpactType.HOMELESS),
-        "affected": (MontyImpactExposureCategory.ALL_PEOPLE, MontyImpactType.TOTAL_AFFECTED),
-    }
 
 
 @dataclass
@@ -120,7 +96,7 @@ class IDUTransformer(MontyDataTransformer):
         enddate = pytz.utc.localize(datetime.datetime.fromisoformat(enddate_str))
 
         item = Item(
-            id=f'{STAC_EVENT_ID_PREFIX}{data["event_id"]}',
+            id=f"{STAC_EVENT_ID_PREFIX}{data['event_id']}",
             geometry=geometry,
             bbox=bbox,
             datetime=startdate,
@@ -146,49 +122,14 @@ class IDUTransformer(MontyDataTransformer):
         monty = MontyExtension.ext(item)
         monty.episode_number = episode_number
         monty.country_codes = [data["iso3"]]
-        monty.hazard_codes = self.map_idu_to_hazard_codes(hazard=hazard_tuple)
+        monty.hazard_codes = IDMCUtils.hazard_codes_mapping(hazard=hazard_tuple)
         monty.compute_and_set_correlation_id(hazard_profiles=self.hazard_profiles)
 
         return item
 
-    def map_idu_to_hazard_codes(self, hazard: tuple) -> list[str]:
-        """Map IDU hazards to UNDRR-ISC 2020 Hazard Codes"""
-        hazard = tuple((item.lower() if item else item for item in hazard))
-        hazard_mapping = {
-            ("geophysical", "geophysical", "earthquake", "earthquake"): ["nat-geo-ear-gro"],
-            ("geophysical", "geophysical", "earthquake", "tsunami"): ["nat-geo-ear-tsu"],
-            ("geophysical", "geophysical", "mass movement", "dry mass movement"): ["nat-geo-mmd-lan"],
-            ("geophysical", "geophysical", "mass movement", "sinkhole"): ["nat-geo-mmd-sub"],
-            ("geophysical", "geophysical", "volcanic activity", "volcanic activity"): ["nat-geo-vol-vol"],
-            ("mixed disasters", "mixed disasters", "mixed disasters", "mixed disasters"): ["mix-mix-mix-mix"],
-            ("weather related", "climatological", "desertification", "desertification"): ["EN0006", "nat-geo-env-des"],
-            ("weather related", "climatological", "drought", "drought"): ["nat-cli-dro-dro"],
-            ("weather related", "climatological", "erosion", "erosion"): ["EN0019", "nat-geo-env-soi"],
-            ("weather related", "climatological", "salinisation", "salinization"): ["EN0007", "nat-geo-env-slr"],
-            ("weather related", "climatological", "sea level rise", "sea level rise"): ["EN0023", "nat-geo-env-slr"],
-            ("weather related", "climatological", "wildfire", "wildfire"): ["nat-cli-wil-wil"],
-            ("weather related", "hydrological", "flood", "dam release flood"): ["tec-mis-col-col"],
-            ("weather related", "hydrological", "flood", "flood"): ["nat-hyd-flo-flo"],
-            ("weather related", "hydrological", "mass movement", "avalanche"): ["nat-hyd-mmw-ava"],
-            ("weather related", "hydrological", "mass movement", "landslide/wet mass movement"): ["nat-hyd-mmw-lan"],
-            ("weather related", "hydrological", "wave action", "rogue wave"): ["nat-hyd-wav-rog"],
-            ("weather related", "meteorological", "extreme temperature", "cold wave"): ["nat-met-ext-col"],
-            ("weather related", "meteorological", "extreme temperature", "heat wave"): ["nat-met-ext-hea"],
-            ("weather related", "meteorological", "storm", "hailstorm"): ["nat-met-sto-hai"],
-            ("weather related", "meteorological", "storm", "sand/dust storm"): ["nat-met-sto-san"],
-            ("weather related", "meteorological", "storm", "storm surge"): ["nat-met-sto-sur"],
-            ("weather related", "meteorological", "storm", "storm"): ["nat-met-sto-sto"],
-            ("weather related", "meteorological", "storm", "tornado"): ["nat-met-sto-tor"],
-            ("weather related", "meteorological", "storm", "typhoon/hurricane/cyclone"): ["nat-met-sto-tro"],
-            ("weather related", "meteorological", "storm", "winter storm/blizzard"): ["nat-met-sto-bli"],
-        }
-        if hazard not in hazard_mapping:
-            raise KeyError(f"Hazard {hazard} not found.")
-        return hazard_mapping.get(hazard)
-
     def _get_impact_type_from_desc(self, description: str):
         """Get impact type from description using regex"""
-        keywords = list(ImpactMappings.mappings.keys())
+        keywords = list(IDMCUtils.mappings.keys())
         # Get the first match
         match = re.findall(r"\((.*?)\)", description)
         # Use the first item only
@@ -228,15 +169,11 @@ class IDUTransformer(MontyDataTransformer):
             items.append(impact_item)
         return items
 
-    def _get_impact_type(self, impact_type: str):
-        """Get the impact related details"""
-        return ImpactMappings.mappings.get(
-            impact_type, (MontyImpactExposureCategory.ALL_PEOPLE, MontyImpactType.INTERNALLY_DISPLACED_PERSONS)
-        )
-
     def get_impact_details(self, idu_src_item: dict, impact_type: str):
         """Returns the impact details related to displacement"""
-        category, category_type = self._get_impact_type(impact_type=impact_type)
+        category, category_type = IDMCUtils.mappings.get(
+            impact_type, (MontyImpactExposureCategory.ALL_PEOPLE, MontyImpactType.INTERNALLY_DISPLACED_PERSONS)
+        )
         return ImpactDetail(
             category=category,
             type=category_type,
@@ -256,11 +193,11 @@ class IDUTransformer(MontyDataTransformer):
             return []
 
         for item in idu_data:
-            if item["displacement_type"] not in DisplacementType._value2member_map_:
+            if item["displacement_type"] not in IDMCUtils.DisplacementType._value2member_map_:
                 logging.error("Unknown displacement type: {item['displacement_type']} found. Ignore the datapoint.")
                 continue
             # Get the Disaster type data only
-            if DisplacementType(item["displacement_type"]) == DisplacementType.DISASTER_TYPE:
+            if IDMCUtils.DisplacementType(item["displacement_type"]) == IDMCUtils.DisplacementType.DISASTER_TYPE:
                 missing_fields = [field for field in required_fields if field not in item]
                 if missing_fields:
                     raise ValueError(f"Missing required fields {missing_fields}.")
