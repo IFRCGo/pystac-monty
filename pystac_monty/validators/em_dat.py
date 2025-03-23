@@ -1,7 +1,8 @@
 import logging
+import math
 from typing import Optional
 
-from pydantic import BaseModel, ConfigDict, field_validator
+from pydantic import BaseModel, ConfigDict, Field, field_validator
 
 logger = logging.getLogger(__name__)
 logging.basicConfig(level=logging.INFO)
@@ -43,7 +44,7 @@ class EmdatDataValidator(BaseModelWithExtra):
     end_year: int
     end_month: int
     end_day: int
-    total_deaths: int
+    total_deaths: Optional[int] = None
     no_injured: Optional[int] = None
     no_affected: Optional[int] = None
     no_homeless: Optional[int] = None
@@ -56,12 +57,12 @@ class EmdatDataValidator(BaseModelWithExtra):
     total_dam_adj: Optional[float] = None
     cpi: Optional[float] = None
     admin_units: Optional[str] = None
-    entry_date: str
-    last_update: str
+    entry_date: Optional[str]
+    last_update: Optional[str]
 
     @field_validator("total_deaths")
     def validate_total_deaths(cls, value):
-        if value < 0:
+        if value and value < 0:
             raise ValueError("Total deaths cannot be negative.")
         return value
 
@@ -75,3 +76,18 @@ class EmdatDataValidator(BaseModelWithExtra):
             return False
         # If all field validators return True, we consider it valid
         return True
+
+    @field_validator(
+        "no_injured",
+        "no_affected",
+        "no_homeless",
+        "total_deaths",
+        "total_affected",
+        "total_dam",
+        "location",
+        mode="before"
+    )
+    def replace_nan_with_none(cls, value):
+        if value is None or (isinstance(value, float) and math.isnan(value)):
+            return None  # Or use 0 if you prefer
+        return value

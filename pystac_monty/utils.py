@@ -22,7 +22,7 @@ def rename_columns(df):
             "end_month": "End Month",
             "end_day": "End Day",
             "magnitude": "Magnitude",
-            "magnitude_scale": "Magnitude Sacle",
+            "magnitude_scale": "Magnitude Scale",
             "name": "Event Name",
             "type": "Disaster Type",
             "subtype": "Disaster Subtype",

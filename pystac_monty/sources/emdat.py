@@ -1,3 +1,5 @@
+import typing
+import logging
 from dataclasses import dataclass
 from datetime import datetime
 from typing import List, Optional, Union
@@ -21,6 +23,8 @@ from pystac_monty.sources.common import MontyDataSource, MontyDataTransformer
 from pystac_monty.utils import rename_columns
 from pystac_monty.validators.em_dat import EmdatDataValidator
 
+logger = logging.getLogger(__name__)
+
 STAC_EVENT_ID_PREFIX = "emdat-event-"
 STAC_HAZARD_ID_PREFIX = "emdat-hazard-"
 STAC_IMPACT_ID_PREFIX = "emdat-impact-"
@@ -41,10 +45,8 @@ class EMDATDataSource(MontyDataSource):
             self.df = data
         elif isinstance(data, dict):
             # If data is a dict, assume it's Json content
-            # data = data["data"]["public_emdat"]["data"]
             data = data["data"]["public_emdat"]["data"]
             df = pd.DataFrame(data)
-            self.df = rename_columns(df)
         else:
             raise ValueError("Data must be either Excel content (str) or pandas DataFrame or Json")
 
@@ -61,43 +63,41 @@ class EMDATTransformer(MontyDataTransformer[EMDATDataSource]):
     source_name = 'emdat'
 
     def make_items(self) -> list[Item]:
-        """Create all STAC items from EM-DAT data"""
-        items = []
+        return list(self.get_stac_items())
 
-        # Create event items
-        event_items = self.make_source_event_items()
-        items.extend(event_items)
+    def get_stac_items(self) -> typing.Generator[Item, None, None]:
 
-        # Create hazard items
-        hazard_items = self.make_hazard_event_items()
-        items.extend(hazard_items)
+        data = self.data_source.get_data()
 
-        # Create impact items
-        impact_items = self.make_impact_items()
-        items.extend(impact_items)
+        failed_items_count = 0
+        total_items_count = 0
 
-        return items
-
-    def make_source_event_items(self) -> List[Item]:
-        """Create source event items from EM-DAT data"""
-        event_items = []
-        df = self.data_source.get_data()
-
-        for _, row in df.iterrows():
+        for _, row in data.iterrows():
+            total_items_count += 1
+            row_dict = row.to_dict()
             try:
-                item = self._create_event_item_from_row(row)
-                if item:
-                    event_items.append(item)
-            except Exception as e:
-                print(f"Error creating event item for DisNo {row.get('DisNo.', 'unknown')}: {str(e)}")
-                continue
+                def parse_row_data(obj: dict):
+                    obj = EmdatDataValidator(**obj)
+                    return obj
 
-        return event_items
+                data = parse_row_data(row_dict)
+                if event_item := self.make_source_event_item(data):
+                    yield event_item
+                    yield self.make_hazard_event_item(event_item)
+                    yield from self.make_impact_items(data, event_item)
+                else:
+                    failed_items_count += 1
+            except Exception:
+                failed_items_count += 1
+                logger.error("Failed to process emdat", exc_info=True)
 
-    def _create_event_item_from_row(self, row: pd.Series) -> Optional[Item]:
+        print(failed_items_count)
+
+    def make_source_event_item(self, row: EmdatDataValidator) -> Optional[Item]:
         """Create a single event item from a DataFrame row"""
+
         # Skip if required fields are missing
-        if pd.isna(row.get("DisNo.")):
+        if pd.isna(row.disno):
             return None
 
         # Create geometry from lat/lon if available
@@ -106,21 +106,21 @@ class EMDATTransformer(MontyDataTransformer[EMDATDataSource]):
         bbox = None
 
         # 1. Try admin units first if geocoder is available
-        if self.geocoder and np.any(pd.notna(row.get("Admin Units"))):
-            geom_data = self.geocoder.get_geometry_from_admin_units(row.get("Admin Units"))
+        if self.geocoder and np.any(pd.notna(row.admin_units)):
+            geom_data = self.geocoder.get_geometry_from_admin_units(row.admin_units)
             if geom_data:
                 geometry = geom_data["geometry"]
                 bbox = geom_data["bbox"]
 
         # 2. Fall back to lat/lon if available
-        if geometry is None and not pd.isna(row.get("Latitude")) and not pd.isna(row.get("Longitude")):
-            point = Point(float(row["Longitude"]), float(row["Latitude"]))
+        if geometry is None and not pd.isna(row.latitude) and not pd.isna(row.longitude):
+            point = Point(float(row.longitude), float(row.latitude))
             geometry = mapping(point)
-            bbox = [float(row["Longitude"]), float(row["Latitude"]), float(row["Longitude"]), float(row["Latitude"])]
+            bbox = [float(row.longitude), float(row.latitude), float(row.longitude), float(row.latitude)]
 
         # 3. Finally, try country geometry if geocoder is available
-        if geometry is None and self.geocoder and not pd.isna(row.get("Country")):
-            geom_data = self.geocoder.get_geometry_by_country_name(row["Country"])
+        if geometry is None and self.geocoder and not pd.isna(row.country):
+            geom_data = self.geocoder.get_geometry_by_country_name(row.country)
             if geom_data:
                 geometry = geom_data["geometry"]
                 bbox = geom_data["bbox"]
@@ -130,7 +130,7 @@ class EMDATTransformer(MontyDataTransformer[EMDATDataSource]):
 
         # Create item
         item = Item(
-            id=f"{STAC_EVENT_ID_PREFIX}{row['DisNo.']}",
+            id=f"{STAC_EVENT_ID_PREFIX}{row.disno}",
             geometry=geometry,
             bbox=bbox,
             datetime=start_date,
@@ -146,8 +146,9 @@ class EMDATTransformer(MontyDataTransformer[EMDATDataSource]):
         MontyExtension.add_to(item)
         monty = MontyExtension.ext(item)
         monty.episode_number = 1  # EM-DAT doesn't have episodes
-        monty.hazard_codes = [row.get("Classification Key", "")]
-        monty.country_codes = [row["ISO"]] if not pd.isna(row.get("ISO")) else []
+        monty.hazard_codes = [row.classif_key]
+        monty.country_codes = [row.iso] if not pd.isna(row.iso) else []
+
         monty.compute_and_set_correlation_id()
 
         # Set collection and roles
@@ -155,23 +156,11 @@ class EMDATTransformer(MontyDataTransformer[EMDATDataSource]):
         item.properties["roles"] = ["source", "event"]
 
         # Add source link
-        item.add_link(Link("via", f"https://public.emdat.be/data/{row['DisNo.']}", "text/html", "EM-DAT Event Data"))
+        item.add_link(Link("via", f"https://public.emdat.be/data/{row.disno}", "text/html", "EM-DAT Event Data"))
 
         return item
 
-    def make_hazard_event_items(self) -> List[Item]:
-        """Create hazard items based on event items"""
-        hazard_items = []
-        event_items = self.make_source_event_items()
-
-        for event_item in event_items:
-            hazard_item = self._create_hazard_item_from_event(event_item)
-            if hazard_item:
-                hazard_items.append(hazard_item)
-
-        return hazard_items
-
-    def _create_hazard_item_from_event(self, event_item: Item) -> Optional[Item]:
+    def make_hazard_event_item(self, event_item: Item) -> Optional[Item]:
         """Create a hazard item from an event item"""
         hazard_item = event_item.clone()
         hazard_item.id = hazard_item.id.replace(STAC_EVENT_ID_PREFIX, STAC_HAZARD_ID_PREFIX)
@@ -186,49 +175,40 @@ class EMDATTransformer(MontyDataTransformer[EMDATDataSource]):
 
         return hazard_item
 
-    def make_impact_items(self) -> List[Item]:
-        """Create impact items from EM-DAT data"""
-        impact_items = []
-        df = self.data_source.get_data()
-
-        for _, row in df.iterrows():
-            impact_items.extend(self._create_impact_items_from_row(row))
-
-        return impact_items
-
-    def _create_impact_items_from_row(self, row: pd.Series) -> List[Item]:
+    def make_impact_items(self, row: EmdatDataValidator, event_item: Item) -> List[Item]:
         """Create impact items from a single row"""
         impact_items = []
         impact_fields = {
-            "Total Deaths": (MontyImpactExposureCategory.ALL_PEOPLE, MontyImpactType.DEATH),
-            "No Injured": (MontyImpactExposureCategory.ALL_PEOPLE, MontyImpactType.INJURED),
-            "No Affected": (MontyImpactExposureCategory.ALL_PEOPLE, MontyImpactType.TOTAL_AFFECTED),
-            "No Homeless": (MontyImpactExposureCategory.ALL_PEOPLE, MontyImpactType.TOTAL_DISPLACED_PERSONS),
-            "Total Affected": (MontyImpactExposureCategory.ALL_PEOPLE, MontyImpactType.TOTAL_AFFECTED),
-            "Total Damages ('000 US$)": (MontyImpactExposureCategory.TOTAL_AFFECTED, MontyImpactType.LOSS_COST),
+            "total_deaths": (MontyImpactExposureCategory.ALL_PEOPLE, MontyImpactType.DEATH),
+            "no_injured": (MontyImpactExposureCategory.ALL_PEOPLE, MontyImpactType.INJURED),
+            "no_affected": (MontyImpactExposureCategory.ALL_PEOPLE, MontyImpactType.TOTAL_AFFECTED),
+            "no_homeless": (MontyImpactExposureCategory.ALL_PEOPLE, MontyImpactType.TOTAL_DISPLACED_PERSONS),
+            "total_affected": (MontyImpactExposureCategory.ALL_PEOPLE, MontyImpactType.TOTAL_AFFECTED),
+            "total_dam": (MontyImpactExposureCategory.TOTAL_AFFECTED, MontyImpactType.LOSS_COST),
         }
 
         for field, (category, impact_type) in impact_fields.items():
-            if not pd.isna(row.get(field)) and float(row[field]) > 0:
-                impact_item = self._create_impact_item(row, field, category, impact_type)
+            value = getattr(row, field, None)
+            if not pd.isna(value) and float(value) > 0:
+                impact_item = self._create_impact_item(row, field, category, impact_type, event_item)
                 if impact_item:
                     impact_items.append(impact_item)
 
         return impact_items
 
     def _create_impact_item(
-        self, row: pd.Series, field: str, category: MontyImpactExposureCategory, impact_type: MontyImpactType
+        self, row: pd.Series, field: str, category: MontyImpactExposureCategory, impact_type: MontyImpactType, event_item: Item
     ) -> Optional[Item]:
         """Create a single impact item"""
         try:
-            base_item = self._create_event_item_from_row(row)
+            base_item = event_item
             if not base_item:
                 return None
 
             impact_item = base_item.clone()
             # add in title
             impact_item.properties["title"] = f"{base_item.properties['title']} - {field}"
-            impact_item.id = f"{STAC_IMPACT_ID_PREFIX}{row['DisNo.']}-{field.lower().replace(' ', '-')}"
+            impact_item.id = f"{STAC_IMPACT_ID_PREFIX}{row.disno}-{field.lower().replace(' ', '-')}"
             impact_item.set_collection(self.get_impact_collection())
             impact_item.properties["roles"] = ["source", "impact"]
 
@@ -236,7 +216,7 @@ class EMDATTransformer(MontyDataTransformer[EMDATDataSource]):
             monty.impact_detail = ImpactDetail(
                 category=category,
                 type=impact_type,
-                value=float(row[field]),
+                value=float(getattr(row, field, None)),
                 unit="USD" if "Damages" in field else "count",
                 estimate_type=MontyEstimateType.PRIMARY,
             )
@@ -246,14 +226,14 @@ class EMDATTransformer(MontyDataTransformer[EMDATDataSource]):
             print(f"Error creating impact item for field {field}: {str(e)}")
             return None
 
-    def _create_datetimes(self, row: pd.Series) -> (datetime, datetime):
+    def _create_datetimes(self, row: EmdatDataValidator) -> (datetime, datetime):
         """Create datetime object from EM-DAT date fields"""
-        start_year = int(row["Start Year"]) if not pd.isna(row.get("Start Year")) else None
-        start_month = int(row["Start Month"]) if not pd.isna(row.get("Start Month")) else 1
-        start_day = int(row["Start Day"]) if not pd.isna(row.get("Start Day")) else 1
-        end_year = int(row["End Year"]) if not pd.isna(row.get("End Year")) else None
-        end_month = int(row["End Month"]) if not pd.isna(row.get("End Month")) else 1
-        end_day = int(row["End Day"]) if not pd.isna(row.get("End Day")) else 1
+        start_year = int(row.start_year) if not pd.isna(row.start_year) else None
+        start_month = int(row.start_month) if not pd.isna(row.start_month) else 1
+        start_day = int(row.start_day) if not pd.isna(row.start_day) else 1
+        end_year = int(row.end_year) if not pd.isna(row.end_year) else None
+        end_month = int(row.end_month) if not pd.isna(row.end_month) else 1
+        end_day = int(row.end_day) if not pd.isna(row.end_day) else 1
 
         if start_year:
             start_dt = datetime(start_year, start_month, start_day)
@@ -278,43 +258,43 @@ class EMDATTransformer(MontyDataTransformer[EMDATDataSource]):
     def _get_row_by_disno(self, disno: str) -> Optional[pd.Series]:
         """Get original DataFrame row by DisNo"""
         df = self.data_source.get_data()
-        matching_rows = df[df["DisNo."] == disno]
+        matching_rows = df[df.disno == disno]
         return matching_rows.iloc[0] if not matching_rows.empty else None
 
     def _create_title_from_row(self, row: pd.Series) -> Optional[str]:
         """Create a descriptive title from row data when Event Name is missing"""
-        if not pd.isna(row.get("Event Name")):
-            return str(row["Event Name"])
+        if not pd.isna(row.name):
+            return str(row.name)
 
         components = []
 
         # Add disaster type
-        if not pd.isna(row.get("Disaster Type")):
-            components.append(row["Disaster Type"])
-            if not pd.isna(row.get("Disaster Subtype")) and row["Disaster Type"] != row["Disaster Subtype"]:
-                components.append(f"({row['Disaster Subtype']})")
+        if not pd.isna(row.type):
+            components.append(row.type)
+            if not pd.isna(row.subtype) and row.type != row.subtype:
+                components.append(f"({row.subtype})")
 
         # Add location info
         locations = []
-        if not pd.isna(row.get("Country")):
-            locations.append(row["Country"])
+        if not pd.isna(row.country):
+            locations.append(row.country)
         if locations:
             components.append("in")
             components.append(", ".join(locations))
 
         # Add date
         date_str = None
-        if not pd.isna(row.get("Start Year")):
+        if not pd.isna(row.start_year):
             date_components = []
             # Add month if available
-            if not pd.isna(row.get("Start Month")):
+            if not pd.isna(row.start_year):
                 try:
-                    month_name = datetime(2000, int(row["Start Month"]), 1).strftime("%B")
+                    month_name = datetime(2000, int(row.start_month), 1).strftime("%B")
                     date_components.append(month_name)
                 except ValueError:
                     pass
             # Add year
-            date_components.append(str(int(row["Start Year"])))
+            date_components.append(str(int(row.start_year)))
             if date_components:
                 date_str = " ".join(date_components)
 
@@ -328,34 +308,34 @@ class EMDATTransformer(MontyDataTransformer[EMDATDataSource]):
         components = []
 
         # Add disaster type
-        if not pd.isna(row.get("Disaster Type")):
-            components.append(row["Disaster Type"])
-            if not pd.isna(row.get("Disaster Subtype")) and row["Disaster Type"] != row["Disaster Subtype"]:
-                components.append(f"({row['Disaster Subtype']})")
+        if not pd.isna(row.type):
+            components.append(row.type)
+            if not pd.isna(row.subtype) and row.type != row.subtype:
+                components.append(f"({row.subtype})")
 
         # Add location info
         locations = []
-        if not pd.isna(row.get("Location")):
-            locations.append(row["Location"])
-        if not pd.isna(row.get("Country")):
-            locations.append(row["Country"])
+        if not pd.isna(row.location):
+            locations.append(row.location)
+        if not pd.isna(row.country):
+            locations.append(row.country)
         if locations:
             components.append("in")
             components.append(", ".join(locations))
 
         # Add date
         date_str = None
-        if not pd.isna(row.get("Start Year")):
+        if not pd.isna(row.start_year):
             date_components = []
             # Add month if available
-            if not pd.isna(row.get("Start Month")):
+            if not pd.isna(row.start_month):
                 try:
-                    month_name = datetime(2000, int(row["Start Month"]), 1).strftime("%B")
+                    month_name = datetime(2000, int(row.start_month), 1).strftime("%B")
                     date_components.append(month_name)
                 except ValueError:
                     pass
             # Add year
-            date_components.append(str(int(row["Start Year"])))
+            date_components.append(str(int(row.start_year)))
             if date_components:
                 date_str = " ".join(date_components)
 
