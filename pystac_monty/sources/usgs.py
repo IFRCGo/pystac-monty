@@ -373,7 +373,7 @@ class USGSTransformer(MontyDataTransformer):
         monty.hazard_codes = ["GH0004"]  # Earthquake surface rupture code
 
         # TODO Get country code from event data or geometry
-        country_codes = ["UNK"]  # [self.geocoder.get_iso3_from_geometry(point)]
+        country_codes = [self.geocoder.get_iso3_from_geometry(point)]
         monty.country_codes = country_codes
 
         # Compute correlation ID
@@ -410,13 +410,16 @@ class USGSTransformer(MontyDataTransformer):
             shakemap = {}
         else:
             shakemap = shakemap[0]
+        if isinstance(shakemap, dict):
+            extent = [
+                float(shakemap.get("properties", {}).get("minimum-longitude", 0)),
+                float(shakemap.get("properties", {}).get("minimum-latitude", 0)),
+                float(shakemap.get("properties", {}).get("maximum-longitude", 0)),
+                float(shakemap.get("properties", {}).get("maximum-latitude", 0)),
+            ]
+        else:
+            extent = [0.0, 0.0, 0.0, 0.0]
 
-        extent = [
-            float(shakemap.get("properties", {}).get("minimum-longitude", 0)),
-            float(shakemap.get("properties", {}).get("minimum-latitude", 0)),
-            float(shakemap.get("properties", {}).get("maximum-longitude", 0)),
-            float(shakemap.get("properties", {}).get("maximum-latitude", 0)),
-        ]
         hazard_item.bbox = extent
         # polygon from extent
         hazard_item.geometry = mapping(
