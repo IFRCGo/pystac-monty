@@ -93,9 +93,9 @@ class DataRow(pydantic.BaseModel):
     @property
     def lowest_level(self):
         if self.level2 is not None:
-            return 'level2'
+            return "level2"
         if self.level1 is not None:
-            return 'level1'
+            return "level1"
         if self.level0 is not None:
-            return 'level0'
+            return "level0"
         return None

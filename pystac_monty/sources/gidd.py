@@ -53,7 +53,7 @@ class GIDDTransformer(MontyDataTransformer[GIDDDataSource]):
     """Transforms GIDD event data into STAC Items"""
 
     hazard_profiles = MontyHazardProfiles()
-    source_name = 'idmc-gidd'
+    source_name = "idmc-gidd"
 
     def get_data(self) -> dict:
         """Get the event detail data."""
@@ -165,7 +165,10 @@ class GIDDTransformer(MontyDataTransformer[GIDDDataSource]):
         item.add_asset(
             "source",
             Asset(
-                href=self.data_source.get_source_url(), media_type="application/geo+json", title="GIDD GeoJson Source", roles=["source"]
+                href=self.data_source.get_source_url(),
+                media_type="application/geo+json",
+                title="GIDD GeoJson Source",
+                roles=["source"],
             ),
         )
 

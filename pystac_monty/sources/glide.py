@@ -39,7 +39,7 @@ class GlideTransformer(MontyDataTransformer[GlideDataSource]):
     """
 
     hazard_profiles = MontyHazardProfiles()
-    source_name = 'glide'
+    source_name = "glide"
 
     def make_items(self) -> list[Item]:
         """Create Glide Items"""
