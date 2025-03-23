@@ -222,7 +222,7 @@ class DesinventarDataSource:
 class DesinventarTransformer(MontyDataTransformer[DesinventarDataSource]):
     """Transform DesInventar data to STAC items"""
 
-    source_name = 'desinventar'
+    source_name = "desinventar"
 
     data_source: DesinventarDataSource
     hazard_profiles = MontyHazardProfiles()
@@ -260,10 +260,7 @@ class DesinventarTransformer(MontyDataTransformer[DesinventarDataSource]):
             start_datetime=row.event_start_date,
             # FIXME: calculate end date
             end_datetime=row.event_start_date,
-            properties={
-                "title": row.event_title,
-                "description": row.event_description
-            },
+            properties={"title": row.event_title, "description": row.event_description},
         )
 
         MontyExtension.add_to(item)
@@ -329,11 +326,7 @@ class DesinventarTransformer(MontyDataTransformer[DesinventarDataSource]):
 
         monty = MontyExtension.ext(impact_item)
         monty.impact_detail = ImpactDetail(
-            category=category,
-            type=impact_type,
-            value=value,
-            unit=unit,
-            estimate_type=MontyEstimateType.PRIMARY
+            category=category, type=impact_type, value=value, unit=unit, estimate_type=MontyEstimateType.PRIMARY
         )
 
         return impact_item
@@ -551,7 +544,7 @@ class DesinventarTransformer(MontyDataTransformer[DesinventarDataSource]):
             geo_data[f"level{level}"] = {
                 "level": str(level) if level is not None else None,
                 "property_code": str(property_code) if property_code is not None else None,
-                "shapefile_data": shapefile_data
+                "shapefile_data": shapefile_data,
             }
 
         return geo_data
@@ -597,7 +590,7 @@ class DesinventarTransformer(MontyDataTransformer[DesinventarDataSource]):
                             self.transform_summary.increment_failed_rows()
                 except Exception:
                     self.transform_summary.increment_failed_rows()
-                    logger.error('Failed to process desinventar', exc_info=True)
+                    logger.error("Failed to process desinventar", exc_info=True)
             self.transform_summary.mark_as_complete()
 
     # FIXME: This is deprecated
