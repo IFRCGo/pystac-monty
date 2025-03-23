@@ -1,4 +1,6 @@
 import json
+import logging
+import typing
 import mimetypes
 from datetime import datetime
 from typing import Any, List
@@ -11,6 +13,8 @@ from pystac_monty.hazard_profiles import MontyHazardProfiles
 from pystac_monty.sources.common import MontyDataSource, MontyDataTransformer
 from pystac_monty.validators.glide import GlideSetValidator
 
+logger = logging.getLogger(__name__)
+
 STAC_EVENT_ID_PREFIX = "glide-event-"
 STAC_HAZARD_ID_PREFIX = "glide-hazard-"
 
@@ -18,19 +22,7 @@ STAC_HAZARD_ID_PREFIX = "glide-hazard-"
 class GlideDataSource(MontyDataSource):
     def __init__(self, source_url: str, data: Any):
         super().__init__(source_url, data)
-        self.data = self.source_data_validator(json.loads(data))
-
-    def source_data_validator(self, data: dict[dict]):
-        """Validate the source data and collect only the success items"""
-        failed_items = []
-        success_items = []
-        for item in data["glideset"]:
-            is_valid = GlideSetValidator.validate_event(item)
-            if is_valid:
-                success_items.append(item)
-            else:
-                failed_items.append(item)
-        return {"glideset": success_items}
+        self.data = json.loads(data)
 
 
 class GlideTransformer(MontyDataTransformer[GlideDataSource]):
@@ -42,16 +34,33 @@ class GlideTransformer(MontyDataTransformer[GlideDataSource]):
     source_name = 'glide'
 
     def make_items(self) -> list[Item]:
-        """Create Glide Items"""
-        items = []
+        return list(self.get_stac_items())
 
-        glide_events = self.make_source_event_items()
-        items.extend(glide_events)
+    def get_stac_items(self) -> typing.Generator[Item, None, None]:
 
-        glide_hazards = self.make_hazard_event_items()
-        items.extend(glide_hazards)
+        glideset: list[dict] = self.data_source.get_data()["glideset"]
 
-        return items
+        failed_items_count = 0
+        total_items_count = 0
+
+        for row in glideset:
+            total_items_count += 1
+            try:
+                def parse_row_data(row: dict):
+                    obj = GlideSetValidator(**row)
+                    return obj
+
+                data = parse_row_data(row)
+                if event_item := self.make_source_event_items(data):
+                    yield event_item
+                    yield self.make_hazard_event_items(event_item)
+                else:
+                    failed_items_count += 1
+            except Exception:
+                failed_items_count += 1
+                logger.error("Failed to process glide", exc_info=True)
+
+        print(failed_items_count)
 
     def get_hazard_codes(self, hazard: str) -> List[str]:
         hazard_mapping = {
@@ -85,84 +94,75 @@ class GlideTransformer(MontyDataTransformer[GlideDataSource]):
             raise KeyError(f"Hazard {hazard} not found.")
         return hazard_mapping.get(hazard)
 
-    def make_source_event_items(self) -> List[Item]:
+    def make_source_event_items(self, data: dict) -> Item:
         """Create source event items"""
-        event_items = []
-        # validate data for glide transformation
-        glide_events = self.check_and_get_glide_events()
+        glide_id = STAC_EVENT_ID_PREFIX + data.event + "-" + data.number + "-" + data.geocode
+        latitude = float(data.latitude)
+        longitude = float(data.longitude)
+        event_date = {
+            "year": abs(int(data.year)),
+            "month": abs(int(data.month)),
+            "day": abs(int(data.day)),
+        }  # abs is used to ignore negative sign
 
-        if not glide_events == []:
-            for data in glide_events:
-                glide_id = STAC_EVENT_ID_PREFIX + data.get("event") + "-" + data.get("number") + "-" + data.get("geocode")
-                latitude = float(data.get("latitude"))
-                longitude = float(data.get("longitude"))
-                event_date = {
-                    "year": abs(int(data.get("year"))),
-                    "month": abs(int(data.get("month"))),
-                    "day": abs(int(data.get("day"))),
-                }  # abs is used to ignore negative sign
+        point = Point(longitude, latitude)
+        geometry = mapping(point)
+        bbox = [longitude, latitude, longitude, latitude]
 
-                point = Point(longitude, latitude)
-                geometry = mapping(point)
-                bbox = [longitude, latitude, longitude, latitude]
+        item = Item(
+            id=glide_id,
+            geometry=geometry,
+            bbox=bbox,
+            datetime=self.make_date(event_date),
+            properties={
+                # "title": humaran readable from event, location, year, month, day,
+                "title": f"{data.event} in {data.location} on {data.year}, {data.month}, {data.day}",
+                "description": data.comments,
+                "magnitude": data.magnitude,
+                "source": data.source,
+                "docid": data.docid,
+                "status": data.status,
+            },
+        )
 
-                item = Item(
-                    id=glide_id,
-                    geometry=geometry,
-                    bbox=bbox,
-                    datetime=self.make_date(event_date),
-                    properties={
-                        "title": data.get("title", ""),
-                        "description": data.get("comments", ""),
-                        "magnitude": data.get("magnitude", ""),
-                        "source": data.get("source", ""),
-                        "docid": data.get("docid", ""),
-                        "status": data.get("status", ""),
-                    },
-                )
+        item.set_collection(self.get_event_collection())
+        item.properties["roles"] = ["source", "event"]
 
-                item.set_collection(self.get_event_collection())
-                item.properties["roles"] = ["source", "event"]
+        MontyExtension.add_to(item)
+        monty = MontyExtension.ext(item)
+        # Since there is no episode_number in glide data,
+        # we set it to 1 as it is required to create the correlation id
+        # in the method monty.compute_and_set_correlation_id(..)
+        monty.episode_number = 1
+        monty.hazard_codes = self.get_hazard_codes(data.event)
+        monty.country_codes = [data.geocode]
 
-                MontyExtension.add_to(item)
-                monty = MontyExtension.ext(item)
-                # Since there is no episode_number in glide data,
-                # we set it to 1 as it is required to create the correlation id
-                # in the method monty.compute_and_set_correlation_id(..)
-                monty.episode_number = 1
-                monty.hazard_codes = self.get_hazard_codes(data.get("event"))
-                monty.country_codes = [data.get("geocode")]
+        monty.compute_and_set_correlation_id(hazard_profiles=self.hazard_profiles)
 
-                monty.compute_and_set_correlation_id(hazard_profiles=self.hazard_profiles)
+        item.add_link(Link("via", self.data_source.get_source_url(), "application/json", "Glide Event Data"))
+        item.add_asset(
+            "report",
+            Asset(
+                href=f"https://www.glidenumber.net/glide/public/search/details.jsp?glide={data.docid}",
+                media_type=mimetypes.types_map[".json"],
+                title="Report",
+            ),
+        )
 
-                item.add_link(Link("via", self.data_source.get_source_url(), "application/json", "Glide Event Data"))
-                item.add_asset(
-                    "report",
-                    Asset(
-                        href=f"https://www.glidenumber.net/glide/public/search/details.jsp?glide={data.get('docid')}",
-                        media_type=mimetypes.types_map[".json"],
-                        title="Report",
-                    ),
-                )
+        # event_items.append(item)
+        return item
 
-                event_items.append(item)
-        return event_items
-
-    def make_hazard_event_items(self) -> List[Item]:
+    def make_hazard_event_items(self, event_item: Item) -> Item:
         """Create hazard event items"""
-        hazard_items = []
-        items = self.make_source_event_items()
+        item = event_item.clone()
+        item.id = item.id.replace(STAC_EVENT_ID_PREFIX, STAC_HAZARD_ID_PREFIX)
+        item.set_collection(self.get_hazard_collection())
+        item.properties["roles"] = ["source", "hazard"]
 
-        for item in items:
-            item.id = item.id.replace(STAC_EVENT_ID_PREFIX, STAC_HAZARD_ID_PREFIX)
-            item.set_collection(self.get_hazard_collection())
-            item.properties["roles"] = ["source", "hazard"]
+        monty = MontyExtension.ext(item)
+        monty.hazard_detail = self.get_hazard_detail(item)
 
-            monty = MontyExtension.ext(item)
-            monty.hazard_detail = self.get_hazard_detail(item)
-            hazard_items.append(item)
-
-        return hazard_items
+        return item
 
     def get_hazard_detail(self, item: Item) -> HazardDetail:
         """Get hazard detail"""
