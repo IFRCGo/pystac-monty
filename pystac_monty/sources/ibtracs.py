@@ -2,7 +2,9 @@
 
 import csv
 import io
-from datetime import datetime
+import itertools
+import logging
+import typing
 from typing import Dict, List, Union
 
 import pytz
@@ -12,6 +14,10 @@ from shapely.geometry import LineString, Point, mapping
 from pystac_monty.extension import HazardDetail, MontyEstimateType, MontyExtension
 from pystac_monty.hazard_profiles import MontyHazardProfiles
 from pystac_monty.sources.common import MontyDataSource, MontyDataTransformer
+from pystac_monty.validators.ibtracs import IBTracsdataValidator
+
+logger = logging.getLogger(__name__)
+
 
 STAC_EVENT_ID_PREFIX = "ibtracs-event-"
 STAC_HAZARD_ID_PREFIX = "ibtracs-hazard-"
@@ -42,21 +48,8 @@ class IBTrACSDataSource(MontyDataSource):
         csv_data = []
         csv_reader = csv.DictReader(io.StringIO(self.data))
         for row in csv_reader:
-            # Skip header row or rows with empty SID
-            if not row.get("SID") or row.get("SID") == " ":
-                continue
             csv_data.append(row)
         return csv_data
-
-    def get_storm_ids(self) -> List[str]:
-        """Get a list of unique storm IDs from the data."""
-        data = self.get_data()
-        return list(set(row.get("SID", "").strip() for row in data if row.get("SID")))
-
-    def get_storm_data(self, storm_id: str) -> List[Dict[str, str]]:
-        """Get all data rows for a specific storm ID."""
-        data = self.get_data()
-        return [row for row in data if row.get("SID", "").strip() == storm_id]
 
 
 class IBTrACSTransformer(MontyDataTransformer[IBTrACSDataSource]):
@@ -65,191 +58,410 @@ class IBTrACSTransformer(MontyDataTransformer[IBTrACSDataSource]):
     hazard_profiles = MontyHazardProfiles()
     source_name = 'ibtracs'
 
-    def make_items(self) -> List[Item]:
-        """Create STAC Items from IBTrACS data.
+    def get_stac_items(self) -> typing.Generator[Item, None, None]:
+        # # TODO: Use sax xml parser for memory efficient usage
+        failed_items_count = 0
+        total_items_count = 0
 
-        Returns:
-            List of STAC Items (events and hazards)
-        """
-        items = []
+        csv_data = self.data_source._parse_csv()
+        csv_data.sort(key=lambda x: x.get("SID", " "))
+        for storm_id, storm_data_iterator in itertools.groupby(csv_data, key=lambda x: x.get("SID", " ")):
+            storm_data = list(storm_data_iterator)
+            total_items_count += len(storm_data)
 
-        # Create event items (one per storm)
-        event_items = self.make_source_event_items()
-        items.extend(event_items)
+            try:
+                def parse_row_data(rows: list[dict]):
+                    validated_data: list[IBTracsdataValidator] = []
+                    for row in rows:
+                        obj = IBTracsdataValidator(**row)
+                        validated_data.append(obj)
+                    return validated_data
 
-        # Create hazard items (one per position)
-        hazard_items = self.make_hazard_items(event_items)
-        items.extend(hazard_items)
+                storm_data = parse_row_data(storm_data)
+                if event_item := self.make_source_event_items(storm_id, storm_data):
+                    yield event_item
+                    yield from self.make_hazard_items(event_item, storm_data)
+                else:
+                    failed_items_count += len(storm_data)
+            except Exception:
+                failed_items_count += len(storm_data)
+                logger.error("Failed to process ibtracs", exc_info=True)
 
-        return items
+        print(failed_items_count)
 
-    def make_source_event_items(self) -> List[Item]:
+    # FIXME: This is deprecated
+    def make_items(self):
+        return list(self.get_stac_items())
+
+    def make_source_event_items(self, storm_id: str, storm_data: list[IBTracsdataValidator]) -> Item | None:
         """Create source event items from IBTrACS data.
 
         Returns:
             List of event STAC Items
         """
-        event_items = []
+        if not storm_data:
+            # FIXME: Do we throw error?
+            return None
 
-        # Get unique storm IDs
-        storm_ids = self.data_source.get_storm_ids()
+        # Create track geometry from all positions
+        track_coords: list[typing.Tuple[float, float]] = []
+        for row in storm_data:
+            lat = row.LAT or 0  # FIXME: Do we need these default values? Are these even correct?
+            lon = row.LON or 0  # FIXME: Do we need these default values? Are these even correct?
+            track_coords.append((lon, lat))
 
-        for storm_id in storm_ids:
-            # Get all data for this storm
-            storm_data = self.data_source.get_storm_data(storm_id)
+        if not track_coords:
+            # FIXME: Do we throw error?
+            return
 
-            if not storm_data:
-                continue
+        # Create LineString geometry for the complete track
+        track_geometry = LineString(track_coords)
+        geometry = mapping(track_geometry)
 
-            # Create track geometry from all positions
-            track_coords = []
-            for row in storm_data:
+        # Calculate bounding box
+        min_lon = min(coord[0] for coord in track_coords)
+        min_lat = min(coord[1] for coord in track_coords)
+        max_lon = max(coord[0] for coord in track_coords)
+        max_lat = max(coord[1] for coord in track_coords)
+        bbox = [min_lon, min_lat, max_lon, max_lat]
+
+        # Get storm metadata
+        name = (storm_data[0].NAME or '').strip()
+        basin = (storm_data[0].BASIN or '').strip()
+        season = storm_data[0].SEASON or ''
+
+        # Get storm dates
+        start_time = None
+        end_time = None
+        for row in storm_data:
+            iso_time = row.ISO_TIME
+            if iso_time:
+                dt = iso_time
+                # dt = datetime.strptime(iso_time, "%Y-%m-%d %H:%M:%S")
+                dt = pytz.utc.localize(dt) if dt.tzinfo is None else dt
+
+                if start_time is None or dt < start_time:
+                    start_time = dt
+                if end_time is None or dt > end_time:
+                    end_time = dt
+
+        if start_time is None or end_time is None:
+            # FIXME: Do we throw error?
+            return
+
+        # Find maximum intensity
+        max_wind = 0
+        min_pressure = 9999
+
+        for row in storm_data:
+            # Try to get wind speed from USA_WIND or WMO_WIND
+            # FIXME: Need to simplify this logic
+            try:
+                wind = float(row.USA_WIND or 0)
+            except (ValueError, TypeError):
                 try:
-                    lat = float(row.get("LAT", 0))
-                    lon = float(row.get("LON", 0))
-                    track_coords.append((lon, lat))
+                    wind = float(row.WMO_WIND or 0)
                 except (ValueError, TypeError):
-                    # Skip invalid coordinates
-                    continue
+                    wind = 0
 
-            if not track_coords:
+            # Try to get pressure from USA_PRES or WMO_PRES
+            # FIXME: Need to simplify this logic
+            try:
+                pressure = float(row.USA_PRES or 9999)
+            except (ValueError, TypeError):
+                try:
+                    pressure = float(row.WMO_PRES or 9999)
+                except (ValueError, TypeError):
+                    pressure = 9999
+
+            max_wind = max(max_wind, wind)
+            min_pressure = min(min_pressure, pressure)
+
+        # Determine storm category based on Saffir-Simpson scale
+        if max_wind >= 137:  # Category 5
+            category = "Category 5 hurricane"
+        elif max_wind >= 113:  # Category 4
+            category = "Category 4 hurricane"
+        elif max_wind >= 96:  # Category 3
+            category = "Category 3 hurricane"
+        elif max_wind >= 83:  # Category 2
+            category = "Category 2 hurricane"
+        elif max_wind >= 64:  # Category 1
+            category = "Category 1 hurricane"
+        elif max_wind >= 34:  # Tropical Storm
+            category = "tropical storm"
+        else:  # Tropical Depression
+            category = "tropical depression"
+
+        # Convert knots to mph for description
+        # FIXME: Why are we using int
+        mph = int(max_wind * 1.15078)
+
+        basin_name = self._get_basin_name(basin)
+
+        # Create title and description
+        title = f"Tropical Cyclone {name}" if name else f"Unnamed Tropical Cyclone {storm_id}"
+        description = f"Tropical Cyclone {name} ({season}) in the {basin_name} basin. "
+        description += f"Maximum intensity: {category} with {mph} mph ({max_wind} knots) winds"
+
+        if min_pressure < 9999:
+            description += f" and minimum pressure of {min_pressure} mb."
+        else:
+            description += "."
+
+        # Create event item
+        item = Item(
+            id=storm_id,
+            geometry=geometry,
+            bbox=bbox,
+            datetime=start_time,
+            properties={
+                "title": title,
+                "description": description,
+                "start_datetime": start_time.isoformat(),
+                "end_datetime": end_time.isoformat(),
+                "roles": ["source", "event"],
+            },
+        )
+
+        # Set collection
+        item.set_collection(self.get_event_collection())
+
+        # Add Monty extension
+        MontyExtension.add_to(item)
+        monty_ext = MontyExtension.ext(item)
+        # Set hazard codes
+        monty_ext.hazard_codes = ["MH0057", "nat-met-sto-tro", "TC"]
+
+        # Determine affected countries
+        countries = self._get_countries_from_track(track_geometry)
+        monty_ext.country_codes = countries
+
+        # Set correlation ID
+        # Format: [datetime]-[country]-[hazard type]-[sequence]-[source]
+        # Example: 20240626T000000-XYZ-NAT-MET-STO-TRO-001-GCDB
+        start_date_str = start_time.strftime("%Y%m%dT%H%M%S")
+
+        country_code: str | None = None
+        if countries and countries[0]:
+            country_code = countries[0]
+        country_code = country_code or "XYZ"  # Default for international waters
+
+        monty_ext.correlation_id = f"{start_date_str}-{country_code}-NAT-MET-STO-TRO-001-GCDB"
+
+        # Add keywords
+        keywords = ["tropical cyclone"]
+        if category.startswith("Category"):
+            keywords.append("hurricane")
+        elif "tropical storm" in category:
+            keywords.append("tropical storm")
+        else:
+            keywords.append("tropical depression")
+
+        if name:
+            keywords.append(name)
+
+        keywords.append(season)
+        keywords.append(self._get_basin_name(basin))
+
+        item.properties["keywords"] = keywords
+
+        # Add links and assets
+        source_url = self.data_source.get_source_url()
+        item.add_link(Link("via", source_url, "text/csv"))
+
+        # Add data asset
+        item.add_asset(
+            "data",
+            Asset(
+                href=source_url,
+                title="IBTrACS North Atlantic Basin Data",
+                media_type="text/csv",
+                extra_fields={"roles": ["data"]},
+            ),
+        )
+
+        # Add documentation asset
+        item.add_asset(
+            "documentation",
+            Asset(
+                href="https://www.ncei.noaa.gov/products/international-best-track-archive",
+                title="IBTrACS Documentation",
+                media_type="text/html",
+                extra_fields={"roles": ["documentation"]},
+            ),
+        )
+
+        return item
+
+    def make_hazard_items(self, event_item: Item, storm_data: list[IBTracsdataValidator]) -> list[Item]:
+        """Create hazard items from IBTrACS data.
+
+        Args:
+            event_items: List of event STAC Items
+
+        Returns:
+            List of hazard STAC Items
+        """
+        hazard_items = []
+
+        storm_id = event_item.id
+
+        if not storm_data:
+            return []
+
+        # Sort storm data by time
+        storm_data.sort(key=lambda x: x.ISO_TIME if x.ISO_TIME else "")
+
+        # Create a hazard item for each position
+        track_coords = []
+
+        for i, row in enumerate(storm_data):
+            lat = row.LAT or 0  # FIXME: Do we need these default values? Are these even correct?
+            lon = row.LON or 0  # FIXME: Do we need these default values? Are these even correct?
+            track_coords.append((lon, lat))
+
+            # Get position time
+            iso_time = row.ISO_TIME
+            if not iso_time:
                 continue
 
-            # Create LineString geometry for the complete track
-            track_geometry = LineString(track_coords)
-            geometry = mapping(track_geometry)
+            dt = iso_time
+            dt = pytz.utc.localize(dt) if dt.tzinfo is None else dt
 
-            # Calculate bounding box
-            min_lon = min(coord[0] for coord in track_coords)
-            min_lat = min(coord[1] for coord in track_coords)
-            max_lon = max(coord[0] for coord in track_coords)
-            max_lat = max(coord[1] for coord in track_coords)
-            bbox = [min_lon, min_lat, max_lon, max_lat]
+            # Format timestamp for ID
+            timestamp = dt.strftime("%Y%m%dT%H%M%SZ")
+
+            # Create geometry (Point for first position, LineString for subsequent positions)
+            if i == 0:
+                geometry = mapping(Point(lon, lat))
+                bbox = [lon, lat, lon, lat]
+            else:
+                # Create LineString with all positions up to this point
+                line_geometry = LineString(track_coords[: i + 1])
+                geometry = mapping(line_geometry)
+
+                # Calculate bounding box
+                min_lon = min(coord[0] for coord in track_coords[: i + 1])
+                min_lat = min(coord[1] for coord in track_coords[: i + 1])
+                max_lon = max(coord[0] for coord in track_coords[: i + 1])
+                max_lat = max(coord[1] for coord in track_coords[: i + 1])
+                bbox = [min_lon, min_lat, max_lon, max_lat]
 
             # Get storm metadata
-            name = storm_data[0].get("NAME", "").strip()
-            basin = storm_data[0].get("BASIN", "").strip()
-            season = storm_data[0].get("SEASON", "").strip()
+            name = row.NAME or ""
+            basin = row.BASIN or ""
+            season = row.SEASON or ""
 
-            # Get storm dates
-            start_time = None
-            end_time = None
-
-            for row in storm_data:
-                iso_time = row.get("ISO_TIME", "")
-                if iso_time:
-                    dt = datetime.strptime(iso_time, "%Y-%m-%d %H:%M:%S")
-                    dt = pytz.utc.localize(dt) if dt.tzinfo is None else dt
-
-                    if start_time is None or dt < start_time:
-                        start_time = dt
-
-                    if end_time is None or dt > end_time:
-                        end_time = dt
-
-            if start_time is None or end_time is None:
-                continue
-
-            # Find maximum intensity
-            max_wind = 0
-            min_pressure = 9999
-
-            for row in storm_data:
-                # Try to get wind speed from USA_WIND or WMO_WIND
+            # Get wind and pressure data
+            try:
+                wind = float(row.USA_WIND or 0)
+            except (ValueError, TypeError):
                 try:
-                    wind = float(row.get("USA_WIND", 0))
+                    wind = float(row.WMO_WIND or 0)
                 except (ValueError, TypeError):
-                    try:
-                        wind = float(row.get("WMO_WIND", 0))
-                    except (ValueError, TypeError):
-                        wind = 0
+                    wind = 0
 
-                # Try to get pressure from USA_PRES or WMO_PRES
+            try:
+                pressure = float(row.USA_PRES or 0)
+            except (ValueError, TypeError):
                 try:
-                    pressure = float(row.get("USA_PRES", 9999))
+                    pressure = float(row.WMO_PRES or 0)
                 except (ValueError, TypeError):
-                    try:
-                        pressure = float(row.get("WMO_PRES", 9999))
-                    except (ValueError, TypeError):
-                        pressure = 9999
+                    pressure = 0
 
-                max_wind = max(max_wind, wind)
-                min_pressure = min(min_pressure, pressure)
+            # Determine storm status
+            status = row.USA_STATUS
+            match status:
+                case "HU":
+                    status_text = "Hurricane"
+                case "TS":
+                    status_text = "Tropical Storm"
+                case "TD":
+                    status_text = "Tropical Depression"
+                case _:
+                    status_text = "Tropical Cyclone"
 
-            # Determine storm category based on Saffir-Simpson scale
-            category = ""
-            if max_wind >= 137:  # Category 5
-                category = "Category 5 hurricane"
-            elif max_wind >= 113:  # Category 4
-                category = "Category 4 hurricane"
-            elif max_wind >= 96:  # Category 3
-                category = "Category 3 hurricane"
-            elif max_wind >= 83:  # Category 2
-                category = "Category 2 hurricane"
-            elif max_wind >= 64:  # Category 1
-                category = "Category 1 hurricane"
-            elif max_wind >= 34:  # Tropical Storm
-                category = "tropical storm"
-            else:  # Tropical Depression
-                category = "tropical depression"
-
-            # Convert knots to mph for description
-            mph = int(max_wind * 1.15078)
+            basin_name = self._get_basin_name(basin)
 
             # Create title and description
-            title = f"Tropical Cyclone {name}" if name else f"Unnamed Tropical Cyclone {storm_id}"
-            description = f"Tropical Cyclone {name} ({season}) in the {self._get_basin_name(basin)} basin. "
-            description += f"Maximum intensity: {category} with {mph} mph ({max_wind} knots) winds"
-
-            if min_pressure < 9999:
-                description += f" and minimum pressure of {min_pressure} mb."
+            if i == 0:
+                title = (
+                    f"Tropical Cyclone {name} - Initial Position"
+                    if name
+                    else f"Unnamed Tropical Cyclone {storm_id} - Initial Position"
+                )
+                description = (
+                    f"Initial position of Tropical Cyclone {name} ({season}) in the {basin_name} basin. "
+                )
             else:
-                description += "."
+                title = f"Tropical Cyclone {name}" if name else f"Unnamed Tropical Cyclone {storm_id}"
+                description = f"Tropical Cyclone {name} ({season}) in the {basin_name} basin. "
 
-            # Create event item
+            description += f"Current status: {status_text} with {int(wind)} knots wind speed."
+
+            if pressure > 0:
+                description += f" Pressure: {int(pressure)} mb."
+
+            # Create hazard item ID
+            hazard_id = f"{storm_id}-hazard-{timestamp}"
+
+            # Create hazard item
             item = Item(
-                id=storm_id,
+                id=hazard_id,
                 geometry=geometry,
                 bbox=bbox,
-                datetime=start_time,
+                datetime=dt,
                 properties={
                     "title": title,
                     "description": description,
-                    "start_datetime": start_time.isoformat(),
-                    "end_datetime": end_time.isoformat(),
-                    "roles": ["source", "event"],
+                    "start_datetime": event_item.properties["start_datetime"],
+                    "end_datetime": dt.isoformat(),
+                    "roles": ["source", "hazard"],
                 },
             )
 
             # Set collection
-            item.collection = self.get_event_collection()
+            item.set_collection(self.get_hazard_collection())
 
             # Add Monty extension
             MontyExtension.add_to(item)
             monty_ext = MontyExtension.ext(item)
 
             # Set hazard codes
-            monty_ext.hazard_codes = ["MH0057", "nat-met-sto-tro", "TC"]
+            monty_ext.hazard_codes = ["nat-met-sto-tro"]
 
-            # Determine affected countries
-            countries = self._get_countries_from_track(track_geometry)
+            # Determine affected countries for the track up to this point
+            if i == 0:
+                # For the first position, there may not be any affected countries yet
+                countries = []
+            else:
+                # For subsequent positions, get countries from the track so far
+                track_so_far = LineString(track_coords[: i + 1])
+                countries = self._get_countries_from_track(track_so_far)
+
             monty_ext.country_codes = countries
 
-            # Set correlation ID
-            # Format: [datetime]-[country]-[hazard type]-[sequence]-[source]
-            # Example: 20240626T000000-XYZ-NAT-MET-STO-TRO-001-GCDB
-            start_date_str = start_time.strftime("%Y%m%dT%H%M%S")
-            country_code = "XYZ"  # Default for international waters
-            if countries and countries[0] != "XYZ":
-                country_code = countries[0]
+            # Set correlation ID (same as event)
+            monty_ext.correlation_id = MontyExtension.ext(event_item).correlation_id
 
-            monty_ext.correlation_id = f"{start_date_str}-{country_code}-NAT-MET-STO-TRO-001-GCDB"
+            # Add hazard detail
+            hazard_detail = HazardDetail(
+                cluster="nat-met-sto-tro",
+                severity_value=int(wind),
+                severity_unit="knots",
+                estimate_type=MontyEstimateType.PRIMARY,
+                pressure=int(pressure) if pressure > 0 else None,
+                pressure_unit="mb" if pressure > 0 else None,
+            )
 
-            # Add keywords
+            monty_ext.hazard_detail = hazard_detail
+
+            # Add keywords (same as event)
             keywords = ["tropical cyclone"]
-            if category.startswith("Category"):
+            if status == "HU":
                 keywords.append("hurricane")
-            elif "tropical storm" in category:
+            elif status == "TS":
                 keywords.append("tropical storm")
             else:
                 keywords.append("tropical depression")
@@ -258,7 +470,7 @@ class IBTrACSTransformer(MontyDataTransformer[IBTrACSDataSource]):
                 keywords.append(name)
 
             keywords.append(season)
-            keywords.append(self._get_basin_name(basin))
+            keywords.append(basin_name)
 
             item.properties["keywords"] = keywords
 
@@ -288,230 +500,17 @@ class IBTrACSTransformer(MontyDataTransformer[IBTrACSDataSource]):
                 ),
             )
 
-            event_items.append(item)
-
-        return event_items
-
-    def make_hazard_items(self, event_items: List[Item]) -> List[Item]:
-        """Create hazard items from IBTrACS data.
-
-        Args:
-            event_items: List of event STAC Items
-
-        Returns:
-            List of hazard STAC Items
-        """
-        hazard_items = []
-
-        for event_item in event_items:
-            storm_id = event_item.id
-            storm_data = self.data_source.get_storm_data(storm_id)
-
-            if not storm_data:
-                continue
-
-            # Sort storm data by time
-            storm_data.sort(key=lambda x: x.get("ISO_TIME", ""))
-
-            # Create a hazard item for each position
-            track_coords = []
-
-            for i, row in enumerate(storm_data):
-                try:
-                    lat = float(row.get("LAT", 0))
-                    lon = float(row.get("LON", 0))
-                    track_coords.append((lon, lat))
-                except (ValueError, TypeError):
-                    # Skip invalid coordinates
-                    continue
-
-                # Get position time
-                iso_time = row.get("ISO_TIME", "")
-                if not iso_time:
-                    continue
-
-                dt = datetime.strptime(iso_time, "%Y-%m-%d %H:%M:%S")
-                dt = pytz.utc.localize(dt) if dt.tzinfo is None else dt
-
-                # Format timestamp for ID
-                timestamp = dt.strftime("%Y%m%dT%H%M%SZ")
-
-                # Create geometry (Point for first position, LineString for subsequent positions)
-                if i == 0:
-                    geometry = mapping(Point(lon, lat))
-                    bbox = [lon, lat, lon, lat]
-                else:
-                    # Create LineString with all positions up to this point
-                    line_geometry = LineString(track_coords[: i + 1])
-                    geometry = mapping(line_geometry)
-
-                    # Calculate bounding box
-                    min_lon = min(coord[0] for coord in track_coords[: i + 1])
-                    min_lat = min(coord[1] for coord in track_coords[: i + 1])
-                    max_lon = max(coord[0] for coord in track_coords[: i + 1])
-                    max_lat = max(coord[1] for coord in track_coords[: i + 1])
-                    bbox = [min_lon, min_lat, max_lon, max_lat]
-
-                # Get storm metadata
-                name = row.get("NAME", "").strip()
-                basin = row.get("BASIN", "").strip()
-                season = row.get("SEASON", "").strip()
-
-                # Get wind and pressure data
-                try:
-                    wind = float(row.get("USA_WIND", 0))
-                except (ValueError, TypeError):
-                    try:
-                        wind = float(row.get("WMO_WIND", 0))
-                    except (ValueError, TypeError):
-                        wind = 0
-
-                try:
-                    pressure = float(row.get("USA_PRES", 0))
-                except (ValueError, TypeError):
-                    try:
-                        pressure = float(row.get("WMO_PRES", 0))
-                    except (ValueError, TypeError):
-                        pressure = 0
-
-                # Determine storm status
-                status = row.get("USA_STATUS", "").strip()
-                if status == "HU":
-                    status_text = "Hurricane"
-                elif status == "TS":
-                    status_text = "Tropical Storm"
-                elif status == "TD":
-                    status_text = "Tropical Depression"
-                else:
-                    status_text = "Tropical Cyclone"
-
-                # Create title and description
-                if i == 0:
-                    title = (
-                        f"Tropical Cyclone {name} - Initial Position"
-                        if name
-                        else f"Unnamed Tropical Cyclone {storm_id} - Initial Position"
-                    )
-                    description = (
-                        f"Initial position of Tropical Cyclone {name} ({season}) in the {self._get_basin_name(basin)} basin. "
-                    )
-                else:
-                    title = f"Tropical Cyclone {name}" if name else f"Unnamed Tropical Cyclone {storm_id}"
-                    description = f"Tropical Cyclone {name} ({season}) in the {self._get_basin_name(basin)} basin. "
-
-                description += f"Current status: {status_text} with {int(wind)} knots wind speed."
-
-                if pressure > 0:
-                    description += f" Pressure: {int(pressure)} mb."
-
-                # Create hazard item ID
-                hazard_id = f"{storm_id}-hazard-{timestamp}"
-
-                # Create hazard item
-                item = Item(
-                    id=hazard_id,
-                    geometry=geometry,
-                    bbox=bbox,
-                    datetime=dt,
-                    properties={
-                        "title": title,
-                        "description": description,
-                        "start_datetime": event_item.properties["start_datetime"],
-                        "end_datetime": dt.isoformat(),
-                        "roles": ["source", "hazard"],
-                    },
+            # Add link to related event
+            item.add_link(
+                Link(
+                    rel="related",
+                    target=f"../ibtracs-events/{storm_id}.json",
+                    media_type="application/json",
+                    extra_fields={"roles": ["event", "source"]},
                 )
+            )
 
-                # Set collection
-                item.collection = self.get_hazard_collection()
-
-                # Add Monty extension
-                MontyExtension.add_to(item)
-                monty_ext = MontyExtension.ext(item)
-
-                # Set hazard codes
-                monty_ext.hazard_codes = ["nat-met-sto-tro"]
-
-                # Determine affected countries for the track up to this point
-                if i == 0:
-                    # For the first position, there may not be any affected countries yet
-                    countries = []
-                else:
-                    # For subsequent positions, get countries from the track so far
-                    track_so_far = LineString(track_coords[: i + 1])
-                    countries = self._get_countries_from_track(track_so_far)
-
-                monty_ext.country_codes = countries
-
-                # Set correlation ID (same as event)
-                monty_ext.correlation_id = MontyExtension.ext(event_item).correlation_id
-
-                # Add hazard detail
-                hazard_detail = HazardDetail(
-                    cluster="nat-met-sto-tro",
-                    severity_value=int(wind),
-                    severity_unit="knots",
-                    estimate_type=MontyEstimateType.PRIMARY,
-                    pressure=int(pressure) if pressure > 0 else None,
-                    pressure_unit="mb" if pressure > 0 else None,
-                )
-
-                monty_ext.hazard_detail = hazard_detail
-
-                # Add keywords (same as event)
-                keywords = ["tropical cyclone"]
-                if status == "HU":
-                    keywords.append("hurricane")
-                elif status == "TS":
-                    keywords.append("tropical storm")
-                else:
-                    keywords.append("tropical depression")
-
-                if name:
-                    keywords.append(name)
-
-                keywords.append(season)
-                keywords.append(self._get_basin_name(basin))
-
-                item.properties["keywords"] = keywords
-
-                # Add links and assets
-                source_url = self.data_source.get_source_url()
-                item.add_link(Link("via", source_url, "text/csv"))
-
-                # Add data asset
-                item.add_asset(
-                    "data",
-                    Asset(
-                        href=source_url,
-                        title="IBTrACS North Atlantic Basin Data",
-                        media_type="text/csv",
-                        extra_fields={"roles": ["data"]},
-                    ),
-                )
-
-                # Add documentation asset
-                item.add_asset(
-                    "documentation",
-                    Asset(
-                        href="https://www.ncei.noaa.gov/products/international-best-track-archive",
-                        title="IBTrACS Documentation",
-                        media_type="text/html",
-                        extra_fields={"roles": ["documentation"]},
-                    ),
-                )
-
-                # Add link to related event
-                item.add_link(
-                    Link(
-                        rel="related",
-                        target=f"../ibtracs-events/{storm_id}.json",
-                        media_type="application/json",
-                        extra_fields={"roles": ["event", "source"]},
-                    )
-                )
-
-                hazard_items.append(item)
+            hazard_items.append(item)
 
         return hazard_items
 
@@ -555,6 +554,7 @@ class IBTrACSTransformer(MontyDataTransformer[IBTrACSDataSource]):
             List of ISO3 country codes
         """
         if self.geocoder is None:
+            # FIXME: Should we use ["UNK"] instead?
             return ["XYZ"]  # Default to international waters if no geocoder
 
         # Use the geocoder to find countries
@@ -576,7 +576,8 @@ class IBTrACSTransformer(MontyDataTransformer[IBTrACSDataSource]):
                     countries.append(country_code)
         except Exception as e:
             # If geocoding fails, default to international waters
-            print(f"Geocoding error: {e}")
+            logger.error(f"Geocoding error: {e}", exc_info=True)
+            # FIXME: Should we use ["UNK"] instead?
             return ["XYZ"]
 
         # Remove duplicates and sort
@@ -584,6 +585,7 @@ class IBTrACSTransformer(MontyDataTransformer[IBTrACSDataSource]):
 
         # If no countries found, use XYZ for international waters
         if not countries:
-            countries = ["XYZ"]
+            # FIXME: Should we use ["UNK"] instead?
+            return ["XYZ"]
 
         return countries

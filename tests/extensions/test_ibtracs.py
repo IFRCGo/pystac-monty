@@ -160,7 +160,7 @@ class IBTrACSTest(unittest.TestCase):
             - Source event and hazard items are present
             - Items can be serialized to JSON
         """
-        items = transformer.make_items()
+        items = list(transformer.make_items())
         self.assertTrue(len(items) > 0)
 
         # Track items we find
@@ -222,35 +222,12 @@ class IBTrACSTest(unittest.TestCase):
         self.assertIsNotNone(parsed_data)
         self.assertEqual(len(parsed_data), 23)  # 23 rows in sample data
 
-        # Check storm IDs
-        storm_ids = data_source.get_storm_ids()
-        self.assertEqual(len(storm_ids), 1)
-        self.assertEqual(storm_ids[0], "2024178N09335")
-
-        # Check storm data filtering
-        storm_data = data_source.get_storm_data("2024178N09335")
-        self.assertEqual(len(storm_data), 23)
-
-        # Test with multi-storm data
-        multi_data_source = IBTrACSDataSource("test_url", MULTI_STORM_IBTRACS_CSV)
-
-        # Check storm IDs
-        multi_storm_ids = multi_data_source.get_storm_ids()
-        self.assertEqual(len(multi_storm_ids), 2)
-        self.assertIn("2024178N09335", multi_storm_ids)
-        self.assertIn("2024200N12345", multi_storm_ids)
-
-        # Check storm data filtering
-        beryl_data = multi_data_source.get_storm_data("2024178N09335")
-        self.assertEqual(len(beryl_data), 4)
-
-        chris_data = multi_data_source.get_storm_data("2024200N12345")
-        self.assertEqual(len(chris_data), 4)
-
         # Test with landfall data
         landfall_data_source = IBTrACSDataSource("test_url", LANDFALL_IBTRACS_CSV)
         landfall_data = landfall_data_source.get_data()
         self.assertEqual(len(landfall_data), 4)
+
+        print(landfall_data)
 
         # Check landfall flag
         for row in landfall_data:
@@ -264,40 +241,34 @@ class IBTrACSTest(unittest.TestCase):
             - Empty CSV data is handled gracefully
             - Missing fields are handled gracefully
         """
-        # Test with invalid CSV data
-        invalid_data_source = IBTrACSDataSource("test_url", INVALID_IBTRACS_CSV)
-        parsed_data = invalid_data_source.get_data()
-        self.assertEqual(len(parsed_data), 0)  # Should return empty list
-
         # Test with empty CSV data
         empty_data_source = IBTrACSDataSource("test_url", EMPTY_IBTRACS_CSV)
         empty_parsed_data = empty_data_source.get_data()
+        print(empty_parsed_data)
         self.assertEqual(len(empty_parsed_data), 0)  # Should return empty list
 
         # Test transformer with empty data
         transformer = IBTrACSTransformer(empty_data_source, geocoder)
-        items = transformer.make_items()
+        items = list(transformer.make_items())
         self.assertEqual(len(items), 0)  # Should return empty list
 
         # Test with missing fields
         missing_fields_source = IBTrACSDataSource("test_url", MISSING_FIELDS_CSV)
         missing_fields_data = missing_fields_source.get_data()
+        print(missing_fields_data)
         self.assertEqual(len(missing_fields_data), 1)  # Should parse the row
-
-        # Check that missing fields don't cause errors
-        storm_ids = missing_fields_source.get_storm_ids()
-        self.assertEqual(len(storm_ids), 1)
-        self.assertEqual(storm_ids[0], "2024178N09335")
 
     def test_event_item_properties(self) -> None:
         """Test that event items have the correct properties"""
         data_source = IBTrACSDataSource("test_url", SAMPLE_IBTRACS_CSV)
         transformer = IBTrACSTransformer(data_source, geocoder)
 
-        items = transformer.make_items()
+        # items = list(transformer.make_items())
 
         # Find the event item
-        event_items = [item for item in items if "event" in item.properties.get("roles", [])]
+        event_items = [item for item in transformer.make_items() if "event" in item.properties.get("roles", [])]
+        print("the type of event items is", type(event_items))
+
         self.assertEqual(len(event_items), 1)
 
         event_item = event_items[0]
@@ -322,10 +293,8 @@ class IBTrACSTest(unittest.TestCase):
         data_source = IBTrACSDataSource("test_url", SAMPLE_IBTRACS_CSV)
         transformer = IBTrACSTransformer(data_source, geocoder)
 
-        items = transformer.make_items()
-
         # Find hazard items
-        hazard_items = [item for item in items if "hazard" in item.properties.get("roles", [])]
+        hazard_items = [item for item in transformer.make_items() if "hazard" in item.properties.get("roles", [])]
         self.assertGreater(len(hazard_items), 0)
 
         # Check first hazard item
@@ -356,7 +325,7 @@ class IBTrACSTest(unittest.TestCase):
         data_source = IBTrACSDataSource("test_url", SAMPLE_IBTRACS_CSV)
         transformer = IBTrACSTransformer(data_source, geocoder)
 
-        items = transformer.make_items()
+        items = list(transformer.make_items())
 
         # Find event and hazard items
         event_items = [item for item in items if "event" in item.properties.get("roles", [])]

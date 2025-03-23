@@ -19,6 +19,7 @@ from pystac_monty.extension import (
 from pystac_monty.hazard_profiles import MontyHazardProfiles
 from pystac_monty.sources.common import MontyDataSource, MontyDataTransformer
 from pystac_monty.utils import rename_columns
+from pystac_monty.validators.em_dat import EmdatDataValidator
 
 STAC_EVENT_ID_PREFIX = "emdat-event-"
 STAC_HAZARD_ID_PREFIX = "emdat-hazard-"
@@ -40,11 +41,23 @@ class EMDATDataSource(MontyDataSource):
             self.df = data
         elif isinstance(data, dict):
             # If data is a dict, assume it's Json content
-            data = data["data"]["public_emdat"]["data"]
+            # data = data["data"]["public_emdat"]["data"]
+            data = self.source_data_validator(data["data"]["public_emdat"]["data"])
             df = pd.DataFrame(data)
             self.df = rename_columns(df)
         else:
             raise ValueError("Data must be either Excel content (str) or pandas DataFrame or Json")
+
+    def source_data_validator(self, data):
+        valid_list = []
+        error_list = []
+        for item in data:
+            if EmdatDataValidator.validate_event(item):
+                valid_list.append(item)
+            else:
+                error_list.append(item)
+
+        return valid_list
 
     def get_data(self) -> pd.DataFrame:
         return self.df
