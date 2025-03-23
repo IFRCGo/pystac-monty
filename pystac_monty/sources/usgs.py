@@ -52,7 +52,7 @@ class USGSTransformer(MontyDataTransformer[USGSDataSource]):
     """Transforms USGS earthquake event data into STAC Items."""
 
     hazard_profiles = MontyHazardProfiles()
-    source_name = 'usgs'
+    source_name = "usgs"
 
     @staticmethod
     def iso2_to_iso3(iso2: str) -> str:

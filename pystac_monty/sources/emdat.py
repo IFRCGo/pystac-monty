@@ -69,7 +69,7 @@ class EMDATTransformer(MontyDataTransformer[EMDATDataSource]):
     """
 
     hazard_profiles = MontyHazardProfiles()
-    source_name = 'emdat'
+    source_name = "emdat"
 
     def make_items(self) -> list[Item]:
         """Create all STAC items from EM-DAT data"""

@@ -78,7 +78,7 @@ class GDACSTransformer(MontyDataTransformer[list[GDACSDataSource]]):
     """
 
     hazard_profiles = MontyHazardProfiles()
-    source_name = 'gdacs'
+    source_name = "gdacs"
 
     def make_items(self) -> list[Item]:
         items = []

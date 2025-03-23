@@ -39,7 +39,7 @@ class GIDDTransformer(MontyDataTransformer[GIDDDataSource]):
     """Transforms GIDD event data into STAC Items"""
 
     hazard_profiles = MontyHazardProfiles()
-    source_name = 'idmc-gidd'
+    source_name = "idmc-gidd"
 
     def get_stac_items(self) -> Generator[Item, None, None]:
         """Creates the STAC Items"""

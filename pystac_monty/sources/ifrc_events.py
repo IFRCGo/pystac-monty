@@ -1,6 +1,7 @@
 import json
+import typing
 from datetime import datetime
-from typing import Any, Dict, List
+from typing import List
 
 from pystac import Item
 
@@ -22,7 +23,7 @@ STAC_IMPACT_ID_PREFIX = "ifrcevent-impact-"
 class IFRCEventDataSource(MontyDataSource):
     def __init__(self, source_url: str, data: str):
         # FIXME: Why do we load using json
-        super().__init__(source_url, self.source_data_validator(json.loads(data)))
+        super().__init__(source_url, json.loads(data))
 
     def source_data_validator(self, data: list[dict]):
         # TODO Handle the failed_items
@@ -41,51 +42,57 @@ class IFRCEventTransformer(MontyDataTransformer[IFRCEventDataSource]):
     hazard_profiles = MontyHazardProfiles()
     source_name = "ifrcevent"
 
-    def make_items(self) -> List[Item]:
-        """Create items"""
-        items = []
+    def make_items(self):
+        return list(self.get_stac_items())
 
-        event_items = self.make_source_event_items()
-        items.extend(event_items)
+    def get_stac_items(self) -> typing.Generator[Item, None, None]:
+        failed_items_count = 0
+        total_items_count = 0
 
-        impact_items = self.make_impact_items()
-        items.extend(impact_items)
+        ifrcevent_data = self.data_source.data
+        for data in ifrcevent_data:
+            total_items_count += 1
+            try:
 
-        return items
+                def parse_data(rows: dict):
+                    obj: IFRCsourceValidator = {}
+                    obj = IFRCsourceValidator(**rows)
+                    return obj
 
-    def make_source_event_items(self) -> List[Item]:
-        """Create ifrc event item"""
-        items = []
-        ifrc_data = self.check_and_get_ifrcevent_data()
+                ifrcdata = parse_data(data)
+                if event_item := self.make_source_event_items(ifrcdata):
+                    yield event_item
+                    yield from self.make_impact_items(event_item, ifrcdata)
+                else:
+                    failed_items_count += 1
+            except Exception as e:
+                print(e)
+                print("Failed to process ifrcevent", failed_items_count)
+                failed_items_count += 1
 
-        for data in ifrc_data:
-            item = self.make_source_event_item(data=data)
-            items.append(item)
-        return items
-
-    def make_source_event_item(self, data: dict) -> Item:
+    def make_source_event_items(self, data: list[IFRCsourceValidator]) -> Item:
         """Create an event item"""
         geometry = None
         bbox = None
-        geom_data = self.geocoder.get_geometry_by_country_name(data["countries"][0]["name"])
+        geom_data = self.geocoder.get_geometry_by_country_name(data.countries[0].name)
 
         if geom_data:
             geometry = geom_data["geometry"]
             bbox = geom_data["bbox"]
 
         # start_date = datetime.fromisoformat(data["disaster_start_date"])
-        start_date = data["disaster_start_date"]
+        start_date = data.disaster_start_date
         start_date = start_date.replace("Z", "+00:00")
         start_date = datetime.fromisoformat(start_date)
         # Create item
         item = Item(
-            id=f"{STAC_EVENT_ID_PREFIX}{data['id']}",
+            id=f"{STAC_EVENT_ID_PREFIX}{data.id}",
             geometry=geometry,
             bbox=bbox,
             datetime=start_date,
             properties={
-                "title": data["name"],
-                "description": data.get("summary").strip() if data.get("summary").strip() != "" else "NA",
+                "title": data.name,
+                "description": data.summary.strip() if data.summary.strip() != "" else "NA",
                 "start_datetime": start_date.isoformat(),
                 # NOTE: source doesnot provide disaster end date so we assume startdate as end date
                 "end_datetime": start_date.isoformat(),
@@ -96,14 +103,12 @@ class IFRCEventTransformer(MontyDataTransformer[IFRCEventDataSource]):
         MontyExtension.add_to(item)
         monty = MontyExtension.ext(item)
         monty.episode_number = 1  # IFRC DREF doesn't have episodes
-        monty.hazard_codes = self.map_ifrc_to_hazard_codes(data["dtype"]["name"])
-        monty.country_codes = [country["iso3"] for country in data["countries"]]
+        monty.hazard_codes = self.map_ifrc_to_hazard_codes(data.dtype.name)
+        monty.country_codes = [country.iso3 for country in data.countries]
         monty.compute_and_set_correlation_id(hazard_profiles=self.hazard_profiles)
-
         # Set collection and roles
         item.set_collection(self.get_event_collection())
         item.properties["roles"] = ["source", "event"]
-
         return item
 
     def map_ifrc_to_hazard_codes(self, classification_key: str) -> List[str]:
@@ -139,7 +144,7 @@ class IFRCEventTransformer(MontyDataTransformer[IFRCEventDataSource]):
 
         return []
 
-    def make_impact_items(self) -> List[Item]:
+    def make_impact_items(self, event_item: Item, ifrcevent_data: IFRCsourceValidator) -> Item | None:
         """Create impact items"""
         items = []
 
@@ -174,33 +179,27 @@ class IFRCEventTransformer(MontyDataTransformer[IFRCEventDataSource]):
                 MontyImpactType.HIGHEST_RISK,
             ),
         }
+        impact_item = event_item.clone()
+        for impact_field, (category, impact_type) in impact_field_category_map.items():
+            impact_item.id = f"{STAC_IMPACT_ID_PREFIX}-{ifrcevent_data.id}"
+            impact_item.properties["roles"] = ["source", "impact"]
+            impact_item.set_collection(self.get_impact_collection())
 
-        ifrcevent_data = self.check_and_get_ifrcevent_data()
+            monty = MontyExtension.ext(impact_item)
 
-        event_items = self.make_source_event_items()
-        for event_item, src_data in zip(event_items, ifrcevent_data):
-            impact_item = event_item.clone()
+            # only save impact value if not null
+            value = None
+            for field in impact_field:
+                if len(ifrcevent_data.field_reports) and ifrcevent_data.field_reports[0].field:
+                    value = ifrcevent_data.field_reports[0].field
+                    break
 
-            for impact_field, (category, impact_type) in impact_field_category_map.items():
-                impact_item.id = f"{STAC_IMPACT_ID_PREFIX}-{src_data['id']}"
-                impact_item.properties["roles"] = ["source", "impact"]
-                impact_item.set_collection(self.get_impact_collection())
+            if not value:
+                continue
 
-                monty = MontyExtension.ext(impact_item)
+            monty.impact_detail = self.get_impact_details(category, impact_type, value)
 
-                # only save impact value if not null
-                value = None
-                for field in impact_field:
-                    if len(src_data["field_reports"]) and src_data["field_reports"][0][field]:
-                        value = src_data["field_reports"][0][field]
-                        break
-
-                if not value:
-                    continue
-
-                monty.impact_detail = self.get_impact_details(category, impact_type, value)
-
-                items.append(impact_item)
+            items.append(impact_item)
         return items
 
     def get_impact_details(self, category, impact_type, value, unit=None):
@@ -231,27 +230,3 @@ class IFRCEventTransformer(MontyDataTransformer[IFRCEventDataSource]):
             "Epidemic",
         ]
         return disaster in monty_accepted_disaster_types
-
-    def check_and_get_ifrcevent_data(self) -> list[Any]:
-        """Validate the source fields"""
-        ifrcevent_data: List[Dict[str, Any]] = self.data_source.get_data()
-
-        filtered_ifrcevent_data = []
-        if not ifrcevent_data:
-            print(f"No IFRC-Event data found in {self.data_source.get_source_url()}")
-            return []
-
-        for item in ifrcevent_data:
-            if not item["appeals"]:
-                continue
-
-            if item["appeals"][0]["atype"] not in {0, 1}:
-                continue
-
-            if item.get("dtype"):
-                if not self.check_accepted_disaster_types(item.get("dtype")["name"]):
-                    continue
-
-            filtered_ifrcevent_data.append(item)
-
-        return filtered_ifrcevent_data
