@@ -31,14 +31,14 @@ items = transformer.make_items()
 
 # 4. The transformer creates three types of STAC items:
 # - Source event item
-# - Hazard item from ShakeMap
+# - Hazard item from ShakeMap 
 # - Impact items from PAGER data (if losses data provided)
 
 # Example: Print details of each item
 for item in items:
     print(f"\nItem ID: {item.id}")
     print(f"Type: {item.properties['roles']}")
-
+    
     # Access Monty extension fields
     monty = MontyExtension.ext(item)
     if monty.is_source_event():
@@ -111,16 +111,16 @@ class USGSTransformer:
     def __init__(self, data: USGSDataSource) -> None:
         """
         Initialize transformer with USGS data source.
-
+        
         Args:
             data: USGSDataSource containing event data and optional losses data
         """
-
+        
     def make_items(self) -> list[Item]:
         """
         Transform USGS data into STAC Items.
         Creates source event, hazard, and impact items if losses data available.
-
+        
         Returns:
             list[Item]: List of STAC Items with Monty extension
         """
@@ -153,7 +153,7 @@ Wrapper class for USGS data that handles both event data and optional losses dat
 class USGSDataSource(MontyDataSource):
     """
     USGS data source that can handle both event detail and losses data.
-
+    
     Args:
         source_url: URL where the event data was retrieved from
         data: Event detail data as JSON string
@@ -163,11 +163,11 @@ class USGSDataSource(MontyDataSource):
         super().__init__(source_url, data)
         self.data = json.loads(data)
         self.losses_data = json.loads(losses_data) if losses_data else None
-
+        
     def get_data(self) -> dict:
         """Get the event detail data."""
         return self.data
-
+        
     def get_losses_data(self) -> Optional[dict]:
         """Get the PAGER losses data if available."""
         return self.losses_data

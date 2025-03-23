@@ -9,3 +9,4 @@ The sources module provides implementations for different data sources that can 
 - [GDACS](sources/gdacs.md) - Global Disaster Alert and Coordination System integration
 - [EMDAT](sources/emdat.md) - Emergency Events Database integration
 - [USGS](sources/usgs.md) - United States Geological Survey integration
+

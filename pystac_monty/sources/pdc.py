@@ -33,7 +33,6 @@ class PDCDataSource(MontyDataSource):
     def __init__(self, source_url: str, data: Any):
         super().__init__(source_url, data)
         self.data = json.loads(data)
-        print(self.data)
 
 
 class PDCTransformer(MontyDataTransformer):
@@ -119,7 +118,7 @@ class PDCTransformer(MontyDataTransformer):
             enddate = pytz.utc.localize(datetime.fromtimestamp(enddate / 1_000))
 
         item = Item(
-            id=f"{STAC_EVENT_ID_PREFIX}{self.hazard_data['uuid']}-{self.hazard_data['hazard_ID']}",
+            id=f'{STAC_EVENT_ID_PREFIX}{self.hazard_data["uuid"]}-{self.hazard_data["hazard_ID"]}',
             geometry=geometry,
             bbox=bbox,
             datetime=startdate,

@@ -37,12 +37,12 @@ for item in items:
     print(f"Roles: {item.properties['roles']}")
     print(f"Datetime: {item.datetime}")
     print(f"Location: {item.geometry}")
-
+    
     # Access Monty extension data
     monty = MontyExtension.ext(item)
     print(f"Hazard codes: {monty.hazard_codes}")
     print(f"Country codes: {monty.country_codes}")
-
+    
     if 'hazard' in item.properties['roles']:
         print(f"Hazard detail: {monty.hazard_detail}")
 ```
@@ -149,32 +149,32 @@ For a flood event in Spain (FL-2024-000199-ESP), the transformer creates:
 class GlideTransformer:
     """
     Transforms GLIDE event data into STAC Items with Monty extension.
-
+    
     The transformer creates two types of items for each GLIDE event:
     1. Source event items - Basic event information
     2. Hazard event items - Event information with hazard details
     """
-
+    
     def make_items(self) -> list[Item]:
         """
         Create both source and hazard items for the GLIDE event.
-
+        
         Returns:
             list[Item]: List of STAC Items with Monty extension
         """
-
+        
     def make_source_event_items(self) -> List[Item]:
         """
         Create source event items.
-
+        
         Returns:
             List[Item]: List of source event STAC Items
         """
-
+        
     def make_hazard_event_items(self) -> List[Item]:
         """
         Create hazard event items.
-
+        
         Returns:
             List[Item]: List of hazard event STAC Items
         """
@@ -186,7 +186,7 @@ class GlideTransformer:
 class GlideDataSource(MontyDataSource):
     """
     Wrapper for GLIDE JSON data from glidenumber.net
-
+    
     Args:
         source_url: URL of the GLIDE data source
         data: JSON response from the GLIDE API

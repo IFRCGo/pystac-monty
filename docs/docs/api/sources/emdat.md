@@ -15,7 +15,7 @@ The `EMDATDataSource` class handles EM-DAT data input in either Excel format or 
 class EMDATDataSource(MontyDataSource):
     """
     EM-DAT data source that can handle both Excel files and pandas DataFrames.
-
+    
     Args:
         source_url: URL of the data source
         data: Either Excel content as string or pandas DataFrame containing EM-DAT data
@@ -30,7 +30,7 @@ The `EMDATTransformer` class transforms EM-DAT data into STAC Items with the Mon
 class EMDATTransformer:
     """
     Transforms EM-DAT data into STAC Items with Monty extension.
-
+    
     Args:
         data: EMDATDataSource containing the EM-DAT data
         geocoder: Optional GAULGeocoder instance for enhanced location handling
@@ -52,11 +52,11 @@ The transformer creates three types of STAC Items:
 1. Event Items (`emdat-event-*`)
    - Basic event information including location and dates
    - Monty extension with hazard codes and country codes
-
+   
 2. Hazard Items (`emdat-hazard-*`)
    - Derived from event items
    - Additional hazard details including severity and classification
-
+   
 3. Impact Items (`emdat-impact-*`)
    - Created for each impact metric
    - Includes detailed impact information with type, value, and units
