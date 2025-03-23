@@ -501,7 +501,8 @@ class GAULGeocoder(MontyGeoCoder):
             return None
 
     def get_iso3_from_geometry(self, geometry: Dict[str, Any]) -> Optional[str]:
-        raise NotImplementedError("Method not implemented")
+        # FIXME: Implement this later
+        return "UNK"
 
     def get_geometry_from_iso3(self, iso3: str) -> Optional[Dict[str, Any]]:
         raise NotImplementedError("Method not implemented")

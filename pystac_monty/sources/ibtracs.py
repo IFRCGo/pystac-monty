@@ -48,20 +48,8 @@ class IBTrACSDataSource(MontyDataSource):
         csv_data = []
         csv_reader = csv.DictReader(io.StringIO(self.data))
         for row in csv_reader:
-            # Skip header row or rows with empty SID
-            if not row.get("SID") or row.get("SID") == " ":
-                continue
             csv_data.append(row)
         return csv_data
-
-    def parse_row_data(self, rows: list[dict]):
-        validated_data = []
-        for row in rows:
-            obj = IBTracsdataValidator.validate_event(row)
-            if obj:
-                validated_data.append(obj)
-
-        return validated_data
 
 
 class IBTrACSTransformer(MontyDataTransformer[IBTrACSDataSource]):
@@ -75,51 +63,55 @@ class IBTrACSTransformer(MontyDataTransformer[IBTrACSDataSource]):
         return list(self.get_stac_items())
 
     def get_stac_items(self) -> typing.Generator[Item, None, None]:
-        csv_data = self.data_source._parse_csv()
-        csv_data.sort(key=lambda x: x.get("SID"))
-
-        grouped_rows = {}
-        for sid, group in itertools.groupby(csv_data, key=lambda x: x.get("SID")):
-            grouped_rows[sid] = list(group)
-
         # # TODO: Use sax xml parser for memory efficient usage
         failed_items_count = 0
         total_items_count = 0
 
-        for storm_id, storm_data in grouped_rows.items():
-            total_items_count += 1
+        csv_data = self.data_source._parse_csv()
+        csv_data.sort(key=lambda x: x.get("SID", " "))
+        for storm_id, storm_data_iterator in itertools.groupby(csv_data, key=lambda x: x.get("SID", " ")):
+            storm_data = list(storm_data_iterator)
+            total_items_count += len(storm_data)
+
             try:
-                storm_data = self.data_source.parse_row_data(storm_data)
+                def parse_row_data(rows: list[dict]):
+                    validated_data: list[IBTracsdataValidator] = []
+                    for row in rows:
+                        obj = IBTracsdataValidator(**row)
+                        validated_data.append(obj)
+                    return validated_data
+
+                storm_data = parse_row_data(storm_data)
                 if event_item := self.make_source_event_items(storm_id, storm_data):
                     yield event_item
                     yield from self.make_hazard_items(event_item, storm_data)
+                else:
+                    failed_items_count += len(storm_data)
             except Exception:
-                failed_items_count += 1
-                logger.error("Failed to process desinventar", exc_info=True)
+                failed_items_count += len(storm_data)
+                logger.error("Failed to process ibtracs", exc_info=True)
 
         print(failed_items_count)
 
-    def make_source_event_items(self, storm_id, storm_data) -> List[Item]:
+    def make_source_event_items(self, storm_id: str, storm_data: list[IBTracsdataValidator]) -> Item | None:
         """Create source event items from IBTrACS data.
 
         Returns:
             List of event STAC Items
         """
         if not storm_data:
-            return
+            # FIXME: Do we throw error?
+            return None
 
         # Create track geometry from all positions
-        track_coords = []
+        track_coords: list[typing.Tuple[float, float]] = []
         for row in storm_data:
-            try:
-                lat = row.LAT if row.LAT else 0
-                lon = row.LON if row.LON else 0
-                track_coords.append((lon, lat))
-            except (ValueError, TypeError):
-                # Skip invalid coordinates
-                continue
+            lat = row.LAT or 0  # FIXME: Do we need these default values? Are these even correct?
+            lon = row.LON or 0  # FIXME: Do we need these default values? Are these even correct?
+            track_coords.append((lon, lat))
 
         if not track_coords:
+            # FIXME: Do we throw error?
             return
 
         # Create LineString geometry for the complete track
@@ -134,16 +126,15 @@ class IBTrACSTransformer(MontyDataTransformer[IBTrACSDataSource]):
         bbox = [min_lon, min_lat, max_lon, max_lat]
 
         # Get storm metadata
-        name = storm_data[0].NAME.strip()
-        basin = storm_data[0].BASIN.strip()
-        season = storm_data[0].SEASON
+        name = (storm_data[0].NAME or '').strip()
+        basin = (storm_data[0].BASIN or '').strip()
+        season = storm_data[0].SEASON or ''
 
         # Get storm dates
         start_time = None
         end_time = None
-
         for row in storm_data:
-            iso_time = row.ISO_TIME if row.ISO_TIME else ""
+            iso_time = row.ISO_TIME
             if iso_time:
                 dt = iso_time
                 # dt = datetime.strptime(iso_time, "%Y-%m-%d %H:%M:%S")
@@ -151,11 +142,11 @@ class IBTrACSTransformer(MontyDataTransformer[IBTrACSDataSource]):
 
                 if start_time is None or dt < start_time:
                     start_time = dt
-
                 if end_time is None or dt > end_time:
                     end_time = dt
 
         if start_time is None or end_time is None:
+            # FIXME: Do we throw error?
             return
 
         # Find maximum intensity
@@ -164,20 +155,22 @@ class IBTrACSTransformer(MontyDataTransformer[IBTrACSDataSource]):
 
         for row in storm_data:
             # Try to get wind speed from USA_WIND or WMO_WIND
+            # FIXME: Need to simplify this logic
             try:
-                wind = float(row.USA_WIND if row.USA_WIND else 0)
+                wind = float(row.USA_WIND or 0)
             except (ValueError, TypeError):
                 try:
-                    wind = float(row.WMO_WIND if row.WMO_WIND else 0)
+                    wind = float(row.WMO_WIND or 0)
                 except (ValueError, TypeError):
                     wind = 0
 
             # Try to get pressure from USA_PRES or WMO_PRES
+            # FIXME: Need to simplify this logic
             try:
-                pressure = float(row.USA_PRES if row.USA_PRES else 9999)
+                pressure = float(row.USA_PRES or 9999)
             except (ValueError, TypeError):
                 try:
-                    pressure = float(row.WMO_PRES if row.WMO_PRES else 9999)
+                    pressure = float(row.WMO_PRES or 9999)
                 except (ValueError, TypeError):
                     pressure = 9999
 
@@ -185,7 +178,6 @@ class IBTrACSTransformer(MontyDataTransformer[IBTrACSDataSource]):
             min_pressure = min(min_pressure, pressure)
 
         # Determine storm category based on Saffir-Simpson scale
-        category = ""
         if max_wind >= 137:  # Category 5
             category = "Category 5 hurricane"
         elif max_wind >= 113:  # Category 4
@@ -202,11 +194,14 @@ class IBTrACSTransformer(MontyDataTransformer[IBTrACSDataSource]):
             category = "tropical depression"
 
         # Convert knots to mph for description
+        # FIXME: Why are we using int
         mph = int(max_wind * 1.15078)
+
+        basin_name = self._get_basin_name(basin)
 
         # Create title and description
         title = f"Tropical Cyclone {name}" if name else f"Unnamed Tropical Cyclone {storm_id}"
-        description = f"Tropical Cyclone {name} ({season}) in the {self._get_basin_name(basin)} basin. "
+        description = f"Tropical Cyclone {name} ({season}) in the {basin_name} basin. "
         description += f"Maximum intensity: {category} with {mph} mph ({max_wind} knots) winds"
 
         if min_pressure < 9999:
@@ -231,10 +226,10 @@ class IBTrACSTransformer(MontyDataTransformer[IBTrACSDataSource]):
 
         # Set collection
         item.set_collection(self.get_event_collection())
+
         # Add Monty extension
         MontyExtension.add_to(item)
         monty_ext = MontyExtension.ext(item)
-
         # Set hazard codes
         monty_ext.hazard_codes = ["MH0057", "nat-met-sto-tro", "TC"]
 
@@ -246,9 +241,11 @@ class IBTrACSTransformer(MontyDataTransformer[IBTrACSDataSource]):
         # Format: [datetime]-[country]-[hazard type]-[sequence]-[source]
         # Example: 20240626T000000-XYZ-NAT-MET-STO-TRO-001-GCDB
         start_date_str = start_time.strftime("%Y%m%dT%H%M%S")
-        country_code = "XYZ"  # Default for international waters
-        if countries and countries[0] != "XYZ":
+
+        country_code: str | None = None
+        if countries and countries[0]:
             country_code = countries[0]
+        country_code = country_code or "XYZ"  # Default for international waters
 
         monty_ext.correlation_id = f"{start_date_str}-{country_code}-NAT-MET-STO-TRO-001-GCDB"
 
@@ -297,7 +294,7 @@ class IBTrACSTransformer(MontyDataTransformer[IBTrACSDataSource]):
 
         return item
 
-    def make_hazard_items(self, event_item: Item, storm_data) -> list[Item] | None:
+    def make_hazard_items(self, event_item: Item, storm_data: list[IBTracsdataValidator]) -> list[Item]:
         """Create hazard items from IBTrACS data.
 
         Args:
@@ -311,7 +308,7 @@ class IBTrACSTransformer(MontyDataTransformer[IBTrACSDataSource]):
         storm_id = event_item.id
 
         if not storm_data:
-            return
+            return []
 
         # Sort storm data by time
         storm_data.sort(key=lambda x: x.ISO_TIME if x.ISO_TIME else "")
@@ -320,16 +317,12 @@ class IBTrACSTransformer(MontyDataTransformer[IBTrACSDataSource]):
         track_coords = []
 
         for i, row in enumerate(storm_data):
-            try:
-                lat = row.LAT if row.LAT else 0
-                lon = row.LON if row.LON else 0
-                track_coords.append((lon, lat))
-            except (ValueError, TypeError):
-                # Skip invalid coordinates
-                continue
+            lat = row.LAT or 0  # FIXME: Do we need these default values? Are these even correct?
+            lon = row.LON or 0  # FIXME: Do we need these default values? Are these even correct?
+            track_coords.append((lon, lat))
 
             # Get position time
-            iso_time = row.ISO_TIME if row.ISO_TIME else ""
+            iso_time = row.ISO_TIME
             if not iso_time:
                 continue
 
@@ -356,39 +349,40 @@ class IBTrACSTransformer(MontyDataTransformer[IBTrACSDataSource]):
                 bbox = [min_lon, min_lat, max_lon, max_lat]
 
             # Get storm metadata
-            name = row.NAME if row.NAME else ""
-            basin = row.BASIN if row.BASIN else ""
-            season = row.SEASON if row.SEASON else ""
+            name = row.NAME or ""
+            basin = row.BASIN or ""
+            season = row.SEASON or ""
 
             # Get wind and pressure data
             try:
-                wind = row.USA_WIND if row.USA_WIND else 0
+                wind = float(row.USA_WIND or 0)
             except (ValueError, TypeError):
                 try:
-                    wind = row.WMO_WIND if row.WMO_WIND else 0
+                    wind = float(row.WMO_WIND or 0)
                 except (ValueError, TypeError):
                     wind = 0
 
-            wind = 0 if wind.strip() == "" else wind
-
             try:
-                pressure = float(row.USA_PRES if row.USA_PRES else 0)
+                pressure = float(row.USA_PRES or 0)
             except (ValueError, TypeError):
                 try:
-                    pressure = float(row.WMO_PRES if row.WMO_PRES else 0)
+                    pressure = float(row.WMO_PRES or 0)
                 except (ValueError, TypeError):
                     pressure = 0
 
             # Determine storm status
-            status = row.USA_STATUS if row.USA_STATUS else ""
-            if status == "HU":
-                status_text = "Hurricane"
-            elif status == "TS":
-                status_text = "Tropical Storm"
-            elif status == "TD":
-                status_text = "Tropical Depression"
-            else:
-                status_text = "Tropical Cyclone"
+            status = row.USA_STATUS
+            match status:
+                case "HU":
+                    status_text = "Hurricane"
+                case "TS":
+                    status_text = "Tropical Storm"
+                case "TD":
+                    status_text = "Tropical Depression"
+                case _:
+                    status_text = "Tropical Cyclone"
+
+            basin_name = self._get_basin_name(basin)
 
             # Create title and description
             if i == 0:
@@ -398,11 +392,11 @@ class IBTrACSTransformer(MontyDataTransformer[IBTrACSDataSource]):
                     else f"Unnamed Tropical Cyclone {storm_id} - Initial Position"
                 )
                 description = (
-                    f"Initial position of Tropical Cyclone {name} ({season}) in the {self._get_basin_name(basin)} basin. "
+                    f"Initial position of Tropical Cyclone {name} ({season}) in the {basin_name} basin. "
                 )
             else:
                 title = f"Tropical Cyclone {name}" if name else f"Unnamed Tropical Cyclone {storm_id}"
-                description = f"Tropical Cyclone {name} ({season}) in the {self._get_basin_name(basin)} basin. "
+                description = f"Tropical Cyclone {name} ({season}) in the {basin_name} basin. "
 
             description += f"Current status: {status_text} with {int(wind)} knots wind speed."
 
@@ -476,7 +470,7 @@ class IBTrACSTransformer(MontyDataTransformer[IBTrACSDataSource]):
                 keywords.append(name)
 
             keywords.append(season)
-            keywords.append(self._get_basin_name(basin))
+            keywords.append(basin_name)
 
             item.properties["keywords"] = keywords
 
@@ -560,6 +554,7 @@ class IBTrACSTransformer(MontyDataTransformer[IBTrACSDataSource]):
             List of ISO3 country codes
         """
         if self.geocoder is None:
+            # FIXME: Should we use ["UNK"] instead?
             return ["XYZ"]  # Default to international waters if no geocoder
 
         # Use the geocoder to find countries
@@ -577,12 +572,12 @@ class IBTrACSTransformer(MontyDataTransformer[IBTrACSDataSource]):
             elif isinstance(track_geometry, Point):
                 lon, lat = track_geometry.x, track_geometry.y
                 country_code = self.geocoder.get_iso3_from_geometry(track_geometry)
-                country_code = "UNK"
                 if country_code:
                     countries.append(country_code)
         except Exception as e:
             # If geocoding fails, default to international waters
-            print(f"Geocoding error: {e}")
+            logger.error(f"Geocoding error: {e}", exc_info=True)
+            # FIXME: Should we use ["UNK"] instead?
             return ["XYZ"]
 
         # Remove duplicates and sort
@@ -590,6 +585,7 @@ class IBTrACSTransformer(MontyDataTransformer[IBTrACSDataSource]):
 
         # If no countries found, use XYZ for international waters
         if not countries:
-            countries = ["XYZ"]
+            # FIXME: Should we use ["UNK"] instead?
+            return ["XYZ"]
 
         return countries
