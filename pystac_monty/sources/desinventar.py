@@ -556,7 +556,6 @@ class DesinventarTransformer(MontyDataTransformer):
                 "shapefile_data": shapefile_data
             }
 
-        print(geo_data)
         return geo_data
 
     @staticmethod
@@ -583,11 +582,9 @@ class DesinventarTransformer(MontyDataTransformer):
 
             events = root.xpath("//fichas/TR")
 
-            failed_items_count = 0
-            total_items_count = 0
-
+            self.transform_summary.mark_as_started()
             for event_row in events:
-                total_items_count += 1
+                self.transform_summary.increment_rows()
                 try:
                     if row_data := parse_row_data(
                         event_row,
@@ -599,12 +596,11 @@ class DesinventarTransformer(MontyDataTransformer):
                             yield event_item
                             yield from self._create_impact_items_from_row(row_data, event_item)
                         else:
-                            failed_items_count += 1
+                            self.transform_summary.increment_failed_rows()
                 except Exception:
-                    failed_items_count += 1
+                    self.transform_summary.increment_failed_rows()
                     logger.error('Failed to process desinventar', exc_info=True)
-
-            print(failed_items_count)
+            self.transform_summary.mark_as_complete()
 
     # FIXME: This is deprecated
     def make_items(self):

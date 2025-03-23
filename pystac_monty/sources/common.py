@@ -9,6 +9,36 @@ from pystac import Collection, Item
 from pystac_monty.geocoding import MontyGeoCoder
 
 
+class TransformSummaryInProgressException(Exception): ...
+
+
+@dataclass
+class TransformSummary:
+    total_rows: int = 0
+    failed_rows: int = 0
+    is_completed: bool = False
+
+    def increment_rows(self, increment=1):
+        self.total_rows += increment
+
+    def increment_failed_rows(self, increment=1):
+        self.failed_rows += increment
+
+    def mark_as_complete(self):
+        self.is_completed = True
+
+    def mark_as_started(self):
+        self.is_completed = False
+        self.total_rows = 0
+        self.failed_rows = 0
+
+    @property
+    def success_rows(self) -> int:
+        if not self.is_completed:
+            raise TransformSummaryInProgressException()
+        return self.total_rows - self.failed_rows
+
+
 @dataclass
 class MontyDataSource:
     source_url: str
@@ -60,6 +90,8 @@ class MontyDataTransformer(typing.Generic[DataSource]):
 
         self.geocoder = geocoder
 
+        self.transform_summary = TransformSummary()
+
     def get_event_collection(self) -> Collection:
         """Get event collection"""
         if self._event_collection_cache is None:
@@ -108,5 +140,9 @@ class MontyDataTransformer(typing.Generic[DataSource]):
             self._impact_collection_cache = collection
         return self._impact_collection_cache
 
+    # FIXME: This method is deprecated
     @abc.abstractmethod
     def make_items(self) -> list[Item]: ...
+
+    @abc.abstractmethod
+    def get_stac_items(self) -> typing.Generator[Item, None, None]: ...
