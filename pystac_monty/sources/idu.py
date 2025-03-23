@@ -8,6 +8,8 @@ from typing import Any, Dict, List
 import pytz
 from markdownify import markdownify as md
 from pystac import Asset, Item, Link
+from shapely.geometry import Point, mapping
+
 from pystac_monty.extension import (
     ImpactDetail,
     MontyEstimateType,
@@ -19,7 +21,6 @@ from pystac_monty.hazard_profiles import MontyHazardProfiles
 from pystac_monty.sources.common import MontyDataSource, MontyDataTransformer
 from pystac_monty.sources.utils import IDMCUtils
 from pystac_monty.validators.idu import IDUSourceValidator
-from shapely.geometry import Point, mapping
 
 logger = logging.getLogger(__name__)
 
@@ -55,7 +56,7 @@ class IDUTransformer(MontyDataTransformer[IDUDataSource]):
     """Transform the source data into the STAC items"""
 
     hazard_profiles = MontyHazardProfiles()
-    source_name = 'idmc-idu'
+    source_name = "idmc-idu"
 
     def make_items(self) -> List[Item]:
         """Create items"""
