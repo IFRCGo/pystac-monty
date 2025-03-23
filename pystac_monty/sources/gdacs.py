@@ -111,13 +111,33 @@ class GDACSTransformer(MontyDataTransformer[GDACSDataSource]):
 
     def get_hazard_codes(self, hazard: str) -> List[str]:
         hazard_mapping = {
-            "EQ": ["GH0001", "GH0002", "GH0003", "GH0004", "GH0005"],
-            "TC": ["MH0030", "MH0031", "MH0032"],
-            "FL": ["FL"],  # General flood
-            "DR": ["MH0035"],
-            "WF": ["EN0013"],
-            "VO": ["GH009", "GH0013", "GH0014", "GH0015", "GH0016"],
-            "TS": ["MH0029", "GH0006"],
+            "EQ": ["nat-gem-ear-gro", "EQ"],
+            "TC": ["nat-met-sto-tro", "TC"],
+            "FL": ["nat-hyd-flo-flo", "FL"],
+            "DR": ["nat-cli-dro-dro", "DR"],
+            "WF": ["nat-cli-wil-wil", "WF"],
+            "VO": ["nat-geo-vol-vol", "VO"],
+            "TS": ["nat-geo-ear-tsu", "TS"],
+            "CW": ["nat-met-ext-col", "CW"],
+            "EP": ["nat-bio-epi-dis", "EP"],
+            "EC": ["nat-met-sto-ext", "EC"],
+            "ET": ["nat-met-ext-col", "ET"],
+            "FR": ["tec-ind-fir-fir", "FR"],
+            "FF": ["nat-hyd-flo-fla", "FF"],
+            "HT": ["nat-met-ext-hea", "HT"],
+            "IN": ["nat-bio-inf-inf", "IN"],
+            "LS": ["nat-hyd-mmw-lan", "LS"],
+            "MS": ["nat-hyd-mmw-mud", "MS"],
+            "ST": ["nat-met-sto-sto", "ST"],
+            "SL": ["nat-hyd-mmw-lan", "SL"],
+            "AV": ["nat-geo-mmd-ava", "AV"],
+            "SS": ["nat-met-sto-sur", "SS"],
+            "AC": ["AC"],
+            "TO": ["nat-met-sto-tor", "TO"],
+            "VW": ["nat-met-sto-tor", "VW"],
+            "WV": ["nat-hyd-wav-rog", "WV"],
+            "OT": ["OT"],
+            "CE": ["CE"],
         }
         if hazard not in hazard_mapping:
             print(f"Hazard {hazard} not found.")
@@ -241,6 +261,8 @@ class GDACSTransformer(MontyDataTransformer[GDACSDataSource]):
         monty = MontyExtension.ext(item)
         # hazard_detail
         monty.hazard_detail = self.get_hazard_detail(item, episode_event)
+        # keep the first hazard code
+        monty.hazard_codes = monty.hazard_codes[0:1]
 
         return item
 
