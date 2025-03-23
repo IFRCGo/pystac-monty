@@ -59,15 +59,13 @@ class IBTrACSTransformer(MontyDataTransformer[IBTrACSDataSource]):
     source_name = 'ibtracs'
 
     def get_stac_items(self) -> typing.Generator[Item, None, None]:
-        # # TODO: Use sax xml parser for memory efficient usage
-        failed_items_count = 0
-        total_items_count = 0
-
+        self.transform_summary.mark_as_started()
+        # TODO: Use sax xml parser for memory efficient usage
         csv_data = self.data_source._parse_csv()
         csv_data.sort(key=lambda x: x.get("SID", " "))
         for storm_id, storm_data_iterator in itertools.groupby(csv_data, key=lambda x: x.get("SID", " ")):
             storm_data = list(storm_data_iterator)
-            total_items_count += len(storm_data)
+            self.transform_summary.increment_rows(len(storm_data))
 
             try:
                 def parse_row_data(rows: list[dict]):
@@ -82,12 +80,11 @@ class IBTrACSTransformer(MontyDataTransformer[IBTrACSDataSource]):
                     yield event_item
                     yield from self.make_hazard_items(event_item, storm_data)
                 else:
-                    failed_items_count += len(storm_data)
+                    self.transform_summary.increment_failed_rows(len(storm_data))
             except Exception:
-                failed_items_count += len(storm_data)
+                self.transform_summary.increment_failed_rows(len(storm_data))
                 logger.error("Failed to process ibtracs", exc_info=True)
-
-        print(failed_items_count)
+        self.transform_summary.mark_as_complete()
 
     # FIXME: This is deprecated
     def make_items(self):
