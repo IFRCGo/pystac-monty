@@ -58,10 +58,6 @@ class IBTrACSTransformer(MontyDataTransformer[IBTrACSDataSource]):
     hazard_profiles = MontyHazardProfiles()
     source_name = 'ibtracs'
 
-    # FIXME: This is deprecated
-    def make_items(self):
-        return list(self.get_stac_items())
-
     def get_stac_items(self) -> typing.Generator[Item, None, None]:
         # # TODO: Use sax xml parser for memory efficient usage
         failed_items_count = 0
@@ -92,6 +88,10 @@ class IBTrACSTransformer(MontyDataTransformer[IBTrACSDataSource]):
                 logger.error("Failed to process ibtracs", exc_info=True)
 
         print(failed_items_count)
+
+    # FIXME: This is deprecated
+    def make_items(self):
+        return list(self.get_stac_items())
 
     def make_source_event_items(self, storm_id: str, storm_data: list[IBTracsdataValidator]) -> Item | None:
         """Create source event items from IBTrACS data.
