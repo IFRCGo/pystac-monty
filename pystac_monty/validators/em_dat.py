@@ -1,8 +1,10 @@
 import logging
 import math
+import typing
 from typing import Optional
 
-from pydantic import BaseModel, ConfigDict, Field, field_validator
+from pydantic import BaseModel, ConfigDict, field_validator
+import pandas as pd
 
 logger = logging.getLogger(__name__)
 logging.basicConfig(level=logging.INFO)
@@ -16,49 +18,51 @@ class BaseModelWithExtra(BaseModel):
 class EmdatDataValidator(BaseModelWithExtra):
     disno: str
     classif_key: str
-    group: str
-    subgroup: str
-    type: str
-    subtype: str
-    external_ids: Optional[str] = None
-    name: Optional[str] = None
-    iso: str
-    country: str
-    subregion: str
-    region: str
-    location: str
-    origin: Optional[str] = None
-    associated_types: Optional[str] = None
-    ofda_response: bool
-    appeal: bool
-    declaration: bool
-    aid_contribution: Optional[str] = None
-    magnitude: Optional[float] = None
-    magnitude_scale: Optional[str] = None
-    latitude: Optional[float] = None
-    longitude: Optional[float] = None
-    river_basin: Optional[str] = None
-    start_year: int
-    start_month: int
-    start_day: int
-    end_year: int
-    end_month: int
-    end_day: int
-    total_deaths: Optional[int] = None
-    no_injured: Optional[int] = None
-    no_affected: Optional[int] = None
-    no_homeless: Optional[int] = None
-    total_affected: Optional[int] = None
-    reconstr_dam: Optional[float] = None
-    reconstr_dam_adj: Optional[float] = None
-    insur_dam: Optional[float] = None
-    insur_dam_adj: Optional[float] = None
-    total_dam: Optional[float] = None
-    total_dam_adj: Optional[float] = None
-    cpi: Optional[float] = None
-    admin_units: Optional[str] = None
-    entry_date: Optional[str]
-    last_update: Optional[str]
+    # group: str
+    # subgroup: str
+    type: str | None = None
+    subtype: str | None = None
+    # external_ids: Optional[str] = None
+    name: str | None = None
+    iso: str | None
+    country: str | None = None
+    # subregion: str
+    # region: str
+    location: str | None = None
+    # origin: Optional[str] = None
+    # associated_types: Optional[str] = None
+    # ofda_response: bool
+    # appeal: bool
+    # declaration: bool
+    # aid_contribution: Optional[str] = None
+    magnitude: float | None = None
+    magnitude_scale: str | None = None
+    latitude: float | None = None
+    longitude: float | None = None
+    # river_basin: Optional[str] = None
+
+    start_year: int | None
+    start_month: int | None
+    start_day: int | None
+    end_year: int | None
+    end_month: int | None
+    end_day: int | None
+
+    total_deaths: float | None = None
+    no_injured: float | None = None
+    no_affected: float | None = None
+    no_homeless: float | None = None
+    total_affected: float | None = None
+    # reconstr_dam: Optional[float] = None
+    # reconstr_dam_adj: Optional[float] = None
+    # insur_dam: Optional[float] = None
+    # insur_dam_adj: Optional[float] = None
+    total_dam: float | None = None
+    # total_dam_adj: Optional[float] = None
+    # cpi: Optional[float] = None
+    # admin_units: list[typing.Any] | None = None
+    # entry_date: Optional[str]
+    # last_update: Optional[str]
 
     @field_validator("total_deaths")
     def validate_total_deaths(cls, value):
@@ -78,16 +82,10 @@ class EmdatDataValidator(BaseModelWithExtra):
         return True
 
     @field_validator(
-        "no_injured",
-        "no_affected",
-        "no_homeless",
-        "total_deaths",
-        "total_affected",
-        "total_dam",
-        "location",
+        "*",
         mode="before"
     )
     def replace_nan_with_none(cls, value):
-        if value is None or (isinstance(value, float) and math.isnan(value)):
-            return None  # Or use 0 if you prefer
+        if pd.isna(value):
+            return None
         return value

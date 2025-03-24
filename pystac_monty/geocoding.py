@@ -5,7 +5,7 @@ from typing import Any, Dict, List, Optional, Set, Union
 
 import fiona  # type: ignore
 import requests
-from shapely.geometry import mapping, shape  # type: ignore
+from shapely.geometry import Point, mapping, shape  # type: ignore
 from shapely.ops import unary_union  # type: ignore
 
 
@@ -16,6 +16,10 @@ class MontyGeoCoder(ABC):
 
     @abstractmethod
     def get_geometry_by_country_name(self, country_name: str) -> Optional[Dict[str, Any]]:
+        pass
+
+    @abstractmethod
+    def get_iso3_from_point(self, point: Point) -> Optional[str]:
         pass
 
     @abstractmethod
@@ -143,6 +147,9 @@ class WorldAdministrativeBoundariesGeocoder(MontyGeoCoder):
             return None
 
         return None
+
+    def get_iso3_from_point(self, point: Point) -> Optional[str]:
+        self.get_iso3_from_geometry(point.__geo_interface__)
 
     def get_geometry_from_admin_units(self, admin_units: str) -> Optional[Dict[str, Any]]:
         raise NotImplementedError("Method not implemented")
@@ -471,7 +478,7 @@ class GAULGeocoder(MontyGeoCoder):
 
         if not self.gpkg_path:
             params = {"country_name": country_name}
-            service_url = f"{self.service_base_url}/by_country_name"
+            service_url = f"{self.service_base_url}/geom_by_country_name"
             return self._service_request_handler(service_url=service_url, params=params)
 
         if not country_name or not self._path:
@@ -500,12 +507,24 @@ class GAULGeocoder(MontyGeoCoder):
             print(f"Error getting country geometry for {country_name}: {str(e)}")
             return None
 
+    def get_iso3_from_point(self, point: Point) -> Optional[str]:
+        if not self.gpkg_path:
+            params = {"lng": point.x, "lat": point.y}
+            service_url = f"{self.service_base_url}/iso3_by_geom"
+            resp = self._service_request_handler(service_url=service_url, params=params)
+            return (resp.get("iso3") if resp else None) or "UNK"
+        return "UNK"
+
+    # FIXME: This is not being used
     def get_iso3_from_geometry(self, geometry: Dict[str, Any]) -> Optional[str]:
-        # FIXME: Implement this later
         return "UNK"
 
     def get_geometry_from_iso3(self, iso3: str) -> Optional[Dict[str, Any]]:
-        raise NotImplementedError("Method not implemented")
+        if not self.gpkg_path:
+            params = {"iso3": iso3}
+            service_url = f"{self.service_base_url}/geom_by_iso3"
+            return self._service_request_handler(service_url=service_url, params=params)
+        return None
 
 
 class MockGeocoder(MontyGeoCoder):
@@ -519,6 +538,23 @@ class MockGeocoder(MontyGeoCoder):
         # Test geometries for Spain and its admin units
         self._test_geometries: Dict[str, Dict[str, Any]] = {
             # Simplified polygon for Spain
+            "USA": {
+                "geometry": {
+                    "type": "Polygon",
+                    "coordinates": [
+                        [
+                            [-125.0, 25.0],  # Southwest
+                            [-125.0, 50.0],  # Northwest
+                            [-67.0, 50.0],  # Northeast
+                            [-67.0, 25.0],  # Southeast
+                            [-125.0, 25.0],  # Close polygon
+                        ]
+                    ],
+                },
+                "bbox": [
+                    -125.0, 25.0, -67.0, 50.0,
+                ],
+            },
             "ESP": {
                 "geometry": {
                     "type": "Polygon",
@@ -590,6 +626,9 @@ class MockGeocoder(MontyGeoCoder):
             # Return test geometry for Spain
             if country_name.lower() == "spain":
                 return self._test_geometries["ESP"]
+            if country_name.lower() == "united states of america":
+                return self._test_geometries["ESP"]
+            return None
             return None
 
         except Exception as e:
@@ -629,6 +668,22 @@ class MockGeocoder(MontyGeoCoder):
         except Exception as e:
             print(f"Error getting mock ISO3 from geometry: {str(e)}")
             return None
+
+    def get_iso3_from_point(self, point: Point) -> Optional[str]:
+        """
+        Get ISO3 code for point
+        Returns the ISO3 code of the first test geometry that intersects with the input point.
+
+        Args:
+            geometry: Point
+
+        Returns:
+            Optional[str]: ISO3 code if geometry intersects with any test point, None otherwise
+        """
+        if not Point:
+            return None
+
+        return self.get_iso3_from_geometry(point.__geo_interface__)
 
     def get_geometry_from_iso3(self, iso3: str) -> Optional[Dict[str, Any]]:
         """

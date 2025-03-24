@@ -574,7 +574,7 @@ class IBTrACSTransformer(MontyDataTransformer[IBTrACSDataSource]):
             if isinstance(track_geometry, LineString):
                 for point in track_geometry.coords:
                     lon, lat = point
-                    country_code = self.geocoder.get_iso3_from_geometry(Point(lon, lat))
+                    country_code = self.geocoder.get_iso3_from_point(Point(lon, lat))
                     if country_code:
                         countries.append(country_code)
             # For Point, check the single point
