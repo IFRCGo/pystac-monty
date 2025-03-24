@@ -1,22 +1,26 @@
+from email.errors import NonASCIILocalPartDefect
 import logging
 from datetime import datetime
+from token import OP
 from typing import List, Optional
 
-from pydantic import BaseModel, field_validator
+from pydantic import BaseModel, field_validator, ConfigDict
 
 logger = logging.getLogger(__name__)
 logging.basicConfig(level=logging.INFO)
 logger.setLevel(logging.INFO)
 
+class BaseModelWithExtra(BaseModel):
+    model_config = ConfigDict(extra="ignore")
 
-class DisasterType(BaseModel):
+class DisasterType(BaseModelWithExtra):
     id: int
     name: str
     summary: str
     translation_module_original_language: str
 
 
-class Country(BaseModel):
+class Country(BaseModelWithExtra):
     iso: str
     iso3: str
     id: int
@@ -32,7 +36,7 @@ class Country(BaseModel):
     translation_module_original_language: str
 
 
-class Appeal(BaseModel):
+class Appeal(BaseModelWithExtra):
     aid: str
     num_beneficiaries: int
     amount_requested: float
@@ -47,7 +51,7 @@ class Appeal(BaseModel):
     translation_module_original_language: str
 
 
-class Contact(BaseModel):
+class Contact(BaseModelWithExtra):
     ctype: str
     name: str
     title: str
@@ -56,7 +60,7 @@ class Contact(BaseModel):
     id: int
 
 
-class FieldReport(BaseModel):
+class FieldReport(BaseModelWithExtra):
     status: int
     contacts: List[Contact]
     countries: List[Country]
@@ -65,20 +69,60 @@ class FieldReport(BaseModel):
     report_date: datetime
     id: int
     is_covid_report: bool
-    num_assisted: Optional[int]
-    num_displaced: Optional[int]
-    gov_num_dead: Optional[int]
-    gov_num_injured: Optional[int]
-    other_num_displaced: Optional[int]
-    affected_pop_centres: Optional[str]
-    gov_affected_pop_centres: Optional[str]
-    other_affected_pop_centres: Optional[str]
+    num_injured: Optional[int] = None
+    num_dead: Optional[int] = None
+    num_missing: Optional[int] = None
+    num_affected: Optional[int]= None
+    num_displaced: Optional[int] = None
+    epi_num_dead: Optional[int] = None
+    num_assisted: Optional[int] = None
+    num_localstaff: int
+    num_volunteers: int
+    num_expats_delegates: Optional[int] = None
+    gov_num_injured: Optional[int] = None
+    gov_num_dead: Optional[int] = None
+    gov_num_missing: Optional[int] = None
+    gov_num_affected: Optional[int] = None
+    gov_num_displaced: Optional[int] = None
+    gov_num_assisted: Optional[int] = None
+    other_num_injured: Optional[int] = None
+    other_num_dead: Optional[int] = None
+    other_num_missing: Optional[int] = None
+    other_num_affected: Optional[int] = None
+    other_num_displaced: Optional[int] = None
+    other_num_assisted: Optional[int] = None
+    num_potentially_affected: Optional[int] = None
+    gov_num_potentially_affected: Optional[int] = None
+    other_num_potentially_affected: Optional[int] = None
+    num_highest_risk: Optional[int] = None
+    gov_num_highest_risk: Optional[int] = None
+    other_num_highest_risk: Optional[int] = None
+    affected_pop_centres: Optional[str] = None
+    gov_affected_pop_centres: Optional[str] = None
+    other_affected_pop_centres: Optional[str] = None
+    epi_cases: Optional[int] = None
+    epi_suspected_cases: Optional[int] = None
+    epi_probable_cases: Optional[int] = None
+    epi_confirmed_cases: Optional[int] = None
+    epi_figures_source: Optional[int] = None
+    epi_figures_source_display: Optional[str] = None
+    epi_cases_since_last_fr: Optional[int] = None
+    epi_deaths_since_last_fr: Optional[int] = None
+    epi_notes_since_last_fr: Optional[str] = None
+    visibility: int
+    visibility_display: str
+    request_assistance: bool
+    ns_request_assistance: bool
+    notes_health: Optional[str] = None
+    notes_ns: Optional[str] = None
+    notes_socioeco: Optional[str] = None
+    recent_affected: int
     description: str
     summary: str
     translation_module_original_language: str
 
 
-class IFRCsourceValidator(BaseModel):
+class IFRCsourceValidator(BaseModelWithExtra):
     dtype: DisasterType
     countries: List[Country]
     num_affected: Optional[int]
