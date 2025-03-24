@@ -39,74 +39,63 @@ class IDUSourceValidator(BaseModelWithExtra):
     type: str
     subtype: str
     standard_popup_text: str
+    sources: str
     source_url: str
     locations_name: str
 
     @field_validator("latitude")
     @classmethod
-    def validate_latitude(cls, value: float) -> bool:
+    def validate_latitude(cls, value: float) -> float | None:
         """Validation for Latitude field"""
         if not (-90 <= value <= 90):
             logger.error("Latitude must be between -90 and 90.")
-            return False
-        return True
+            return None
+        return value
 
     @field_validator("longitude")
     @classmethod
-    def validate_longitude(cls, value: float) -> bool:
+    def validate_longitude(cls, value: float) -> float | None:
         """Validation for Longitude field"""
         if not (-180 <= value <= 180):
             logger.error("Longitude must be between -180 and 180.")
-            return True
-        return True
+            return None
+        return value
 
     @field_validator("centroid")
     @classmethod
-    def validate_centroid(cls, value: str) -> bool:
+    def validate_centroid(cls, value: str) -> str | None:
         """Validation for centroid field"""
         try:
             coords = json.loads(value)  # Parse JSON format list
             if not isinstance(coords, list) or len(coords) != 2:
                 logger.error("Centroid must be a list with two values: [latitude, longitude].")
-                return False
+                return None
             latitude, longitude = coords
             if not (-90 <= latitude <= 90) or not (-180 <= longitude <= 180):
                 logger.error("Invalid centroid coordinates.")
-                return False
+                return None
         except (json.JSONDecodeError, ValueError):
             logger.error("Invalid centroid format. Must be a JSON string representing [latitude, longitude].")
-            return False
-        return True
+            return None
+        return value
 
     @field_validator(
         "displacement_date", "displacement_start_date", "displacement_end_date", "event_start_date", "event_end_date"
     )
     @classmethod
-    def validate_date(cls, value: date) -> bool:
+    def validate_date(cls, value: date) -> date | None:
         """Validation for date field"""
         if not isinstance(value, date):
             logger.error(f"Invalid date format: {value}. Expected YYYY-MM-DD.")
-            return False
-        return True
+            return None
+        return value
 
     @field_validator("source_url")
     @classmethod
-    def validate_source_url(cls, value: str) -> bool:
+    def validate_source_url(cls, value: str) -> str | None:
         """Validation for source_url field"""
         url_regex = r"^(https?://)?([a-zA-Z0-9_-]+(\.[a-zA-Z0-9_-]+)+)(/[^\s]*)?$"
         if not re.match(url_regex, value):
             logger.error(f"Invalid URL: {value}")
-            return False
-        return True
-
-    # Method to validate the entire model
-    @classmethod
-    def validate_event(cls, data: dict) -> bool:
-        """Validate the overall data item"""
-        try:
-            _ = cls(**data)  # This will trigger the validators
-        except Exception as e:
-            logger.error(f"Validation failed: {e}")
-            return False
-        # If all field validators return True, we consider it valid
-        return True
+            return None
+        return value

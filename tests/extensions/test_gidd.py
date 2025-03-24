@@ -47,11 +47,9 @@ class GIDDTest(unittest.TestCase):
     @parameterized.expand(load_scenarios(scenarios))
     @pytest.mark.vcr()
     def test_transformer(self, transformer: GIDDTransformer) -> None:
-        items = transformer.make_items()
-        self.assertTrue(len(items) > 0)
         source_event_item = None
         source_impact_item = None
-        for item in items:
+        for item in transformer.get_stac_items():
             # write pretty json in a temporary folder for manual inspection
             item_path = get_data_file(f"temp/gidd/{item.id}.json")
             with open(item_path, "w") as f:

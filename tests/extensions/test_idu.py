@@ -47,12 +47,10 @@ class IDUTest(unittest.TestCase):
     @parameterized.expand(load_scenarios(scenarios))
     @pytest.mark.vcr()
     def test_transformer(self, transformer: IDUTransformer) -> None:
-        items = transformer.make_items()
-        self.assertTrue(len(items) > 0)
         source_event_item = None
         source_impact_item = None
 
-        for item in items:
+        for item in transformer.get_stac_items():
             item_path = get_data_file(f"temp/idu/{item.id}.json")
             with open(item_path, "w", encoding="utf-8") as f:
                 json.dump(item.to_dict(), f, indent=2)
