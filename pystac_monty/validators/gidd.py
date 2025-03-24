@@ -39,6 +39,7 @@ class Properties(BaseModelWithExtra):
     Stock_reporting_date: date = Field(None, alias="Stock reporting date")
     Start_date: date = Field(None, alias="Start date")
     Start_date_accuracy: str = Field(None, alias="Start date accuracy")
+    End_date: date = Field(None, alias="End date")
     Start_reporting_date: date = Field(None, alias="Start reporting date")
     Publishers: List[str]
     Sources: List[str]
@@ -59,23 +60,13 @@ class Properties(BaseModelWithExtra):
     Displacement_occurred: Optional[str] = None
 
     @field_validator("Figure_cause")
-    def check_figure_cause(cls, value: str) -> bool:
-        if value not in ["Conflict", "Disaster"]:
+    def check_figure_cause(cls, value: str) -> str | None:
+        if value not in ["Conflict", "Disaster", "Other"]:
             logger.error("Figure cause must be either 'Conflict' or 'Disaster'.")
-            return False
-        return True
+            return None
+        return value
 
 
 class GiddValidator(BaseModelWithExtra):
     geometry: Geometry
     properties: Properties
-
-    @classmethod
-    def validate_event(cls, data) -> bool:
-        """Validate the overall data item"""
-        try:
-            _ = cls(**data)  # This will trigger the validators
-        except Exception as e:
-            logger.error(f"Validation failed: {e}")
-            return False
-        return True
