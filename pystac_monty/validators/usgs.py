@@ -1,6 +1,8 @@
+from curses.ascii import ETB
 from attr import dataclass
-from pydantic import BaseModel, HttpUrl, Field, field_validator
-from typing import List, Optional, Dict, Any
+from pydantic import BaseModel, HttpUrl, Field, field_validator, ConfigDict
+from typing import List, Optional, Dict, Any, Union
+from datetime import datetime
 
 import logging
 
@@ -8,15 +10,95 @@ logger = logging.getLogger(__name__)
 logging.basicConfig(level=logging.INFO)
 logger.setLevel(logging.INFO)
 
-class Metadata(BaseModel):
-    generated: int
-    url: HttpUrl
-    title: str
-    status: int
-    api: str
-    count: int
+class BaseModelWithExtra(BaseModel):
+    model_config = ConfigDict(extra="ignore")       
 
-class Properties(BaseModel):
+class ContentItem(BaseModel):
+    contentType: str
+    lastModified: int
+    length: int
+    url: str
+
+class LossProperties(BaseModel):
+    alertlevel: str
+    depth: str
+    eventsource: str
+    eventsourcecode: str
+    eventtime: datetime
+    latitude: str
+    longitude: str
+    magnitude: str
+    maxmmi: str
+    pdl_client_version: str
+    review_status: str
+
+class ShakemapProperties(BaseModel):
+    depth: float
+    event_description: str
+    event_type: str
+    eventsource: str
+    eventsourcecode: str
+    eventtime: datetime
+    gmice: str
+    latitude: float
+    longitude: float
+    magnitude: float
+    map_status: str
+    maximum_latitude: float
+    maximum_longitude: float
+    maxmmi: float
+    maxmmi_grid: float
+    maxpga: float
+    maxpga_grid: float
+    maxpgv: float
+    maxpgv_grid: float
+    maxpsa03: float
+    maxpsa03_grid: float
+    maxpsa10: float
+    maxpsa10_grid: float
+    maxpsa30: float
+    maxpsa30_grid: float
+    minimum_latitude: float
+    minimum_longitude: float
+    pdl_client_version: str
+    process_timestamp: datetime
+    review_status: str
+    shakemap_code_version: str
+    version: int
+
+
+class Losspager(BaseModel):
+    indexid: int
+    indexTime: int
+    id: str
+    type: str
+    code: str
+    source: str
+    updateTime: int
+    status: str
+    properties: LossProperties
+    preferredWeight: int
+    contents: Dict[str, ContentItem]
+    
+class Shakemap(BaseModel):
+    indexid: int
+    indexTime: int
+    id: str
+    type: str
+    code: str
+    source: str
+    updateTime: int
+    status: str
+    properties: ShakemapProperties
+    preferredWeight: int
+    contents: Dict[str, ContentItem]
+
+class Products(BaseModelWithExtra):
+    losspager: List[Losspager]
+    shakemap: List[Shakemap]
+
+
+class BaseProperties(BaseModel):
     mag: float
     place: str
     time: int
@@ -43,6 +125,7 @@ class Properties(BaseModel):
     magType: str
     type: str
     title: str
+    products: Dict[str,Products]
 
 class Geometry(BaseModel):
     type: str
@@ -54,21 +137,31 @@ class Geometry(BaseModel):
             logger.error("Coordinates must have exactly three elements (longitude, latitude, depth)")
         return value
 
-class Feature(BaseModel):
+class USGSValidator(BaseModel):
     type: str
-    properties: Properties
+    properties: BaseProperties
     geometry: Geometry
     id: str
 
-class EarthquakeData(BaseModel):
-    type: str
-    metadata: Metadata
-    features: List[Feature]
-    bbox: List[float]
+class CountryFatalities(BaseModel):
+    country_code: str
+    rates: List[float]
+
+
+class CountryDollars(BaseModel):
+    country_code: str
+    rates: List[float]
+    us_dollars: int
+
+
+class EmpiricalFatality(BaseModel):
+    total_fatalities: int
+    country_fatalities: List[CountryFatalities]
+
+class EmpiricalEconomic(BaseModel):
+    total_dollars: int
+    country_dollars: List[CountryDollars]
     
-    @field_validator("bbox")
-    def validate_bbox(cls, value):
-        if len(value) != 6:
-            logger.error("Bounding box must contain exactly six elements")
-        return value
-    
+class EmpiricalValidator(BaseModelWithExtra):
+    empirical_fatality: EmpiricalFatality
+    empirical_economic: EmpiricalEconomic
