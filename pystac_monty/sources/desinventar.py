@@ -2,13 +2,10 @@ import logging
 import tempfile
 import typing
 from contextlib import contextmanager
-from datetime import datetime
 from pathlib import Path
-from typing import Any, Dict, List, Optional, Tuple, TypedDict
+from typing import Any, Dict, List, Optional, Tuple
 from zipfile import ZipFile
 
-import pydantic
-import pytz
 import requests
 from geopandas import gpd
 from lxml import etree
@@ -222,7 +219,7 @@ class DesinventarDataSource:
                 xml_file.close()
 
 
-class DesinventarTransformer(MontyDataTransformer):
+class DesinventarTransformer(MontyDataTransformer[DesinventarDataSource]):
     """Transform DesInventar data to STAC items"""
 
     source_name = 'desinventar'

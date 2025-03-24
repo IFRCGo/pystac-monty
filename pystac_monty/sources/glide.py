@@ -1,7 +1,7 @@
 import json
 import logging
-import typing
 import mimetypes
+import typing
 from datetime import datetime
 from typing import Any, List
 
@@ -33,18 +33,16 @@ class GlideTransformer(MontyDataTransformer[GlideDataSource]):
     hazard_profiles = MontyHazardProfiles()
     source_name = 'glide'
 
+    # FIXME: This is deprecated
     def make_items(self) -> list[Item]:
         return list(self.get_stac_items())
 
     def get_stac_items(self) -> typing.Generator[Item, None, None]:
-
         glideset: list[dict] = self.data_source.get_data()["glideset"]
 
-        failed_items_count = 0
-        total_items_count = 0
-
+        self.transform_summary.mark_as_started()
         for row in glideset:
-            total_items_count += 1
+            self.transform_summary.increment_rows()
             try:
                 def parse_row_data(row: dict):
                     obj = GlideSetValidator(**row)
@@ -55,12 +53,11 @@ class GlideTransformer(MontyDataTransformer[GlideDataSource]):
                     yield event_item
                     yield self.make_hazard_event_items(event_item)
                 else:
-                    failed_items_count += 1
+                    self.transform_summary.increment_failed_rows()
             except Exception:
-                failed_items_count += 1
+                self.transform_summary.increment_failed_rows()
                 logger.error("Failed to process glide", exc_info=True)
-
-        print(failed_items_count)
+        self.transform_summary.mark_as_complete()
 
     def get_hazard_codes(self, hazard: str) -> List[str]:
         hazard_mapping = {
@@ -90,19 +87,17 @@ class GlideTransformer(MontyDataTransformer[GlideDataSource]):
             "VW": ["MH0060"],
             "WV": ["MH0029", "GH0006"],
         }
-        if hazard not in hazard_mapping:
-            raise KeyError(f"Hazard {hazard} not found.")
-        return hazard_mapping.get(hazard)
+        return hazard_mapping[hazard]
 
-    def make_source_event_items(self, data: dict) -> Item:
+    def make_source_event_items(self, data: GlideSetValidator) -> Item | None:
         """Create source event items"""
         glide_id = STAC_EVENT_ID_PREFIX + data.event + "-" + data.number + "-" + data.geocode
-        latitude = float(data.latitude)
-        longitude = float(data.longitude)
+        latitude = data.latitude
+        longitude = data.longitude
         event_date = {
-            "year": abs(int(data.year)),
-            "month": abs(int(data.month)),
-            "day": abs(int(data.day)),
+            "year": data.year,
+            "month": data.month,
+            "day": data.day,
         }  # abs is used to ignore negative sign
 
         point = Point(longitude, latitude)
@@ -149,7 +144,6 @@ class GlideTransformer(MontyDataTransformer[GlideDataSource]):
             ),
         )
 
-        # event_items.append(item)
         return item
 
     def make_hazard_event_items(self, event_item: Item) -> Item:
@@ -166,10 +160,12 @@ class GlideTransformer(MontyDataTransformer[GlideDataSource]):
 
     def get_hazard_detail(self, item: Item) -> HazardDetail:
         """Get hazard detail"""
-        magnitude = item.properties.get("magnitude", "").strip()
+        # FIXME: This is not type safe
+        magnitude = item.properties.get("magnitude")
+
         return HazardDetail(
             cluster=self.hazard_profiles.get_cluster_code(item),
-            severity_value=int(float(magnitude)) if magnitude else 0,
+            severity_value=magnitude or 0,
             severity_unit="glide",
             estimate_type=MontyEstimateType.PRIMARY,
         )
