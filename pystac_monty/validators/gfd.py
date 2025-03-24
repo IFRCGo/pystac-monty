@@ -34,7 +34,7 @@ class Footprint(BaseModelWithExtra):
 
 class Properties(BaseModelWithExtra):
     dfo_main_cause: str
-    dfo_severity: int  # Assuming severity is between 0-5
+    dfo_severity: float  # Assuming severity is between 0-5
     system_footprint: Footprint = Field(alias="system:footprint")
     dfo_displaced: int
     id: int
@@ -73,13 +73,3 @@ class GFDSourceValidator(BaseModelWithExtra):
         if v != "Image":
             raise ValueError("Type must be 'Image'")
         return v
-
-    @classmethod
-    def validate_event(cls, data) -> bool:
-        """Validate the overall data item"""
-        try:
-            _ = cls(**data)  # This will trigger the validators
-        except Exception as e:
-            logger.error(f"Validation failed: {e}")
-            return False
-        return True
