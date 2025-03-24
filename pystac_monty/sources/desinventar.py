@@ -501,7 +501,7 @@ class DesinventarTransformer(MontyDataTransformer):
         if code is None:
             return (None, None)
 
-        cached_data = self.geo_data_cache.get(f"{level}:{code}", None)
+        cached_data = self.geo_data_cache.get(f"{level}:{getattr(row, level)}", None)
         if cached_data is not None:
             return cached_data
 
@@ -509,10 +509,10 @@ class DesinventarTransformer(MontyDataTransformer):
         if gfd is None:
             return (None, None)
 
-        # FIXME: confirm with frozenhelium
-        # filtered_gfd = gfd[gfd[code] == row[level]].copy()
-        filtered_gfd = gfd[gfd[code] == getattr(row, level)].copy()
-        # FIXME: confirm if we need to check this datatype
+        try:
+            filtered_gfd = gfd[gfd[code] == getattr(row, level)].copy()
+        except KeyError:
+            return (None, None)
         if isinstance(filtered_gfd, gpd.GeoDataFrame):
             # Use a tolerance value for simplification (smaller values will keep more detail)
             filtered_gfd["geometry"] = filtered_gfd["geometry"].apply(
