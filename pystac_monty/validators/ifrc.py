@@ -1,17 +1,17 @@
-from email.errors import NonASCIILocalPartDefect
 import logging
 from datetime import datetime
-from token import OP
 from typing import List, Optional
 
-from pydantic import BaseModel, field_validator, ConfigDict
+from pydantic import BaseModel, ConfigDict, field_validator
 
 logger = logging.getLogger(__name__)
 logging.basicConfig(level=logging.INFO)
 logger.setLevel(logging.INFO)
 
+
 class BaseModelWithExtra(BaseModel):
     model_config = ConfigDict(extra="ignore")
+
 
 class DisasterType(BaseModelWithExtra):
     id: int
@@ -72,7 +72,7 @@ class FieldReport(BaseModelWithExtra):
     num_injured: Optional[int] = None
     num_dead: Optional[int] = None
     num_missing: Optional[int] = None
-    num_affected: Optional[int]= None
+    num_affected: Optional[int] = None
     num_displaced: Optional[int] = None
     epi_num_dead: Optional[int] = None
     num_assisted: Optional[int] = None
@@ -154,14 +154,3 @@ class IFRCsourceValidator(BaseModelWithExtra):
         if value not in range(0, 4):
             raise ValueError("Invalid severity level, must be between 0 and 3")
         return value
-
-    @classmethod
-    def validate_event(cls, data: dict) -> bool:
-        """Validate the overall data item"""
-        try:
-            _ = cls(**data)  # This will trigger the validators
-        except Exception as e:
-            logger.error(f"Validation failed: {e}")
-            return False
-        # If all field validators return True, we consider it valid
-        return True
