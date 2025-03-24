@@ -1,15 +1,17 @@
 import datetime
+import itertools
 import json
 import logging
-import itertools
 import re
+import typing
 from dataclasses import dataclass
 from typing import Any, Dict, List
-import typing
 
 import pytz
 from markdownify import markdownify as md
 from pystac import Asset, Item, Link
+from shapely.geometry import Point, mapping
+
 from pystac_monty.extension import (
     ImpactDetail,
     MontyEstimateType,
@@ -21,7 +23,6 @@ from pystac_monty.hazard_profiles import MontyHazardProfiles
 from pystac_monty.sources.common import MontyDataSource, MontyDataTransformer
 from pystac_monty.sources.utils import IDMCUtils
 from pystac_monty.validators.idu import IDUSourceValidator
-from shapely.geometry import Point, mapping
 
 logger = logging.getLogger(__name__)
 
@@ -48,16 +49,16 @@ class IDUTransformer(MontyDataTransformer[IDUDataSource]):
 
     def get_stac_items(self) -> typing.Generator[Item, None, None]:
         """Creates the STAC Items"""
-        failed_items_count = 0
-        total_items_count = 0
+        self.transform_summary.mark_as_started()
 
         idu_data = self.check_and_get_idu_data()
         idu_data.sort(key=lambda x: x.get("event_id", " "))
-        total_items_count = len(idu_data)
         for event_id, data_iterator in itertools.groupby(idu_data, key=lambda x: x.get("event_id", " ")):
             idu_data_items = list(data_iterator)
-
+            # FIXME: Why do we sort using "id"?
             idu_data_items.sort(key=lambda x: x.get("id"))
+            self.transform_summary.increment_rows(len(idu_data_items))
+
             try:
                 def get_validated_data(items: list[dict]) -> List[IDUSourceValidator]:
                     validated_data: list[IDUSourceValidator] = []
@@ -65,27 +66,31 @@ class IDUTransformer(MontyDataTransformer[IDUDataSource]):
                         obj = IDUSourceValidator(**item)
                         validated_data.append(obj)
                     return validated_data
+
                 validated_data = get_validated_data(idu_data_items)
                 if event_item := self.make_source_event_item(event_id, validated_data):
                     yield event_item
                     yield from self.make_impact_item(event_item, validated_data)
+                else:
+                    self.transform_summary.increment_failed_rows(len(idu_data_items))
             except Exception:
-                failed_items_count += 1
+                self.transform_summary.increment_failed_rows(len(idu_data_items))
                 logger.error("Failed to process the IDU data", exc_info=True)
+        self.transform_summary.mark_as_complete()
 
-        logger.info(total_items_count)
-        logger.info(failed_items_count)
-
+    # FIXME: This is deprecated
     def make_items(self) -> List[Item]:
         return list(self.get_stac_items())
 
-    def make_source_event_item(self, event_id: int, data_items: List[IDUSourceValidator]) -> Item:
+    def make_source_event_item(self, event_id: int, data_items: List[IDUSourceValidator]) -> Item | None:
         """Create an Event Item"""
         # For now, get the first item only to create a single event item
         data_item = data_items[0]
         latitude = float(data_item.latitude or 0.0)
         longitude = float(data_item.longitude or 0.0)
+
         # Create the geojson point
+        # FIXME: We might need to get this from min and max of all figures
         point = Point(longitude, latitude)
         geometry = mapping(point)
         bbox = [longitude, latitude, longitude, latitude]
@@ -98,6 +103,7 @@ class IDUTransformer(MontyDataTransformer[IDUDataSource]):
         startdate_str = data_item.event_start_date.strftime("%Y-%m-%d")
         enddate_str = data_item.event_end_date.strftime("%Y-%m-%d")
 
+        # FIXME: We might need to get this from min and max of all figures
         startdate = pytz.utc.localize(
             datetime.datetime.fromisoformat(startdate_str)
         )
@@ -166,7 +172,7 @@ class IDUTransformer(MontyDataTransformer[IDUDataSource]):
             impact_item.id = (
                 f"{impact_item.id.replace(STAC_EVENT_ID_PREFIX, STAC_IMPACT_ID_PREFIX)}{data_item.id}-{impact_type}"
             )
-            impact_item.startdate = startdate
+            impact_item.datetime = startdate
             impact_item.properties["start_datetime"] = startdate.isoformat()
             impact_item.properties["end_datetime"] = enddate.isoformat()
             impact_item.properties["roles"] = ["source", "impact"]

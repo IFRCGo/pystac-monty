@@ -1,9 +1,10 @@
+import itertools
 import json
 import logging
 from dataclasses import dataclass
 from datetime import datetime
-from typing import List, Generator, Any, Dict
-import itertools
+from typing import Any, Dict, Generator, List
+
 import pytz
 from pystac import Asset, Item, Link
 
@@ -40,21 +41,15 @@ class GIDDTransformer(MontyDataTransformer[GIDDDataSource]):
     hazard_profiles = MontyHazardProfiles()
     source_name = 'idmc-gidd'
 
-    def get_data(self) -> dict:
-        """Get the event detail data."""
-        return self.data_source
-
     def get_stac_items(self) -> Generator[Item, None, None]:
         """Creates the STAC Items"""
-        failed_items_count = 0
-        total_items_count = 0
+        self.transform_summary.mark_as_started()
 
         gidd_data = self.check_and_get_gidd_data()
         gidd_data.sort(key=lambda x: x["properties"]["Event ID"])
-        total_items_count = len(gidd_data)
-
         for event_id, data_iterator in itertools.groupby(gidd_data, key=lambda x: x["properties"].get("Event ID", " ")):
             gidd_data_items = list(data_iterator)
+            self.transform_summary.increment_rows(len(gidd_data_items))
 
             try:
                 def get_validated_data(items: list[dict]) -> List[GiddValidator]:
@@ -68,14 +63,14 @@ class GIDDTransformer(MontyDataTransformer[GIDDDataSource]):
                 if event_item := self.make_source_event_item(event_id=event_id, data_items=validated_data):
                     yield event_item
                     yield from self.make_impact_items(event_item, validated_data)
+                else:
+                    self.transform_summary.increment_failed_rows(len(gidd_data_items))
             except Exception:
-                failed_items_count += 1
+                self.transform_summary.increment_failed_rows(len(gidd_data_items))
                 logger.error("Failed to process the GIDD data", exc_info=True)
+        self.transform_summary.mark_as_complete()
 
-        logger.info(total_items_count)
-        logger.info(failed_items_count)
-
-    # Note: This method is deprecated
+    # FIXME: This is deprecated
     def make_items(self) -> List[Item]:
         """Get the STAC items"""
         return list(self.get_stac_items())
@@ -100,12 +95,13 @@ class GIDDTransformer(MontyDataTransformer[GIDDDataSource]):
 
         return [min_x, min_y, max_x, max_y]
 
-    def make_source_event_item(self, event_id: int, data_items: List[GiddValidator]) -> Item:
+    def make_source_event_item(self, event_id: int, data_items: List[GiddValidator]) -> Item | None:
         """Create an Event Item"""
         # Get the first item to create the STAC event item
         # as only one event item can create multiple impact items
         data_item = data_items[0]
         # Create the geojson point
+        # FIXME: We might need to get this from aggregating the figures
         geometry = data_item.geometry
         coordinates = geometry.coordinates
         bbox = self.make_bbox(coordinates)
@@ -113,6 +109,7 @@ class GIDDTransformer(MontyDataTransformer[GIDDDataSource]):
         # Episode number not in the source, so set it to 1
         episode_number = 1
 
+        # FIXME: We might need to get this from aggregating the figures
         startdate_str = data_item.properties.Event_start_date.strftime("%Y-%m-%d")
         enddate_str = data_item.properties.Event_end_date.strftime("%Y-%m-%d")
         startdate = pytz.utc.localize(datetime.fromisoformat(startdate_str))
@@ -159,7 +156,10 @@ class GIDDTransformer(MontyDataTransformer[GIDDDataSource]):
         item.add_asset(
             "source",
             Asset(
-                href=self.data_source.get_source_url(), media_type="application/geo+json", title="GIDD GeoJson Source", roles=["source"]
+                href=self.data_source.get_source_url(),
+                media_type="application/geo+json",
+                title="GIDD GeoJson Source",
+                roles=["source"]
             ),
         )
 
@@ -172,10 +172,18 @@ class GIDDTransformer(MontyDataTransformer[GIDDDataSource]):
         items = []
         for data_item in data_items:
             impact_item = event_item.clone()
-            startdate_str = data_item.properties.Start_date.strftime("%Y-%m-%d")
-            enddate_str = data_item.properties.End_date.strftime("%Y-%m-%d")
-            startdate = pytz.utc.localize(datetime.fromisoformat(startdate_str))
-            enddate = pytz.utc.localize(datetime.fromisoformat(enddate_str))
+
+            actual_start_date = data_item.properties.Start_date or data_item.properties.Stock_date
+            startdate_str = actual_start_date.strftime("%Y-%m-%d") if actual_start_date else None
+            # FIXME: this should work
+            startdate = pytz.utc.localize(datetime.fromisoformat(startdate_str)) if startdate_str else None
+
+            actual_end_date = data_item.properties.End_date or data_item.properties.Stock_reporting_date
+            enddate_str = actual_end_date.strftime("%Y-%m-%d") if actual_end_date else None
+            enddate = pytz.utc.localize(datetime.fromisoformat(enddate_str)) if enddate_str else None
+
+            if not startdate:
+                raise Exception('Start date is not defined')
 
             impact_type = data_item.properties.Figure_category or "displaced"
 
@@ -192,8 +200,9 @@ class GIDDTransformer(MontyDataTransformer[GIDDDataSource]):
             )
             impact_item.properties.update(
                 {
-                    "start_datetime": startdate.isoformat(),
-                    "end_datetime": enddate.isoformat(),
+                    # FIXME: Do we need to store if the figure is FLOW or STOCK
+                    "start_datetime": startdate.isoformat() if startdate else None,
+                    "end_datetime": enddate.isoformat() if enddate else None,
                     "figure_category": data_item.properties.Figure_category,
                     "figure_unit": data_item.properties.Figure_unit,
                     "figure_cause": data_item.properties.Figure_cause,
@@ -230,25 +239,16 @@ class GIDDTransformer(MontyDataTransformer[GIDDDataSource]):
         Returns:
             List of validated GIDD data dictionaries
         """
-        gidd_data: List[Dict[str, Any]] = self.data_source.get_data()
+        gidd_data: Dict[str, Any] = self.data_source.get_data()
         if not gidd_data:
             print(f"No gidd data found in {self.data_source.get_source_url()}")
             return []
 
-        data = gidd_data.get("features")
+        # FIXME: Only pass disaster
+        data = gidd_data["features"]
         disaster_data = []
         for item in data:
             item_properties = item.get("properties", {})
-            if item_properties.get("Figure cause") not in IDMCUtils.DisplacementType._value2member_map_:
-                logging.error(f"Unknown displacement type: {item_properties.get('Figure cause')} found. Ignore the datapoint.")
-                continue
-            if (
-                IDMCUtils.DisplacementType(item_properties.get("Figure cause")) == IDMCUtils.DisplacementType.DISASTER_TYPE
-            ):  # skip conflict data
-                required_properties = ["Event ID", "ISO3", "Event start date"]
-                missing_properties = [field for field in required_properties if field not in item_properties]
-                if missing_properties:
-                    raise ValueError(f"Missing required properties {missing_properties}.")
+            if (IDMCUtils.DisplacementType(item_properties.get("Figure cause")) == IDMCUtils.DisplacementType.DISASTER_TYPE):
                 disaster_data.append(item)
-
         return disaster_data
