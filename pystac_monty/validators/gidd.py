@@ -61,7 +61,11 @@ class Properties(BaseModelWithExtra):
     @field_validator("Figure_cause")
     def check_figure_cause(cls, value: str) -> bool:
         if value not in ["Conflict", "Disaster"]:
-            logger.error("Figure cause must be either 'Conflict' or 'Disaster'.")
+            logger.error(
+                "Figure cause must be either 'Conflict' or 'Disaster'.",
+                exc_info=True,
+                extra={"Figure_cause": value}
+            )
             return False
         return True
 
@@ -76,6 +80,10 @@ class GiddValidator(BaseModelWithExtra):
         try:
             _ = cls(**data)  # This will trigger the validators
         except Exception as e:
-            logger.error(f"Validation failed: {e}")
+            logger.error(
+                "Gidd validation failed",
+                exc_info=True,
+                # extra=log_extra(e),
+            )
             return False
         return True

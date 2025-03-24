@@ -61,6 +61,7 @@ class IBTrACSTransformer(MontyDataTransformer[IBTrACSDataSource]):
     def get_stac_items(self) -> typing.Generator[Item, None, None]:
         self.transform_summary.mark_as_started()
         # TODO: Use sax xml parser for memory efficient usage
+        # TODO: Use an efficient csv sorter to first sort the data using SID
         csv_data = self.data_source._parse_csv()
         csv_data.sort(key=lambda x: x.get("SID", " "))
         for storm_id, storm_data_iterator in itertools.groupby(csv_data, key=lambda x: x.get("SID", " ")):
@@ -83,7 +84,10 @@ class IBTrACSTransformer(MontyDataTransformer[IBTrACSDataSource]):
                     self.transform_summary.increment_failed_rows(len(storm_data))
             except Exception:
                 self.transform_summary.increment_failed_rows(len(storm_data))
-                logger.error("Failed to process ibtracs", exc_info=True)
+                logger.error(
+                    "Failed to process ibtracs",
+                    exc_info=True,
+                )
         self.transform_summary.mark_as_complete()
 
     # FIXME: This is deprecated
@@ -573,7 +577,11 @@ class IBTrACSTransformer(MontyDataTransformer[IBTrACSDataSource]):
                     countries.append(country_code)
         except Exception as e:
             # If geocoding fails, default to international waters
-            logger.error(f"Geocoding error: {e}", exc_info=True)
+            logger.error(
+                "Ibtracs geocoding error",
+                exc_info=True,
+                # extra=e,
+            )
             # FIXME: Should we use ["UNK"] instead?
             return ["XYZ"]
 

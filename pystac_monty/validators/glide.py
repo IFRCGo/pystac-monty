@@ -74,7 +74,11 @@ class GlideSetValidator(BaseModelWithExtra):
         try:
             _ = cls(**data)  # This will trigger the validators
         except Exception as e:
-            logger.error(f"Validation failed: {e}")
+            logger.error(
+                "Glide validation failed",
+                exc_info=True,
+                # extra=log_extra(e),
+            )
             return False
         # If all field validators return True, we consider it valid
         return True

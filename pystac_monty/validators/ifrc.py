@@ -117,7 +117,11 @@ class IFRCsourceValidator(BaseModel):
         try:
             _ = cls(**data)  # This will trigger the validators
         except Exception as e:
-            logger.error(f"Validation failed: {e}")
+            logger.error(
+                "Ifrc validation failed",
+                exc_info=True,
+                # extra=e,
+            )
             return False
         # If all field validators return True, we consider it valid
         return True

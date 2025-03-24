@@ -80,6 +80,10 @@ class GFDSourceValidator(BaseModelWithExtra):
         try:
             _ = cls(**data)  # This will trigger the validators
         except Exception as e:
-            logger.error(f"Validation failed: {e}")
+            logger.error(
+                "Gfd validation failed",
+                exc_info=True,
+                # extra=log_extra(e),
+            )
             return False
         return True

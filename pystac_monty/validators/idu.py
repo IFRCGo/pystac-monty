@@ -47,7 +47,12 @@ class IDUSourceValidator(BaseModelWithExtra):
     def validate_latitude(cls, value: float) -> bool:
         """Validation for Latitude field"""
         if not (-90 <= value <= 90):
-            logger.error("Latitude must be between -90 and 90.")
+            # FIXME: Add log extra
+            logger.error(
+                "Latitude must be between -90 and 90.",
+                exc_info=True,
+                extra={"latitude": value},
+            )
             return False
         return True
 
@@ -56,7 +61,11 @@ class IDUSourceValidator(BaseModelWithExtra):
     def validate_longitude(cls, value: float) -> bool:
         """Validation for Longitude field"""
         if not (-180 <= value <= 180):
-            logger.error("Longitude must be between -180 and 180.")
+            logger.error(
+                "Longitude must be between -180 and 180.",
+                exc_info=True,
+                extra={"longitude": value},
+            )
             return True
         return True
 
@@ -67,14 +76,34 @@ class IDUSourceValidator(BaseModelWithExtra):
         try:
             coords = json.loads(value)  # Parse JSON format list
             if not isinstance(coords, list) or len(coords) != 2:
-                logger.error("Centroid must be a list with two values: [latitude, longitude].")
+                logger.error(
+                    "Centroid must be a list with two values: [latitude, longitude].",
+                    exc_info=True,
+                    extra={
+                        "centroid": coords,
+                    },
+                )
                 return False
             latitude, longitude = coords
             if not (-90 <= latitude <= 90) or not (-180 <= longitude <= 180):
-                logger.error("Invalid centroid coordinates.")
+                logger.error(
+                    "Invalid centroid coordiantes",
+                    exc_info=True,
+                    extra={
+                        "latitude": latitude,
+                        "longitude": longitude,
+                        "centroid": coords,
+                    },
+                )
                 return False
         except (json.JSONDecodeError, ValueError):
-            logger.error("Invalid centroid format. Must be a JSON string representing [latitude, longitude].")
+            logger.error(
+                "Invalid centroid format. Must be a JSON string representing [latitude, longitude].",
+                exc_info=True,
+                extra={
+                    "centroid": value,
+                },
+            )
             return False
         return True
 
@@ -84,8 +113,15 @@ class IDUSourceValidator(BaseModelWithExtra):
     @classmethod
     def validate_date(cls, value: date) -> bool:
         """Validation for date field"""
+        # FIXME: This validation is not correct
         if not isinstance(value, date):
-            logger.error(f"Invalid date format: {value}. Expected YYYY-MM-DD.")
+            logger.error(
+                "Invalid date format. Expected YYYY-MM-DD.",
+                exc_info=True,
+                extra={
+                    "value": value,
+                },
+            )
             return False
         return True
 
@@ -95,7 +131,13 @@ class IDUSourceValidator(BaseModelWithExtra):
         """Validation for source_url field"""
         url_regex = r"^(https?://)?([a-zA-Z0-9_-]+(\.[a-zA-Z0-9_-]+)+)(/[^\s]*)?$"
         if not re.match(url_regex, value):
-            logger.error(f"Invalid URL: {value}")
+            logger.error(
+                "Invalid URL",
+                exc_info=True,
+                extra={
+                    "value": value,
+                },
+            )
             return False
         return True
 
@@ -106,7 +148,11 @@ class IDUSourceValidator(BaseModelWithExtra):
         try:
             _ = cls(**data)  # This will trigger the validators
         except Exception as e:
-            logger.error(f"Validation failed: {e}")
+            logger.error(
+                "Idu validation failed",
+                exc_info=True,
+                # extra=e,
+            )
             return False
         # If all field validators return True, we consider it valid
         return True
