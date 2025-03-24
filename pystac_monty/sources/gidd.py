@@ -2,8 +2,8 @@ import json
 import logging
 from dataclasses import dataclass
 from datetime import datetime
-from typing import Any, Dict, List
-
+from typing import List, Generator, Any, Dict
+import itertools
 import pytz
 from pystac import Asset, Item, Link
 
@@ -32,21 +32,6 @@ class GIDDDataSource(MontyDataSource):
     def __init__(self, source_url: str, data: Any):
         super().__init__(source_url, data)
         self.data = json.loads(data)
-        self.data = self.source_data_validator(json.loads(data))
-
-    def source_data_validator(self, data: dict):
-        """Validate only the items inside 'features' while keeping other keys unchanged."""
-
-        new_data = {}  # Store the filtered dictionary
-
-        for key, value in data.items():
-            if key == "features" and isinstance(value, list):
-                # Validate each feature in the list and skip the ones with 'Figure cause' = 'Conflict'
-                new_data[key] = [feature for feature in value if GiddValidator.validate_event(feature)]
-            else:
-                # Keep normal key-value pairs unchanged
-                new_data[key] = value
-        return new_data
 
 
 class GIDDTransformer(MontyDataTransformer[GIDDDataSource]):
@@ -59,36 +44,41 @@ class GIDDTransformer(MontyDataTransformer[GIDDDataSource]):
         """Get the event detail data."""
         return self.data_source
 
-    def make_items(self) -> List[Item]:
-        """Create all STAC items from GIDD data"""
-        items = []
-        # Create event items
-        event_items = self.make_source_event_items()
-        # Get the latest item based on id(the last occurrence)
-        # and get rid of duplicate items at event level
-        event_items_unique = {item.id: item for item in event_items}
-        event_items = list(event_items_unique.values())
+    def get_stac_items(self) -> Generator[Item, None, None]:
+        """Creates the STAC Items"""
+        failed_items_count = 0
+        total_items_count = 0
 
-        items.extend(event_items)
-        # Create impact items
-        impact_items = self.make_impact_items()
-        items.extend(impact_items)
-
-        return items
-
-    def make_source_event_items(self) -> List[Item]:
-        """Create the source event items"""
-        items = []
         gidd_data = self.check_and_get_gidd_data()
+        gidd_data.sort(key=lambda x: x["properties"]["Event ID"])
+        total_items_count = len(gidd_data)
 
-        if not gidd_data:
-            return []
+        for event_id, data_iterator in itertools.groupby(gidd_data, key=lambda x: x["properties"].get("Event ID", " ")):
+            gidd_data_items = list(data_iterator)
 
-        for data in gidd_data:
-            item = self.make_source_event_item(data=data)
-            items.append(item)
+            try:
+                def get_validated_data(items: list[dict]) -> List[GiddValidator]:
+                    validated_data: list[GiddValidator] = []
+                    for item in items:
+                        obj = GiddValidator(**item)
+                        validated_data.append(obj)
+                    return validated_data
+                validated_data = get_validated_data(gidd_data_items)
 
-        return items
+                if event_item := self.make_source_event_item(event_id=event_id, data_items=validated_data):
+                    yield event_item
+                    yield from self.make_impact_items(event_item, validated_data)
+            except Exception:
+                failed_items_count += 1
+                logger.error("Failed to process the GIDD data", exc_info=True)
+
+        logger.info(total_items_count)
+        logger.info(failed_items_count)
+
+    # Note: This method is deprecated
+    def make_items(self) -> List[Item]:
+        """Get the STAC items"""
+        return list(self.get_stac_items())
 
     def make_bbox(self, coordinates) -> List[float]:
         """
@@ -110,51 +100,55 @@ class GIDDTransformer(MontyDataTransformer[GIDDDataSource]):
 
         return [min_x, min_y, max_x, max_y]
 
-    def make_source_event_item(self, data: dict) -> Item:
+    def make_source_event_item(self, event_id: int, data_items: List[GiddValidator]) -> Item:
         """Create an Event Item"""
+        # Get the first item to create the STAC event item
+        # as only one event item can create multiple impact items
+        data_item = data_items[0]
         # Create the geojson point
-        geometry = data.get("geometry")
-        coordinates = geometry["coordinates"]
+        geometry = data_item.geometry
+        coordinates = geometry.coordinates
         bbox = self.make_bbox(coordinates)
 
         # Episode number not in the source, so set it to 1
         episode_number = 1
-        properties = data["properties"]
 
-        startdate_str = properties.get("Event start date")
-        enddate_str = properties.get("Event end date")
+        startdate_str = data_item.properties.Event_start_date.strftime("%Y-%m-%d")
+        enddate_str = data_item.properties.Event_end_date.strftime("%Y-%m-%d")
         startdate = pytz.utc.localize(datetime.fromisoformat(startdate_str))
         enddate = pytz.utc.localize(datetime.fromisoformat(enddate_str))
 
         item = Item(
-            id=f"{STAC_EVENT_ID_PREFIX}{properties['ID']}",
-            geometry=geometry,
+            id=f"{STAC_EVENT_ID_PREFIX}{data_item.properties.Event_ID}",
+            geometry=dict(geometry),
             bbox=bbox,
             datetime=startdate,
             properties={
-                "title": properties.get("Event name"),
+                "title": data_item.properties.Event_name,
                 "start_datetime": startdate.isoformat(),
                 "end_datetime": enddate.isoformat(),
-                "location": properties.get("Locations name"),
-                "location_accuracy": properties.get("Locations accuracy"),
-                "location_type": properties.get("Locations type"),
-                "displacement_occured": properties.get("Displacement occurred"),
-                "sources": properties.get("Sources"),
-                "publishers": properties.get("Publishers"),
+                "location": data_item.properties.Locations_name,
+                "location_accuracy": data_item.properties.Locations_accuracy,
+                "location_type": data_item.properties.Locations_type,
+                "displacement_occured": data_item.properties.Displacement_occurred,
+                "sources": data_item.properties.Sources,
+                "publishers": data_item.properties.Publishers,
             },
         )
 
         MontyExtension.add_to(item)
         monty = MontyExtension.ext(item)
         monty.episode_number = episode_number
-        monty.country_codes = [properties.get("ISO3")]
+        monty.country_codes = [data_item.properties.ISO3]
 
-        if properties.get("Figure cause") == "Disaster":
+        if IDMCUtils.DisplacementType(
+            data_item.properties.Figure_cause
+        ) == IDMCUtils.DisplacementType.DISASTER_TYPE:
             hazard_tuple = (
-                properties["Hazard category"],
-                properties["Hazard sub category"],
-                properties["Hazard type"],
-                properties["Hazard sub type"],
+                data_item.properties.Hazard_category,
+                data_item.properties.Hazard_sub_category,
+                data_item.properties.Hazard_type,
+                data_item.properties.Hazard_sub_type,
             )
             monty.hazard_codes = IDMCUtils.hazard_codes_mapping(hazard=hazard_tuple)
         monty.compute_and_set_correlation_id(hazard_profiles=self.hazard_profiles)
@@ -173,51 +167,50 @@ class GIDDTransformer(MontyDataTransformer[GIDDDataSource]):
 
         return item
 
-    def make_impact_items(self) -> List[Item]:
+    def make_impact_items(self, event_item: Item, data_items: List[GiddValidator]) -> List[Item]:
         """Create impact items"""
         items = []
-        gidd_data = self.check_and_get_gidd_data()
-        event_items = self.make_source_event_items()
-
-        for event_item, src_data in zip(event_items, gidd_data):
+        for data_item in data_items:
             impact_item = event_item.clone()
-            properties = src_data["properties"]
-            startdate_str = properties.get("Event start date")
-            enddate_str = properties.get("Event end date")
+            startdate_str = data_item.properties.Start_date.strftime("%Y-%m-%d")
+            enddate_str = data_item.properties.End_date.strftime("%Y-%m-%d")
             startdate = pytz.utc.localize(datetime.fromisoformat(startdate_str))
             enddate = pytz.utc.localize(datetime.fromisoformat(enddate_str))
 
-            impact_type = properties.get("Figure category", "displaced")
+            impact_type = data_item.properties.Figure_category or "displaced"
 
             impact_item.id = (
-                impact_item.id.replace(STAC_EVENT_ID_PREFIX, STAC_IMPACT_ID_PREFIX) + str(properties["ID"]) + "-" + impact_type
+                impact_item.id.replace(STAC_EVENT_ID_PREFIX, STAC_IMPACT_ID_PREFIX) +
+                str(data_item.properties.ID) +
+                "-" +
+                impact_type
             )
 
             impact_item.datetime = startdate
             impact_item.properties["title"] = (
-                f"{properties.get('Figure category')}-{properties.get('Figure unit')} for {properties.get('Event name')}"
+                f"{data_item.properties.Figure_category}-{data_item.properties.Figure_unit}-{data_item.properties.Figure_unit}-{data_item.properties.Event_name}"
             )
             impact_item.properties.update(
                 {
                     "start_datetime": startdate.isoformat(),
                     "end_datetime": enddate.isoformat(),
-                    "figure_category": properties.get("Figure category"),
-                    "figure_unit": properties.get("Figure unit"),
-                    "figure_cause": properties.get("Figure cause"),
-                    "geographical_region": properties.get("Geographical region"),
-                    "country": properties.get("Country"),
+                    "figure_category": data_item.properties.Figure_category,
+                    "figure_unit": data_item.properties.Figure_unit,
+                    "figure_cause": data_item.properties.Figure_cause,
+                    "geographical_region": data_item.properties.Geographical_region,
+                    "country": data_item.properties.Country,
                     "roles": ["source", "impact"],
                 }
             )
 
             impact_item.set_collection(self.get_impact_collection())
             monty = MontyExtension.ext(impact_item)
-            monty.impact_detail = self.get_impact_details(properties, impact_type=impact_type)
+            monty.impact_detail = self.get_impact_details(data_item=data_item, impact_type=impact_type)
             items.append(impact_item)
 
         return items
 
-    def get_impact_details(self, gidd_src_item: dict, impact_type: str) -> ImpactDetail:
+    def get_impact_details(self, data_item: GiddValidator, impact_type: str) -> ImpactDetail:
         """Returns the impact details related to displacement"""
         category, category_type = IDMCUtils.mappings.get(
             impact_type, (MontyImpactExposureCategory.ALL_PEOPLE, MontyImpactType.INTERNALLY_DISPLACED_PERSONS)
@@ -225,7 +218,7 @@ class GIDDTransformer(MontyDataTransformer[GIDDDataSource]):
         return ImpactDetail(
             category=category,
             type=category_type,
-            value=gidd_src_item["Total figures"],
+            value=data_item.properties.Total_figures,
             unit="count",
             estimate_type=MontyEstimateType.PRIMARY,
         )
