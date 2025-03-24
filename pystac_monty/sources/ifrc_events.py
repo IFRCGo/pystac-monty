@@ -53,7 +53,6 @@ class IFRCEventTransformer(MontyDataTransformer[IFRCEventDataSource]):
         for data in ifrcevent_data:
             total_items_count += 1
             try:
-
                 def parse_data(rows: dict):
                     obj: IFRCsourceValidator = {}
                     obj = IFRCsourceValidator(**rows)
@@ -66,8 +65,6 @@ class IFRCEventTransformer(MontyDataTransformer[IFRCEventDataSource]):
                 else:
                     failed_items_count += 1
             except Exception as e:
-                print(e)
-                print("Failed to process ifrcevent", failed_items_count)
                 failed_items_count += 1
 
     def make_source_event_items(self, data: list[IFRCsourceValidator]) -> Item:
@@ -82,8 +79,6 @@ class IFRCEventTransformer(MontyDataTransformer[IFRCEventDataSource]):
 
         # start_date = datetime.fromisoformat(data["disaster_start_date"])
         start_date = data.disaster_start_date
-        start_date = start_date.replace("Z", "+00:00")
-        start_date = datetime.fromisoformat(start_date)
         # Create item
         item = Item(
             id=f"{STAC_EVENT_ID_PREFIX}{data.id}",
@@ -190,8 +185,8 @@ class IFRCEventTransformer(MontyDataTransformer[IFRCEventDataSource]):
             # only save impact value if not null
             value = None
             for field in impact_field:
-                if len(ifrcevent_data.field_reports) and ifrcevent_data.field_reports[0].field:
-                    value = ifrcevent_data.field_reports[0].field
+                if len(ifrcevent_data.field_reports) > 0 and hasattr(ifrcevent_data.field_reports[0], field):
+                    value = getattr(ifrcevent_data.field_reports[0], field)
                     break
 
             if not value:

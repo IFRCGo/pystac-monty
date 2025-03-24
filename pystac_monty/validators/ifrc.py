@@ -2,21 +2,23 @@ import logging
 from datetime import datetime
 from typing import List, Optional
 
-from pydantic import BaseModel, field_validator
+from pydantic import BaseModel, field_validator, ConfigDict
 
 logger = logging.getLogger(__name__)
 logging.basicConfig(level=logging.INFO)
 logger.setLevel(logging.INFO)
 
+class BaseModelWithExtra(BaseModel):
+    model_config = ConfigDict(extra="ignore")
 
-class DisasterType(BaseModel):
+class DisasterType(BaseModelWithExtra):
     id: int
     name: str
     summary: str
     translation_module_original_language: str
 
 
-class Country(BaseModel):
+class Country(BaseModelWithExtra):
     iso: str
     iso3: str
     id: int
@@ -32,7 +34,7 @@ class Country(BaseModel):
     translation_module_original_language: str
 
 
-class Appeal(BaseModel):
+class Appeal(BaseModelWithExtra):
     aid: str
     num_beneficiaries: int
     amount_requested: float
@@ -47,7 +49,7 @@ class Appeal(BaseModel):
     translation_module_original_language: str
 
 
-class Contact(BaseModel):
+class Contact(BaseModelWithExtra):
     ctype: str
     name: str
     title: str
@@ -56,7 +58,7 @@ class Contact(BaseModel):
     id: int
 
 
-class FieldReport(BaseModel):
+class FieldReport(BaseModelWithExtra):
     status: int
     contacts: List[Contact]
     countries: List[Country]
@@ -78,7 +80,7 @@ class FieldReport(BaseModel):
     translation_module_original_language: str
 
 
-class IFRCsourceValidator(BaseModel):
+class IFRCsourceValidator(BaseModelWithExtra):
     dtype: DisasterType
     countries: List[Country]
     num_affected: Optional[int]
@@ -121,3 +123,4 @@ class IFRCsourceValidator(BaseModel):
             return False
         # If all field validators return True, we consider it valid
         return True
+ 
