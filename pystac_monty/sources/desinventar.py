@@ -285,7 +285,8 @@ class DesinventarTransformer(MontyDataTransformer):
                 Link(
                     "via",
                     row.data_source_url,
-                    "application/zip",
+                    # XXX: the server does not support "zip" so using "octet-stream" for the time being.
+                    "application/octet-stream",
                     f"DesInventar export zip file for {self.data_source.iso3}",
                 )
             )
