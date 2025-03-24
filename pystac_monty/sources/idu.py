@@ -151,18 +151,16 @@ class IDUTransformer(MontyDataTransformer[IDUDataSource]):
     def make_impact_item(self, event_item: Item, data_items: List[IDUSourceValidator]) -> List[Item]:
         """Create impact items"""
         items = []
-        #idu_data = self.check_and_get_idu_data()
-        #event_items = self.make_source_event_items()
-        # for event_item, src_data in zip(event_items, idu_data):
+
         for data_item in data_items:
             impact_item = event_item.clone()
 
-            startdate_str = data_item.displacement_start_date.strftime("%Y-%m-%d")   # src_data["displacement_start_date"]
-            enddate_str = data_item.displacement_end_date.strftime("%Y-%m-%d")  # src_data["displacement_end_date"]
+            startdate_str = data_item.displacement_start_date.strftime("%Y-%m-%d")
+            enddate_str = data_item.displacement_end_date.strftime("%Y-%m-%d")
             startdate = pytz.utc.localize(datetime.datetime.fromisoformat(startdate_str))
             enddate = pytz.utc.localize(datetime.datetime.fromisoformat(enddate_str))
 
-            description = data_item.standard_popup_text  # src_data["standard_popup_text"]
+            description = data_item.standard_popup_text
             impact_type = self._get_impact_type_from_desc(description=description)
 
             impact_item.id = (
