@@ -443,6 +443,8 @@ def search_and_display_cyclone(cyclone_name, catalog):
     else:
         # If there are multiple results, let the user select one
         print("\nEnter the ID of the cyclone you want to visualize in the next cell.")
+        
+    return search_results
 
 def display_cyclone_by_id(cyclone_id, catalog):
     """
