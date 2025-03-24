@@ -26,7 +26,7 @@ STAC_HAZARD_ID_PREFIX = "ibtracs-hazard-"
 class IBTrACSDataSource(MontyDataSource):
     """IBTrACS data source that handles tropical cyclone track data."""
 
-    def __init__(self, source_url: str, data: str):
+    def __init__(self, source_url: str, data: str, version: str = "v04r01"):
         """Initialize IBTrACS data source.
 
         Args:
@@ -36,6 +36,7 @@ class IBTrACSDataSource(MontyDataSource):
         super().__init__(source_url, data)
         self.data = data
         self._parsed_data = None
+        self.version = version
 
     def get_data(self) -> List[Dict[str, str]]:
         """Get the tropical cyclone track data as a list of dictionaries."""
@@ -275,6 +276,17 @@ class IBTrACSTransformer(MontyDataTransformer[IBTrACSDataSource]):
                 title="IBTrACS North Atlantic Basin Data",
                 media_type="text/csv",
                 extra_fields={"roles": ["data"]},
+            ),
+        )
+
+        # Add track plot asset
+        item.add_asset(
+            "thumbnail",
+            Asset(
+                href=f"https://ncics.org/ibtracs/html/plots//{self.data_source.version}.{storm_id}.png",
+                title="IBTrACS Track Plot",
+                media_type="image/png",
+                extra_fields={"roles": ["track-plot"]},
             ),
         )
 
