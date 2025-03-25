@@ -35,14 +35,14 @@ items = transformer.make_items()
 
 # 3. The transformer creates three types of STAC items:
 # - Source event item
-# - Hazard event item  
+# - Hazard event item
 # - Impact items (from Sendai indicators if present)
 
 # Example: Print details of each item
 for item in items:
     print(f"\nItem ID: {item.id}")
     print(f"Type: {item.properties['roles']}")
-    
+
     # Access Monty extension fields
     monty = MontyExtension.ext(item)
     if monty.is_source_event():
@@ -111,16 +111,16 @@ class GDACSTransformer:
     def __init__(self, data: list[GDACSDataSource]) -> None:
         """
         Initialize transformer with GDACS data sources.
-        
+
         Args:
             data: List of GDACSDataSource objects containing event and geometry data
         """
-        
+
     def make_items(self) -> list[Item]:
         """
         Transform GDACS data into STAC Items.
         Creates source event, hazard, and impact items.
-        
+
         Returns:
             list[Item]: List of STAC Items with Monty extension
         """
