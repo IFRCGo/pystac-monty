@@ -1,6 +1,6 @@
 import json
+import logging
 import typing
-from datetime import datetime
 from typing import List
 
 from pystac import Item
@@ -16,6 +16,8 @@ from pystac_monty.hazard_profiles import MontyHazardProfiles
 from pystac_monty.sources.common import MontyDataSource, MontyDataTransformer
 from pystac_monty.validators.ifrc import IFRCsourceValidator
 
+logger = logging.getLogger(__name__)
+
 STAC_EVENT_ID_PREFIX = "ifrcevent-event-"
 STAC_IMPACT_ID_PREFIX = "ifrcevent-impact-"
 
@@ -24,18 +26,6 @@ class IFRCEventDataSource(MontyDataSource):
     def __init__(self, source_url: str, data: str):
         # FIXME: Why do we load using json
         super().__init__(source_url, json.loads(data))
-
-    def source_data_validator(self, data: list[dict]):
-        # TODO Handle the failed_items
-        failed_items = []
-        success_items = []
-        for item in data:
-            is_valid = IFRCsourceValidator.validate_event(item)
-            if is_valid:
-                success_items.append(item)
-            else:
-                failed_items.append(item)
-        return success_items
 
 
 class IFRCEventTransformer(MontyDataTransformer[IFRCEventDataSource]):
@@ -46,28 +36,26 @@ class IFRCEventTransformer(MontyDataTransformer[IFRCEventDataSource]):
         return list(self.get_stac_items())
 
     def get_stac_items(self) -> typing.Generator[Item, None, None]:
-        failed_items_count = 0
-        total_items_count = 0
-
         ifrcevent_data = self.data_source.data
+
+        self.transform_summary.mark_as_started()
         for data in ifrcevent_data:
-            total_items_count += 1
+            self.transform_summary.increment_rows()
             try:
-                def parse_data(rows: dict):
-                    obj: IFRCsourceValidator = {}
-                    obj = IFRCsourceValidator(**rows)
-                    return obj
+                def parse_data(row: dict):
+                    return IFRCsourceValidator(**row)
 
                 ifrcdata = parse_data(data)
-                if event_item := self.make_source_event_items(ifrcdata):
+                if event_item := self.make_source_event_item(ifrcdata):
                     yield event_item
                     yield from self.make_impact_items(event_item, ifrcdata)
                 else:
-                    failed_items_count += 1
-            except Exception as e:
-                failed_items_count += 1
+                    self.transform_summary.increment_failed_rows()
+            except Exception:
+                self.transform_summary.increment_failed_rows()
+                logger.error("Failed to process ifrc events", exc_info=True)
 
-    def make_source_event_items(self, data: list[IFRCsourceValidator]) -> Item:
+    def make_source_event_item(self, data: IFRCsourceValidator) -> Item:
         """Create an event item"""
         geometry = None
         bbox = None
@@ -139,7 +127,7 @@ class IFRCEventTransformer(MontyDataTransformer[IFRCEventDataSource]):
 
         return []
 
-    def make_impact_items(self, event_item: Item, ifrcevent_data: IFRCsourceValidator) -> Item | None:
+    def make_impact_items(self, event_item: Item, ifrcevent_data: IFRCsourceValidator) -> List[Item]:
         """Create impact items"""
         items = []
 
