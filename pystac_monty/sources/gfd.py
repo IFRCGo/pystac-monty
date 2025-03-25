@@ -1,4 +1,6 @@
 import json
+import logging
+import typing
 from datetime import datetime
 from typing import Any, List
 
@@ -17,6 +19,8 @@ from pystac_monty.hazard_profiles import MontyHazardProfiles
 from pystac_monty.sources.common import MontyDataSource, MontyDataTransformer
 from pystac_monty.validators.gfd import GFDSourceValidator
 
+logger = logging.getLogger(__name__)
+
 # Constants
 
 STAC_EVENT_ID_PREFIX = "gfd-event-"
@@ -29,20 +33,7 @@ class GFDDataSource(MontyDataSource):
 
     def __init__(self, source_url: str, data: Any):
         super().__init__(source_url, data)
-        self.data = self.source_data_validator(json.loads(data))
-
-    def source_data_validator(self, data: list[dict]):
-        """Validate the source data and collect only the success items"""
-        # TODO Handle the failed_items
-        failed_items = []
-        success_items = []
-        for item in data:
-            is_valid = GFDSourceValidator.validate_event(item)
-            if is_valid:
-                success_items.append(item)
-            else:
-                failed_items.append(item)
-        return success_items
+        self.data = json.loads(data)
 
 
 class GFDTransformer(MontyDataTransformer[GFDDataSource]):
@@ -51,55 +42,54 @@ class GFDTransformer(MontyDataTransformer[GFDDataSource]):
     hazard_profiles = MontyHazardProfiles()
     source_name = "gfd"
 
+    # FIXME: This is deprecated
     def make_items(self) -> List[Item]:
-        """Create Items"""
-        items = []
+        return list(self.get_stac_items())
 
-        event_items = self.make_source_event_items()
-        items.extend(event_items)
+    def get_stac_items(self) -> typing.Generator[Item, None, None]:
+        data = self.data_source.get_data()
 
-        hazard_items = self.make_hazard_items()
-        items.extend(hazard_items)
-
-        impact_items = self.make_impact_items()
-        items.extend(impact_items)
-
-        return items
+        self.transform_summary.mark_as_started()
+        for row in data:
+            self.transform_summary.increment_rows()
+            try:
+                data = GFDSourceValidator(**row)
+                if event_item := self.make_source_event_item(data):
+                    yield event_item
+                    yield self.make_hazard_event_item(event_item, data)
+                    yield from self.make_impact_items(event_item, data)
+                else:
+                    self.transform_summary.increment_failed_rows()
+            except Exception:
+                self.transform_summary.increment_failed_rows()
+                logger.error("Failed to process gfd", exc_info=True)
+        self.transform_summary.mark_as_complete()
 
     def _get_bounding_box(self, polygon: list):
         """Get the bounding box from the polygon"""
         lons, lats = zip(*polygon)  # Separate longitudes and latitudes
         return [min(lons), min(lats), max(lons), max(lats)]
 
-    def make_source_event_items(self) -> List[Item]:
-        """Create the source event item"""
-        items = []
-        gfd_data = self.check_and_get_gfd_data()
-        if not gfd_data:
-            return []
-        for data in gfd_data:
-            item = self.make_source_event_item(data=data)
-            items.append(item)
-        return items
-
-    def make_source_event_item(self, data: dict) -> Item:
+    def make_source_event_item(self, data: GFDSourceValidator) -> Item:
         """Create the source event item"""
 
-        footprint = data["system:footprint"]
+        properties = data.properties
+        footprint = data.properties.system_footprint
         # Note: Convert LinearRing to Polygon as LinearRing is not supported in STAC spec.
-        geometry = {"type": "Polygon", "coordinates": [footprint["coordinates"]]}
+        # FIXME: This might be incorrect
+        geometry = {"type": "Polygon", "coordinates": [footprint.coordinates]}
 
-        description = data["dfo_main_cause"]
+        description = properties.dfo_main_cause
 
-        bbox = self._get_bounding_box(data["system:footprint"]["coordinates"])
+        bbox = self._get_bounding_box(footprint.coordinates)
         # Episode number not in the source, so, set it to 1
         episode_number = 1
 
-        startdate = pytz.utc.localize(datetime.fromtimestamp(data["system:time_start"] / 1000))
-        enddate = pytz.utc.localize(datetime.fromtimestamp(data["system:time_end"] / 1000))
+        startdate = pytz.utc.localize(datetime.fromtimestamp(properties.system_time_start / 1000))
+        enddate = pytz.utc.localize(datetime.fromtimestamp(properties.system_time_end / 1000))
 
         item = Item(
-            id=f"{STAC_EVENT_ID_PREFIX}{data['id']}",
+            id=f"{STAC_EVENT_ID_PREFIX}{properties.id}",
             geometry=geometry,
             bbox=bbox,
             datetime=startdate,
@@ -117,47 +107,32 @@ class GFDTransformer(MontyDataTransformer[GFDDataSource]):
         MontyExtension.add_to(item)
         monty = MontyExtension.ext(item)
         monty.episode_number = episode_number
-        monty.country_codes = data["cc"].split(",")
+        monty.country_codes = properties.cc.split(",")
         monty.hazard_codes = ["FL"]  # GFD is a Flood related source
         monty.compute_and_set_correlation_id(hazard_profiles=self.hazard_profiles)
 
         return item
 
-    def make_hazard_items(self) -> List[Item]:
+    def make_hazard_event_item(self, event_item: Item, row: GFDSourceValidator) -> Item:
         """Create hazard items"""
-        hazard_items = []
 
-        gfd_data = self.check_and_get_gfd_data()
-        event_items = self.make_source_event_items()
+        hazard_item = event_item.clone()
+        hazard_item.id = event_item.id.replace(STAC_EVENT_ID_PREFIX, STAC_HAZARD_ID_PREFIX)
+        hazard_item.properties["roles"] = ["source", "hazard"]
+        hazard_item.set_collection(self.get_hazard_collection())
 
-        for event_item, src_data in zip(event_items, gfd_data):
-            hazard_item = event_item.clone()
-            hazard_item.id = event_item.id.replace(STAC_EVENT_ID_PREFIX, STAC_HAZARD_ID_PREFIX)
-            hazard_item.properties["roles"] = ["source", "hazard"]
-            hazard_item.set_collection(self.get_hazard_collection())
+        monty = MontyExtension.ext(hazard_item)
+        # Hazard Detail
+        monty.hazard_detail = HazardDetail(
+            cluster=self.hazard_profiles.get_cluster_code(hazard_item),
+            severity_value=row.properties.dfo_severity,
+            severity_unit="GFD Flood Severity Score",
+            severity_label=None,
+            estimate_type=MontyEstimateType.PRIMARY,
+        )
+        return hazard_item
 
-            monty = MontyExtension.ext(hazard_item)
-            # Hazard Detail
-            monty.hazard_detail = HazardDetail(
-                cluster=self.hazard_profiles.get_cluster_code(hazard_item),
-                severity_value=src_data["dfo_severity"],
-                severity_unit="GFD Flood Severity Score",
-                severity_label=None,
-                estimate_type=MontyEstimateType.PRIMARY,
-            )
-            hazard_items.append(hazard_item)
-        return hazard_items
-
-    def make_impact_items(self) -> List[Item]:
-        """Create impact items"""
-        items = []
-        gfd_data = self.check_and_get_gfd_data()
-        event_items = self.make_source_event_items()
-        for event_item, src_data in zip(event_items, gfd_data):
-            items.extend(self.make_type_based_impact_items(event_item, src_data))
-        return items
-
-    def make_type_based_impact_items(self, event_item: dict, src_data: dict) -> List[Item]:
+    def make_impact_items(self, event_item: Item, src_data: GFDSourceValidator) -> List[Item]:
         """Returns the impact details related to flood"""
         impact_fields = {
             "dfo_dead": (MontyImpactExposureCategory.ALL_PEOPLE, MontyImpactType.DEATH),
@@ -165,10 +140,9 @@ class GFDTransformer(MontyDataTransformer[GFDDataSource]):
         }
 
         impact_items = []
-
         for key_field, (category, impact_type) in impact_fields.items():
             impact_item = event_item.clone()
-            impact_item.id = f"{STAC_IMPACT_ID_PREFIX}{src_data['id']}-{key_field}"
+            impact_item.id = f"{STAC_IMPACT_ID_PREFIX}{src_data.properties.id}-{key_field}"
             impact_item.properties["title"] = f"{event_item.properties['title']}-{key_field}"
             impact_item.properties["roles"] = ["source", "impact"]
             impact_item.set_collection(self.get_impact_collection())
@@ -177,7 +151,7 @@ class GFDTransformer(MontyDataTransformer[GFDDataSource]):
             monty.impact_detail = ImpactDetail(
                 category=category,
                 type=impact_type,
-                value=src_data[key_field],
+                value=getattr(src_data.properties, key_field),
                 unit="count",
                 estimate_type=MontyEstimateType.PRIMARY,
             )

@@ -1,9 +1,10 @@
 import datetime
 import json
 import mimetypes
+import typing
 from dataclasses import dataclass
 from enum import Enum
-from typing import Any, List
+from typing import Any, Dict, List, Optional
 
 import pytz
 from markdownify import markdownify as md
@@ -42,74 +43,49 @@ class GDACSDataSourceType(Enum):
 class GDACSDataSource(MontyDataSource):
     type: GDACSDataSourceType
 
-    def __init__(self, source_url: str, data: Any, type: GDACSDataSourceType):
+    def __init__(
+        self,
+        source_url: str,
+        data: Any,
+        episodes: Optional[list[Dict[GDACSDataSourceType, tuple[str, Any]]]] = None,
+    ):
         super().__init__(source_url, data)
-        self.type = type
         # all gdacs data are json
-        self.data = json.loads(data)
+        self.data = json.loads(data) if isinstance(data, str) else data
+        self.episodes = episodes
 
-    def get_type(self) -> GDACSDataSourceType:
-        return self.type
+    def get_episode_data(self) -> Optional[Dict[str, Any]]:
+        return self.episodes
 
 
-class GDACSTransformer(MontyDataTransformer[list[GDACSDataSource]]):
+class GDACSTransformer(MontyDataTransformer[GDACSDataSource]):
     """
     Transforms GDACS event data into STAC Items
     see https://github.com/IFRCGo/monty-stac-extension/tree/main/model/sources/GDACS
     """
 
     hazard_profiles = MontyHazardProfiles()
-    source_name = 'gdacs'
+    source_name = "gdacs"
 
     def make_items(self) -> list[Item]:
         items = []
 
-        """ 1. Create the source event item """
-        source_event_item = self.make_source_event_item()
+        # Process the main event data
+        source_event_item = self.make_source_event_item(self.data_source.data, self.data_source.source_url)
         items.append(source_event_item)
 
-        # """ 2. Create the hazard item """
-        hazard_event_item = self.make_hazard_event_item()
-        items.append(hazard_event_item)
+        # Process each episode
+        if self.data_source.episodes:
+            for episode_data in self.data_source.episodes:
+                episode_hazard_item = self.make_hazard_event_item(episode_data)
 
-        """ 3. Create the impact items """
-        impact_items = self.make_impact_items()
-        items.extend(impact_items)
+                items.append(episode_hazard_item)
+
+                # Create impact items for this episode
+                impact_items = self.make_impact_items(episode_hazard_item, episode_data[GDACSDataSourceType.EVENT][1])
+                items.extend(impact_items)
 
         return items
-
-    def check_and_get_event_data(self) -> GDACSDataSource:
-        # first check that the event data is present in the data
-        gdacs_event = next((x for x in self.data_source if x.get_type() == GDACSDataSourceType.EVENT), None)
-
-        if not gdacs_event or not gdacs_event.data:
-            raise ValueError("no GDACS event data found")
-
-        if "geometry" not in gdacs_event.data:
-            raise ValueError("event_data must contain a geometry")
-        # check that the geometry is only a point
-        if gdacs_event.data["geometry"]["type"] != "Point":
-            raise ValueError("Geometry must be a point")
-        # check the properties
-        if "properties" not in gdacs_event.data:
-            raise ValueError("event_data must contain properties")
-        # check the datetime
-        if GDACS_EVENT_STARTDATETIME_PROPERTY not in gdacs_event.data["properties"]:
-            raise ValueError("event_data must contain a 'fromdate' property")
-
-        return gdacs_event
-
-    def check_and_get_geometry_data(self) -> GDACSDataSource:
-        # first check that the geometry data is present in the data
-        gdacs_geometry = next((x for x in self.data_source if x.get_type() == GDACSDataSourceType.GEOMETRY), None)
-
-        if not gdacs_geometry:
-            raise ValueError("no GDACS geometry data found")
-
-        if "features" not in gdacs_geometry.data:
-            raise ValueError("geometry_data must contain features")
-
-        return gdacs_geometry
 
     def get_hazard_codes(self, hazard: str) -> List[str]:
         hazard_mapping = {
@@ -125,37 +101,29 @@ class GDACSTransformer(MontyDataTransformer[list[GDACSDataSource]]):
             raise KeyError(f"Hazard {hazard} not found.")
         return hazard_mapping.get(hazard)
 
-    def make_source_event_item(self) -> Item:
-        # check event_data
-        gdacs_event = self.check_and_get_event_data()
-
+    def make_source_event_item(self, data: Any, source_url: str) -> Item:
         # Build the identifier for the item
-        id = STAC_EVENT_ID_PREFIX + gdacs_event.data["properties"]["eventid"].__str__()
-        episode_number = 0
-        if "episodeid" in gdacs_event.data["properties"]:
-            episode_number = gdacs_event.data["properties"]["episodeid"]
-
-        id += "-" + episode_number.__str__()
+        id = STAC_EVENT_ID_PREFIX + data["properties"]["eventid"].__str__()
 
         # Select the description
-        if "htmldescription" in gdacs_event.data["properties"]:
+        if "htmldescription" in data["properties"]:
             # translate the description to markdown
-            description = md(gdacs_event.data["properties"]["htmldescription"])
+            description = md(data["properties"]["htmldescription"])
         else:
-            description = gdacs_event.data["properties"]["description"]
+            description = data["properties"]["description"]
 
-        startdate_str = gdacs_event.data["properties"][GDACS_EVENT_STARTDATETIME_PROPERTY]
+        startdate_str = data["properties"][GDACS_EVENT_STARTDATETIME_PROPERTY]
         startdate = pytz.utc.localize(datetime.datetime.fromisoformat(startdate_str))
-        enddate_str = gdacs_event.data["properties"][GDACS_EVENT_ENDDATETIME_PROPERTY]
+        enddate_str = data["properties"][GDACS_EVENT_ENDDATETIME_PROPERTY]
         enddate = pytz.utc.localize(datetime.datetime.fromisoformat(enddate_str))
 
         item = Item(
             id=id,
-            geometry=gdacs_event.data["geometry"],
-            bbox=gdacs_event.data["bbox"],
+            geometry=data["geometry"],
+            bbox=data["bbox"],
             datetime=startdate,
             properties={
-                "title": gdacs_event.data["properties"]["name"],
+                "title": data["properties"]["name"],
                 "description": description,
                 "start_datetime": startdate.isoformat(),
                 "end_datetime": enddate.isoformat(),
@@ -163,110 +131,118 @@ class GDACSTransformer(MontyDataTransformer[list[GDACSDataSource]]):
         )
 
         # Monty extension fields
-
         MontyExtension.add_to(item)
         monty = MontyExtension.ext(item)
-        monty.episode_number = episode_number
-        monty.hazard_codes = self.get_hazard_codes(gdacs_event.data["properties"]["eventtype"])
-        cc = set([gdacs_event.data["properties"]["iso3"]])
-        if "affectedcountries" in gdacs_event.data["properties"]:
-            cc.update([cc["iso3"] for cc in gdacs_event.data["properties"]["affectedcountries"]])
-        monty.country_codes = list(cc.union())
+        monty.episode_number = 1
+        monty.hazard_codes = self.get_hazard_codes(data["properties"]["eventtype"])
+        cc = set([data["properties"]["iso3"]])
+        if "affectedcountries" in data["properties"]:
+            cc.update([cc["iso3"] for cc in data["properties"]["affectedcountries"]])
+        monty.country_codes = list(cc)
         monty.compute_and_set_correlation_id(hazard_profiles=self.hazard_profiles)
 
         # assets
-
         # icon
         item.add_asset(
             "icon",
             Asset(
-                href=gdacs_event.data["properties"]["icon"],
-                media_type=mimetypes.guess_type(gdacs_event.data["properties"]["icon"])[0],
+                href=data["properties"]["icon"],
+                media_type=mimetypes.guess_type(data["properties"]["icon"])[0],
                 title="Icon",
             ),
         )
 
         # report
-        if "report" in gdacs_event.data["properties"]["url"]:
+        if "report" in data["properties"]["url"]:
             item.add_asset(
                 "report",
                 Asset(
-                    href=gdacs_event.data["properties"]["url"]["report"],
+                    href=data["properties"]["url"]["report"],
                     media_type=mimetypes.types_map[".html"],
                     title="Report",
                 ),
             )
 
         # collection and roles
-
         item.set_collection(self.get_event_collection())
         item.properties["roles"] = ["source", "event"]
 
         # links
-
-        item.add_link(Link("via", gdacs_event.source_url, "application/json", "GDACS Event Data"))
+        item.add_link(Link("via", source_url, "application/json", "GDACS Event Data"))
 
         return item
 
-    def make_hazard_event_item(self) -> Item:
-        item = self.make_source_event_item()
-        gdacs_geometry = self.check_and_get_geometry_data()
+    def make_hazard_event_item(self, episode_source: Dict[GDACSDataSourceType, tuple[str, Any]]) -> Item:
+        item = self.make_source_event_item(
+            episode_source[GDACSDataSourceType.EVENT][1], episode_source[GDACSDataSourceType.EVENT][0]
+        )
 
-        if not gdacs_geometry:
-            raise ValueError("no GDACS geometry data found")
+        episode_event = episode_source[GDACSDataSourceType.EVENT][1]
+        episode_geometry = episode_source.get(GDACSDataSourceType.GEOMETRY, None)
 
-        item.id = item.id.replace(STAC_EVENT_ID_PREFIX, STAC_HAZARD_ID_PREFIX)
+        item.id = (
+            item.id.replace(STAC_EVENT_ID_PREFIX, STAC_HAZARD_ID_PREFIX)
+            + "-"
+            + episode_event["properties"]["episodeid"].__str__()
+        )
         item.set_collection(self.get_hazard_collection())
         item.properties["roles"] = ["source", "hazard"]
+        item.properties["source"] = episode_event["properties"]["source"]
 
         hazard_geometry = None
 
-        # geometry data is a FeatureCollection so we must find the proper feature
-        # that has the properties.class == "Poly_Affected"
-        for feature in gdacs_geometry.data["features"]:
-            if feature["properties"].get("Class", None) == "Poly_Affected":
-                hazard_geometry: BaseGeometry = shape(feature["geometry"])
-                break
+        if episode_geometry is not None:
+            episode_geometry = episode_geometry[1]
+            # geometry data is a FeatureCollection so we must find the proper feature
+            # that has the properties.class == "Poly_Affected"
+            for feature in episode_geometry["features"]:
+                if feature["properties"].get("Class", None) == "Poly_Affected":
+                    hazard_geometry: BaseGeometry = shape(feature["geometry"])
+                    break
+                if feature["properties"].get("Class", None) == "Poly_area":
+                    hazard_geometry: BaseGeometry = shape(feature["geometry"])
+                    break
 
-        if hazard_geometry:
-            # We often need to simplify the geometry using shapely
-            simplified_geometry = simplify(hazard_geometry, tolerance=0.1, preserve_topology=True)
-            item.geometry = json.loads(to_geojson(simplified_geometry))
-            item.bbox = list(simplified_geometry.bounds)
+            if hazard_geometry:
+                # We often need to simplify the geometry using shapely
+                simplified_geometry = simplify(hazard_geometry, tolerance=0.1, preserve_topology=True)
+                item.geometry = json.loads(to_geojson(simplified_geometry))
+                item.bbox = list(simplified_geometry.bounds)
 
         # Monty extension fields
         monty = MontyExtension.ext(item)
         # hazard_detail
-        monty.hazard_detail = self.get_hazard_detail(item)
+        monty.hazard_detail = self.get_hazard_detail(item, episode_event)
 
         return item
 
-    def get_hazard_detail(self, item: Item) -> HazardDetail:
-        # get the hazard detail from the event data
-        gdacs_event = self.check_and_get_event_data()
+    def get_hazard_detail(self, item: Item, data: Any) -> HazardDetail:
+        # Use episode-specific severity data
+        severity_value = data["properties"].get("episodealertscore", None)
+        severity_label = data["properties"].get("episodealertlevel", None)
+
         return HazardDetail(
             cluster=self.hazard_profiles.get_cluster_code(item),
-            severity_value=gdacs_event.data["properties"].get("episodealertscore", None),
-            severity_unit="GDACS Flood Severity Score",
-            severity_label=gdacs_event.data["properties"].get("episodealertlevel", None),
+            severity_value=severity_value,
+            severity_unit="GDACS Severity Score",
+            severity_label=severity_label,
             estimate_type=MontyEstimateType.PRIMARY,
         )
 
-    def make_impact_items(self) -> list[Item]:
+    def make_impact_items(self, hazard_item: Item, data: Any) -> list[Item]:
         impact_items = []
-        # check event_data
-        gdacs_event = self.check_and_get_event_data()
+
         # Search for Sendai fields
-        if "sendai" in gdacs_event.data["properties"]:
-            sendai = gdacs_event.data["properties"]["sendai"]
+        if "sendai" in data["properties"]:
+            sendai = data["properties"]["sendai"]
             for entry in sendai:
-                impact_item = self.make_impact_item_from_sendai_entry(entry, gdacs_event)
+                impact_item = self.make_impact_item_from_sendai_entry(entry, hazard_item, data=data)
                 impact_items.append(impact_item)
 
         return impact_items
 
-    def make_impact_item_from_sendai_entry(self, entry: dict, gdacs_event: GDACSDataSource) -> Item:
-        item = self.make_source_event_item()
+    def make_impact_item_from_sendai_entry(self, entry: dict, hazard_item: Item, data: Any = None) -> Item:
+        item = hazard_item.clone()
         item.id = (
             item.id.replace(STAC_EVENT_ID_PREFIX, STAC_IMPACT_ID_PREFIX)
             + "-"
@@ -292,10 +268,10 @@ class GDACSTransformer(MontyDataTransformer[list[GDACSDataSource]]):
         # impact_detail
         monty.impact_detail = self.get_impact_detail(entry)
         country_code = next(
-            (cc["iso3"] for cc in gdacs_event.data["properties"]["affectedcountries"] if cc["countryname"] == entry["country"]),
+            (cc["iso3"] for cc in data["properties"]["affectedcountries"] if cc["countryname"] == entry["country"]),
             None,
         )
-        monty.country_codes = [(country_code if country_code else gdacs_event.data["properties"]["iso3"])]
+        monty.country_codes = [(country_code if country_code else data["properties"]["iso3"])]
 
         return item
 
@@ -322,7 +298,7 @@ class GDACSTransformer(MontyDataTransformer[list[GDACSDataSource]]):
             return GDACSTransformer.get_impact_category_from_sendai_e(sendainame)
         elif sendaitype == "F":
             return GDACSTransformer.get_impact_category_from_sendai_f(sendainame)
-        elif sendainame == "G":
+        elif sendaitype == "G":
             return GDACSTransformer.get_impact_category_from_sendai_g(sendainame)
         else:
             raise ValueError(f"Unknown sendai type {sendaitype} and name {sendainame}")
@@ -361,6 +337,27 @@ class GDACSTransformer(MontyDataTransformer[list[GDACSDataSource]]):
             raise ValueError(f"Unknown sendai name {sendainame} for indicators D")
 
     @staticmethod
+    def get_impact_category_from_sendai_e(
+        sendainame: str,
+    ) -> MontyImpactExposureCategory:
+        # Implement this method if needed
+        raise ValueError(f"Method not implemented for sendai type E with name {sendainame}")
+
+    @staticmethod
+    def get_impact_category_from_sendai_f(
+        sendainame: str,
+    ) -> MontyImpactExposureCategory:
+        # Implement this method if needed
+        raise ValueError(f"Method not implemented for sendai type F with name {sendainame}")
+
+    @staticmethod
+    def get_impact_category_from_sendai_g(
+        sendainame: str,
+    ) -> MontyImpactExposureCategory:
+        # Implement this method if needed
+        raise ValueError(f"Method not implemented for sendai type G with name {sendainame}")
+
+    @staticmethod
     def get_impact_type_from_sendai_indicators(sendaitype: str, sendainame: str) -> MontyImpactType:
         if sendaitype == "A":
             return GDACSTransformer.get_impact_type_from_sendai_a(sendainame)
@@ -374,7 +371,7 @@ class GDACSTransformer(MontyDataTransformer[list[GDACSDataSource]]):
             return GDACSTransformer.get_impact_type_from_sendai_e(sendainame)
         elif sendaitype == "F":
             return GDACSTransformer.get_impact_type_from_sendai_f(sendainame)
-        elif sendainame == "G":
+        elif sendaitype == "G":
             return GDACSTransformer.get_impact_type_from_sendai_g(sendainame)
         else:
             raise ValueError(f"Unknown sendai type {sendaitype} and name {sendainame}")
@@ -412,3 +409,24 @@ class GDACSTransformer(MontyDataTransformer[list[GDACSDataSource]]):
             return MontyImpactType.DESTROYED
         else:
             raise ValueError(f"Unknown sendai name {sendainame} for indicators D")
+
+    @staticmethod
+    def get_impact_type_from_sendai_e(sendainame: str) -> MontyImpactType:
+        # Implement this method if needed
+        raise ValueError(f"Method not implemented for sendai type E with name {sendainame}")
+
+    @staticmethod
+    def get_impact_type_from_sendai_f(sendainame: str) -> MontyImpactType:
+        # Implement this method if needed
+        raise ValueError(f"Method not implemented for sendai type F with name {sendainame}")
+
+    @staticmethod
+    def get_impact_type_from_sendai_g(sendainame: str) -> MontyImpactType:
+        # Implement this method if needed
+        raise ValueError(f"Method not implemented for sendai type G with name {sendainame}")
+
+    def get_stac_items(self) -> typing.Generator[Item, None, None]:
+        # This is an abstract method from the parent class that needs to be implemented
+        # For now, we'll just yield the items from make_items
+        for item in self.make_items():
+            yield item

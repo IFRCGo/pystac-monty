@@ -42,22 +42,11 @@ class EMDATDataSource(MontyDataSource):
         elif isinstance(data, dict):
             # If data is a dict, assume it's Json content
             # data = data["data"]["public_emdat"]["data"]
-            data = self.source_data_validator(data["data"]["public_emdat"]["data"])
+            data = data["data"]["public_emdat"]["data"]
             df = pd.DataFrame(data)
             self.df = rename_columns(df)
         else:
             raise ValueError("Data must be either Excel content (str) or pandas DataFrame or Json")
-
-    def source_data_validator(self, data):
-        valid_list = []
-        error_list = []
-        for item in data:
-            if EmdatDataValidator.validate_event(item):
-                valid_list.append(item)
-            else:
-                error_list.append(item)
-
-        return valid_list
 
     def get_data(self) -> pd.DataFrame:
         return self.df
