@@ -32,20 +32,37 @@ class IFRCEventTransformer(MontyDataTransformer[IFRCEventDataSource]):
     hazard_profiles = MontyHazardProfiles()
     source_name = "ifrcevent"
 
+    # FIXME: This is not used anymore
     def make_items(self):
         return list(self.get_stac_items())
 
     def get_stac_items(self) -> typing.Generator[Item, None, None]:
-        ifrcevent_data = self.data_source.data
+        ifrcevent_data: List[typing.Dict[str, typing.Any]] = self.data_source.data
+
+        filtered_ifrcevent_data = []
+        for item in ifrcevent_data:
+            appeals: list[typing.Dict] | None = item.get("appeals")
+            if not appeals:
+                continue
+
+            first_appeal: typing.Dict = appeals[0]
+            if first_appeal.get("atype", None) not in {0, 1}:
+                continue
+
+            dtype: typing.Dict | None = item.get("dtype")
+            if not dtype:
+                continue
+
+            dtype_name: str | None = dtype.get("name")
+            if not self.check_accepted_disaster_types(dtype_name):
+                continue
+            filtered_ifrcevent_data.append(item)
 
         self.transform_summary.mark_as_started()
-        for data in ifrcevent_data:
+        for data in filtered_ifrcevent_data:
             self.transform_summary.increment_rows()
             try:
-                def parse_data(row: dict):
-                    return IFRCsourceValidator(**row)
-
-                ifrcdata = parse_data(data)
+                ifrcdata = IFRCsourceValidator(**data)
                 if event_item := self.make_source_event_item(ifrcdata):
                     yield event_item
                     yield from self.make_impact_items(event_item, ifrcdata)
@@ -54,6 +71,7 @@ class IFRCEventTransformer(MontyDataTransformer[IFRCEventDataSource]):
             except Exception:
                 self.transform_summary.increment_failed_rows()
                 logger.error("Failed to process ifrc events", exc_info=True)
+        self.transform_summary.mark_as_complete()
 
     def make_source_event_item(self, data: IFRCsourceValidator) -> Item:
         """Create an event item"""
@@ -174,7 +192,16 @@ class IFRCEventTransformer(MontyDataTransformer[IFRCEventDataSource]):
             value = None
             for field in impact_field:
                 if len(ifrcevent_data.field_reports) > 0 and hasattr(ifrcevent_data.field_reports[0], field):
-                    value = getattr(ifrcevent_data.field_reports[0], field)
+                    value = getattr(ifrcevent_data.field_reports[0], typing.cast(typing.Literal[
+                        "num_dead", "gov_num_dead", "other_num_dead"
+                        "num_displaced", "gov_num_displaced", "other_num_displaced"
+                        "num_injured", "gov_num_injured", "other_num_injured"
+                        "num_missing", "gov_num_missing", "other_num_missing"
+                        "num_affected", "gov_num_affected", "other_num_affected"
+                        "num_assisted", "gov_num_assisted", "other_num_assisted"
+                        "num_potentially_affected", "gov_num_potentially_affected", "other_num_potentially_affected"
+                        "num_highest_risk", "gov_num_highest_risk", "other_num_highest_risk"
+                    ], field))
                     break
 
             if not value:
@@ -195,7 +222,11 @@ class IFRCEventTransformer(MontyDataTransformer[IFRCEventDataSource]):
             estimate_type=MontyEstimateType.PRIMARY,
         )
 
-    def check_accepted_disaster_types(self, disaster):
+    # FIXME: not used here
+    def check_accepted_disaster_types(self, disaster: str | None):
+        if not disaster:
+            return []
+
         # Filter out relevant disaster types
         monty_accepted_disaster_types = [
             "Earthquake",
