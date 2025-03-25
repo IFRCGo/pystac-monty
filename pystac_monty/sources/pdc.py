@@ -2,7 +2,7 @@ import json
 import logging
 import os
 from datetime import datetime
-from typing import Any, Generator, List, Optional, Union
+from typing import Any, Generator, List, Optional
 
 import pytz
 from markdownify import markdownify as md
@@ -10,10 +10,6 @@ from pystac import Asset, Item
 from shapely.geometry import Point, mapping
 
 from pystac_monty.validators.pdc import AdminData, ExposureDetailValidator, HazardEventValidator
-
-logger = logging.getLogger(__name__)
-
-
 from pystac_monty.extension import (
     HazardDetail,
     ImpactDetail,
@@ -26,6 +22,8 @@ from pystac_monty.geocoding import MontyGeoCoder
 from pystac_monty.hazard_profiles import MontyHazardProfiles
 from pystac_monty.sources.common import MontyDataSource, MontyDataTransformer
 
+
+logger = logging.getLogger(__name__)
 # Constants
 
 STAC_EVENT_ID_PREFIX = "pdc-event-"
@@ -97,7 +95,6 @@ class PDCTransformer(MontyDataTransformer):
         for data in pdc_hazard_data:
             self.transform_summary.increment_rows()
             try:
-
                 def parse_data(data: dict, validator):
                     obj = validator(**data)
                     return obj
@@ -114,6 +111,7 @@ class PDCTransformer(MontyDataTransformer):
             except Exception:
                 self.transform_summary.increment_failed_rows()
                 logger.error("Failed to process pdc", exc_info=True)
+        self.transform_summary.mark_as_complete()
 
     def make_source_event_item(self, pdc_hazard_data: HazardEventValidator, pdc_exposure_data: ExposureDetailValidator):
         """Create an Event Item"""
@@ -270,10 +268,10 @@ class PDCTransformer(MontyDataTransformer):
             impact_item.properties["roles"] = ["source", "impact"]
 
             monty = MontyExtension.ext(impact_item)
-            country = []
+            country_codes = []
             if exposure_detail:
-                country.extend([admin.country for admin in exposure_detail.totalByAdmin if admin.country])
-            monty.country_codes = country
+                country_codes.extend([admin.country for admin in exposure_detail.totalByAdmin if admin.country])
+            monty.country_codes = country_codes
             # Impact Detail
             category, impact_type = field_values
             value = self.get_nested_data(exposure_detail.totalByAdmin, field_key)
@@ -282,7 +280,7 @@ class PDCTransformer(MontyDataTransformer):
         return impact_items
 
     def get_impact_detail(
-        self, category: MontyImpactExposureCategory, impact_type: MontyImpactType, value: Union[int, float, str]
+        self, category: MontyImpactExposureCategory, impact_type: MontyImpactType, value: float
     ):
         """Create an Impact detail object"""
         return ImpactDetail(category=category, type=impact_type, value=value, unit=None, estimate_type=MontyEstimateType.PRIMARY)
