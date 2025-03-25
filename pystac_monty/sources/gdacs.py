@@ -48,24 +48,7 @@ class GDACSDataSource(MontyDataSource):
         super().__init__(source_url, data)
         self.type = type
         # all gdacs data are json
-        self.data = self.source_data_validator(json.loads(data))
-
-    def source_data_validator(self, data: dict):
-        # Debug print
-        if self.type == GDACSDataSourceType.EVENT:
-            result = GdacsDataValidatorEvents.validate_event(data)
-            if result:
-                return data
-        elif self.type == GDACSDataSourceType.GEOMETRY:
-            new_data = {}  # Store the filtered dictionary
-            for key, value in data.items():
-                if key == "features" and isinstance(value, list):
-                    # Validate each feature in the list and skip the ones with 'Figure cause' = 'Conflict'
-                    new_data[key] = [feature for feature in value if GdacsDataValidatorGeometry.validate_event(feature)]
-                else:
-                    # Keep normal key-value pairs unchanged
-                    new_data[key] = value
-            return new_data
+        self.data = json.loads(data)
 
     def get_type(self) -> GDACSDataSourceType:
         return self.type
