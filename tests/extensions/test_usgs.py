@@ -84,8 +84,6 @@ class USGSTest(unittest.TestCase):
             - Source event, hazard and impact items are present
             - Items can be serialized to JSON
         """
-        #items = transformer.make_items()
-        #self.assertTrue(len(items) > 0)
 
         # Track items we find
         source_event_item = None
@@ -134,11 +132,6 @@ class USGSTest(unittest.TestCase):
         data_source = USGSDataSource(tibetan_plateau_eq[1], event_data)
         transformer = USGSTransformer(data_source, geocoder)
 
-        #items = transformer.make_items()
-
-        # Should only have event and hazard items
-        #self.assertEqual(len(items), 2)
-
         found_event = False
         found_hazard = False
         for item in transformer.get_stac_items():
@@ -176,26 +169,26 @@ class USGSTest(unittest.TestCase):
     #     with self.assertRaises(json.JSONDecodeError):
     #         USGSDataSource("test_url", invalid_json)
 
-    # def test_invalid_losses_data(self) -> None:
-    #     """Test handling of invalid losses data
+    def test_invalid_losses_data(self) -> None:
+        """Test handling of invalid losses data
 
-    #     Tests that:
-    #         - Invalid losses data doesn't prevent event/hazard creation
-    #         - Appropriate errors are raised
-    #         - Valid items are still created
-    #     """
-    #     # Get valid event data
-    #     event_data = requests.get(tibetan_plateau_eq[1]).text
+        Tests that:
+            - Invalid losses data doesn't prevent event/hazard creation
+            - Appropriate errors are raised
+            - Valid items are still created
+        """
+        # Get valid event data
+        event_data = requests.get(tibetan_plateau_eq[1]).text
 
-    #     # Test with invalid losses JSON
-    #     invalid_losses = "{"
-    #     with self.assertRaises(json.JSONDecodeError):
-    #         USGSDataSource("test_url", event_data, invalid_losses)
+        # Test with invalid losses JSON
+        invalid_losses = "{"
+        with self.assertRaises(json.JSONDecodeError):
+            USGSDataSource("test_url", event_data, invalid_losses)
 
-    #     # Test with empty losses data - should still create event and hazard
-    #     empty_losses = "{}"
-    #     data_source = USGSDataSource("test_url", event_data, empty_losses)
-    #     transformer = USGSTransformer(data_source, geocoder)
-    #     items = transformer.make_items()
+        # Test with empty losses data - should still create event and hazard
+        empty_losses = "{}"
+        data_source = USGSDataSource("test_url", event_data, empty_losses)
+        transformer = USGSTransformer(data_source, geocoder)
+        items = transformer.make_items()
 
-    #     self.assertEqual(len(items), 2)  # Should still get event and hazard
+        self.assertEqual(len(items), 2)  # Should still get event and hazard

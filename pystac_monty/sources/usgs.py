@@ -311,13 +311,13 @@ class USGSTransformer(MontyDataTransformer[USGSDataSource]):
     
     def get_stac_items(self) -> typing.Generator[Item, None, None]:
         """Creates the STAC Items"""
-        failed_items_count = 0
-        total_items_count = 0
+        self.transform_summary.mark_as_started()
 
         item_data = self.data_source.get_data()
         losspager_data = self.data_source.get_losses_data()
 
-        total_items_count = 1
+        # Note that only one datapoint is sent
+        self.transform_summary.increment_rows(1)
         try:
             def get_validated_data(items: typing.List[dict]) -> typing.List[EmpiricalValidator]:
                 validated_losspager_data: list[EmpiricalValidator] = []
@@ -332,18 +332,18 @@ class USGSTransformer(MontyDataTransformer[USGSDataSource]):
             else:
                 losspager_validated_items = []
 
-            event_item = self.make_source_event_item(item_data=validated_item)
-            yield event_item
-            hazard_item = self.make_hazard_event_item(event_item=event_item, data_item=validated_item)
-            yield hazard_item
-            yield from self.make_impact_items(event_item=event_item, hazard_item=hazard_item, losspager_items=losspager_validated_items)
+            if event_item := self.make_source_event_item(item_data=validated_item):
+                yield event_item
+                hazard_item = self.make_hazard_event_item(event_item=event_item, data_item=validated_item)
+                yield hazard_item
+                yield from self.make_impact_items(event_item=event_item, hazard_item=hazard_item, losspager_items=losspager_validated_items)
+            else:
+                self.transform_summary.increment_failed_rows(1)
         except Exception:
-            logger.error("Failed to process the USGS data", exc_info=True)
-            failed_items_count += 1
+            self.transform_summary.increment_failed_rows(1)
+            logger.error("Failed to process the USGS data.", exc_info=True)
 
-        print(total_items_count)
-        print(failed_items_count)
-
+        self.transform_summary.mark_as_complete()
 
     # TODO This method is deprecated
     def make_items(self) -> typing.List[Item]:
@@ -358,6 +358,11 @@ class USGSTransformer(MontyDataTransformer[USGSDataSource]):
         point = Point(longitude, latitude)
 
         event_datetime = datetime.fromtimestamp(item_data.properties.time / 1_000, pytz.UTC)
+        # TODO Verify the logic for depth
+        if item_data.properties.products.shakemap:
+            eq_depth = item_data.properties.products.shakemap[0].properties.depth
+        else:
+            eq_depth = "-"
 
         item = Item(
             id=f"{STAC_EVENT_ID_PREFIX}{item_data.id}",
@@ -372,7 +377,7 @@ class USGSTransformer(MontyDataTransformer[USGSDataSource]):
                 "eq:status": item_data.properties.status,
                 "eq:tsunami": bool(item_data.properties.tsunami),
                 "eq:felt": item_data.properties.felt,
-                "eq:depth": item_data.properties.products.shakemap[0].properties.depth
+                "eq:depth": eq_depth
             },
         )
 
