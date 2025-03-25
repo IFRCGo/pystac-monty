@@ -134,8 +134,8 @@ class IFRCsourceValidator(BaseModel):
     summary: str
     # translation_module_original_language: str
 
-    @field_validator("ifrc_severity_level")
-    def validate_severity_level(cls, value):
-        if value not in range(0, 4):
-            raise ValueError("Invalid severity level, must be between 0 and 3")
-        return value
+    # @field_validator("ifrc_severity_level")
+    # def validate_severity_level(cls, value):
+    #     if value not in range(0, 4):
+    #         raise ValueError("Invalid severity level, must be between 0 and 3")
+    #     return value
