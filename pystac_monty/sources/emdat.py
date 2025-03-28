@@ -98,7 +98,7 @@ class EMDATDataSource(MontyDataSource):
         elif isinstance(data, dict):
             # If data is a dict, assume it's Json content
             data = data["data"]["public_emdat"]["data"]
-            df = pd.DataFrame(data)
+            self.df = pd.DataFrame(data)
         else:
             raise ValueError("Data must be either Excel content (str) or pandas DataFrame or Json")
 
@@ -146,14 +146,13 @@ class EMDATTransformer(MontyDataTransformer[EMDATDataSource]):
         geometry = None
         bbox = None
 
-        # FIXME: Disabling this for the timebeing as it's slow for historical data
         # 1. Try admin units first if geocoder is available
-        # if self.geocoder and row.admin_units:
-        #     # FIXME: convert this to json str
-        #     geom_data = self.geocoder.get_geometry_from_admin_units(json.dumps(row.admin_units))
-        #     if geom_data:
-        #         geometry = geom_data["geometry"]
-        #         bbox = geom_data["bbox"]
+        if self.geocoder and row.admin_units:
+            # FIXME: convert this to json str
+            geom_data = self.geocoder.get_geometry_from_admin_units(json.dumps(row.admin_units))
+            if geom_data:
+                geometry = geom_data["geometry"]
+                bbox = geom_data["bbox"]
 
         # 2. Fall back to lat/lon if available
         if geometry is None and row.latitude is not None and row.longitude is not None:

@@ -1,4 +1,5 @@
 import json
+import typing
 import zipfile
 from abc import ABC, abstractmethod
 from typing import Any, Dict, List, Optional, Set, Union
@@ -7,6 +8,10 @@ import fiona  # type: ignore
 import requests
 from shapely.geometry import Point, mapping, shape  # type: ignore
 from shapely.ops import unary_union  # type: ignore
+
+
+WORLD_ADMIN_BOUNDARIES_FGB = "world_admin_boundaries.fgb"
+GAUL2014_2015_GPCK_ZIP = "gaul2014_2015.gpkg"
 
 
 class MontyGeoCoder(ABC):
@@ -31,7 +36,62 @@ class MontyGeoCoder(ABC):
         pass
 
 
-WORLD_ADMIN_BOUNDARIES_FGB = "world_admin_boundaries.fgb"
+class TheirGeocoder(MontyGeoCoder):
+    _base_url: str
+
+    def __init__(self, url: str):
+        self._base_url = url
+
+    def _request(self, url: str, params: dict[str, typing.Any]):
+        response = requests.get(
+            f"{self._base_url}{url}",
+            params=params,
+            timeout=30,
+        )
+        if response.status_code == 200:
+            return response.json()
+        return None
+
+    def get_geometry_from_admin_units(self, admin_units: str) -> Optional[Dict[str, Any]]:
+        admin_list = json.loads(admin_units)
+        # Collect admin1 codes from both direct references and admin2 mappings
+        admin1_codes: Set[int] = set()
+        admin2_codes: Set[int] = set()
+        for entry in admin_list:
+            if "adm1_code" in entry:
+                admin1_codes.add(int(entry["adm1_code"]))
+            elif "adm2_code" in entry:
+                admin2_codes.add(int(entry["adm2_code"]))
+        return self._request(
+            "/admin2/geometries",
+            {
+                "admin1_codes": list(admin1_codes),
+                "admin2_codes": list(admin2_codes),
+            }
+        )
+
+    def get_geometry_by_country_name(self, country_name: str) -> Optional[Dict[str, Any]]:
+        return self._request(
+            "/country/geometry",
+            {"country_name": country_name}
+        )
+
+    def get_iso3_from_point(self, point: Point) -> Optional[str]:
+        response = self._request(
+            "/country/iso3",
+            {"lat": point.y, "lng": point.x}
+        )
+        return response["iso3"] if response else None
+
+    # FIXME: This is not implemented
+    def get_iso3_from_geometry(self, geometry: Dict[str, Any]) -> Optional[str]:
+        return "UNK"
+
+    def get_geometry_from_iso3(self, iso3: str) -> Optional[Dict[str, Any]]:
+        return self._request(
+            "/country/geometry",
+            {"iso3": iso3}
+        )
 
 
 class WorldAdministrativeBoundariesGeocoder(MontyGeoCoder):
@@ -190,16 +250,13 @@ class WorldAdministrativeBoundariesGeocoder(MontyGeoCoder):
         return None
 
 
-GAUL2014_2015_GPCK_ZIP = "gaul2014_2015.gpkg"
-
-
 class GAULGeocoder(MontyGeoCoder):
     """
     Implementation of MontyGeoCoder using GAUL geopackage for geocoding.
     Loads features dynamically as needed.
     """
 
-    def __init__(self, gpkg_path: Optional[str], service_base_url: Optional[str], simplify_tolerance: float = 0.01) -> None:
+    def __init__(self, gpkg_path: str, simplify_tolerance: float = 0.01) -> None:
         """
         Initialize GAULGeocoder
 
@@ -215,15 +272,8 @@ class GAULGeocoder(MontyGeoCoder):
         self._cache: Dict[str, Union[Dict[str, Any], int, None]] = {}  # Cache for frequently accessed geometries
         self._file_handle = None
 
-        if not gpkg_path and not service_base_url:
-            raise ValueError("At least the gpkg_path or service_base_url should be set.")
-
-        if self.gpkg_path:
-            self._initialize_path()
-            self._open_file()
-        else:
-            self.service_base_url = service_base_url
-            self.request_timeout = 30
+        self._initialize_path()
+        self._open_file()
 
     def __enter__(self) -> "GAULGeocoder":
         """Context manager entry point"""
@@ -396,12 +446,6 @@ class GAULGeocoder(MontyGeoCoder):
                 return adm0_code
         return None
 
-    def _service_request_handler(self, service_url: str, params: dict):
-        response = requests.get(service_url, params=params, timeout=self.request_timeout)
-        if response.status_code == 200:
-            return response.json()
-        return None
-
     def get_geometry_from_admin_units(self, admin_units: str) -> Optional[Dict[str, Any]]:
         """
         Get geometry from admin units JSON string
@@ -476,11 +520,6 @@ class GAULGeocoder(MontyGeoCoder):
             Dictionary containing geometry and bbox if found
         """
 
-        if not self.gpkg_path:
-            params = {"country_name": country_name}
-            service_url = f"{self.service_base_url}/geom_by_country_name"
-            return self._service_request_handler(service_url=service_url, params=params)
-
         if not country_name or not self._path:
             return None
 
@@ -507,23 +546,16 @@ class GAULGeocoder(MontyGeoCoder):
             print(f"Error getting country geometry for {country_name}: {str(e)}")
             return None
 
+    # FIXME: This is not implemented
     def get_iso3_from_point(self, point: Point) -> Optional[str]:
-        if not self.gpkg_path:
-            params = {"lng": point.x, "lat": point.y}
-            service_url = f"{self.service_base_url}/iso3_by_geom"
-            resp = self._service_request_handler(service_url=service_url, params=params)
-            return (resp.get("iso3") if resp else None) or "UNK"
         return "UNK"
 
     # FIXME: This is not being used
     def get_iso3_from_geometry(self, geometry: Dict[str, Any]) -> Optional[str]:
         return "UNK"
 
+    # FIXME: This is not implemented
     def get_geometry_from_iso3(self, iso3: str) -> Optional[Dict[str, Any]]:
-        if not self.gpkg_path:
-            params = {"iso3": iso3}
-            service_url = f"{self.service_base_url}/geom_by_iso3"
-            return self._service_request_handler(service_url=service_url, params=params)
         return None
 
 

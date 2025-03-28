@@ -60,7 +60,7 @@ class EmdatDataValidator(BaseModelWithExtra):
     total_dam: float | None = None
     # total_dam_adj: Optional[float] = None
     # cpi: Optional[float] = None
-    # admin_units: list[typing.Any] | None = None
+    admin_units: list[typing.Any] | None = None
     # entry_date: Optional[str]
     # last_update: Optional[str]
 
