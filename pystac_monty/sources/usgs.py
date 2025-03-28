@@ -360,7 +360,9 @@ class USGSTransformer(MontyDataTransformer[USGSDataSource]):
         monty.hazard_codes = ["GH0004"]  # Earthquake surface rupture code
 
         # TODO Get country code from event data or geometry
-        country_codes = [self.geocoder.get_iso3_from_geometry(point)]
+        iso3 = self.geocoder.get_iso3_from_point(point) or 'UNK'
+        country_codes = [iso3]
+
         monty.country_codes = country_codes
 
         # Compute correlation ID

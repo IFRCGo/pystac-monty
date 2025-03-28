@@ -1,12 +1,17 @@
 import json
+import typing
 import zipfile
 from abc import ABC, abstractmethod
 from typing import Any, Dict, List, Optional, Set, Union
 
 import fiona  # type: ignore
 import requests
-from shapely.geometry import mapping, shape  # type: ignore
+from shapely.geometry import Point, mapping, shape  # type: ignore
 from shapely.ops import unary_union  # type: ignore
+
+
+WORLD_ADMIN_BOUNDARIES_FGB = "world_admin_boundaries.fgb"
+GAUL2014_2015_GPCK_ZIP = "gaul2014_2015.gpkg"
 
 
 class MontyGeoCoder(ABC):
@@ -19,6 +24,10 @@ class MontyGeoCoder(ABC):
         pass
 
     @abstractmethod
+    def get_iso3_from_point(self, point: Point) -> Optional[str]:
+        pass
+
+    @abstractmethod
     def get_iso3_from_geometry(self, geometry: Dict[str, Any]) -> Optional[str]:
         pass
 
@@ -27,7 +36,62 @@ class MontyGeoCoder(ABC):
         pass
 
 
-WORLD_ADMIN_BOUNDARIES_FGB = "world_admin_boundaries.fgb"
+class TheirGeocoder(MontyGeoCoder):
+    _base_url: str
+
+    def __init__(self, url: str):
+        self._base_url = url
+
+    def _request(self, url: str, params: dict[str, typing.Any]):
+        response = requests.get(
+            f"{self._base_url}{url}",
+            params=params,
+            timeout=30,
+        )
+        if response.status_code == 200:
+            return response.json()
+        return None
+
+    def get_geometry_from_admin_units(self, admin_units: str) -> Optional[Dict[str, Any]]:
+        admin_list = json.loads(admin_units)
+        # Collect admin1 codes from both direct references and admin2 mappings
+        admin1_codes: Set[int] = set()
+        admin2_codes: Set[int] = set()
+        for entry in admin_list:
+            if "adm1_code" in entry:
+                admin1_codes.add(int(entry["adm1_code"]))
+            elif "adm2_code" in entry:
+                admin2_codes.add(int(entry["adm2_code"]))
+        return self._request(
+            "/admin2/geometries",
+            {
+                "admin1_codes": list(admin1_codes),
+                "admin2_codes": list(admin2_codes),
+            }
+        )
+
+    def get_geometry_by_country_name(self, country_name: str) -> Optional[Dict[str, Any]]:
+        return self._request(
+            "/country/geometry",
+            {"country_name": country_name}
+        )
+
+    def get_iso3_from_point(self, point: Point) -> Optional[str]:
+        response = self._request(
+            "/country/iso3",
+            {"lat": point.y, "lng": point.x}
+        )
+        return response["iso3"] if response else None
+
+    # FIXME: This is not implemented
+    def get_iso3_from_geometry(self, geometry: Dict[str, Any]) -> Optional[str]:
+        return "UNK"
+
+    def get_geometry_from_iso3(self, iso3: str) -> Optional[Dict[str, Any]]:
+        return self._request(
+            "/country/geometry",
+            {"iso3": iso3}
+        )
 
 
 class WorldAdministrativeBoundariesGeocoder(MontyGeoCoder):
@@ -144,6 +208,9 @@ class WorldAdministrativeBoundariesGeocoder(MontyGeoCoder):
 
         return None
 
+    def get_iso3_from_point(self, point: Point) -> Optional[str]:
+        self.get_iso3_from_geometry(point.__geo_interface__)
+
     def get_geometry_from_admin_units(self, admin_units: str) -> Optional[Dict[str, Any]]:
         raise NotImplementedError("Method not implemented")
 
@@ -183,16 +250,13 @@ class WorldAdministrativeBoundariesGeocoder(MontyGeoCoder):
         return None
 
 
-GAUL2014_2015_GPCK_ZIP = "gaul2014_2015.gpkg"
-
-
 class GAULGeocoder(MontyGeoCoder):
     """
     Implementation of MontyGeoCoder using GAUL geopackage for geocoding.
     Loads features dynamically as needed.
     """
 
-    def __init__(self, gpkg_path: Optional[str], service_base_url: Optional[str], simplify_tolerance: float = 0.01) -> None:
+    def __init__(self, gpkg_path: str, simplify_tolerance: float = 0.01) -> None:
         """
         Initialize GAULGeocoder
 
@@ -208,15 +272,8 @@ class GAULGeocoder(MontyGeoCoder):
         self._cache: Dict[str, Union[Dict[str, Any], int, None]] = {}  # Cache for frequently accessed geometries
         self._file_handle = None
 
-        if not gpkg_path and not service_base_url:
-            raise ValueError("At least the gpkg_path or service_base_url should be set.")
-
-        if self.gpkg_path:
-            self._initialize_path()
-            self._open_file()
-        else:
-            self.service_base_url = service_base_url
-            self.request_timeout = 30
+        self._initialize_path()
+        self._open_file()
 
     def __enter__(self) -> "GAULGeocoder":
         """Context manager entry point"""
@@ -389,12 +446,6 @@ class GAULGeocoder(MontyGeoCoder):
                 return adm0_code
         return None
 
-    def _service_request_handler(self, service_url: str, params: dict):
-        response = requests.get(service_url, params=params, timeout=self.request_timeout)
-        if response.status_code == 200:
-            return response.json()
-        return None
-
     def get_geometry_from_admin_units(self, admin_units: str) -> Optional[Dict[str, Any]]:
         """
         Get geometry from admin units JSON string
@@ -469,11 +520,6 @@ class GAULGeocoder(MontyGeoCoder):
             Dictionary containing geometry and bbox if found
         """
 
-        if not self.gpkg_path:
-            params = {"country_name": country_name}
-            service_url = f"{self.service_base_url}/by_country_name"
-            return self._service_request_handler(service_url=service_url, params=params)
-
         if not country_name or not self._path:
             return None
 
@@ -500,12 +546,17 @@ class GAULGeocoder(MontyGeoCoder):
             print(f"Error getting country geometry for {country_name}: {str(e)}")
             return None
 
-    def get_iso3_from_geometry(self, geometry: Dict[str, Any]) -> Optional[str]:
-        # FIXME: Implement this later
+    # FIXME: This is not implemented
+    def get_iso3_from_point(self, point: Point) -> Optional[str]:
         return "UNK"
 
+    # FIXME: This is not being used
+    def get_iso3_from_geometry(self, geometry: Dict[str, Any]) -> Optional[str]:
+        return "UNK"
+
+    # FIXME: This is not implemented
     def get_geometry_from_iso3(self, iso3: str) -> Optional[Dict[str, Any]]:
-        raise NotImplementedError("Method not implemented")
+        return None
 
 
 class MockGeocoder(MontyGeoCoder):
@@ -519,6 +570,23 @@ class MockGeocoder(MontyGeoCoder):
         # Test geometries for Spain and its admin units
         self._test_geometries: Dict[str, Dict[str, Any]] = {
             # Simplified polygon for Spain
+            "USA": {
+                "geometry": {
+                    "type": "Polygon",
+                    "coordinates": [
+                        [
+                            [-125.0, 25.0],  # Southwest
+                            [-125.0, 50.0],  # Northwest
+                            [-67.0, 50.0],  # Northeast
+                            [-67.0, 25.0],  # Southeast
+                            [-125.0, 25.0],  # Close polygon
+                        ]
+                    ],
+                },
+                "bbox": [
+                    -125.0, 25.0, -67.0, 50.0,
+                ],
+            },
             "ESP": {
                 "geometry": {
                     "type": "Polygon",
@@ -590,6 +658,9 @@ class MockGeocoder(MontyGeoCoder):
             # Return test geometry for Spain
             if country_name.lower() == "spain":
                 return self._test_geometries["ESP"]
+            if country_name.lower() == "united states of america":
+                return self._test_geometries["ESP"]
+            return None
             return None
 
         except Exception as e:
@@ -629,6 +700,22 @@ class MockGeocoder(MontyGeoCoder):
         except Exception as e:
             print(f"Error getting mock ISO3 from geometry: {str(e)}")
             return None
+
+    def get_iso3_from_point(self, point: Point) -> Optional[str]:
+        """
+        Get ISO3 code for point
+        Returns the ISO3 code of the first test geometry that intersects with the input point.
+
+        Args:
+            geometry: Point
+
+        Returns:
+            Optional[str]: ISO3 code if geometry intersects with any test point, None otherwise
+        """
+        if not Point:
+            return None
+
+        return self.get_iso3_from_geometry(point.__geo_interface__)
 
     def get_geometry_from_iso3(self, iso3: str) -> Optional[Dict[str, Any]]:
         """
