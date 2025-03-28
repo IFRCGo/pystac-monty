@@ -147,6 +147,9 @@ class IFRCEventTransformer(MontyDataTransformer[IFRCEventDataSource]):
 
     def make_impact_items(self, event_item: Item, ifrcevent_data: IFRCsourceValidator) -> List[Item]:
         """Create impact items"""
+        if not ifrcevent_data.field_reports:
+            return []
+
         items = []
 
         impact_field_category_map = {
@@ -191,25 +194,16 @@ class IFRCEventTransformer(MontyDataTransformer[IFRCEventDataSource]):
             # only save impact value if not null
             value = None
             for field in impact_field:
-                if len(ifrcevent_data.field_reports) > 0 and hasattr(ifrcevent_data.field_reports[0], field):
-                    value = getattr(ifrcevent_data.field_reports[0], typing.cast(typing.Literal[
-                        "num_dead", "gov_num_dead", "other_num_dead"
-                        "num_displaced", "gov_num_displaced", "other_num_displaced"
-                        "num_injured", "gov_num_injured", "other_num_injured"
-                        "num_missing", "gov_num_missing", "other_num_missing"
-                        "num_affected", "gov_num_affected", "other_num_affected"
-                        "num_assisted", "gov_num_assisted", "other_num_assisted"
-                        "num_potentially_affected", "gov_num_potentially_affected", "other_num_potentially_affected"
-                        "num_highest_risk", "gov_num_highest_risk", "other_num_highest_risk"
-                    ], field))
+                value = getattr(ifrcevent_data.field_reports[0], field)
+                if value:
                     break
 
             if not value:
                 continue
 
             monty.impact_detail = self.get_impact_details(category, impact_type, value)
-
             items.append(impact_item)
+
         return items
 
     def get_impact_details(self, category, impact_type, value, unit=None):
