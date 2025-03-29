@@ -42,13 +42,13 @@ class USGSDataSource(MontyDataSource):
         self.data = json.loads(data)
         self.losses_data = json.loads(losses_data) if losses_data else None
 
-    def get_data(self) -> dict:
+    def get_data(self) -> dict[str, typing.Any]:
         """Get the event detail data."""
         return self.data
 
-    def get_losses_data(self) -> typing.Optional[typing.List[dict]]:
+    def get_losses_data(self) -> list[dict[str, typing.Any]] | None:
         """Get the PAGER losses data if available."""
-        return self.losses_data if self.losses_data else None
+        return self.losses_data or []
 
 
 class USGSTransformer(MontyDataTransformer[USGSDataSource]):
@@ -307,8 +307,8 @@ class USGSTransformer(MontyDataTransformer[USGSDataSource]):
             "ZM": "ZMB",
             "ZW": "ZWE",
         }
-        return iso_mappings.get(iso2.upper(), "")
-    
+        return iso_mappings[iso2.upper()]
+
     def get_stac_items(self) -> typing.Generator[Item, None, None]:
         """Creates the STAC Items"""
         self.transform_summary.mark_as_started()
@@ -319,7 +319,7 @@ class USGSTransformer(MontyDataTransformer[USGSDataSource]):
         # Note that only one datapoint is sent
         self.transform_summary.increment_rows(1)
         try:
-            def get_validated_data(items: typing.List[dict]) -> typing.List[EmpiricalValidator]:
+            def get_validated_data(items: list[dict[str, typing.Any]]) -> typing.List[EmpiricalValidator]:
                 validated_losspager_data: list[EmpiricalValidator] = []
                 for item in items:
                     obj = EmpiricalValidator(**item)
@@ -327,13 +327,10 @@ class USGSTransformer(MontyDataTransformer[USGSDataSource]):
                 return validated_losspager_data
 
             validated_item = USGSValidator(**item_data)
-            if losspager_data:
-                losspager_validated_items = get_validated_data(losspager_data)
-            else:
-                losspager_validated_items = []
 
             if event_item := self.make_source_event_item(item_data=validated_item):
                 yield event_item
+                losspager_validated_items = get_validated_data(losspager_data)
                 hazard_item = self.make_hazard_event_item(event_item=event_item, data_item=validated_item)
                 yield hazard_item
                 yield from self.make_impact_items(event_item=event_item, hazard_item=hazard_item, losspager_items=losspager_validated_items)
@@ -358,6 +355,7 @@ class USGSTransformer(MontyDataTransformer[USGSDataSource]):
         point = Point(longitude, latitude)
 
         event_datetime = datetime.fromtimestamp(item_data.properties.time / 1_000, pytz.UTC)
+
         # TODO Verify the logic for depth
         if item_data.properties.products.shakemap:
             eq_depth = item_data.properties.products.shakemap[0].properties.depth
@@ -473,7 +471,7 @@ class USGSTransformer(MontyDataTransformer[USGSDataSource]):
         if shakemap:
             pin_thumbnail = shakemap.contents.download_pin_thumbnail
             if pin_thumbnail:
-                shakemap_assets = {
+                shakemap_assets: dict[str, typing.Any] = {
                     "intensity_map": {
                         "href": pin_thumbnail.url,
                         "media_type": "image/png",
@@ -491,10 +489,10 @@ class USGSTransformer(MontyDataTransformer[USGSDataSource]):
 
     def make_impact_items(self, event_item: Item, hazard_item: Item, losspager_items: typing.List[EmpiricalValidator]) -> typing.List[Item]:
         """Create impact items (PAGER) from USGS data."""
-        impact_items = []
-
         if not losspager_items:
-            return impact_items
+            return []
+
+        impact_items = []
 
         # Create fatalities impact item
         for loss_data in losspager_items:
@@ -562,16 +560,21 @@ class USGSTransformer(MontyDataTransformer[USGSDataSource]):
         monty = MontyExtension.ext(impact_item)
         monty.country_codes = [self.iso2_to_iso3(iso2)]
         monty.impact_detail = ImpactDetail(
-            category=category, type=imp_type, value=float(value), unit=unit, estimate_type=MontyEstimateType.MODELLED
+            category=category,
+            type=imp_type,
+            value=value,
+            unit=unit,
+            estimate_type=MontyEstimateType.MODELLED,
         )
         geom = self.geocoder.get_geometry_from_iso3(monty.country_codes[0])
-        # intersect with the hazard geometry
-        geom = shape(geom["geometry"]).intersection(shape(hazard_item.geometry))
+        if geom:
+            # intersect with the hazard geometry
+            geom = shape(geom["geometry"]).intersection(shape(hazard_item.geometry))
         impact_item.geometry = mapping(geom)
         impact_item.bbox = geom.bounds
 
         # Add PAGER assets
-        pager_assets = {
+        pager_assets: dict[str, typing.Any] = {
             "pager_onepager": {
                 "href": f"{self.data_source.get_source_url()}/onepager.pdf",
                 "media_type": "application/pdf",

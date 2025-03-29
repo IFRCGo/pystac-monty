@@ -81,7 +81,7 @@ class TheirGeocoder(MontyGeoCoder):
             "/country/iso3",
             {"lat": point.y, "lng": point.x}
         )
-        return response["iso3"] if response else None
+        return response["iso3"] if response else "UNK"
 
     # FIXME: This is not implemented
     def get_iso3_from_geometry(self, geometry: Dict[str, Any]) -> Optional[str]:

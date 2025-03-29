@@ -35,7 +35,7 @@ class Shakemap(BaseModel):
 
 
 class Products(BaseModelWithExtra):
-    shakemap: List[Shakemap]
+    shakemap: list[Shakemap] | None = None
 
 
 class BaseProperties(BaseModel):
