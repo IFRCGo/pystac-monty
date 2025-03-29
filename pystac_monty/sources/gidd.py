@@ -67,7 +67,7 @@ class GIDDTransformer(MontyDataTransformer[GIDDDataSource]):
                     self.transform_summary.increment_failed_rows(len(gidd_data_items))
             except Exception:
                 self.transform_summary.increment_failed_rows(len(gidd_data_items))
-                logger.error("Failed to process the GIDD data", exc_info=True)
+                logger.warning("Failed to process the GIDD data", exc_info=True)
         self.transform_summary.mark_as_complete()
 
     # FIXME: This is deprecated

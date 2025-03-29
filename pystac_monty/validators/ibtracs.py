@@ -35,7 +35,7 @@ class IBTracsdataValidator(BaseModelWithExtra):
     def validate_basin(cls, value: str):
         if value not in ["NA", "SA", "EP", "SP", "WP", "SI", "NI"]:
             # FIXME: Add log extra
-            logger.error("Invalid basin code.")
+            logger.warning("Invalid basin code.")
             return False
         return value
 
@@ -43,6 +43,6 @@ class IBTracsdataValidator(BaseModelWithExtra):
     def validate_sid(cls, value: str):
         if value == " ":
             # FIXME: Add log extra
-            logger.error("Invalid SID")
+            logger.warning("Invalid SID")
             return False
         return value

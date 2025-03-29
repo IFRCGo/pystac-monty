@@ -70,7 +70,7 @@ class IFRCEventTransformer(MontyDataTransformer[IFRCEventDataSource]):
                     self.transform_summary.increment_failed_rows()
             except Exception:
                 self.transform_summary.increment_failed_rows()
-                logger.error("Failed to process ifrc events", exc_info=True)
+                logger.warning("Failed to process ifrc events", exc_info=True)
         self.transform_summary.mark_as_complete()
 
     def make_source_event_item(self, data: IFRCsourceValidator) -> Item:
