@@ -195,6 +195,7 @@ class PDCTransformer(MontyDataTransformer):
         }
 
         if hazard not in hazard_mapping:
+            logger.warning(f"The hazard {hazard} is not in the mapping.")
             raise KeyError(f"The hazard {hazard} is not in the mapping.")
 
         return hazard_mapping.get(hazard)
@@ -229,8 +230,6 @@ class PDCTransformer(MontyDataTransformer):
                 data = data.__getattribute__(key)
             else:
                 return None
-        if isinstance(data, list):
-            return data[0] if data else None
         return data
 
     def make_impact_items(self, event_item: Item, exposure_detail: ExposureDetailValidator) -> List[Item]:
@@ -261,24 +260,21 @@ class PDCTransformer(MontyDataTransformer):
 
         impact_items = []
         for field_key, field_values in impact_fields.items():
-            if not self.exposure_detail:
+            if not exposure_detail:
                 continue
-
-            impact_item = event_item.clone()
-            impact_item.id = f"{impact_item.id.replace(STAC_EVENT_ID_PREFIX, STAC_IMPACT_ID_PREFIX)}-{self.episode_number}-{'-'.join(field_key[:-1])}"  # noqa
-            impact_item.set_collection(self.get_impact_collection())
-            impact_item.properties["roles"] = ["source", "impact"]
-
-            monty = MontyExtension.ext(impact_item)
-            country_codes = []
-            if exposure_detail:
-                country_codes.extend([admin.country for admin in exposure_detail.totalByAdmin if admin.country])
-            monty.country_codes = country_codes
-            # Impact Detail
-            category, impact_type = field_values
-            value = self.get_nested_data(exposure_detail.totalByAdmin, field_key)
-            monty.impact_detail = self.get_impact_detail(category, impact_type, value)
-            impact_items.append(impact_item)
+            for admin_item in exposure_detail.totalByAdmin:
+                impact_item = event_item.clone()
+                impact_item.id = f"{impact_item.id.replace(STAC_EVENT_ID_PREFIX, STAC_IMPACT_ID_PREFIX)}-{self.episode_number}-{'-'.join(field_key[:-1])}"  # noqa
+                impact_item.set_collection(self.get_impact_collection())
+                impact_item.properties["roles"] = ["source", "impact"]
+                monty = MontyExtension.ext(impact_item)
+                print(admin_item)
+                monty.country_codes = [admin_item.country] #type: ignore
+                # Impact Detail
+                category, impact_type = field_values
+                value = self.get_nested_data(admin_item, field_key)
+                monty.impact_detail = self.get_impact_detail(category, impact_type, value) 
+                impact_items.append(impact_item)
         return impact_items
 
     def get_impact_detail(
@@ -286,6 +282,3 @@ class PDCTransformer(MontyDataTransformer):
     ):
         """Create an Impact detail object"""
         return ImpactDetail(category=category, type=impact_type, value=value, unit=None, estimate_type=MontyEstimateType.PRIMARY)
-
-
-# Run pre-commit checks for pdc.py
