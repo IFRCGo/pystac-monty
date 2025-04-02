@@ -2,7 +2,7 @@ import logging
 from datetime import datetime
 from typing import List, Union
 
-from pydantic import BaseModel, ConfigDict, HttpUrl, field_validator
+from pydantic import BaseModel, ConfigDict, HttpUrl
 
 logger = logging.getLogger(__name__)
 logging.basicConfig(level=logging.INFO)
@@ -10,7 +10,7 @@ logger.setLevel(logging.INFO)
 
 
 class BaseModelWithExtra(BaseModel):
-    model_config = ConfigDict(extra="ignore")
+    model_config = ConfigDict(extra="ignore", arbitrary_types_allowed=True)
 
 
 # Define the schema for affected countries
@@ -35,7 +35,7 @@ class EventUrls(BaseModelWithExtra):
 
 
 # Define the schema for properties (event properties)
-class EventProperties(BaseModelWithExtra):
+class Properties(BaseModelWithExtra):
     eventtype: str
     eventid: int
     episodeid: int
@@ -69,30 +69,17 @@ class EventProperties(BaseModelWithExtra):
 # Define the schema for geometry (point)
 class Geometry(BaseModelWithExtra):
     type: str
-    coordinates: Union[List[float], List[List[float]], List[List[List[float]]]]
+    coordinates: List
 
 
-# Define the schema for the feature collection
-class GdacsDataValidatorGeometry(BaseModelWithExtra):
+class Feature(BaseModelWithExtra):
     type: str
     bbox: List[float]
     geometry: Geometry
-    properties: EventProperties
+    properties: Properties
 
-    @field_validator("bbox")
-    @classmethod
-    def validate_bbox(cls, value):
-        """Ensure bbox has at least four coordinates"""
-        if len(value) < 4:
-            raise ValueError("Bounding box must have at least four coordinates.")
-        return value
 
-    @classmethod
-    def validate_event(cls, data) -> bool:
-        """Validate the overall data item"""
-        try:
-            _ = cls(**data)  # This will trigger the validators
-        except Exception as e:
-            logger.error(f"Validation failed: {e}")
-            return False
-        return True
+# Define the schema for the feature collection
+class GdacsGeometryDataValidator(BaseModelWithExtra):
+    type: str
+    features: List[Feature]
