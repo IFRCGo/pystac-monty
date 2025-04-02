@@ -37,6 +37,22 @@ class PDCDataSource(MontyDataSource):
     def __init__(self, source_url: str, data: Any):
         super().__init__(source_url, data)
         self.data = json.loads(data)
+        self.hazards_data = []
+        self.exposure_detail = {}
+        self.geojson_data = {}      
+
+        if "hazards_file_path" in self.data and os.path.exists(self.data["hazards_file_path"]):
+            with open(self.data["hazards_file_path"], "r", encoding="utf-8") as f:
+                self.hazards_data = json.loads(f.read())
+        
+        
+        if "exposure_detail_file_path" in self.data and os.path.exists(self.data["exposure_detail_file_path"]):
+            with open(self.data["exposure_detail_file_path"], "r", encoding="utf-8") as f:
+                self.exposure_detail = json.loads(f.read())
+        
+        if "geojson_file_path" in self.data and os.path.exists(self.data["geojson_file_path"]):
+            with open(self.data["geojson_file_path"], "r", encoding="utf-8") as f:
+                self.geojson_data = json.loads(f.read())
 
 
 class PDCTransformer(MontyDataTransformer):
@@ -48,30 +64,16 @@ class PDCTransformer(MontyDataTransformer):
     def __init__(self, pdc_data_src: PDCDataSource, geocoder: MontyGeoCoder):
         super().__init__(pdc_data_src, geocoder)
         self.config_data = pdc_data_src.data
-
-        self.hazards_data = []
-        self.exposure_detail = {}
-        self.geojson_data = {}
-
-        if "hazards_file_path" in self.config_data and os.path.exists(self.config_data["hazards_file_path"]):
-            with open(self.config_data["hazards_file_path"], "r", encoding="utf-8") as f:
-                self.hazards_data = json.loads(f.read())
-
-        if "exposure_detail_file_path" in self.config_data and os.path.exists(self.config_data["exposure_detail_file_path"]):
-            with open(self.config_data["exposure_detail_file_path"], "r", encoding="utf-8") as f:
-                self.exposure_detail = json.loads(f.read())
-
+        self.hazards_data = pdc_data_src.hazards_data
+        self.exposure_detail = pdc_data_src.exposure_detail
+        self.geojson_data = pdc_data_src.geojson_data
+       
         self.uuid = self.config_data.get("uuid", None)
-
         # NOTE Assigning -1 to episode_number incase of failure just to ignore the item formation (see make_items method)
         try:
             self.episode_number = int(float(self.config_data.get("exposure_timestamp", -1)))
         except ValueError:
             self.episode_number = -1
-
-        if "geojson_file_path" in self.config_data and os.path.exists(self.config_data["geojson_file_path"]):
-            with open(self.config_data["geojson_file_path"], "r", encoding="utf-8") as f:
-                self.geojson_data = json.loads(f.read())
 
         self.hazard_data = self._get_hazard_data()
 
