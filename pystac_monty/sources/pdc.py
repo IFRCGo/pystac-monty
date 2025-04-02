@@ -152,8 +152,8 @@ class PDCTransformer(MontyDataTransformer):
         item.properties["roles"] = ["source", "event"]
 
         all_iso3 = []
-        if pdc_exposure_data.totalByAdmin:
-            all_iso3.extend([admin.country for admin in pdc_exposure_data.totalByAdmin if admin.country])
+        if pdc_exposure_data.totalByCountry:
+            all_iso3.extend([admin.country for admin in pdc_exposure_data.totalByCountry if admin.country])
         if not all_iso3:
             return None
 

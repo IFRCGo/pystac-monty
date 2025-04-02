@@ -1,4 +1,4 @@
-from pydantic import BaseModel, Field, ConfigDict, HttpUrl
+from pydantic import BaseModel
 from typing import List, Optional
 
 class ValueDetails(BaseModel):
@@ -62,6 +62,7 @@ class AdminData(BaseModel):
 
 class ExposureDetailValidator(BaseModel):
     totalByAdmin: List[AdminData]
+    totalByCountry: List[AdminData]
 
 # Example Usage:
 # validated_data = TotalByAdmin(**your_json_data)
