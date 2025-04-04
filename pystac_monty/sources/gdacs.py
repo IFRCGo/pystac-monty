@@ -1,5 +1,6 @@
 import datetime
 import json
+import logging
 import mimetypes
 import typing
 from dataclasses import dataclass
@@ -24,7 +25,7 @@ from pystac_monty.hazard_profiles import MontyHazardProfiles
 from pystac_monty.sources.common import MontyDataSource, MontyDataTransformer
 from pystac_monty.validators.gdacs_events import GdacsEventDataValidator, Sendai
 from pystac_monty.validators.gdacs_geometry import GdacsGeometryDataValidator
-import logging
+
 # Constants
 
 GDACS_EVENT_STARTDATETIME_PROPERTY = "fromdate"
@@ -35,11 +36,14 @@ STAC_HAZARD_ID_PREFIX = "gdacs-hazard-"
 STAC_IMPACT_ID_PREFIX = "gdacs-impact-"
 
 
+logger = logging.getLogger(__name__)
+
+
 class GDACSDataSourceType(Enum):
     EVENT = "geteventdata"
     GEOMETRY = "getgeometry"
 
-logger = logging.getLogger(__name__)
+
 @dataclass
 class GDACSDataSource(MontyDataSource):
     type: GDACSDataSourceType
@@ -75,26 +79,16 @@ class GDACSTransformer(MontyDataTransformer[GDACSDataSource]):
         self.transform_summary.increment_rows(1)
 
         try:
-            def get_validated_event_data(item: Dict[str, Any]) -> GdacsEventDataValidator:
-                return GdacsEventDataValidator(**item)
-
-            def get_validated_geometry_data(item: Dict[Any, Any]) -> GdacsGeometryDataValidator:
-                return GdacsGeometryDataValidator(**item)
-
-            validated_event_data = get_validated_event_data(self.data_source.data)
+            validated_event_data = GdacsEventDataValidator(**self.data_source.data)
             source_event_item = self.make_source_event_item(data=validated_event_data, source_url=self.data_source.source_url)
             yield source_event_item
 
             if self.data_source.episodes:
                 for episode_data in self.data_source.episodes:
-                    validated_episode_data = get_validated_event_data(
-                        item=episode_data[GDACSDataSourceType.EVENT][1],
-                    )
+                    validated_episode_data = GdacsEventDataValidator(**episode_data[GDACSDataSourceType.EVENT][1])
                     episode_data_url = episode_data[GDACSDataSourceType.EVENT][0]
                     if GDACSDataSourceType.GEOMETRY in episode_data:
-                        validated_geometry_data = get_validated_geometry_data(
-                            item=episode_data[GDACSDataSourceType.GEOMETRY][1]
-                        )
+                        validated_geometry_data = GdacsGeometryDataValidator(**episode_data[GDACSDataSourceType.GEOMETRY][1])
                         geometry_data_url = episode_data[GDACSDataSourceType.GEOMETRY][0]
                     else:
                         validated_geometry_data = None
