@@ -353,7 +353,7 @@ class GDACSTransformer(MontyDataTransformer[GDACSDataSource]):
     def get_impact_category_from_sendai_b(
         sendainame: str,
     ) -> MontyImpactExposureCategory:
-        if sendainame == "rescued" or sendainame == "displaced" or sendainame == "affected":
+        if sendainame == "rescued" or sendainame == "displaced" or sendainame == "affected" or sendainame == "injured":
             return MontyImpactExposureCategory.ALL_PEOPLE
         else:
             raise ValueError(f"Unknown sendai name {sendainame} for indicators B")
@@ -447,6 +447,8 @@ class GDACSTransformer(MontyDataTransformer[GDACSDataSource]):
     def get_impact_type_from_sendai_d(sendainame: str) -> MontyImpactType:
         if sendainame == "bridges destroyed":
             return MontyImpactType.DESTROYED
+        elif sendainame == "transport":
+            return MontyImpactType.TOTAL_AFFECTED
         else:
             raise ValueError(f"Unknown sendai name {sendainame} for indicators D")
 
