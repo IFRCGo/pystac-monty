@@ -1,20 +1,23 @@
-from pydantic import BaseModel
+from pydantic import BaseModel, ConfigDict
 from typing import List, Optional
 
-class ValueDetails(BaseModel):
+
+class BaseModelWithExtra(BaseModel):
+    model_config = ConfigDict(extra="ignore", arbitrary_types_allowed=True)
+
+class ValueDetails(BaseModelWithExtra):
     valueFormatted: str
     valueFormattedNoTrunc: str
     valueRounded: float
     value: float
 
-class Capital(BaseModel):
+class Capital(BaseModelWithExtra):
     total: ValueDetails
     school: ValueDetails
     hospital: ValueDetails
 
-class Population(BaseModel):
+class Population(BaseModelWithExtra):
     total: ValueDetails
-    vulnerable: ValueDetails
     households: ValueDetails
     total0_14: ValueDetails
     total15_64: ValueDetails
@@ -33,18 +36,8 @@ class Population(BaseModel):
     total55_59: ValueDetails
     total60_64: ValueDetails
     total65_69: ValueDetails
-    total70_74: ValueDetails
-    total75_79: ValueDetails
-    total80_84: ValueDetails
-    total85_89: ValueDetails
-    total90_94: ValueDetails
-    total95_99: ValueDetails
-    total100AndOver: ValueDetails
-    vulnerable0_14: ValueDetails
-    vulnerable15_64: ValueDetails
-    vulnerable65_Plus: ValueDetails
 
-class AdminData(BaseModel):
+class AdminData(BaseModelWithExtra):
     country: str
     capital: Capital
     foodNeeds: ValueDetails
@@ -60,41 +53,24 @@ class AdminData(BaseModel):
     admin1: Optional[str]
     admin2: Optional[str]
 
-class ExposureDetailValidator(BaseModel):
+class ExposureDetailValidator(BaseModelWithExtra):
     totalByAdmin: List[AdminData]
     totalByCountry: List[AdminData]
 
 # Example Usage:
 # validated_data = TotalByAdmin(**your_json_data)
-class HazardEventValidator(BaseModel):
-    app_ID: int
-    app_IDs: str
-    autoexpire: str
+class HazardEventValidator(BaseModelWithExtra):
     category_ID: str
-    charter_Uri: str
-    comment_Text: str | None
     create_Date: str
-    creator: str
     end_Date: str
-    glide_Uri: str
     hazard_ID: int
     hazard_Name: str
-    last_Update: str | None
     latitude: float
     longitude: float
-    master_Incident_ID: str
-    message_ID: str
-    org_ID: int
     severity_ID: str
     snc_url: str | None
     start_Date: str
     status: str
     type_ID: str
-    update_Date: str
-    update_User: str | None
-    product_total: str
     uuid: str
-    in_Dashboard: str
-    areabrief_url: Optional[str]
     description: str
-    roles: List[str]

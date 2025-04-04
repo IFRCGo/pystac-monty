@@ -97,12 +97,8 @@ class PDCTransformer(MontyDataTransformer):
         for data in pdc_hazard_data:
             self.transform_summary.increment_rows()
             try:
-                def parse_data(data: dict, validator):
-                    obj = validator(**data)
-                    return obj
-
-                pdc_hazard_data = parse_data(data, HazardEventValidator)
-                exposure_detail = parse_data(pdc_exposure_data, ExposureDetailValidator)
+                pdc_hazard_data = HazardEventValidator(**data)
+                exposure_detail = ExposureDetailValidator(**pdc_exposure_data)
 
                 if event_item := self.make_source_event_item(pdc_hazard_data, exposure_detail):
                     yield event_item
@@ -268,7 +264,6 @@ class PDCTransformer(MontyDataTransformer):
                 impact_item.set_collection(self.get_impact_collection())
                 impact_item.properties["roles"] = ["source", "impact"]
                 monty = MontyExtension.ext(impact_item)
-                print(admin_item)
                 monty.country_codes = [admin_item.country] #type: ignore
                 # Impact Detail
                 category, impact_type = field_values
