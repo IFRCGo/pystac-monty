@@ -597,7 +597,7 @@ class DesinventarTransformer(MontyDataTransformer[DesinventarDataSource]):
                             self.transform_summary.increment_failed_rows()
                 except Exception:
                     self.transform_summary.increment_failed_rows()
-                    logger.error('Failed to process desinventar', exc_info=True)
+                    logger.warning('Failed to process desinventar', exc_info=True)
             self.transform_summary.mark_as_complete()
 
     # FIXME: This is deprecated

@@ -57,7 +57,7 @@ class Geometry(BaseModel):
     @field_validator("coordinates")
     def validate_coordinates(cls, value):
         if len(value) != 3:
-            logger.error("Coordinates must have exactly three elements (longitude, latitude, depth)")
+            logger.warning("Coordinates must have exactly three elements (longitude, latitude, depth)")
         return value
 
 
