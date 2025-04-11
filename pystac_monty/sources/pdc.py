@@ -46,7 +46,7 @@ class PDCDataSource(MontyDataSource):
                 self.hazards_data = json.loads(f.read())
         
         
-        if "exposure_detail_file_path" in self.data and os.path.exists(self.data["exposure_detail_file_path"]):
+        if "exposure_detail_file_path" in self.data and self.data['exposure_detail_file_path'] and  os.path.exists(self.data["exposure_detail_file_path"]):
             with open(self.data["exposure_detail_file_path"], "r", encoding="utf-8") as f:
                 self.exposure_detail = json.loads(f.read())
         
@@ -99,7 +99,6 @@ class PDCTransformer(MontyDataTransformer):
             try:
                 pdc_hazard_data = HazardEventValidator(**data)
                 exposure_detail = ExposureDetailValidator(**pdc_exposure_data)
-
                 if event_item := self.make_source_event_item(pdc_hazard_data, exposure_detail):
                     yield event_item
                     yield self.make_hazard_item(event_item, pdc_hazard_data)
@@ -268,9 +267,10 @@ class PDCTransformer(MontyDataTransformer):
                 # Impact Detail
                 category, impact_type = field_values
                 value = self.get_nested_data(admin_item, field_key)
-                monty.impact_detail = self.get_impact_detail(category, impact_type, value) 
-                impact_items.append(impact_item)
-        return impact_items
+                if value:
+                    monty.impact_detail = self.get_impact_detail(category, impact_type, value) 
+                    impact_items.append(impact_item)
+        return impact_items 
 
     def get_impact_detail(
         self, category: MontyImpactExposureCategory, impact_type: MontyImpactType, value: float

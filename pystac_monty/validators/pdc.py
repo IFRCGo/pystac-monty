@@ -6,10 +6,7 @@ class BaseModelWithExtra(BaseModel):
     model_config = ConfigDict(extra="ignore", arbitrary_types_allowed=True)
 
 class ValueDetails(BaseModelWithExtra):
-    valueFormatted: str
-    valueFormattedNoTrunc: str
-    valueRounded: float
-    value: float
+    value: float | None
 
 class Capital(BaseModelWithExtra):
     total: ValueDetails
