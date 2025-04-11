@@ -22,7 +22,7 @@ class AffectedCountry(BaseModelWithExtra):
 
 # Define the schema for severity data
 class SeverityData(BaseModelWithExtra):
-    severity: int
+    severity: Union[float, int]
     severitytext: str
     severityunit: str
 
