@@ -29,21 +29,12 @@ class GlideSetValidator(BaseModelWithExtra):
     month: int = Field(..., ge=1, le=12)
     geocode: str
     location: Optional[str]
-    magnitude: Optional[float]
+    magnitude: Optional[str]
     time: Optional[str]
     id: Optional[str]
     event: str  # Ensuring event is uppercase letters
     day: int = Field(..., ge=1, le=31)
     status: str
-
-    @model_validator(mode="before")
-    def empty_str_to_none(values):
-        if (
-           values['magnitude'] is not None
-           and values['magnitude'].strip() == ''
-       ):
-            values['magnitude'] = None
-        return values
 
     @field_validator("event")
     def validate_enum(cls, value):

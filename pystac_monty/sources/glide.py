@@ -165,7 +165,8 @@ class GlideTransformer(MontyDataTransformer[GlideDataSource]):
 
         return HazardDetail(
             cluster=self.hazard_profiles.get_cluster_code(item),
-            severity_value=magnitude or 0,
+            # NOTE If the alphanumeric value is present in the magnitude, it is converted to 0 for now. But the actual value of the magnitude can be found in the properties.magnitude
+            severity_value=float(magnitude) if magnitude.isnumeric() else 0,
             severity_unit="glide",
             estimate_type=MontyEstimateType.PRIMARY,
         )
