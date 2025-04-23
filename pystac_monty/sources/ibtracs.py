@@ -84,7 +84,7 @@ class IBTrACSTransformer(MontyDataTransformer[IBTrACSDataSource]):
                     self.transform_summary.increment_failed_rows(len(storm_data))
             except Exception:
                 self.transform_summary.increment_failed_rows(len(storm_data))
-                logger.error("Failed to process ibtracs", exc_info=True)
+                logger.warning("Failed to process ibtracs", exc_info=True)
         self.transform_summary.mark_as_complete()
 
     # FIXME: This is deprecated

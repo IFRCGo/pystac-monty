@@ -56,7 +56,7 @@ class GlideTransformer(MontyDataTransformer[GlideDataSource]):
                     self.transform_summary.increment_failed_rows()
             except Exception:
                 self.transform_summary.increment_failed_rows()
-                logger.error("Failed to process glide", exc_info=True)
+                logger.warning("Failed to process glide", exc_info=True)
         self.transform_summary.mark_as_complete()
 
     def get_hazard_codes(self, hazard: str) -> List[str]:
