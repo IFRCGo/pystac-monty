@@ -333,7 +333,7 @@ class EMDATTransformer(MontyDataTransformer[EMDATDataSource]):
     def _create_title_from_row(self, row: EmdatDataValidator) -> Optional[str]:
         """Create a descriptive title from row data when Event Name is missing"""
         if not row.name:
-            return 'N/a'
+            return f"{row.subtype} in {row.country}" if row.subtype else "N/A"
 
         components = []
 
