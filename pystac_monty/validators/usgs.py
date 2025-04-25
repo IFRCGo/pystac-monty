@@ -1,6 +1,6 @@
 import logging
 from datetime import datetime
-from typing import List, Optional
+from typing import List, Optional, Union
 
 from pydantic import BaseModel, ConfigDict, Field, field_validator
 
@@ -18,7 +18,7 @@ class ContentDetail(BaseModel):
 
 
 class ContentItem(BaseModel):
-    download_pin_thumbnail: ContentDetail = Field(alias="download/pin-thumbnail.png")
+    download_pin_thumbnail: Optional[ContentDetail] = Field(default = None, alias="download/pin-thumbnail.png") 
 
 
 class ShakemapProperties(BaseModel):
@@ -52,7 +52,7 @@ class BaseProperties(BaseModel):
 
 class Geometry(BaseModel):
     type: str
-    coordinates: List[float]
+    coordinates: List[Union[float, None]]
 
     @field_validator("coordinates")
     def validate_coordinates(cls, value):
