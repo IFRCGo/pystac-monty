@@ -18,7 +18,7 @@ class ContentDetail(BaseModel):
 
 
 class ContentItem(BaseModel):
-    download_pin_thumbnail: ContentDetail = Field(alias="download/pin-thumbnail.png")
+    download_pin_thumbnail: Optional[ContentDetail] = Field(default = None, alias="download/pin-thumbnail.png") 
 
 
 class ShakemapProperties(BaseModel):
