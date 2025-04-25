@@ -206,8 +206,6 @@ class GDACSTransformer(MontyDataTransformer[GDACSDataSource]):
     ) -> Item:
         item = self.make_source_event_item(*episode_event_data)
 
-        #episode_event = episode_source[GDACSDataSourceType.EVENT][1]
-        #episode_geometry = episode_source.get(GDACSDataSourceType.GEOMETRY, None)
         episode_event = episode_event_data[0]
         episode_geometry = episode_geometry_data[0]
 
