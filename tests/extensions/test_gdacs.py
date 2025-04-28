@@ -281,12 +281,17 @@ class GDACSTest(unittest.TestCase):
     @parameterized.expand(load_scenarios(scenarios))
     @pytest.mark.vcr()
     def test_transformer(self, transformer: GDACSTransformer) -> None:
-        items = transformer.make_items()
-        self.assertTrue(len(items) > 0)
         source_event_item = None
         source_hazard_item = None
         source_impact_item = None
-        for item in items:
+        sendai_data_available = False
+        for episode in transformer.data_source.episodes:
+            episode_data = episode[GDACSDataSourceType.EVENT][1]
+            if "sendai" in episode_data["properties"] and len(episode_data["properties"]["sendai"]) > 0:
+                sendai_data_available = True
+                break
+
+        for item in transformer.get_stac_items():
             # write pretty json in a temporary folder
             item_path = get_data_file(f"temp/gdacs/{item.id}.json")
             with open(item_path, "w") as f:
@@ -302,4 +307,5 @@ class GDACSTest(unittest.TestCase):
 
         self.assertIsNotNone(source_event_item)
         self.assertIsNotNone(source_hazard_item)
-        # self.assertIsNotNone(source_impact_item)
+        if sendai_data_available:
+            self.assertIsNotNone(source_impact_item)
