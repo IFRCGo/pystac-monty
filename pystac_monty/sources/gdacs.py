@@ -427,6 +427,8 @@ class GDACSTransformer(MontyDataTransformer[GDACSDataSource]):
     def get_impact_type_from_sendai_b(sendainame: str) -> MontyImpactType:
         if sendainame == "rescued":
             return MontyImpactType.ASSISTED
+        if sendainame == "injured":
+            return MontyImpactType.INJURED
         elif sendainame == "displaced":
             return MontyImpactType.RELOCATED
         elif sendainame == "affected":
