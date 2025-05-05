@@ -427,7 +427,7 @@ class GDACSTransformer(MontyDataTransformer[GDACSDataSource]):
     def get_impact_type_from_sendai_b(sendainame: str) -> MontyImpactType:
         if sendainame == "rescued":
             return MontyImpactType.ASSISTED
-        if sendainame == "injured":
+        elif sendainame == "injured":
             return MontyImpactType.INJURED
         elif sendainame == "displaced":
             return MontyImpactType.RELOCATED
@@ -438,7 +438,7 @@ class GDACSTransformer(MontyDataTransformer[GDACSDataSource]):
 
     @staticmethod
     def get_impact_type_from_sendai_c(sendainame: str) -> MontyImpactType:
-        if sendainame == "houses damaged" or sendainame == "houses":
+        if sendainame == "houses damaged" or sendainame == "houses" or sendainame == "houses destroyed":
             return MontyImpactType.DAMAGED
         else:
             raise ValueError(f"Unknown sendai name {sendainame} for indicators C")
