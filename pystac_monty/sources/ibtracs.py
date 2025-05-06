@@ -57,7 +57,7 @@ class IBTrACSTransformer(MontyDataTransformer[IBTrACSDataSource]):
     """Transforms IBTrACS tropical cyclone data into STAC Items."""
 
     hazard_profiles = MontyHazardProfiles()
-    source_name = 'ibtracs'
+    source_name = "ibtracs"
 
     def get_stac_items(self) -> typing.Generator[Item, None, None]:
         self.transform_summary.mark_as_started()
@@ -69,6 +69,7 @@ class IBTrACSTransformer(MontyDataTransformer[IBTrACSDataSource]):
             self.transform_summary.increment_rows(len(storm_data))
 
             try:
+
                 def parse_row_data(rows: list[dict]):
                     validated_data: list[IBTracsdataValidator] = []
                     for row in rows:
@@ -124,9 +125,9 @@ class IBTrACSTransformer(MontyDataTransformer[IBTrACSDataSource]):
         bbox = [min_lon, min_lat, max_lon, max_lat]
 
         # Get storm metadata
-        name = (storm_data[0].NAME or '').strip()
-        basin = (storm_data[0].BASIN or '').strip()
-        season = storm_data[0].SEASON or ''
+        name = (storm_data[0].NAME or "").strip()
+        basin = (storm_data[0].BASIN or "").strip()
+        season = storm_data[0].SEASON or ""
 
         # Get storm dates
         start_time = None
@@ -400,9 +401,7 @@ class IBTrACSTransformer(MontyDataTransformer[IBTrACSDataSource]):
                     if name
                     else f"Unnamed Tropical Cyclone {storm_id} - Initial Position"
                 )
-                description = (
-                    f"Initial position of Tropical Cyclone {name} ({season}) in the {basin_name} basin. "
-                )
+                description = f"Initial position of Tropical Cyclone {name} ({season}) in the {basin_name} basin. "
             else:
                 title = f"Tropical Cyclone {name}" if name else f"Unnamed Tropical Cyclone {storm_id}"
                 description = f"Tropical Cyclone {name} ({season}) in the {basin_name} basin. "

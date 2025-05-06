@@ -45,7 +45,7 @@ class IDUTransformer(MontyDataTransformer[IDUDataSource]):
     """Transform the source data into the STAC items"""
 
     hazard_profiles = MontyHazardProfiles()
-    source_name = 'idmc-idu'
+    source_name = "idmc-idu"
 
     def get_stac_items(self) -> typing.Generator[Item, None, None]:
         """Creates the STAC Items"""
