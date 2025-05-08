@@ -40,8 +40,12 @@ class USGSDataSource(MontyDataSource):
             losses_data: Optional PAGER losses data as JSON string
         """
         super().__init__(source_url, data)
-        self.data = json.loads(data)
-        self.losses_data = json.loads(losses_data) if losses_data else None
+        with open(data, 'r') as data_file:
+            self.data = json.load(data_file)
+        self.losses_data = None
+        if losses_data:
+            with open(losses_data, 'r') as losses_file:
+                self.losses_data = json.load(losses_file)
 
     def get_data(self) -> dict[str, typing.Any]:
         """Get the event detail data."""
