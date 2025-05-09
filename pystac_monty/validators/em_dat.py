@@ -57,6 +57,8 @@ class EmdatDataValidator(BaseModelWithExtra):
     def replace_nan_with_none(cls, value: Any, info: ValidationInfo):
         # Ignore the check for admin_units as it will be an ambiguous check (being a list of dicts)
         if info.field_name in {"admin_units"}:
+            if pd.isna(value):
+                return None
             return value
         if pd.isna(value):
             return None
