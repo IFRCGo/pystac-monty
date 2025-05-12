@@ -2,7 +2,7 @@ import logging
 from datetime import datetime
 from typing import Dict, List, Optional, Union
 
-from pydantic import BaseModel, ConfigDict, HttpUrl, field_validator
+from pydantic import BaseModel, ConfigDict, HttpUrl
 
 logger = logging.getLogger(__name__)
 logging.basicConfig(level=logging.INFO)
@@ -10,7 +10,7 @@ logger.setLevel(logging.INFO)
 
 
 class BaseModelWithExtra(BaseModel):
-    model_config = ConfigDict(extra="ignore")
+    model_config = ConfigDict(extra="ignore", arbitrary_types_allowed=True)
 
 
 class URLLinks(BaseModelWithExtra):
@@ -45,28 +45,6 @@ class AffectedCountry(BaseModelWithExtra):
     iso3: str
     countryname: str
 
-
-class Images(BaseModelWithExtra):
-    populationmap: HttpUrl
-    floodmap_cached: HttpUrl
-    thumbnailmap_cached: HttpUrl
-    rainmap_cached: HttpUrl
-    overviewmap_cached: HttpUrl
-    overviewmap: HttpUrl
-    floodmap: HttpUrl
-    rainmap: HttpUrl
-    rainmap_legend: HttpUrl
-    floodmap_legend: HttpUrl
-    overviewmap_legend: HttpUrl
-    rainimage: HttpUrl
-    meteoimages: HttpUrl
-    mslpimages: HttpUrl
-    event_icon_map: HttpUrl
-    event_icon: HttpUrl
-    thumbnailmap: HttpUrl
-    npp_icon: HttpUrl
-
-
 class Geometry(BaseModelWithExtra):
     type: str
     coordinates: Union[List[float], List[List[float]], List[List[List[float]]]]
@@ -84,6 +62,7 @@ class Properties(BaseModelWithExtra):
     url: URLLinks
     alertlevel: str
     episodealertlevel: str
+    episodealertscore: float
     country: str
     fromdate: Union[str, datetime]
     todate: Union[str, datetime]
@@ -96,30 +75,12 @@ class Properties(BaseModelWithExtra):
     episodes: Optional[List[Dict[str, HttpUrl]]] = None
     sendai: Optional[List[Sendai]] = None
     impacts: Optional[List[Dict]] = []
-    images: Optional[Images] = None
     additionalinfos: Optional[Dict] = None
     documents: Optional[Dict] = None
 
 
-class GdacsDataValidatorEvents(BaseModelWithExtra):
+class GdacsEventDataValidator(BaseModelWithExtra):
     type: str
     bbox: List[float]
     geometry: Geometry
     properties: Properties
-
-    @field_validator("bbox")
-    @classmethod
-    def validate_bbox(cls, value):
-        if len(value) < 4:
-            raise ValueError("Bounding box must have at least four coordinates.")
-        return value
-
-    @classmethod
-    def validate_event(cls, data) -> bool:
-        """Validate the overall data item"""
-        try:
-            _ = cls(**data)  # This will trigger the validators
-        except Exception as e:
-            logger.error(f"Validation failed: {e}")
-            return False
-        return True

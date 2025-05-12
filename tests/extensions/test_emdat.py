@@ -167,7 +167,7 @@ json_mock_data = {
                     "total_dam": None,
                     "total_dam_adj": None,
                     "cpi": None,
-                    "admin_units": None,
+                    "admin_units": [{"adm1_code": 10, "adm1_name": "adm_name_1"}, {"adm2_code": 12, "adm2_name": "adm_name_2"}],
                     "entry_date": "2025-02-17",
                     "last_update": "2025-02-19",
                 },

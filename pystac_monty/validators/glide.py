@@ -1,7 +1,7 @@
 import logging
 from typing import Optional
 
-from pydantic import BaseModel, ConfigDict, Field, field_validator
+from pydantic import BaseModel, ConfigDict, Field, field_validator, model_validator
 
 logger = logging.getLogger(__name__)
 logging.basicConfig(level=logging.INFO)
@@ -29,7 +29,7 @@ class GlideSetValidator(BaseModelWithExtra):
     month: int = Field(..., ge=1, le=12)
     geocode: str
     location: Optional[str]
-    magnitude: str
+    magnitude: Optional[str]
     time: Optional[str]
     id: Optional[str]
     event: str  # Ensuring event is uppercase letters
@@ -67,14 +67,3 @@ class GlideSetValidator(BaseModelWithExtra):
         ]:
             raise ValueError(f"Event type {value} is not valid.")
         return value
-
-    @classmethod
-    def validate_event(cls, data: dict) -> bool:
-        """Validate the overall data item"""
-        try:
-            _ = cls(**data)  # This will trigger the validators
-        except Exception as e:
-            logger.error(f"Validation failed: {e}")
-            return False
-        # If all field validators return True, we consider it valid
-        return True

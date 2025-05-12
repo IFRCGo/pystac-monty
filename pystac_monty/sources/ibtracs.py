@@ -26,7 +26,7 @@ STAC_HAZARD_ID_PREFIX = "ibtracs-hazard-"
 class IBTrACSDataSource(MontyDataSource):
     """IBTrACS data source that handles tropical cyclone track data."""
 
-    def __init__(self, source_url: str, data: str):
+    def __init__(self, source_url: str, data: str, version: str = "v04r01"):
         """Initialize IBTrACS data source.
 
         Args:
@@ -36,6 +36,7 @@ class IBTrACSDataSource(MontyDataSource):
         super().__init__(source_url, data)
         self.data = data
         self._parsed_data = None
+        self.version = version
 
     def get_data(self) -> List[Dict[str, str]]:
         """Get the tropical cyclone track data as a list of dictionaries."""
@@ -56,7 +57,7 @@ class IBTrACSTransformer(MontyDataTransformer[IBTrACSDataSource]):
     """Transforms IBTrACS tropical cyclone data into STAC Items."""
 
     hazard_profiles = MontyHazardProfiles()
-    source_name = 'ibtracs'
+    source_name = "ibtracs"
 
     def get_stac_items(self) -> typing.Generator[Item, None, None]:
         self.transform_summary.mark_as_started()
@@ -68,6 +69,7 @@ class IBTrACSTransformer(MontyDataTransformer[IBTrACSDataSource]):
             self.transform_summary.increment_rows(len(storm_data))
 
             try:
+
                 def parse_row_data(rows: list[dict]):
                     validated_data: list[IBTracsdataValidator] = []
                     for row in rows:
@@ -123,9 +125,9 @@ class IBTrACSTransformer(MontyDataTransformer[IBTrACSDataSource]):
         bbox = [min_lon, min_lat, max_lon, max_lat]
 
         # Get storm metadata
-        name = (storm_data[0].NAME or '').strip()
-        basin = (storm_data[0].BASIN or '').strip()
-        season = storm_data[0].SEASON or ''
+        name = (storm_data[0].NAME or "").strip()
+        basin = (storm_data[0].BASIN or "").strip()
+        season = storm_data[0].SEASON or ""
 
         # Get storm dates
         start_time = None
@@ -278,6 +280,17 @@ class IBTrACSTransformer(MontyDataTransformer[IBTrACSDataSource]):
             ),
         )
 
+        # Add track plot asset
+        item.add_asset(
+            "thumbnail",
+            Asset(
+                href=f"https://ncics.org/ibtracs/html/plots//{self.data_source.version}.{storm_id}.png",
+                title="IBTrACS Track Plot",
+                media_type="image/png",
+                extra_fields={"roles": ["track-plot"]},
+            ),
+        )
+
         # Add documentation asset
         item.add_asset(
             "documentation",
@@ -388,9 +401,7 @@ class IBTrACSTransformer(MontyDataTransformer[IBTrACSDataSource]):
                     if name
                     else f"Unnamed Tropical Cyclone {storm_id} - Initial Position"
                 )
-                description = (
-                    f"Initial position of Tropical Cyclone {name} ({season}) in the {basin_name} basin. "
-                )
+                description = f"Initial position of Tropical Cyclone {name} ({season}) in the {basin_name} basin. "
             else:
                 title = f"Tropical Cyclone {name}" if name else f"Unnamed Tropical Cyclone {storm_id}"
                 description = f"Tropical Cyclone {name} ({season}) in the {basin_name} basin. "
@@ -562,7 +573,7 @@ class IBTrACSTransformer(MontyDataTransformer[IBTrACSDataSource]):
             if isinstance(track_geometry, LineString):
                 for point in track_geometry.coords:
                     lon, lat = point
-                    country_code = self.geocoder.get_iso3_from_geometry(Point(lon, lat))
+                    country_code = self.geocoder.get_iso3_from_point(Point(lon, lat))
                     if country_code:
                         countries.append(country_code)
             # For Point, check the single point
