@@ -124,8 +124,8 @@ class TestMontyHazardProfiles:
         MontyExtension.ext(item, add_if_missing=True).hazard_codes = ["MH0035", "AV"]
 
         cluster_code = profile.get_cluster_code(item)
-        # Should return the first alphabetically - "AV" comes before "nat-cli-dro-dro"
-        assert cluster_code == "AV"
+        # Should return the first - "nat-cli-dro-dro" comes before "AV"
+        assert cluster_code == "nat-cli-dro-dro"
 
     def test_get_cluster_code_glide_multiple_matches(self) -> None:
         """Test handling of multiple rows matching a GLIDE code with matching UNDRR key."""

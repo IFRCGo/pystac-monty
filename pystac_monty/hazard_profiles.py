@@ -93,4 +93,7 @@ class MontyHazardProfiles(HazardProfiles):
         count_dict = {code: cluster_codes.count(code) for code in set(cluster_codes)}
         max_count = max(count_dict.values())
         max_codes = [code for code, count in count_dict.items() if count == max_count]
-        return str(max_codes[0])
+        # Return the first max_code as it appears in the original cluster_codes list
+        for code in cluster_codes:
+            if code in max_codes:
+                return str(code)
