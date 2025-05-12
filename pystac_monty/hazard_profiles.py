@@ -1,5 +1,7 @@
 import importlib.resources
 from abc import ABC, abstractmethod
+from math import nan
+import math
 
 import pandas as pd
 from pystac import Item
@@ -70,6 +72,8 @@ class MontyHazardProfiles(HazardProfiles):
                         rows = rows[rows["undrr_key"].isna()]
                         if not cluster_code and len(rows) > 0:
                             cluster_code = rows.iloc[0][self.IMPACT_CLUSTER_CODE_COLUMN]
+                        if not cluster_code or isinstance(cluster_code, float):
+                            cluster_code = monty.hazard_codes[-1]
 
                     else:
                         cluster_code = cluster_codes[-1]
@@ -77,6 +81,8 @@ class MontyHazardProfiles(HazardProfiles):
                     pass
             if cluster_code:
                 cluster_codes.append(cluster_code)
+        if not cluster_codes or len(cluster_codes) == 0:
+            raise ValueError("No cluster code found for hazard codes {}".format(monty.hazard_codes))
 
         # Remove the nan items
         cluster_codes = pd.Series(cluster_codes).dropna().tolist()
@@ -87,4 +93,7 @@ class MontyHazardProfiles(HazardProfiles):
         count_dict = {code: cluster_codes.count(code) for code in set(cluster_codes)}
         max_count = max(count_dict.values())
         max_codes = [code for code, count in count_dict.items() if count == max_count]
-        return str(min(max_codes))
+        # Return the first max_code as it appears in the original cluster_codes list
+        for code in cluster_codes:
+            if code in max_codes:
+                return str(code)

@@ -99,7 +99,6 @@ def test_get_cluster_code_tie_breaker() -> None:
     item = Item(id="test", geometry=None, bbox=None, datetime=TEST_DATETIME, properties={})
     # One drought (nat-cli-dro-dro) and one avalanche (nat-geo-ava-ava)
     MontyExtension.ext(item, add_if_missing=True).hazard_codes = ["MH0035", "AV"]
-
     cluster_code = profile.get_cluster_code(item)
     # Should return drought as it comes first
     assert cluster_code == "nat-cli-dro-dro"
