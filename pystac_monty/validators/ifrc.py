@@ -139,3 +139,12 @@ class IFRCsourceValidator(BaseModel):
     #     if value not in range(0, 4):
     #         raise ValueError("Invalid severity level, must be between 0 and 3")
     #     return value
+
+    @field_validator("countries")
+    @classmethod
+    def validate_countries(cls, value: list) -> list | None:
+        """Validate whether the countries field is a empty list"""
+        if not value:
+            logger.error("Empty country list.")
+            return None
+        return value

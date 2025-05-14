@@ -610,6 +610,36 @@ class MockGeocoder(MontyGeoCoder):
                 },
                 "bbox": [-2.0, 40.0, 0.0, 42.0],
             },
+            "NPL": {
+                "geometry": {
+                    "type": "Polygon",
+                    "coordinates": [
+                        [
+                            [80.058, 26.347],  # Southwest
+                            [80.058, 30.447],  # Northwest
+                            [88.201, 30.447],  # Northeast
+                            [88.201, 26.347],  # Southeast
+                            [80.058, 26.347]   # Close polygon
+                        ]
+                    ]
+                },
+                "bbox": [80.058, 26.347, 88.201, 30.447]
+            },
+            "MAR": {
+                "geometry": {
+                    "type": "Polygon",
+                    "coordinates": [
+                        [
+                            [-13.0, 27.6],   # Southwest
+                            [-13.0, 35.9],   # Northwest
+                            [-0.9, 35.9],    # Northeast
+                            [-0.9, 27.6],    # Southeast
+                            [-13.0, 27.6]    # Close polygon
+                        ]
+                    ]
+                },
+                "bbox": [-13.0, 27.6, -0.9, 35.9]
+            },
         }
 
     def get_geometry_from_admin_units(self, admin_units: str) -> Optional[Dict[str, Any]]:

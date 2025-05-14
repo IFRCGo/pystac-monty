@@ -77,11 +77,18 @@ class IFRCEventTransformer(MontyDataTransformer[IFRCEventDataSource]):
         """Create an event item"""
         geometry = None
         bbox = None
-        geom_data = self.geocoder.get_geometry_by_country_name(data.countries[0].name)
 
-        if geom_data:
-            geometry = geom_data["geometry"]
-            bbox = geom_data["bbox"]
+        if data.countries:
+            geom_data = self.geocoder.get_geometry_from_iso3(data.countries[0].iso3)
+            if not geom_data:
+                geom_data = self.geocoder.get_geometry_by_country_name(data.countries[0].name)
+            if geom_data:
+                geometry = geom_data["geometry"]
+                bbox = geom_data["bbox"]
+            else:
+                raise ValueError("No geometry data")
+        else:
+            raise ValueError("Empty Countries; cannot generate geometry and bbox")
 
         # start_date = datetime.fromisoformat(data["disaster_start_date"])
         start_date = data.disaster_start_date
