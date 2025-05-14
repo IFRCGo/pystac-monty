@@ -3,6 +3,7 @@ import json
 import logging
 import mimetypes
 import typing
+import tempfile
 from dataclasses import dataclass
 from enum import Enum
 from typing import Any, Dict, List, Tuple, Optional
@@ -51,17 +52,16 @@ class GDACSDataSource(MontyDataSource):
     def __init__(
         self,
         source_url: str,
-        data: Any,
-        episodes: Optional[list[Dict[GDACSDataSourceType, tuple[str, Any]]]] = None,
+        data: tempfile._TemporaryFileWrapper,
+        episodes: Optional[List[Dict[GDACSDataSourceType, Tuple[str, Any]]]] = None,
     ):
         super().__init__(source_url, data)
         # all gdacs data are json
-        self.data = json.loads(data) if isinstance(data, str) else data
+        # self.data = json.loads(data) if isinstance(data, str) else data
         self.episodes = episodes
 
-    def get_episode_data(self) -> List[Dict[str, Tuple[str, dict]]]:
-        """Get all episodes"""
-        return self.episodes
+        with open(data, "r", encoding="utf-8") as f:
+            self.data = json.loads(f.read())
 
 
 class GDACSTransformer(MontyDataTransformer[GDACSDataSource]):
@@ -85,10 +85,17 @@ class GDACSTransformer(MontyDataTransformer[GDACSDataSource]):
 
             if self.data_source.episodes:
                 for episode_data in self.data_source.episodes:
-                    validated_episode_data = GdacsEventDataValidator(**episode_data[GDACSDataSourceType.EVENT][1])
+                    episode_data_file = episode_data[GDACSDataSourceType.EVENT][1]
+                    with open(episode_data_file, "r", encoding="utf-8") as f:
+                        episode_file_data = json.loads(f.read())
+
+                    validated_episode_data = GdacsEventDataValidator(**episode_file_data)
                     episode_data_url = episode_data[GDACSDataSourceType.EVENT][0]
                     if GDACSDataSourceType.GEOMETRY in episode_data:
-                        validated_geometry_data = GdacsGeometryDataValidator(**episode_data[GDACSDataSourceType.GEOMETRY][1])
+                        geometry_data_file = episode_data[GDACSDataSourceType.GEOMETRY][1]
+                        with open(geometry_data_file, "r", encoding="utf-8") as f:
+                            geometry_data = json.loads(f.read())
+                        validated_geometry_data = GdacsGeometryDataValidator(**geometry_data)
                         geometry_data_url = episode_data[GDACSDataSourceType.GEOMETRY][0]
                     else:
                         validated_geometry_data = None
