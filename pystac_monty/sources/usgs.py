@@ -2,8 +2,9 @@
 
 import json
 import logging
-from datetime import datetime
 import typing
+from datetime import datetime
+
 import pytz
 from pystac import Asset, Item, Link
 from shapely.geometry import Point, mapping, shape
@@ -18,7 +19,7 @@ from pystac_monty.extension import (
 )
 from pystac_monty.hazard_profiles import MontyHazardProfiles
 from pystac_monty.sources.common import MontyDataSource, MontyDataTransformer
-from pystac_monty.validators.usgs import USGSValidator, EmpiricalValidator
+from pystac_monty.validators.usgs import EmpiricalValidator, USGSValidator
 
 logger = logging.getLogger(__name__)
 
@@ -319,6 +320,7 @@ class USGSTransformer(MontyDataTransformer[USGSDataSource]):
         # Note that only one datapoint is sent
         self.transform_summary.increment_rows(1)
         try:
+
             def get_validated_data(items: list[dict[str, typing.Any]]) -> typing.List[EmpiricalValidator]:
                 validated_losspager_data: list[EmpiricalValidator] = []
                 for item in items:
@@ -333,7 +335,9 @@ class USGSTransformer(MontyDataTransformer[USGSDataSource]):
                 losspager_validated_items = get_validated_data(losspager_data)
                 hazard_item = self.make_hazard_event_item(event_item=event_item, data_item=validated_item)
                 yield hazard_item
-                yield from self.make_impact_items(event_item=event_item, hazard_item=hazard_item, losspager_items=losspager_validated_items)
+                yield from self.make_impact_items(
+                    event_item=event_item, hazard_item=hazard_item, losspager_items=losspager_validated_items
+                )
             else:
                 self.transform_summary.increment_failed_rows(1)
         except Exception:
@@ -375,7 +379,7 @@ class USGSTransformer(MontyDataTransformer[USGSDataSource]):
                 "eq:status": item_data.properties.status,
                 "eq:tsunami": bool(item_data.properties.tsunami),
                 "eq:felt": item_data.properties.felt,
-                "eq:depth": eq_depth
+                "eq:depth": eq_depth,
             },
         )
 
@@ -386,7 +390,7 @@ class USGSTransformer(MontyDataTransformer[USGSDataSource]):
         monty.hazard_codes = ["GH0004"]  # Earthquake surface rupture code
 
         # TODO Get country code from event data or geometry
-        iso3 = self.geocoder.get_iso3_from_point(point) or 'UNK'
+        iso3 = self.geocoder.get_iso3_from_point(point) or "UNK"
         country_codes = [iso3]
 
         monty.country_codes = country_codes
@@ -487,7 +491,9 @@ class USGSTransformer(MontyDataTransformer[USGSDataSource]):
 
         return hazard_item
 
-    def make_impact_items(self, event_item: Item, hazard_item: Item, losspager_items: typing.List[EmpiricalValidator]) -> typing.List[Item]:
+    def make_impact_items(
+        self, event_item: Item, hazard_item: Item, losspager_items: typing.List[EmpiricalValidator]
+    ) -> typing.List[Item]:
         """Create impact items (PAGER) from USGS data."""
         if not losspager_items:
             return []
