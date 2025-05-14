@@ -45,6 +45,7 @@ class AffectedCountry(BaseModelWithExtra):
     iso3: str
     countryname: str
 
+
 class Geometry(BaseModelWithExtra):
     type: str
     coordinates: Union[List[float], List[List[float]], List[List[List[float]]]]

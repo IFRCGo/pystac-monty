@@ -1,11 +1,13 @@
 import logging
-from typing import Optional, Union, Any
-from pydantic import BaseModel, ConfigDict, field_validator, ValidationInfo
+from typing import Any, Optional, Union
+
 import pandas as pd
+from pydantic import BaseModel, ConfigDict, ValidationInfo, field_validator
 
 logger = logging.getLogger(__name__)
 logging.basicConfig(level=logging.INFO)
 logger.setLevel(logging.INFO)
+
 
 class BaseModelWithExtra(BaseModel):
     model_config = ConfigDict(extra="ignore")
@@ -15,9 +17,11 @@ class Admin1(BaseModelWithExtra):
     adm1_code: int
     adm1_name: str
 
+
 class Admin2(BaseModelWithExtra):
     adm2_code: int
     adm2_name: str
+
 
 class EmdatDataValidator(BaseModelWithExtra):
     disno: str

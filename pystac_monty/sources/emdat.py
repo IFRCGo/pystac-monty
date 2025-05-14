@@ -39,54 +39,57 @@ class EMDATDataSource(MontyDataSource):
         super().__init__(source_url, data)
 
         def rename_excel_df(df: pd.DataFrame):
-            df.rename(columns={
-                "DisNo.": "disno",
-                "Historic": "historic",
-                "Classification Key": "classif_key",
-                "Disaster Group": "group",
-                "Disaster Subgroup": "subgroup",
-                "Disaster Type": "type",
-                "Disaster Subtype": "subtype",
-                "External IDs": "external_ids",
-                "Event Name": "name",
-                "ISO": "iso",
-                "Country": "country",
-                "Subregion": "subregion",
-                "Region": "region",
-                "Location": "location",
-                "Origin": "origin",
-                "Associated Types": "associated_types",
-                "OFDA/BHA Response": "ofda_response",
-                "Appeal": "appeal",
-                "Declaration": "declaration",
-                "AID Contribution ('000 US$)": "aid_contribution",
-                "Magnitude": "magnitude",
-                "Magnitude Scale": "magnitude_scale",
-                "Latitude": "latitude",
-                "Longitude": "longitude",
-                "River Basin": "river_basin",
-                "Start Year": "start_year",
-                "Start Month": "start_month",
-                "Start Day": "start_day",
-                "End Year": "end_year",
-                "End Month": "end_month",
-                "End Day": "end_day",
-                "Total Deaths": "total_deaths",
-                "No. Injured": "no_injured",
-                "No. Affected": "no_affected",
-                "No. Homeless": "no_homeless",
-                "Total Affected": "total_affected",
-                "Reconstruction Costs ('000 US$)": "reconstr_dam",
-                "Reconstruction Costs, Adjusted ('000 US$)": "reconstr_dam_adj",
-                "Insured Damage ('000 US$)": "insur_dam",
-                "Insured Damage, Adjusted ('000 US$)": "insur_dam_adj",
-                "Total Damage ('000 US$)": "total_dam",
-                "Total Damage, Adjusted ('000 US$)": "total_dam_adj",
-                "CPI": "cpi",
-                "Admin Units": "admin_units",
-                "Entry Date": "entry_date",
-                "Last Update": "last_update"
-            }, inplace=True)
+            df.rename(
+                columns={
+                    "DisNo.": "disno",
+                    "Historic": "historic",
+                    "Classification Key": "classif_key",
+                    "Disaster Group": "group",
+                    "Disaster Subgroup": "subgroup",
+                    "Disaster Type": "type",
+                    "Disaster Subtype": "subtype",
+                    "External IDs": "external_ids",
+                    "Event Name": "name",
+                    "ISO": "iso",
+                    "Country": "country",
+                    "Subregion": "subregion",
+                    "Region": "region",
+                    "Location": "location",
+                    "Origin": "origin",
+                    "Associated Types": "associated_types",
+                    "OFDA/BHA Response": "ofda_response",
+                    "Appeal": "appeal",
+                    "Declaration": "declaration",
+                    "AID Contribution ('000 US$)": "aid_contribution",
+                    "Magnitude": "magnitude",
+                    "Magnitude Scale": "magnitude_scale",
+                    "Latitude": "latitude",
+                    "Longitude": "longitude",
+                    "River Basin": "river_basin",
+                    "Start Year": "start_year",
+                    "Start Month": "start_month",
+                    "Start Day": "start_day",
+                    "End Year": "end_year",
+                    "End Month": "end_month",
+                    "End Day": "end_day",
+                    "Total Deaths": "total_deaths",
+                    "No. Injured": "no_injured",
+                    "No. Affected": "no_affected",
+                    "No. Homeless": "no_homeless",
+                    "Total Affected": "total_affected",
+                    "Reconstruction Costs ('000 US$)": "reconstr_dam",
+                    "Reconstruction Costs, Adjusted ('000 US$)": "reconstr_dam_adj",
+                    "Insured Damage ('000 US$)": "insur_dam",
+                    "Insured Damage, Adjusted ('000 US$)": "insur_dam_adj",
+                    "Total Damage ('000 US$)": "total_dam",
+                    "Total Damage, Adjusted ('000 US$)": "total_dam_adj",
+                    "CPI": "cpi",
+                    "Admin Units": "admin_units",
+                    "Entry Date": "entry_date",
+                    "Last Update": "last_update",
+                },
+                inplace=True,
+            )
 
         if isinstance(data, str):
             # If data is a string, assume it's Excel content
@@ -150,9 +153,7 @@ class EMDATTransformer(MontyDataTransformer[EMDATDataSource]):
         # 1. Try admin units first if geocoder is available
         if self.geocoder and row.admin_units:
             # FIXME: convert this to json str
-            geom_data = self.geocoder.get_geometry_from_admin_units(
-                json.dumps([unit.model_dump() for unit in row.admin_units])
-            )
+            geom_data = self.geocoder.get_geometry_from_admin_units(json.dumps([unit.model_dump() for unit in row.admin_units]))
             if geom_data:
                 geometry = geom_data["geometry"]
                 bbox = geom_data["bbox"]
@@ -260,10 +261,10 @@ class EMDATTransformer(MontyDataTransformer[EMDATDataSource]):
         self,
         row: EmdatDataValidator,
         # FIXME: Make this type script
-        field: typing.Literal['total_deaths', 'no_injured', 'no_affected', 'total_affected', 'total_dam'],
+        field: typing.Literal["total_deaths", "no_injured", "no_affected", "total_affected", "total_dam"],
         category: MontyImpactExposureCategory,
         impact_type: MontyImpactType,
-        event_item: Item
+        event_item: Item,
     ) -> Optional[Item]:
         """Create a single impact item"""
         try:

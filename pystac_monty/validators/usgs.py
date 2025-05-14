@@ -1,5 +1,4 @@
 import logging
-from datetime import datetime
 from typing import List, Optional, Union
 
 from pydantic import BaseModel, ConfigDict, Field, field_validator
@@ -18,7 +17,7 @@ class ContentDetail(BaseModel):
 
 
 class ContentItem(BaseModel):
-    download_pin_thumbnail: Optional[ContentDetail] = Field(default = None, alias="download/pin-thumbnail.png") 
+    download_pin_thumbnail: Optional[ContentDetail] = Field(default=None, alias="download/pin-thumbnail.png")
 
 
 class ShakemapProperties(BaseModel):

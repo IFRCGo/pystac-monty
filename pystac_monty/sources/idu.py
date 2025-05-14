@@ -60,6 +60,7 @@ class IDUTransformer(MontyDataTransformer[IDUDataSource]):
             self.transform_summary.increment_rows(len(idu_data_items))
 
             try:
+
                 def get_validated_data(items: list[dict]) -> List[IDUSourceValidator]:
                     validated_data: list[IDUSourceValidator] = []
                     for item in items:
@@ -104,12 +105,8 @@ class IDUTransformer(MontyDataTransformer[IDUDataSource]):
         enddate_str = data_item.event_end_date.strftime("%Y-%m-%d")
 
         # FIXME: We might need to get this from min and max of all figures
-        startdate = pytz.utc.localize(
-            datetime.datetime.fromisoformat(startdate_str)
-        )
-        enddate = pytz.utc.localize(
-            datetime.datetime.fromisoformat(enddate_str)
-        )
+        startdate = pytz.utc.localize(datetime.datetime.fromisoformat(startdate_str))
+        enddate = pytz.utc.localize(datetime.datetime.fromisoformat(enddate_str))
 
         item = Item(
             id=f"{STAC_EVENT_ID_PREFIX}{data_item.event_id}",
@@ -169,9 +166,7 @@ class IDUTransformer(MontyDataTransformer[IDUDataSource]):
             description = data_item.standard_popup_text
             impact_type = self._get_impact_type_from_desc(description=description)
 
-            impact_item.id = (
-                f"{impact_item.id.replace(STAC_EVENT_ID_PREFIX, STAC_IMPACT_ID_PREFIX)}{data_item.id}-{impact_type}"
-            )
+            impact_item.id = f"{impact_item.id.replace(STAC_EVENT_ID_PREFIX, STAC_IMPACT_ID_PREFIX)}{data_item.id}-{impact_type}"
             impact_item.datetime = startdate
             impact_item.properties["start_datetime"] = startdate.isoformat()
             impact_item.properties["end_datetime"] = enddate.isoformat()

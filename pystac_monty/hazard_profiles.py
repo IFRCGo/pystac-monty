@@ -1,7 +1,5 @@
 import importlib.resources
 from abc import ABC, abstractmethod
-from math import nan
-import math
 
 import pandas as pd
 from pystac import Item

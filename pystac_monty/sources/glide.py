@@ -44,6 +44,7 @@ class GlideTransformer(MontyDataTransformer[GlideDataSource]):
         for row in glideset:
             self.transform_summary.increment_rows()
             try:
+
                 def parse_row_data(row: dict):
                     obj = GlideSetValidator(**row)
                     return obj
@@ -165,7 +166,8 @@ class GlideTransformer(MontyDataTransformer[GlideDataSource]):
 
         return HazardDetail(
             cluster=self.hazard_profiles.get_cluster_code(item),
-            # NOTE If the alphanumeric value is present in the magnitude, it is converted to 0 for now. But the actual value of the magnitude can be found in the properties.magnitude
+            # NOTE If the alphanumeric value is present in the magnitude, it is converted to 0 for now.
+            # But the actual value of the magnitude can be found in the properties.magnitude
             severity_value=float(magnitude) if magnitude.isnumeric() else 0,
             severity_unit="glide",
             estimate_type=MontyEstimateType.PRIMARY,

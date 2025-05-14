@@ -5,7 +5,7 @@ import mimetypes
 import typing
 from dataclasses import dataclass
 from enum import Enum
-from typing import Any, Dict, List, Tuple, Optional
+from typing import Any, Dict, List, Optional, Tuple
 
 import pytz
 from markdownify import markdownify as md
@@ -95,7 +95,7 @@ class GDACSTransformer(MontyDataTransformer[GDACSDataSource]):
                         geometry_data_url = None
                     episode_hazard_item = self.make_hazard_event_item(
                         episode_event_data=(validated_episode_data, episode_data_url),
-                        episode_geometry_data=(validated_geometry_data, geometry_data_url)
+                        episode_geometry_data=(validated_geometry_data, geometry_data_url),
                     )
                     yield episode_hazard_item
                     yield from self.make_impact_items(episode_hazard_item, validated_episode_data)
@@ -193,11 +193,7 @@ class GDACSTransformer(MontyDataTransformer[GDACSDataSource]):
         # icon
         item.add_asset(
             "icon",
-            Asset(
-                href=str(data.properties.icon),
-                media_type=mimetypes.guess_type(str(data.properties.icon))[0],
-                title="Icon"
-            )
+            Asset(href=str(data.properties.icon), media_type=mimetypes.guess_type(str(data.properties.icon))[0], title="Icon"),
         )
 
         # report
@@ -220,20 +216,17 @@ class GDACSTransformer(MontyDataTransformer[GDACSDataSource]):
 
         return item
 
-    def make_hazard_event_item(self,
+    def make_hazard_event_item(
+        self,
         episode_event_data: Tuple[GdacsEventDataValidator, str],
-        episode_geometry_data: Tuple[GdacsGeometryDataValidator | None, str | None]
+        episode_geometry_data: Tuple[GdacsGeometryDataValidator | None, str | None],
     ) -> Item:
         item = self.make_source_event_item(*episode_event_data)
 
         episode_event = episode_event_data[0]
         episode_geometry = episode_geometry_data[0]
 
-        item.id = (
-            item.id.replace(STAC_EVENT_ID_PREFIX, STAC_HAZARD_ID_PREFIX)
-            + "-"
-            + str(episode_event.properties.episodeid)
-        )
+        item.id = item.id.replace(STAC_EVENT_ID_PREFIX, STAC_HAZARD_ID_PREFIX) + "-" + str(episode_event.properties.episodeid)
         item.set_collection(self.get_hazard_collection())
         item.properties["roles"] = ["source", "hazard"]
         item.properties["source"] = episode_event.properties.source
@@ -292,7 +285,9 @@ class GDACSTransformer(MontyDataTransformer[GDACSDataSource]):
 
         return impact_items
 
-    def make_impact_item_from_sendai_entry(self, entry: Sendai, hazard_item: Item, data: Optional[GdacsEventDataValidator] = None) -> Item:
+    def make_impact_item_from_sendai_entry(
+        self, entry: Sendai, hazard_item: Item, data: Optional[GdacsEventDataValidator] = None
+    ) -> Item:
         item = hazard_item.clone()
         item.id = (
             item.id.replace(STAC_EVENT_ID_PREFIX, STAC_IMPACT_ID_PREFIX)
@@ -305,7 +300,7 @@ class GDACSTransformer(MontyDataTransformer[GDACSDataSource]):
             + "-"
             + entry.region
         )
-        item.common_metadata.description = entry.description #entry["description"]
+        item.common_metadata.description = entry.description  # entry["description"]
         # TODO geolocate the with country and region metadata
         # item.geometry = self.geolocate(entry["country"], entry["region"])
         item.set_collection(self.get_impact_collection())
