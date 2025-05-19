@@ -1,3 +1,4 @@
+import os
 import json
 import logging
 import typing
@@ -92,9 +93,16 @@ class EMDATDataSource(MontyDataSource):
             )
 
         if isinstance(data, str):
-            # If data is a string, assume it's Excel content
-            self.df = pd.read_excel(data)
-            rename_excel_df(self.df)
+            if os.path.isfile(data):
+                with open(data, "r", encoding="utf-8") as f:
+                    data = json.loads(f.read())
+
+                data = data["data"]["public_emdat"]["data"]
+                self.df = pd.DataFrame(data)
+            else:
+                # If data is a string, assume it's Excel content
+                self.df = pd.read_excel(data)
+                rename_excel_df(self.df)
         elif isinstance(data, pd.DataFrame):
             self.df = data
             rename_excel_df(self.df)
