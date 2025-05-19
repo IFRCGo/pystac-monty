@@ -178,6 +178,14 @@ json_mock_data = {
     }
 }
 
+def save_data_to_tmp_file(data):
+    tmpfile = tempfile.NamedTemporaryFile(suffix=".json", delete=False)
+    data = json.dumps(data).encode('utf-8')
+    tmpfile.write(data)
+    tmpfile.close()
+    return tmpfile.name
+
+DATA_FILE = save_data_to_tmp_file(json_mock_data)
 
 def save_data_to_tmp_file(data):
     tmpfile = tempfile.NamedTemporaryFile(suffix=".json", delete=False)
