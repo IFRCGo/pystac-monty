@@ -1,6 +1,7 @@
 """Tests for pystac.tests.extensions.monty EM-DAT source"""
 
 import json
+import tempfile
 import unittest
 from os import makedirs
 from typing import Union
@@ -17,6 +18,7 @@ from tests.extensions.test_monty import CustomValidator
 
 CURRENT_SCHEMA_URI = "https://ifrcgo.github.io/monty/v0.1.0/schema.json"
 CURRENT_SCHEMA_MAPURL = "https://raw.githubusercontent.com/IFRCGo/monty-stac-extension/refs/heads/main/json-schema/schema.json"
+
 
 json_mock_data = {
     "data": {
@@ -176,6 +178,14 @@ json_mock_data = {
     }
 }
 
+def save_data_to_tmp_file(data):
+    tmpfile = tempfile.NamedTemporaryFile(suffix=".json", delete=False)
+    data = json.dumps(data).encode('utf-8')
+    tmpfile.write(data)
+    tmpfile.close()
+    return tmpfile.name
+
+DATA_FILE = save_data_to_tmp_file(json_mock_data)
 
 def load_scenarios(
     scenarios: Union[list[tuple[str, str]], dict],
@@ -189,7 +199,7 @@ def load_scenarios(
         List of EMDATTransformer instances initialized with test data
     """
     transformers = []
-    if isinstance(scenarios, dict):
+    if isinstance(scenarios, dict) or isinstance(scenarios, str):
         emdat_data_source = EMDATDataSource(source_url="", data=scenarios)
         geocoder = MockGeocoder()
         transformers.append(EMDATTransformer(emdat_data_source, geocoder))
@@ -287,6 +297,37 @@ class EMDATTest(unittest.TestCase):
     @parameterized.expand(load_scenarios(json_mock_data))
     @pytest.mark.vcr()
     def test_transformer_with_json_data(self, transformer: EMDATTransformer) -> None:
+        items = transformer.make_items()
+        self.assertTrue(len(items) > 0)
+
+        source_event_item = None
+        source_hazard_item = None
+
+        for item in items:
+            # Write pretty JSON in temporary folder for manual inspection
+            item_path = get_data_file(f"temp/emdat/{item.id}.json")
+            with open(item_path, "w", encoding="utf-8") as f:
+                # json.dump(item.to_dict(), f, indent=2, ensure_ascii=False)
+                json.dump(item.to_dict(), f, indent=2)
+
+            # Validate item against schema
+            item.validate(validator=self.validator)
+
+            # Check item type
+            monty_item_ext = MontyExtension.ext(item)
+            if monty_item_ext.is_source_event():
+                source_event_item = item
+            elif monty_item_ext.is_source_hazard():
+                source_hazard_item = item
+
+        # Verify required items were created
+        self.assertIsNotNone(source_event_item)
+        self.assertIsNotNone(source_hazard_item)
+
+
+    @parameterized.expand(load_scenarios(DATA_FILE))
+    @pytest.mark.vcr()
+    def test_transformer_with_file_data(self, transformer: EMDATTransformer) -> None:
         items = transformer.make_items()
         self.assertTrue(len(items) > 0)
 
