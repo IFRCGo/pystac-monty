@@ -1,3 +1,4 @@
+import os
 import json
 import logging
 import mimetypes
@@ -22,7 +23,11 @@ STAC_HAZARD_ID_PREFIX = "glide-hazard-"
 class GlideDataSource(MontyDataSource):
     def __init__(self, source_url: str, data: Any):
         super().__init__(source_url, data)
-        self.data = json.loads(data)
+        if os.path.isfile(data):
+            with open(data, "r", encoding="utf-8") as f:
+                self.data = json.loads(f.read())
+        else:
+            logger.error("File path does not exists", exc_info=True)
 
 
 class GlideTransformer(MontyDataTransformer[GlideDataSource]):
