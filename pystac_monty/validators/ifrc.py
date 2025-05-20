@@ -1,6 +1,6 @@
 import logging
 from datetime import datetime
-from typing import List, Optional
+from typing import List
 
 from pydantic import BaseModel, field_validator
 
@@ -30,34 +30,6 @@ class Country(BaseModel):
     # society_name: str
     name: str
     # translation_module_original_language: str
-
-
-'''
-class Appeal(BaseModel):
-     aid: str
-     num_beneficiaries: int
-     amount_requested: float
-     code: str
-     amount_funded: float
-     status: int
-     status_display: str
-     start_date: datetime
-     atype: int
-     atype_display: str
-     id: int
-     translation_module_original_language: str
-'''
-
-
-'''
-class Contact(BaseModel):
-    ctype: str
-    name: str
-    title: str
-    email: str
-    phone: str
-    id: int
-'''
 
 
 class FieldReport(BaseModel):
