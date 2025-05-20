@@ -326,8 +326,11 @@ class USGSTransformer(MontyDataTransformer[USGSDataSource]):
         try:
 
             def get_validated_data(items: list[dict[str, typing.Any]]) -> typing.List[EmpiricalValidator]:
+                print("-------->",type(items))
                 validated_losspager_data: list[EmpiricalValidator] = []
                 for item in items:
+                    print("-------->",type(item))
+
                     obj = EmpiricalValidator(**item)
                     validated_losspager_data.append(obj)
                 return validated_losspager_data
