@@ -1,9 +1,11 @@
-from pydantic import BaseModel, ConfigDict
 from typing import List, Optional
+
+from pydantic import BaseModel, ConfigDict
 
 
 class BaseModelWithExtra(BaseModel):
     model_config = ConfigDict(extra="ignore", arbitrary_types_allowed=True)
+
 
 class ValueDetails(BaseModelWithExtra):
     valueFormatted: str
@@ -11,10 +13,12 @@ class ValueDetails(BaseModelWithExtra):
     valueRounded: float
     value: float
 
+
 class Capital(BaseModelWithExtra):
     total: ValueDetails
     school: ValueDetails
     hospital: ValueDetails
+
 
 class Population(BaseModelWithExtra):
     total: ValueDetails
@@ -37,6 +41,7 @@ class Population(BaseModelWithExtra):
     total60_64: ValueDetails
     total65_69: ValueDetails
 
+
 class AdminData(BaseModelWithExtra):
     country: str
     capital: Capital
@@ -53,9 +58,11 @@ class AdminData(BaseModelWithExtra):
     admin1: Optional[str]
     admin2: Optional[str]
 
+
 class ExposureDetailValidator(BaseModelWithExtra):
     totalByAdmin: List[AdminData]
     totalByCountry: List[AdminData]
+
 
 # Example Usage:
 # validated_data = TotalByAdmin(**your_json_data)

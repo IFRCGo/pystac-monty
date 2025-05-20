@@ -9,7 +9,6 @@ from markdownify import markdownify as md
 from pystac import Asset, Item
 from shapely.geometry import Point, mapping
 
-from pystac_monty.validators.pdc import AdminData, ExposureDetailValidator, HazardEventValidator
 from pystac_monty.extension import (
     HazardDetail,
     ImpactDetail,
@@ -21,7 +20,7 @@ from pystac_monty.extension import (
 from pystac_monty.geocoding import MontyGeoCoder
 from pystac_monty.hazard_profiles import MontyHazardProfiles
 from pystac_monty.sources.common import MontyDataSource, MontyDataTransformer
-
+from pystac_monty.validators.pdc import AdminData, ExposureDetailValidator, HazardEventValidator
 
 logger = logging.getLogger(__name__)
 # Constants
@@ -39,17 +38,16 @@ class PDCDataSource(MontyDataSource):
         self.data = json.loads(data)
         self.hazards_data = []
         self.exposure_detail = {}
-        self.geojson_data = {}      
+        self.geojson_data = {}
 
         if "hazards_file_path" in self.data and os.path.exists(self.data["hazards_file_path"]):
             with open(self.data["hazards_file_path"], "r", encoding="utf-8") as f:
                 self.hazards_data = json.loads(f.read())
-        
-        
+
         if "exposure_detail_file_path" in self.data and os.path.exists(self.data["exposure_detail_file_path"]):
             with open(self.data["exposure_detail_file_path"], "r", encoding="utf-8") as f:
                 self.exposure_detail = json.loads(f.read())
-        
+
         if "geojson_file_path" in self.data and os.path.exists(self.data["geojson_file_path"]):
             with open(self.data["geojson_file_path"], "r", encoding="utf-8") as f:
                 self.geojson_data = json.loads(f.read())
@@ -67,7 +65,7 @@ class PDCTransformer(MontyDataTransformer):
         self.hazards_data = pdc_data_src.hazards_data
         self.exposure_detail = pdc_data_src.exposure_detail
         self.geojson_data = pdc_data_src.geojson_data
-       
+
         self.uuid = self.config_data.get("uuid", None)
         # NOTE Assigning -1 to episode_number incase of failure just to ignore the item formation (see make_items method)
         try:
@@ -264,16 +262,14 @@ class PDCTransformer(MontyDataTransformer):
                 impact_item.set_collection(self.get_impact_collection())
                 impact_item.properties["roles"] = ["source", "impact"]
                 monty = MontyExtension.ext(impact_item)
-                monty.country_codes = [admin_item.country] #type: ignore
+                monty.country_codes = [admin_item.country]  # type: ignore
                 # Impact Detail
                 category, impact_type = field_values
                 value = self.get_nested_data(admin_item, field_key)
-                monty.impact_detail = self.get_impact_detail(category, impact_type, value) 
+                monty.impact_detail = self.get_impact_detail(category, impact_type, value)
                 impact_items.append(impact_item)
         return impact_items
 
-    def get_impact_detail(
-        self, category: MontyImpactExposureCategory, impact_type: MontyImpactType, value: float
-    ):
+    def get_impact_detail(self, category: MontyImpactExposureCategory, impact_type: MontyImpactType, value: float):
         """Create an Impact detail object"""
         return ImpactDetail(category=category, type=impact_type, value=value, unit=None, estimate_type=MontyEstimateType.PRIMARY)
