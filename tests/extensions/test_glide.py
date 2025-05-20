@@ -1,6 +1,7 @@
 """Tests for pystac.tests.extensions.monty"""
 
 import json
+import tempfile
 import unittest
 from os import makedirs
 
@@ -18,12 +19,19 @@ CURRENT_SCHEMA_URI = "https://ifrcgo.github.io/monty/v0.1.0/schema.json"
 CURRENT_SCHEMA_MAPURL = "https://raw.githubusercontent.com/IFRCGo/monty-stac-extension/refs/heads/main/json-schema/schema.json"
 
 
+def request_and_save_tmp_file(url):
+    response = requests.get(url)
+    tmpfile = tempfile.NamedTemporaryFile(suffix=".json", delete=False)
+    tmpfile.write(response.content)
+    return tmpfile.name
+
+
 def load_scenarios(
     scenarios: list[tuple[str, str]],
 ) -> list[GlideTransformer]:
     transformers = []
     for scenario in scenarios:
-        data = requests.get(scenario[1]).text
+        data = request_and_save_tmp_file(scenario[1])
         glide_data_source = GlideDataSource(scenario[1], data)
         geocoder = MockGeocoder()
         transformers.append(GlideTransformer(glide_data_source, geocoder))
