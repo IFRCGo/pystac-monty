@@ -324,8 +324,11 @@ class USGSTransformer(MontyDataTransformer[USGSDataSource]):
         self.transform_summary.increment_rows(1)
         try:
             def get_validated_data(items: list[dict[str, typing.Any]]) -> typing.List[EmpiricalValidator]:
+                print("-------->",type(items))
                 validated_losspager_data: list[EmpiricalValidator] = []
                 for item in items:
+                    print("-------->",type(item))
+
                     obj = EmpiricalValidator(**item)
                     validated_losspager_data.append(obj)
                 return validated_losspager_data

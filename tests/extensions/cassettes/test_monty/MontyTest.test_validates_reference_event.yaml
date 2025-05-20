@@ -50,11 +50,12 @@ interactions:
         viewscreen.githubusercontent.com notebooks.githubusercontent.com; img-src
         ''self'' data: blob: github.githubassets.com media.githubusercontent.com camo.githubusercontent.com
         identicons.github.com avatars.githubusercontent.com private-avatars.githubusercontent.com
-        github-cloud.s3.amazonaws.com objects.githubusercontent.com secured-user-images.githubusercontent.com/
-        user-images.githubusercontent.com/ private-user-images.githubusercontent.com
-        opengraph.githubassets.com github-production-user-asset-6210df.s3.amazonaws.com
-        customer-stories-feed.github.com spotlights-feed.github.com objects-origin.githubusercontent.com
-        *.githubusercontent.com; manifest-src ''self''; media-src github.com user-images.githubusercontent.com/
+        github-cloud.s3.amazonaws.com objects.githubusercontent.com release-assets.githubusercontent.com
+        secured-user-images.githubusercontent.com/ user-images.githubusercontent.com/
+        private-user-images.githubusercontent.com opengraph.githubassets.com copilotprodattachments.blob.core.windows.net/github-production-copilot-attachments/
+        github-production-user-asset-6210df.s3.amazonaws.com customer-stories-feed.github.com
+        spotlights-feed.github.com objects-origin.githubusercontent.com *.githubusercontent.com;
+        manifest-src ''self''; media-src github.com user-images.githubusercontent.com/
         secured-user-images.githubusercontent.com/ private-user-images.githubusercontent.com
         github-production-user-asset-6210df.s3.amazonaws.com gist.github.com; script-src
         github.githubassets.com; style-src ''unsafe-inline'' github.githubassets.com;
@@ -63,24 +64,24 @@ interactions:
       Content-Type:
       - text/html; charset=utf-8
       Date:
-      - Mon, 24 Mar 2025 18:04:07 GMT
+      - Mon, 12 May 2025 10:29:50 GMT
       Location:
       - https://raw.githubusercontent.com/IFRCGo/monty-stac-extension/refs/heads/main/examples/reference-events/20241027T150000-ESP-HM-FLOOD-001-GCDB.json
       Referrer-Policy:
       - no-referrer-when-downgrade
       Server:
-      - GitHub.com
+      - github.com
       Strict-Transport-Security:
       - max-age=31536000; includeSubdomains; preload
       Vary:
-      - X-PJAX, X-PJAX-Container, Turbo-Visit, Turbo-Frame, Accept-Encoding, Accept,
+      - X-PJAX, X-PJAX-Container, Turbo-Visit, Turbo-Frame,Accept-Encoding, Accept,
         X-Requested-With
       X-Content-Type-Options:
       - nosniff
       X-Frame-Options:
       - deny
       X-GitHub-Request-Id:
-      - BBC6:BA838:33D1DE:3DC24D:67E19E97
+      - FB5C:1269E3:2AD289:2FB9F8:6821CD9E
       X-XSS-Protection:
       - '0'
     status:
@@ -132,11 +133,11 @@ interactions:
       Cross-Origin-Resource-Policy:
       - cross-origin
       Date:
-      - Mon, 24 Mar 2025 18:04:07 GMT
+      - Mon, 12 May 2025 10:29:50 GMT
       ETag:
       - W/"9ea00a9c7f61dc2525a639d3eb02e28ad07aa9640d8cd88adb98221401aced31"
       Expires:
-      - Mon, 24 Mar 2025 18:09:07 GMT
+      - Mon, 12 May 2025 10:34:50 GMT
       Source-Age:
       - '0'
       Strict-Transport-Security:
@@ -146,21 +147,21 @@ interactions:
       Via:
       - 1.1 varnish
       X-Cache:
-      - MISS
+      - HIT
       X-Cache-Hits:
       - '0'
       X-Content-Type-Options:
       - nosniff
       X-Fastly-Request-ID:
-      - b2373831d1578b9e87690eeb2faa721d1cf2549e
+      - 95ae4065d6c006433138ec22200811c7c820f00d
       X-Frame-Options:
       - deny
       X-GitHub-Request-Id:
-      - 10FF:14633C:9BE37:145FE0:67E19E91
+      - DC18:A3C73:F4147:2C7C4A:6821C264
       X-Served-By:
-      - cache-del21740-DEL
+      - cache-maa10234-MAA
       X-Timer:
-      - S1742839448.639304,VS0,VE300
+      - S1747045791.666086,VS0,VE285
       X-XSS-Protection:
       - 1; mode=block
     status:
