@@ -2,12 +2,11 @@ import os
 import json
 import logging
 import typing
+import pandas as pd
+import pytz
 from dataclasses import dataclass
 from datetime import datetime
 from typing import List, Optional, Union
-
-import pandas as pd
-import pytz
 from pystac import Item, Link
 from shapely.geometry import Point, mapping
 
@@ -36,8 +35,8 @@ class EMDATDataSource(MontyDataSource):
 
     df: pd.DataFrame
 
-    def __init__(self, source_url: str, data: Union[str, dict[str, typing.Any], pd.DataFrame]):
-        super().__init__(source_url, data)
+    def __init__(self, data: dict):
+        super().__init__(data)
 
         def rename_excel_df(df: pd.DataFrame):
             df.rename(
@@ -92,24 +91,26 @@ class EMDATDataSource(MontyDataSource):
                 inplace=True,
             )
 
-        if isinstance(data, str):
-            if os.path.isfile(data):
-                with open(data, "r", encoding="utf-8") as f:
+        if self.data_source.data_type == "file":
+            if os.path.isfile(self.data_source.path):
+                with open(self.data_source.path, "r", encoding="utf-8") as f:
                     data = json.loads(f.read())
 
                 data = data["data"]["public_emdat"]["data"]
                 self.df = pd.DataFrame(data)
-            else:
+
+        elif self.data_source.data_type == "memory":
+            if type(self.data_source.content) == "str":
                 # If data is a string, assume it's Excel content
                 self.df = pd.read_excel(data)
                 rename_excel_df(self.df)
-        elif isinstance(data, pd.DataFrame):
-            self.df = data
-            rename_excel_df(self.df)
-        elif isinstance(data, dict):
-            # If data is a dict, assume it's Json content
-            data = data["data"]["public_emdat"]["data"]
-            self.df = pd.DataFrame(data)
+            elif type(self.data_source.content) == pd.DataFrame:
+                self.df = self.data_source.content
+                rename_excel_df(self.df)
+            elif type(self.data_source.content) == dict:
+                # If data is a dict, assume it's Json content
+                data = self.data_source.content["data"]["public_emdat"]["data"]
+                self.df = pd.DataFrame(data)
         else:
             raise ValueError("Data must be either Excel content (str) or pandas DataFrame or Json")
 
