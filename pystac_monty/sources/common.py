@@ -1,11 +1,12 @@
 import abc
 import json
 import typing
-from dataclasses import dataclass
-
 import requests
-from pystac import Collection, Item
+from typing import Literal, Union
+from dataclasses import dataclass
+from pydantic import BaseModel, Field
 
+from pystac import Collection, Item
 from pystac_monty.geocoding import MontyGeoCoder
 
 
@@ -39,14 +40,34 @@ class TransformSummary:
         return self.total_rows - self.failed_rows
 
 
+class File(BaseModel):
+    data_type: Literal['file']
+    path : str
+
+
+class Memory(BaseModel):
+    data_type: Literal['memory']
+    content : typing.Any
+
+
+class SourceSchemaValidator(BaseModel):
+    source_url: str
+    source_data: Union[File, Memory] = Field(discriminator='data_type')
+
+
 @dataclass
 class MontyDataSource:
     source_url: str
-    data: typing.Any
+    data_source: Union[File, Memory]
 
-    def __init__(self, source_url: str, data: typing.Any):
-        self.source_url = source_url
-        self.data = data
+    class Config:
+        arbitrary_types_allowed = True
+
+    def __init__(self, data: dict):
+        validated = SourceSchemaValidator(**data)
+        if validated:
+            self.source_url = validated.source_url
+            self.data_source = validated.source_data
 
     def get_source_url(self) -> str:
         return self.source_url
