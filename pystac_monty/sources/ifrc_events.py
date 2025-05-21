@@ -158,7 +158,8 @@ class IFRCEventTransformer(MontyDataTransformer[IFRCEventDataSource]):
             return []
 
         items = []
-
+        # Note that the monty impact types should be unique in the mapping
+        # to ensure that the generated impact ids and items are unique
         impact_field_category_map = {
             ("num_dead", "gov_num_dead", "other_num_dead"): (MontyImpactExposureCategory.ALL_PEOPLE, MontyImpactType.DEATH),
             ("num_displaced", "gov_num_displaced", "other_num_displaced"): (
@@ -190,9 +191,10 @@ class IFRCEventTransformer(MontyDataTransformer[IFRCEventDataSource]):
                 MontyImpactType.HIGHEST_RISK,
             ),
         }
-        impact_item = event_item.clone()
+
         for impact_field, (category, impact_type) in impact_field_category_map.items():
-            impact_item.id = f"{STAC_IMPACT_ID_PREFIX}-{ifrcevent_data.id}"
+            impact_item = event_item.clone()
+            impact_item.id = f"{STAC_IMPACT_ID_PREFIX}-{ifrcevent_data.id}-{impact_type}"
             impact_item.properties["roles"] = ["source", "impact"]
             impact_item.set_collection(self.get_impact_collection())
 
