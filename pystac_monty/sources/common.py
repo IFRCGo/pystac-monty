@@ -65,6 +65,22 @@ class SourceSchemaValidator(BaseModel):
 @dataclass
 class MontyDataSource:
     source_url: str
+    data: typing.Any
+
+    def __init__(self, source_url: str, data: typing.Any):
+        self.source_url = source_url
+        self.data = data
+
+    def get_source_url(self) -> str:
+        return self.source_url
+
+    def get_data(self) -> typing.Any:
+        return self.data
+
+
+@dataclass
+class MontyDataSourceV2:
+    source_url: str
     data_source: Union[File, Memory]
 
     class Config:
