@@ -1,12 +1,13 @@
-import os
 import json
 import logging
+import os
 import typing
-import pandas as pd
-import pytz
 from dataclasses import dataclass
 from datetime import datetime
-from typing import List, Optional, Union
+from typing import List, Optional
+
+import pandas as pd
+import pytz
 from pystac import Item, Link
 from shapely.geometry import Point, mapping
 
@@ -19,7 +20,7 @@ from pystac_monty.extension import (
     MontyImpactType,
 )
 from pystac_monty.hazard_profiles import MontyHazardProfiles
-from pystac_monty.sources.common import MontyDataSource, MontyDataTransformer
+from pystac_monty.sources.common import DataType, MontyDataSource, MontyDataTransformer
 from pystac_monty.validators.em_dat import EmdatDataValidator
 
 logger = logging.getLogger(__name__)
@@ -37,6 +38,29 @@ class EMDATDataSource(MontyDataSource):
 
     def __init__(self, data: dict):
         super().__init__(data)
+
+        def handle_file_data():
+            if os.path.isfile(self.data_source.path):
+                with open(self.data_source.path, "r", encoding="utf-8") as f:
+                    data = json.loads(f.read())
+
+                data = data["data"]["public_emdat"]["data"]
+                self.df = pd.DataFrame(data)
+
+        def handle_memory_data():
+            if isinstance(self.data_source.content, str):
+                # If data is a string, assume it's Excel content
+                self.df = pd.read_excel(self.data_source.content)
+                rename_excel_df(self.df)
+            elif isinstance(self.data_source.content, pd.DataFrame):
+                self.df = self.data_source.content
+                rename_excel_df(self.df)
+            elif isinstance(self.data_source.content, dict):
+                # If data is a dict, assume it's Json content
+                data = self.data_source.content["data"]["public_emdat"]["data"]
+                self.df = pd.DataFrame(data)
+            else:
+                raise ValueError("Data must be either Excel content (str) or pandas DataFrame or Json")
 
         def rename_excel_df(df: pd.DataFrame):
             df.rename(
@@ -91,28 +115,14 @@ class EMDATDataSource(MontyDataSource):
                 inplace=True,
             )
 
-        if self.data_source.data_type == "file":
-            if os.path.isfile(self.data_source.path):
-                with open(self.data_source.path, "r", encoding="utf-8") as f:
-                    data = json.loads(f.read())
-
-                data = data["data"]["public_emdat"]["data"]
-                self.df = pd.DataFrame(data)
-
-        elif self.data_source.data_type == "memory":
-            if type(self.data_source.content) == "str":
-                # If data is a string, assume it's Excel content
-                self.df = pd.read_excel(data)
-                rename_excel_df(self.df)
-            elif type(self.data_source.content) == pd.DataFrame:
-                self.df = self.data_source.content
-                rename_excel_df(self.df)
-            elif type(self.data_source.content) == dict:
-                # If data is a dict, assume it's Json content
-                data = self.data_source.content["data"]["public_emdat"]["data"]
-                self.df = pd.DataFrame(data)
-        else:
-            raise ValueError("Data must be either Excel content (str) or pandas DataFrame or Json")
+        input_data_type = self.data_source.data_type
+        match input_data_type:
+            case DataType.FILE:
+                handle_file_data()
+            case DataType.MEMORY:
+                handle_memory_data()
+            case _:
+                typing.assert_never(input_data_type)
 
     def get_data(self) -> pd.DataFrame:
         return self.df
