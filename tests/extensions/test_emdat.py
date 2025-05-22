@@ -178,14 +178,17 @@ json_mock_data = {
     }
 }
 
+
 def save_data_to_tmp_file(data):
     tmpfile = tempfile.NamedTemporaryFile(suffix=".json", delete=False)
-    data = json.dumps(data).encode('utf-8')
+    data = json.dumps(data).encode("utf-8")
     tmpfile.write(data)
     tmpfile.close()
     return tmpfile.name
 
+
 DATA_FILE = save_data_to_tmp_file(json_mock_data)
+
 
 def load_scenarios(
     scenarios: Union[list[tuple[str, str]], dict],
@@ -323,7 +326,6 @@ class EMDATTest(unittest.TestCase):
         # Verify required items were created
         self.assertIsNotNone(source_event_item)
         self.assertIsNotNone(source_hazard_item)
-
 
     @parameterized.expand(load_scenarios(DATA_FILE))
     @pytest.mark.vcr()
