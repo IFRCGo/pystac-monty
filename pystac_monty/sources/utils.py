@@ -1,5 +1,6 @@
 from enum import Enum
-
+import subprocess
+import tempfile
 from pystac_monty.extension import (
     MontyImpactExposureCategory,
     MontyImpactType,
@@ -70,3 +71,19 @@ class IDMCUtils:
         if hazard not in hazard_mapping:
             raise KeyError(f"Hazard {hazard} not found.")
         return hazard_mapping.get(hazard)
+
+
+def order_data_file(filepath: str):
+    """Order the data based on event_id"""
+    result = subprocess.run(
+        ['jq', 'sort_by(.event_id)', filepath],
+        capture_output=True,
+        text=True,
+        check=True
+    )
+
+    temp_file = tempfile.NamedTemporaryFile(delete=False)
+    temp_file.write(result.stdout.encode())
+    temp_file.close()
+
+    return temp_file
