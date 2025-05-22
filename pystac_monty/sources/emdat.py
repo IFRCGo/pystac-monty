@@ -20,7 +20,7 @@ from pystac_monty.extension import (
     MontyImpactType,
 )
 from pystac_monty.hazard_profiles import MontyHazardProfiles
-from pystac_monty.sources.common import DataType, MontyDataSource, MontyDataTransformer
+from pystac_monty.sources.common import DataType, MontyDataSourceV2, MontyDataTransformer
 from pystac_monty.validators.em_dat import EmdatDataValidator
 
 logger = logging.getLogger(__name__)
@@ -31,7 +31,7 @@ STAC_IMPACT_ID_PREFIX = "emdat-impact-"
 
 
 @dataclass
-class EMDATDataSource(MontyDataSource):
+class EMDATDataSource(MontyDataSourceV2):
     """EM-DAT data source that can handle both Excel files and pandas DataFrames"""
 
     df: pd.DataFrame
