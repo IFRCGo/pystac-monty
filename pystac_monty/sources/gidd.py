@@ -39,7 +39,7 @@ class GIDDTransformer(MontyDataTransformer[GIDDDataSource]):
     """Transforms GIDD event data into STAC Items"""
 
     hazard_profiles = MontyHazardProfiles()
-    source_name = 'idmc-gidd'
+    source_name = "idmc-gidd"
 
     def get_stac_items(self) -> Generator[Item, None, None]:
         """Creates the STAC Items"""
@@ -52,12 +52,14 @@ class GIDDTransformer(MontyDataTransformer[GIDDDataSource]):
             self.transform_summary.increment_rows(len(gidd_data_items))
 
             try:
+
                 def get_validated_data(items: list[dict]) -> List[GiddValidator]:
                     validated_data: list[GiddValidator] = []
                     for item in items:
                         obj = GiddValidator(**item)
                         validated_data.append(obj)
                     return validated_data
+
                 validated_data = get_validated_data(gidd_data_items)
 
                 if event_item := self.make_source_event_item(event_id=event_id, data_items=validated_data):
@@ -138,9 +140,7 @@ class GIDDTransformer(MontyDataTransformer[GIDDDataSource]):
         monty.episode_number = episode_number
         monty.country_codes = [data_item.properties.ISO3]
 
-        if IDMCUtils.DisplacementType(
-            data_item.properties.Figure_cause
-        ) == IDMCUtils.DisplacementType.DISASTER_TYPE:
+        if IDMCUtils.DisplacementType(data_item.properties.Figure_cause) == IDMCUtils.DisplacementType.DISASTER_TYPE:
             hazard_tuple = (
                 data_item.properties.Hazard_category,
                 data_item.properties.Hazard_sub_category,
@@ -159,7 +159,7 @@ class GIDDTransformer(MontyDataTransformer[GIDDDataSource]):
                 href=self.data_source.get_source_url(),
                 media_type="application/geo+json",
                 title="GIDD GeoJson Source",
-                roles=["source"]
+                roles=["source"],
             ),
         )
 
@@ -183,15 +183,15 @@ class GIDDTransformer(MontyDataTransformer[GIDDDataSource]):
             enddate = pytz.utc.localize(datetime.fromisoformat(enddate_str)) if enddate_str else None
 
             if not startdate:
-                raise Exception('Start date is not defined')
+                raise Exception("Start date is not defined")
 
             impact_type = data_item.properties.Figure_category or "displaced"
 
             impact_item.id = (
-                impact_item.id.replace(STAC_EVENT_ID_PREFIX, STAC_IMPACT_ID_PREFIX) +
-                str(data_item.properties.ID) +
-                "-" +
-                impact_type
+                impact_item.id.replace(STAC_EVENT_ID_PREFIX, STAC_IMPACT_ID_PREFIX)
+                + str(data_item.properties.ID)
+                + "-"
+                + impact_type
             )
 
             impact_item.datetime = startdate
@@ -249,6 +249,6 @@ class GIDDTransformer(MontyDataTransformer[GIDDDataSource]):
         disaster_data = []
         for item in data:
             item_properties = item.get("properties", {})
-            if (IDMCUtils.DisplacementType(item_properties.get("Figure cause")) == IDMCUtils.DisplacementType.DISASTER_TYPE):
+            if IDMCUtils.DisplacementType(item_properties.get("Figure cause")) == IDMCUtils.DisplacementType.DISASTER_TYPE:
                 disaster_data.append(item)
         return disaster_data

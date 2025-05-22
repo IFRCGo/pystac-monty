@@ -1,8 +1,9 @@
 """USGS data transformer for STAC Items."""
 
 import json
+import logging
+import typing
 from datetime import datetime
-from typing import List, Optional
 
 import pytz
 from pystac import Asset, Item, Link
@@ -18,6 +19,9 @@ from pystac_monty.extension import (
 )
 from pystac_monty.hazard_profiles import MontyHazardProfiles
 from pystac_monty.sources.common import MontyDataSource, MontyDataTransformer
+from pystac_monty.validators.usgs import EmpiricalValidator, USGSValidator
+
+logger = logging.getLogger(__name__)
 
 STAC_EVENT_ID_PREFIX = "usgs-event-"
 STAC_HAZARD_ID_PREFIX = "usgs-hazard-"
@@ -27,7 +31,7 @@ STAC_IMPACT_ID_PREFIX = "usgs-impact-"
 class USGSDataSource(MontyDataSource):
     """USGS data source that can handle both event detail and losses data."""
 
-    def __init__(self, source_url: str, data: str, losses_data: Optional[str] = None):
+    def __init__(self, source_url: str, data: str, losses_data: typing.Optional[str] = None):
         """Initialize USGS data source.
 
         Args:
@@ -39,20 +43,20 @@ class USGSDataSource(MontyDataSource):
         self.data = json.loads(data)
         self.losses_data = json.loads(losses_data) if losses_data else None
 
-    def get_data(self) -> dict:
+    def get_data(self) -> dict[str, typing.Any]:
         """Get the event detail data."""
         return self.data
 
-    def get_losses_data(self) -> Optional[dict]:
+    def get_losses_data(self) -> list[dict[str, typing.Any]] | None:
         """Get the PAGER losses data if available."""
-        return self.losses_data
+        return self.losses_data or []
 
 
 class USGSTransformer(MontyDataTransformer[USGSDataSource]):
     """Transforms USGS earthquake event data into STAC Items."""
 
     hazard_profiles = MontyHazardProfiles()
-    source_name = 'usgs'
+    source_name = "usgs"
 
     @staticmethod
     def iso2_to_iso3(iso2: str) -> str:
@@ -304,52 +308,78 @@ class USGSTransformer(MontyDataTransformer[USGSDataSource]):
             "ZM": "ZMB",
             "ZW": "ZWE",
         }
-        return iso_mappings.get(iso2.upper(), "")
+        return iso_mappings[iso2.upper()]
 
-    def make_items(self) -> List[Item]:
-        """Create STAC items from USGS data."""
-        items = []
+    def get_stac_items(self) -> typing.Generator[Item, None, None]:
+        """Creates the STAC Items"""
+        self.transform_summary.mark_as_started()
 
-        # Create event item
-        event_item = self.make_source_event_item()
-        items.append(event_item)
+        item_data = self.data_source.get_data()
+        losspager_data = self.data_source.get_losses_data()
 
-        # Create hazard item (ShakeMap)
-        hazard_item = self.make_hazard_event_item()
-        items.append(hazard_item)
+        # Note that only one datapoint is sent
+        self.transform_summary.increment_rows(1)
+        try:
 
-        # Create impact items (PAGER)
-        if self.data_source.get_losses_data():
-            impact_items = self.make_impact_items(hazard_item)
-            items.extend(impact_items)
+            def get_validated_data(items: list[dict[str, typing.Any]]) -> typing.List[EmpiricalValidator]:
+                validated_losspager_data: list[EmpiricalValidator] = []
+                for item in items:
+                    obj = EmpiricalValidator(**item)
+                    validated_losspager_data.append(obj)
+                return validated_losspager_data
 
-        return items
+            validated_item = USGSValidator(**item_data)
 
-    def make_source_event_item(self) -> Item:
+            if event_item := self.make_source_event_item(item_data=validated_item):
+                yield event_item
+                losspager_validated_items = get_validated_data(losspager_data)
+                hazard_item = self.make_hazard_event_item(event_item=event_item, data_item=validated_item)
+                yield hazard_item
+                yield from self.make_impact_items(
+                    event_item=event_item, hazard_item=hazard_item, losspager_items=losspager_validated_items
+                )
+            else:
+                self.transform_summary.increment_failed_rows(1)
+        except Exception:
+            self.transform_summary.increment_failed_rows(1)
+            logger.error("Failed to process the USGS data.", exc_info=True)
+
+        self.transform_summary.mark_as_complete()
+
+    # TODO This method is deprecated
+    def make_items(self) -> typing.List[Item]:
+        return list(self.get_stac_items())
+
+    def make_source_event_item(self, item_data: USGSValidator) -> Item:
         """Create source event item from USGS data."""
-        event_data = self.data_source.get_data()
 
         # Create geometry from coordinates
-        longitude = event_data["geometry"]["coordinates"][0]
-        latitude = event_data["geometry"]["coordinates"][1]
+        longitude = item_data.geometry.coordinates[0]
+        latitude = item_data.geometry.coordinates[1]
         point = Point(longitude, latitude)
 
-        event_datetime = datetime.fromtimestamp(event_data["properties"]["time"] / 1000, pytz.UTC)
+        event_datetime = datetime.fromtimestamp(item_data.properties.time / 1_000, pytz.UTC)
+
+        # TODO Verify the logic for depth
+        if item_data.properties.products.shakemap:
+            eq_depth = item_data.properties.products.shakemap[0].properties.depth
+        else:
+            eq_depth = "-"
 
         item = Item(
-            id=f"{STAC_EVENT_ID_PREFIX}{event_data['id']}",
+            id=f"{STAC_EVENT_ID_PREFIX}{item_data.id}",
             geometry=mapping(point),
             bbox=[longitude, latitude, longitude, latitude],
             datetime=event_datetime,
             properties={
-                "title": event_data["properties"].get("title", ""),
-                "description": event_data["properties"].get("place", ""),
-                "eq:magnitude": event_data["properties"].get("mag"),
-                "eq:magnitude_type": event_data["properties"].get("magType"),
-                "eq:status": event_data["properties"].get("status"),
-                "eq:tsunami": bool(event_data["properties"].get("tsunami")),
-                "eq:felt": event_data["properties"].get("felt"),
-                "eq:depth": event_data["properties"].get("depth"),
+                "title": item_data.properties.title,
+                "description": item_data.properties.place,
+                "eq:magnitude": item_data.properties.mag,
+                "eq:magnitude_type": item_data.properties.magType,
+                "eq:status": item_data.properties.status,
+                "eq:tsunami": bool(item_data.properties.tsunami),
+                "eq:felt": item_data.properties.felt,
+                "eq:depth": eq_depth,
             },
         )
 
@@ -360,7 +390,9 @@ class USGSTransformer(MontyDataTransformer[USGSDataSource]):
         monty.hazard_codes = ["GH0004"]  # Earthquake surface rupture code
 
         # TODO Get country code from event data or geometry
-        country_codes = [self.geocoder.get_iso3_from_geometry(point)]
+        iso3 = self.geocoder.get_iso3_from_point(point) or "UNK"
+        country_codes = [iso3]
+
         monty.country_codes = country_codes
 
         # Compute correlation ID
@@ -384,20 +416,28 @@ class USGSTransformer(MontyDataTransformer[USGSDataSource]):
 
         return item
 
-    def make_hazard_event_item(self) -> Item:
+    def make_hazard_event_item(self, event_item: Item, data_item: USGSValidator) -> Item:
         """Create hazard item (ShakeMap) from USGS data."""
-        event_item = self.make_source_event_item()
+
         hazard_item = event_item.clone()
         hazard_item.id = f"{STAC_HAZARD_ID_PREFIX}{hazard_item.id.replace(STAC_EVENT_ID_PREFIX, '')}-shakemap"
 
         # extent the hazard zone with the shakemap extent
-        shakemap = self.data_source.get_data()["properties"].get("products", {}).get("shakemap", [])[0]
-        extent = [
-            float(shakemap.get("properties", {}).get("minimum-longitude", 0)),
-            float(shakemap.get("properties", {}).get("minimum-latitude", 0)),
-            float(shakemap.get("properties", {}).get("maximum-longitude", 0)),
-            float(shakemap.get("properties", {}).get("maximum-latitude", 0)),
-        ]
+        shakemap = None
+        shakemaps = data_item.properties.products.shakemap or []
+        if shakemaps:
+            shakemap = shakemaps[0]
+
+        if shakemap:
+            extent = [
+                float(shakemap.properties.minimum_longitude or 0.0),
+                float(shakemap.properties.minimum_latitude or 0.0),
+                float(shakemap.properties.maximum_longitude or 0.0),
+                float(shakemap.properties.maximum_latitude or 0.0),
+            ]
+        else:
+            extent = [0.0, 0.0, 0.0, 0.0]
+
         hazard_item.bbox = extent
         # polygon from extent
         hazard_item.geometry = mapping(
@@ -432,60 +472,68 @@ class USGSTransformer(MontyDataTransformer[USGSDataSource]):
 
         # Add shakemap assets
         # download/pin-thumbnail.png
-        pin_thumbnail = shakemap.get("contents", {}).get("download/pin-thumbnail.png", {})
-        shakemap_assets = {
-            "intensity_map": {
-                "href": pin_thumbnail.get("url"),
-                "media_type": "image/png",
-                "title": "Intensity Map",
-                "roles": ["overview"],
-            }
-        }
+        if shakemap:
+            pin_thumbnail = shakemap.contents.download_pin_thumbnail
+            if pin_thumbnail:
+                shakemap_assets: dict[str, typing.Any] = {
+                    "intensity_map": {
+                        "href": pin_thumbnail.url,
+                        "media_type": "image/png",
+                        "title": "Intensity Map",
+                        "roles": ["overview"],
+                    }
+                }
+            else:
+                shakemap_assets = {}
 
-        for key, asset_info in shakemap_assets.items():
-            hazard_item.add_asset(key, Asset(**asset_info))
+            for key, asset_info in shakemap_assets.items():
+                hazard_item.add_asset(key, Asset(**asset_info))
 
         return hazard_item
 
-    def make_impact_items(self, hazard_item: Item) -> List[Item]:
+    def make_impact_items(
+        self, event_item: Item, hazard_item: Item, losspager_items: typing.List[EmpiricalValidator]
+    ) -> typing.List[Item]:
         """Create impact items (PAGER) from USGS data."""
-        impact_items = []
-        losses_data = self.data_source.get_losses_data()
+        if not losspager_items:
+            return []
 
-        if not losses_data:
-            return impact_items
+        impact_items = []
 
         # Create fatalities impact item
-        if "empirical_fatality" in losses_data:
-            for country in losses_data["empirical_fatality"]["country_fatalities"]:
-                if country["fatalities"] == 0:
-                    continue
-                fatalities_item = self._create_impact_item_from_losses(
-                    "fatalities",
-                    MontyImpactExposureCategory.ALL_PEOPLE,
-                    MontyImpactType.DEATH,
-                    country["fatalities"],
-                    "people",
-                    country["country_code"],
-                    hazard_item,
-                )
-                impact_items.append(fatalities_item)
+        for loss_data in losspager_items:
+            if loss_data.empirical_fatality:
+                for country in loss_data.empirical_fatality.country_fatalities:
+                    if not country.fatalities:
+                        continue
+                    fatalities_item = self._create_impact_item_from_losses(
+                        "fatalities",
+                        MontyImpactExposureCategory.ALL_PEOPLE,
+                        MontyImpactType.DEATH,
+                        country.fatalities,
+                        "people",
+                        country.country_code,
+                        hazard_item,
+                        event_item,
+                    )
+                    impact_items.append(fatalities_item)
 
-        # Create economic losses impact item
-        if "empirical_economic" in losses_data:
-            for country in losses_data["empirical_economic"]["country_dollars"]:
-                if country["us_dollars"] == 0:
-                    continue
-                economic_item = self._create_impact_item_from_losses(
-                    "economic",
-                    MontyImpactExposureCategory.BUILDINGS,
-                    MontyImpactType.LOSS_COST,
-                    country["us_dollars"],
-                    "usd",
-                    country["country_code"],
-                    hazard_item,
-                )
-                impact_items.append(economic_item)
+            # Create economic losses impact item
+            if loss_data.empirical_economic:
+                for country in loss_data.empirical_economic.country_dollars:
+                    if not country.us_dollars:
+                        continue
+                    economic_item = self._create_impact_item_from_losses(
+                        "economic",
+                        MontyImpactExposureCategory.BUILDINGS,
+                        MontyImpactType.LOSS_COST,
+                        country.us_dollars,
+                        "usd",
+                        country.country_code,
+                        hazard_item,
+                        event_item,
+                    )
+                    impact_items.append(economic_item)
 
         return impact_items
 
@@ -498,9 +546,10 @@ class USGSTransformer(MontyDataTransformer[USGSDataSource]):
         unit: str,
         iso2: str,
         hazard_item: Item,
+        event_item: Item,
     ) -> Item:
         """Helper method to create impact items from PAGER losses data."""
-        event_item = self.make_source_event_item()
+
         impact_item = event_item.clone()
         impact_item.id = f"{STAC_IMPACT_ID_PREFIX}{impact_item.id.replace(STAC_EVENT_ID_PREFIX, '')}-{impact_type}-{iso2}"
 
@@ -517,16 +566,21 @@ class USGSTransformer(MontyDataTransformer[USGSDataSource]):
         monty = MontyExtension.ext(impact_item)
         monty.country_codes = [self.iso2_to_iso3(iso2)]
         monty.impact_detail = ImpactDetail(
-            category=category, type=imp_type, value=float(value), unit=unit, estimate_type=MontyEstimateType.MODELLED
+            category=category,
+            type=imp_type,
+            value=value,
+            unit=unit,
+            estimate_type=MontyEstimateType.MODELLED,
         )
         geom = self.geocoder.get_geometry_from_iso3(monty.country_codes[0])
-        # intersect with the hazard geometry
-        geom = shape(geom["geometry"]).intersection(shape(hazard_item.geometry))
+        if geom:
+            # intersect with the hazard geometry
+            geom = shape(geom["geometry"]).intersection(shape(hazard_item.geometry))
         impact_item.geometry = mapping(geom)
         impact_item.bbox = geom.bounds
 
         # Add PAGER assets
-        pager_assets = {
+        pager_assets: dict[str, typing.Any] = {
             "pager_onepager": {
                 "href": f"{self.data_source.get_source_url()}/onepager.pdf",
                 "media_type": "application/pdf",
