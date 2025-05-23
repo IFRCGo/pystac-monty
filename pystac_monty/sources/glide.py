@@ -1,17 +1,17 @@
-import os
-import json
 import logging
 import mimetypes
+import os
 import typing
 from datetime import datetime
-from typing import Any, List
+from typing import Any, List, Union
 
+import ijson
 from pystac import Asset, Item, Link
 from shapely.geometry import Point, mapping
 
 from pystac_monty.extension import HazardDetail, MontyEstimateType, MontyExtension
 from pystac_monty.hazard_profiles import MontyHazardProfiles
-from pystac_monty.sources.common import MontyDataSource, MontyDataTransformer
+from pystac_monty.sources.common import DataType, MontyDataSourceV2, MontyDataTransformer
 from pystac_monty.validators.glide import GlideSetValidator
 
 logger = logging.getLogger(__name__)
@@ -20,14 +20,41 @@ STAC_EVENT_ID_PREFIX = "glide-event-"
 STAC_HAZARD_ID_PREFIX = "glide-hazard-"
 
 
-class GlideDataSource(MontyDataSource):
-    def __init__(self, source_url: str, data: Any):
-        super().__init__(source_url, data)
-        if os.path.isfile(data):
-            with open(data, "r", encoding="utf-8") as f:
-                self.data = json.loads(f.read())
-        else:
-            logger.error("File path does not exists", exc_info=True)
+class GlideDataSource(MontyDataSourceV2):
+    file_path: str
+    data: Union[str, dict]
+
+    def __init__(self, data: dict):
+        super().__init__(data)
+
+        def handle_file_data():
+            if os.path.isfile(self.data_source.path):
+                self.file_path = self.data_source.path
+            else:
+                raise ValueError("File path does not exists", exc_info=True)
+
+        def handle_memory_data():
+            if isinstance(self.data_source.content, dict):
+                self.data = self.data_source.content
+            else:
+                raise ValueError("Data must be in Json", exc_info=True)
+
+        input_data_type = self.data_source.data_type
+        match input_data_type:
+            case DataType.FILE:
+                handle_file_data()
+            case DataType.MEMORY:
+                handle_memory_data()
+            case _:
+                typing.assert_never(input_data_type)
+
+    def get_data(self) -> Union[dict, str]:
+        if self.data_source.data_type == DataType.FILE:
+            return self.file_path
+        return self.data
+
+    def get_input_data_type(self) -> DataType:
+        return self.data_source.data_type
 
 
 class GlideTransformer(MontyDataTransformer[GlideDataSource]):
@@ -43,6 +70,42 @@ class GlideTransformer(MontyDataTransformer[GlideDataSource]):
         return list(self.get_stac_items())
 
     def get_stac_items(self) -> typing.Generator[Item, None, None]:
+        data_type = self.data_source.get_input_data_type()
+        match data_type:
+            case DataType.FILE:
+                yield from self.get_stac_items_from_file()
+            case DataType.MEMORY:
+                yield from self.get_stac_items_from_memory()
+            case _:
+                typing.assert_never(data_type)
+
+    def get_stac_items_from_file(self) -> typing.Generator[Item, None, None]:
+        data_path = self.data_source.get_data()
+
+        with open(data_path, "rb") as f:
+            self.transform_summary.mark_as_started()
+
+            glideset: list[dict] = ijson.items(f, "glideset.item")
+            for row in glideset:
+                self.transform_summary.increment_rows()
+                try:
+
+                    def parse_row_data(row: dict):
+                        obj = GlideSetValidator(**row)
+                        return obj
+
+                    data = parse_row_data(row)
+                    if event_item := self.make_source_event_items(data):
+                        yield event_item
+                        yield self.make_hazard_event_items(event_item)
+                    else:
+                        self.transform_summary.increment_failed_rows()
+                except Exception:
+                    self.transform_summary.increment_failed_rows()
+                    logger.error("Failed to process glide", exc_info=True)
+            self.transform_summary.mark_as_complete()
+
+    def get_stac_items_from_memory(self) -> typing.Generator[Item, None, None]:
         glideset: list[dict] = self.data_source.get_data()["glideset"]
 
         self.transform_summary.mark_as_started()

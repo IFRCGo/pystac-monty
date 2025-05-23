@@ -1,3 +1,4 @@
+import json
 import subprocess
 import tempfile
 from enum import Enum
@@ -6,6 +7,14 @@ from pystac_monty.extension import (
     MontyImpactExposureCategory,
     MontyImpactType,
 )
+
+
+def save_json_data_into_tmp_file(data: dict) -> tempfile._TemporaryFileWrapper:
+    tmpfile = tempfile.NamedTemporaryFile(suffix=".json", delete=False)
+    data = json.dumps(data).encode("utf-8")
+    tmpfile.write(data)
+    tmpfile.close()
+    return tmpfile
 
 
 class IDMCUtils:
