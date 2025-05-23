@@ -1,4 +1,5 @@
 import datetime
+import itertools
 import json
 import logging
 import os
@@ -37,6 +38,7 @@ STAC_IMPACT_ID_PREFIX = "idmc-idu-impact-"
 class IDUDataSourceV2(MontyDataSourceV2):
     """IDU Data Source Version 2"""
 
+    parsed_content: List[dict]
     ordered_temp_file: Optional[str] = None
 
     def __init__(self, data: dict):
@@ -47,7 +49,7 @@ class IDUDataSourceV2(MontyDataSourceV2):
                 self.ordered_temp_file = order_data_file(self.data_source.path)
 
         def handle_memory_data():
-            pass
+            self.parsed_content = json.loads(self.data_source.content)
 
         input_data_type = self.data_source.data_type
         match input_data_type:
@@ -59,7 +61,16 @@ class IDUDataSourceV2(MontyDataSourceV2):
                 typing.assert_never(input_data_type)
 
     def get_ordered_tmp_file(self):
+        """Get the temp file object which has ordered data"""
         return self.ordered_temp_file
+
+    def get_input_data_type(self) -> DataType:
+        """Returns the input data type"""
+        return self.data_source.data_type
+
+    def get_memory_data(self):
+        """Get the parsed memory data"""
+        return self.parsed_content
 
 
 @dataclass
@@ -223,29 +234,38 @@ class IDUTransformer(MontyDataTransformer[IDUDataSourceV2]):
         required_fields = ["latitude", "longitude", "event_id"]
 
         tmp_file = self.data_source.get_ordered_tmp_file()
-        with open(tmp_file.name, "rb") as f:
-            items = ijson.items(f, "item")  # assumes top-level is a JSON array
-            current_id = None
-            group = []
+        input_data_type = self.data_source.get_input_data_type()
+        match input_data_type:
+            case DataType.FILE:
+                with open(tmp_file.name, "rb") as f:
+                    items = ijson.items(f, "item")  # assumes top-level is a JSON array
+                    current_id = None
+                    group = []
 
-            for item in items:
-                if item["displacement_type"] not in IDMCUtils.DisplacementType._value2member_map_:
-                    logging.error(f"Unknown displacement type: {item['displacement_type']} found. Ignore the datapoint.")
-                    continue
-                # Get the Disaster type data only
-                if IDMCUtils.DisplacementType(item["displacement_type"]) == IDMCUtils.DisplacementType.DISASTER_TYPE:
-                    missing_fields = [field for field in required_fields if field not in item]
-                    if missing_fields:
-                        raise ValueError(f"Missing required fields {missing_fields}.")
+                    for item in items:
+                        if item["displacement_type"] not in IDMCUtils.DisplacementType._value2member_map_:
+                            logging.error(f"Unknown displacement type: {item['displacement_type']} found. Ignore the datapoint.")
+                            continue
+                        # Get the Disaster type data only
+                        if IDMCUtils.DisplacementType(item["displacement_type"]) == IDMCUtils.DisplacementType.DISASTER_TYPE:
+                            missing_fields = [field for field in required_fields if field not in item]
+                            if missing_fields:
+                                raise ValueError(f"Missing required fields {missing_fields}.")
 
-                    item_id = item["event_id"]
-                    if item_id != current_id:
-                        if group:
-                            yield group
-                        group = [item]
-                        current_id = item_id
-                    else:
-                        group.append(item)
+                            item_id = item["event_id"]
+                            if item_id != current_id:
+                                if group:
+                                    yield group
+                                group = [item]
+                                current_id = item_id
+                            else:
+                                group.append(item)
 
-            if group:
-                yield group
+                    if group:
+                        yield group
+            case DataType.MEMORY:
+                data_contents = self.data_source.get_memory_data()
+                data_contents.sort(key=lambda x: x.get("event_id", " "))
+                yield from [list(group) for _, group in itertools.groupby(data_contents, key=lambda x: x.get("event_id", " "))]
+            case _:
+                typing.assert_never(input_data_type)
