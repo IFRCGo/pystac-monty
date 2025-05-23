@@ -1,14 +1,13 @@
-import os
 import datetime
-import logging
-import re
 import json
+import logging
+import os
+import re
 import typing
-from typing import Optional
 from dataclasses import dataclass
-from typing import Any, Dict, List, Iterator
-import ijson
+from typing import Any, Dict, Iterator, List, Optional
 
+import ijson
 import pytz
 from markdownify import markdownify as md
 from pystac import Asset, Item, Link
@@ -23,10 +22,8 @@ from pystac_monty.extension import (
 )
 from pystac_monty.hazard_profiles import MontyHazardProfiles
 from pystac_monty.sources.common import DataType, MontyDataSource, MontyDataSourceV2, MontyDataTransformer
-from pystac_monty.sources.utils import IDMCUtils
+from pystac_monty.sources.utils import IDMCUtils, order_data_file
 from pystac_monty.validators.idu import IDUSourceValidator
-
-from pystac_monty.sources.utils import order_data_file
 
 logger = logging.getLogger(__name__)
 
@@ -39,6 +36,7 @@ STAC_IMPACT_ID_PREFIX = "idmc-idu-impact-"
 @dataclass
 class IDUDataSourceV2(MontyDataSourceV2):
     """IDU Data Source Version 2"""
+
     ordered_temp_file: Optional[str] = None
 
     def __init__(self, data: dict):
@@ -86,6 +84,7 @@ class IDUTransformer(MontyDataTransformer[IDUDataSourceV2]):
         for idu_data in self.check_and_get_idu_data():
             self.transform_summary.increment_rows(len(idu_data))
             try:
+
                 def get_validated_data(items: list[dict]) -> List[IDUSourceValidator]:
                     validated_data: list[IDUSourceValidator] = []
                     for item in items:
@@ -224,8 +223,8 @@ class IDUTransformer(MontyDataTransformer[IDUDataSourceV2]):
         required_fields = ["latitude", "longitude", "event_id"]
 
         tmp_file = self.data_source.get_ordered_tmp_file()
-        with open(tmp_file.name, 'r', encoding="utf-8") as f:
-            items = ijson.items(f, 'item')  # assumes top-level is a JSON array
+        with open(tmp_file.name, "rb") as f:
+            items = ijson.items(f, "item")  # assumes top-level is a JSON array
             current_id = None
             group = []
 
@@ -239,7 +238,7 @@ class IDUTransformer(MontyDataTransformer[IDUDataSourceV2]):
                     if missing_fields:
                         raise ValueError(f"Missing required fields {missing_fields}.")
 
-                    item_id = item['event_id']
+                    item_id = item["event_id"]
                     if item_id != current_id:
                         if group:
                             yield group
