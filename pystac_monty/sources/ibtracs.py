@@ -2,6 +2,7 @@
 
 import csv
 import io
+import itertools
 import logging
 import tempfile
 import typing
@@ -10,12 +11,14 @@ from typing import Dict, List, Union
 import pandas as pd
 import pytz
 from pystac import Asset, Item, Link
-from shapely.geometry import LineString, Point, mapping
-
-from pystac_monty.extension import HazardDetail, MontyEstimateType, MontyExtension
+from pystac_monty.extension import (HazardDetail, MontyEstimateType,
+                                    MontyExtension)
 from pystac_monty.hazard_profiles import MontyHazardProfiles
-from pystac_monty.sources.common import MontyDataSource, MontyDataTransformer
+from pystac_monty.sources.common import (DataType, MontyDataSource,
+                                         MontyDataTransformer)
+from pystac_monty.sources.emdat import MontyDataSourceV2
 from pystac_monty.validators.ibtracs import IBTracsdataValidator
+from shapely.geometry import LineString, Point, mapping
 
 logger = logging.getLogger(__name__)
 
@@ -24,38 +27,54 @@ STAC_EVENT_ID_PREFIX = "ibtracs-event-"
 STAC_HAZARD_ID_PREFIX = "ibtracs-hazard-"
 
 
-class IBTrACSDataSource(MontyDataSource):
+class IBTrACSDataSource(MontyDataSourceV2):
     """IBTrACS data source that handles tropical cyclone track data."""
+    file_path: str
+    def __init__(self, data: dict, version: str = "v04r01"):
 
-    def __init__(self, source_url: str, data: str, version: str = "v04r01"):
         """Initialize IBTrACS data source.
 
         Args:
             source_url: URL where the data was retrieved from
             data: Tropical cyclone track data as CSV string
         """
-        super().__init__(source_url, data)
-        df = pd.read_csv(self.data)
-        df = df.sort_values(by=["SID", "ISO_TIME"])
-        with tempfile.NamedTemporaryFile(delete=False, mode="w", newline="", encoding="utf-8") as tmp_file:
-            df.to_csv(tmp_file, index=False)
-            self.data = tmp_file.name
-
-        self._parsed_data = None
+        super().__init__(data)
         self.version = version
+
+
+        def handle_file_data():
+            df = pd.read_csv(self.data_source.path)
+            df = df.sort_values(by=["SID", "ISO_TIME"])
+            with tempfile.NamedTemporaryFile(delete=False, mode="w", newline="", encoding="utf-8") as tmp_file:
+                df.to_csv(tmp_file, index=False)
+                self.file_path = tmp_file.name
+
+
+        def handle_memory_data():
+            ...
+
+        self.input_data_type = self.data_source.data_type
+        match self.input_data_type:
+            case DataType.FILE:
+                handle_file_data()
+            case DataType.MEMORY:
+                handle_memory_data()
+            case _:
+                typing.assert_never(self.input_data_type)
+
 
     def _parse_csv(self) -> List[Dict[str, str]]:
         """Parse the CSV data into a list of dictionaries."""
         csv_data = []
-        csv_reader = csv.DictReader(io.StringIO(self.data))
+        csv_reader = csv.DictReader(io.StringIO(self.data_source.content))
         for row in csv_reader:
             csv_data.append(row)
         return csv_data
 
-    def get_data(self):
+    def get_data_for_file(self):
         """Yield storm data grouped by SID from a sorted CSV."""
 
-        with open(self.data, mode="r", newline="", encoding="utf-8") as f:
+        with open(self.file_path, mode="r", newline="", encoding="utf-8") as f:
             reader = csv.DictReader(f)
             current_storm_id = None
             storm_data = []
@@ -72,6 +91,13 @@ class IBTrACSDataSource(MontyDataSource):
             if storm_data:
                 yield storm_data
 
+    def get_data_for_memory(self):
+        parsed_data = self._parse_csv()
+        parsed_data.sort(key=lambda x: (x["SID"], x["ISO_TIME"]))
+        yield from [list(group) for _, group in itertools.groupby(parsed_data, key=lambda x: x["SID"])]
+
+    def get_input_data_type(self)-> DataType:
+        return self.input_data_type
 
 class IBTrACSTransformer(MontyDataTransformer[IBTrACSDataSource]):
     """Transforms IBTrACS tropical cyclone data into STAC Items."""
@@ -81,11 +107,19 @@ class IBTrACSTransformer(MontyDataTransformer[IBTrACSDataSource]):
 
     def get_stac_items(self) -> typing.Generator[Item, None, None]:
         self.transform_summary.mark_as_started()
-        # TODO: Use sax xml parser for memory efficient usage
-        csv_data = self.data_source.get_data()
+        data_type = self.data_source.get_input_data_type()
+        match data_type:
+            case DataType.FILE:
+                csv_data = self.data_source.get_data_for_file()
+            case DataType.MEMORY:
+                csv_data = self.data_source.get_data_for_memory()
+            case _:
+                typing.assert_never(data_type)
+
+
         for storm_data in csv_data:
-            if storm_data[0]["SID"] == " ":
-                logger.error("SID is empty")
+            if storm_data[0].get("SID", "").strip() == "":
+                logger.warning("SID is empty")
                 continue
 
             self.transform_summary.increment_rows(len(storm_data))
