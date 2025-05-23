@@ -2,8 +2,11 @@ import abc
 import json
 import typing
 from dataclasses import dataclass
+from enum import Enum
+from typing import Literal, Union
 
 import requests
+from pydantic import BaseModel, Field
 from pystac import Collection, Item
 
 from pystac_monty.geocoding import MontyGeoCoder
@@ -39,6 +42,26 @@ class TransformSummary:
         return self.total_rows - self.failed_rows
 
 
+class DataType(Enum):
+    FILE = "file"
+    MEMORY = "memory"
+
+
+class File(BaseModel):
+    data_type: Literal[DataType.FILE]
+    path: str
+
+
+class Memory(BaseModel):
+    data_type: Literal[DataType.MEMORY]
+    content: typing.Any
+
+
+class SourceSchemaValidator(BaseModel):
+    source_url: str
+    source_data: Union[File, Memory] = Field(discriminator="data_type")
+
+
 @dataclass
 class MontyDataSource:
     source_url: str
@@ -47,6 +70,27 @@ class MontyDataSource:
     def __init__(self, source_url: str, data: typing.Any):
         self.source_url = source_url
         self.data = data
+
+    def get_source_url(self) -> str:
+        return self.source_url
+
+    def get_data(self) -> typing.Any:
+        return self.data
+
+
+@dataclass
+class MontyDataSourceV2:
+    source_url: str
+    data_source: Union[File, Memory]
+
+    class Config:
+        arbitrary_types_allowed = True
+
+    def __init__(self, data: dict):
+        validated = SourceSchemaValidator(**data)
+        if validated:
+            self.source_url = validated.source_url
+            self.data_source = validated.source_data
 
     def get_source_url(self) -> str:
         return self.source_url
