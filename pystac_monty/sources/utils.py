@@ -83,9 +83,13 @@ class IDMCUtils:
         return hazard_mapping.get(hazard)
 
 
-def order_data_file(filepath: str):
-    """Order the data based on event_id"""
-    result = subprocess.run(["jq", "sort_by(.event_id)", filepath], capture_output=True, text=True, check=True)
+def order_data_file(filepath: str, jq_filter: str):
+    """Order the data based on given filter"""
+    try:
+        result = subprocess.run(["jq", jq_filter, filepath], capture_output=True, text=True, check=True)
+    except subprocess.CalledProcessError as e:
+        print("Error running jq:", e.stderr)
+        raise
 
     temp_file = tempfile.NamedTemporaryFile(delete=False)
     temp_file.write(result.stdout.encode())

@@ -46,7 +46,8 @@ class IDUDataSourceV2(MontyDataSourceV2):
 
         def handle_file_data():
             if os.path.isfile(self.data_source.path):
-                self.ordered_temp_file = order_data_file(self.data_source.path)
+                jq_filter = "sort_by(.event_id)"
+                self.ordered_temp_file = order_data_file(filepath=self.data_source.path, jq_filter=jq_filter)
 
         def handle_memory_data():
             self.parsed_content = json.loads(self.data_source.content)
