@@ -57,10 +57,32 @@ class Memory(BaseModel):
     content: typing.Any
 
 
+DataSourceType = Union[File, Memory]
+
+
 class SourceSchemaValidator(BaseModel):
     source_url: str
     source_data: Union[File, Memory] = Field(discriminator="data_type")
 
+
+class GenericDataSource(BaseModel):
+    source_url: str
+    data_source: DataSourceType  # single file source
+
+    class Config:
+        arbitrary_types_allowed = True
+
+    def __init__(self, data: dict):
+        validated = SourceSchemaValidator(**data)
+        if validated:
+            self.source_url = validated.source_url
+            self.data_source = validated.source_data
+
+    def get_source_url(self) -> str:
+        return self.source_url
+
+    def get_data(self) -> typing.Any:
+        return self.data
 
 @dataclass
 class MontyDataSource:
@@ -97,6 +119,24 @@ class MontyDataSourceV2:
 
     def get_data(self) -> typing.Any:
         return self.data
+
+class GdacsEpisodes(BaseModel):
+    type = str
+    data = GenericDataSource
+
+
+class GdacsDataSourceType(BaseModel):
+    source_url = str
+    event_data = DataSourceType
+    episodes = List[GdacsEpisodes]
+
+
+@dataclass
+class MontyDataSourceV3:
+    __root__: Union[GenericDataSource, GdacsDataSourceType]
+
+    def __init__(self, root):
+        self.root = root
 
 
 DataSource = typing.TypeVar("DataSource")

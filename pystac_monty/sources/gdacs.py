@@ -22,7 +22,7 @@ from pystac_monty.extension import (
     MontyImpactType,
 )
 from pystac_monty.hazard_profiles import MontyHazardProfiles
-from pystac_monty.sources.common import MontyDataSource, MontyDataTransformer
+from pystac_monty.sources.common import MontyDataSource, MontyDataTransformer, MontyDataSourceV3
 from pystac_monty.validators.gdacs_events import GdacsEventDataValidator, Sendai
 from pystac_monty.validators.gdacs_geometry import GdacsGeometryDataValidator
 
@@ -64,7 +64,26 @@ class GDACSDataSource(MontyDataSource):
         return self.episodes
 
 
-class GDACSTransformer(MontyDataTransformer[GDACSDataSource]):
+# @dataclass
+class GDACSDataSourceV3(MontyDataSourceV3):
+    # type: GDACSDataSourceType
+    source_url: str
+    data: [str, dict]
+    episodes: list[Dict]
+
+    def __init__(self, root):
+        super().__init__(root)
+        self.data = root.event_data
+        print("Event data", self.event_data)
+        self.episodes = root.episodes
+        print("Episodes", self.episodes)
+
+    def get_episode_data(self) -> List[Dict[str, Tuple[str, dict]]]:
+        """Get all episodes"""
+        return self.episodes
+
+
+class GDACSTransformer(MontyDataTransformer[GDACSDataSourceV3]):
     """
     Transforms GDACS event data into STAC Items
     see https://github.com/IFRCGo/monty-stac-extension/tree/main/model/sources/GDACS
@@ -107,7 +126,8 @@ class GDACSTransformer(MontyDataTransformer[GDACSDataSource]):
 
     # FIXME: This is deprecated
     def make_items(self) -> List[Item]:
-        return list(self.get_stac_items())
+        print(self.data
+        # return list(self.get_stac_items())
 
     def get_hazard_codes(self, hazard: str) -> List[str]:
         hazard_mapping = {
