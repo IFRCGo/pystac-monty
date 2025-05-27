@@ -2,10 +2,12 @@ import datetime
 import json
 import logging
 import mimetypes
+import os
+import tempfile
 import typing
 from dataclasses import dataclass
 from enum import Enum
-from typing import Any, Dict, List, Optional, Tuple
+from typing import Any, Dict, List, Optional, Tuple, Union
 
 import pytz
 from markdownify import markdownify as md
@@ -22,7 +24,7 @@ from pystac_monty.extension import (
     MontyImpactType,
 )
 from pystac_monty.hazard_profiles import MontyHazardProfiles
-from pystac_monty.sources.common import MontyDataSource, MontyDataTransformer, MontyDataSourceV3
+from pystac_monty.sources.common import DataType, GdacsDataSourceType, MontyDataSource, MontyDataSourceV3, MontyDataTransformer
 from pystac_monty.validators.gdacs_events import GdacsEventDataValidator, Sendai
 from pystac_monty.validators.gdacs_geometry import GdacsGeometryDataValidator
 
@@ -51,36 +53,63 @@ class GDACSDataSource(MontyDataSource):
     def __init__(
         self,
         source_url: str,
-        data: Any,
-        episodes: Optional[list[Dict[GDACSDataSourceType, tuple[str, Any]]]] = None,
+        data: tempfile._TemporaryFileWrapper,
+        episodes: Optional[List[Dict[GDACSDataSourceType, Tuple[str, Any]]]] = None,
     ):
         super().__init__(source_url, data)
-        # all gdacs data are json
-        self.data = json.loads(data) if isinstance(data, str) else data
         self.episodes = episodes
 
-    def get_episode_data(self) -> List[Dict[str, Tuple[str, dict]]]:
-        """Get all episodes"""
-        return self.episodes
+        with open(data, "r", encoding="utf-8") as f:
+            self.data = json.loads(f.read())
 
 
-# @dataclass
+@dataclass
 class GDACSDataSourceV3(MontyDataSourceV3):
-    # type: GDACSDataSourceType
+    type: GDACSDataSourceType
     source_url: str
-    data: [str, dict]
+    event_data: [str, dict]
+    event_data_file_path: str
     episodes: list[Dict]
 
-    def __init__(self, root):
-        super().__init__(root)
-        self.data = root.event_data
-        print("Event data", self.event_data)
-        self.episodes = root.episodes
-        print("Episodes", self.episodes)
+    def __init__(self, data: GdacsDataSourceType):
+        super().__init__(data)
+        print("DATA", data)
+        self.source_url = data.source_url
+        self.episodes = data.episodes
+
+        def handle_file_data():
+            if os.path.isfile(data.event_data.path):
+                self.event_data_file_path = data.event_data.path
+            else:
+                raise ValueError("File path does not exists", exc_info=True)
+
+        def handle_memory_data():
+            if isinstance(data.event_data.content, dict):
+                self.event_data = data.event_data.content
+            else:
+                raise ValueError("Data must be in Json", exc_info=True)
+
+        input_data_type = data.event_data.data_type
+        match input_data_type:
+            case DataType.FILE:
+                handle_file_data()
+            case DataType.MEMORY:
+                handle_memory_data()
+            case _:
+                typing.assert_never(input_data_type)
 
     def get_episode_data(self) -> List[Dict[str, Tuple[str, dict]]]:
         """Get all episodes"""
         return self.episodes
+
+    def get_data(self) -> Union[dict, str]:
+        if self.root.event_data.data_type == DataType.FILE:
+            with open(self.event_data_file_path, "r", encoding="utf-8") as f:
+                self.event_data = json.loads(f.read())
+        return self.event_data
+
+    def get_input_data_type(self) -> DataType:
+        return self.root.event_data.data_type
 
 
 class GDACSTransformer(MontyDataTransformer[GDACSDataSourceV3]):
@@ -93,22 +122,42 @@ class GDACSTransformer(MontyDataTransformer[GDACSDataSourceV3]):
     source_name = "gdacs"
 
     def get_stac_items(self) -> typing.Generator[Item, None, None]:
+        data_type = self.data_source.get_input_data_type()
+        match data_type:
+            case DataType.FILE:
+                yield from self.get_stac_items_from_file()
+            case DataType.MEMORY:
+                yield from self.get_stac_items_from_memory()
+            case _:
+                typing.assert_never(data_type)
+
+    def get_stac_items_from_memory(self) -> typing.Generator[Item, None, None]:
+        pass
+
+    def get_stac_items_from_file(self) -> typing.Generator[Item, None, None]:
         """Create STAC Items"""
         self.transform_summary.mark_as_started()
         self.transform_summary.increment_rows(1)
 
         try:
-            validated_event_data = GdacsEventDataValidator(**self.data_source.data)
+            validated_event_data = GdacsEventDataValidator(**self.data_source.get_data())
             source_event_item = self.make_source_event_item(data=validated_event_data, source_url=self.data_source.source_url)
             yield source_event_item
 
             if self.data_source.episodes:
                 for episode_data in self.data_source.episodes:
-                    validated_episode_data = GdacsEventDataValidator(**episode_data[GDACSDataSourceType.EVENT][1])
-                    episode_data_url = episode_data[GDACSDataSourceType.EVENT][0]
+                    episode_data_file = episode_data[0].data.data_source.path
+                    with open(episode_data_file, "r", encoding="utf-8") as f:
+                        episode_file_data = json.loads(f.read())
+
+                    validated_episode_data = GdacsEventDataValidator(**episode_file_data)
+                    episode_data_url = episode_data[0].data.source_url
                     if GDACSDataSourceType.GEOMETRY in episode_data:
-                        validated_geometry_data = GdacsGeometryDataValidator(**episode_data[GDACSDataSourceType.GEOMETRY][1])
-                        geometry_data_url = episode_data[GDACSDataSourceType.GEOMETRY][0]
+                        geometry_data_file = episode_data[1].data.data_source.path
+                        with open(geometry_data_file, "r", encoding="utf-8") as f:
+                            geometry_data = json.loads(f.read())
+                        validated_geometry_data = GdacsGeometryDataValidator(**geometry_data)
+                        geometry_data_url = episode_data[1].data.source_url
                     else:
                         validated_geometry_data = None
                         geometry_data_url = None
@@ -126,8 +175,7 @@ class GDACSTransformer(MontyDataTransformer[GDACSDataSourceV3]):
 
     # FIXME: This is deprecated
     def make_items(self) -> List[Item]:
-        print(self.data
-        # return list(self.get_stac_items())
+        return list(self.get_stac_items())
 
     def get_hazard_codes(self, hazard: str) -> List[str]:
         hazard_mapping = {

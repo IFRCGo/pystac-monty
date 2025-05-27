@@ -1,6 +1,7 @@
 """Tests for pystac.tests.extensions.monty"""
 
 import json
+import tempfile
 import unittest
 from os import makedirs
 
@@ -10,9 +11,10 @@ from parameterized import parameterized
 
 from pystac_monty.extension import MontyExtension
 from pystac_monty.geocoding import MockGeocoder
+from pystac_monty.sources.common import DataType, File, GdacsDataSourceType, GdacsEpisodes, GenericDataSource
 from pystac_monty.sources.gdacs import (
-    GDACSDataSource,
     GDACSDataSourceType,
+    GDACSDataSourceV3,
     GDACSTransformer,
 )
 from tests.conftest import get_data_file
@@ -22,26 +24,49 @@ CURRENT_SCHEMA_URI = "https://ifrcgo.github.io/monty/v0.1.0/schema.json"
 CURRENT_SCHEMA_MAPURL = "https://raw.githubusercontent.com/IFRCGo/monty-stac-extension/refs/heads/main/json-schema/schema.json"
 
 
+def request_and_save_tmp_file(url):
+    response = requests.get(url)
+    tmpfile = tempfile.NamedTemporaryFile(suffix=".json", delete=False)
+    tmpfile.write(response.content)
+    return tmpfile.name
+
+
 def load_scenarios(
     scenarios: list[dict],
 ) -> list[GDACSTransformer]:
     transformers = []
     for scenario in scenarios:
         event_data_url = scenario.get(GDACSDataSourceType.EVENT)
-        event_data = requests.get(event_data_url).json()
+        event_data_file = request_and_save_tmp_file(event_data_url)
+
         episodes_data = []
         for episode in scenario.get("episodes"):
             episode_event_url = episode.get(GDACSDataSourceType.EVENT)
             episode_geometry_url = episode.get(GDACSDataSourceType.GEOMETRY)
-            episode_event = requests.get(episode_event_url).json()
-            episode_geometry = requests.get(episode_geometry_url).json()
-            episode_data = {
-                GDACSDataSourceType.EVENT: (episode_event_url, episode_event),
-            }
+            episode_event_file = request_and_save_tmp_file(episode_event_url)
+            episode_geometry_file = request_and_save_tmp_file(episode_geometry_url)
+            event_episode_data = GdacsEpisodes(
+                type=GDACSDataSourceType.EVENT,
+                data=GenericDataSource(
+                    source_url=episode_event_url, data_source=File(path=episode_event_file, data_type=DataType.FILE)
+                ),
+            )
+
             if episode_geometry_url is not None:
-                episode_data[GDACSDataSourceType.GEOMETRY] = (episode_geometry_url, episode_geometry)
-            episodes_data.append(episode_data)
-        gdacs_data_sources = GDACSDataSource(source_url=event_data_url, data=event_data, episodes=episodes_data)
+                geometry_episode_data = GdacsEpisodes(
+                    type=GDACSDataSourceType.GEOMETRY,
+                    data=GenericDataSource(
+                        source_url=episode_geometry_url, data_source=File(path=episode_geometry_file, data_type=DataType.FILE)
+                    ),
+                )
+
+            episode_data_tuple = (event_episode_data, geometry_episode_data)
+            episodes_data.append(episode_data_tuple)
+        gdacs_data_sources = GDACSDataSourceV3(
+            data=GdacsDataSourceType(
+                source_url=event_data_url, event_data=File(path=event_data_file, data_type=DataType.FILE), episodes=episodes_data
+            )
+        )
         geocoder = MockGeocoder()
         transformers.append(GDACSTransformer(gdacs_data_sources, geocoder))
     return transformers
@@ -286,7 +311,10 @@ class GDACSTest(unittest.TestCase):
         source_impact_item = None
         sendai_data_available = False
         for episode in transformer.data_source.episodes:
-            episode_data = episode[GDACSDataSourceType.EVENT][1]
+            episode_data_file = episode[0].data.data_source.path
+            with open(episode_data_file, "r", encoding="utf-8") as f:
+                episode_data = json.loads(f.read())
+
             if "sendai" in episode_data["properties"] and len(episode_data["properties"]["sendai"]) > 0:
                 sendai_data_available = True
                 break

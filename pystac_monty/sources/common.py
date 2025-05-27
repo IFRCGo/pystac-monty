@@ -3,10 +3,10 @@ import json
 import typing
 from dataclasses import dataclass
 from enum import Enum
-from typing import Literal, Union
+from typing import List, Literal, Tuple, Union
 
 import requests
-from pydantic import BaseModel, Field
+from pydantic import BaseModel, ConfigDict, Field
 from pystac import Collection, Item
 
 from pystac_monty.geocoding import MontyGeoCoder
@@ -67,22 +67,26 @@ class SourceSchemaValidator(BaseModel):
 
 class GenericDataSource(BaseModel):
     source_url: str
-    data_source: DataSourceType  # single file source
+    data_source: DataSourceType
 
-    class Config:
-        arbitrary_types_allowed = True
+    model_config = ConfigDict(from_attributes=True)
+    # model_config = ConfigDict(orm_mode=True)
 
-    def __init__(self, data: dict):
-        validated = SourceSchemaValidator(**data)
-        if validated:
-            self.source_url = validated.source_url
-            self.data_source = validated.source_data
+    # class Config:
+    #     arbitrary_types_allowed = True
 
-    def get_source_url(self) -> str:
-        return self.source_url
+    # def __init__(self, data: dict):
+    #     validated = SourceSchemaValidator(**data)
+    #     if validated:
+    #         self.source_url = validated.source_url
+    #         self.data_source = validated.source_data
 
-    def get_data(self) -> typing.Any:
-        return self.data
+    # def get_source_url(self) -> str:
+    #     return self.source_url
+
+    # def get_data(self) -> typing.Any:
+    #     return self.data
+
 
 @dataclass
 class MontyDataSource:
@@ -120,23 +124,31 @@ class MontyDataSourceV2:
     def get_data(self) -> typing.Any:
         return self.data
 
+
 class GdacsEpisodes(BaseModel):
-    type = str
-    data = GenericDataSource
+    type: str
+    data: GenericDataSource
 
 
 class GdacsDataSourceType(BaseModel):
-    source_url = str
-    event_data = DataSourceType
-    episodes = List[GdacsEpisodes]
+    source_url: str
+    event_data: Union[File, Memory]
+    episodes: List[Tuple[GdacsEpisodes, GdacsEpisodes]]
+
+    # def __init__(self, data: dict):
+    # validated = SourceSchemaValidator(**data)
+    # if validated:
+    # self.source_url = data.get("source_url")
+    # self.event_data = data.get("data")
+    # self.episodes = data.get("episodes")
 
 
 @dataclass
 class MontyDataSourceV3:
-    __root__: Union[GenericDataSource, GdacsDataSourceType]
+    root: Union[GenericDataSource, GdacsDataSourceType]
 
-    def __init__(self, root):
-        self.root = root
+    # def __init__(self, root):
+    #     self.root = root
 
 
 DataSource = typing.TypeVar("DataSource")
