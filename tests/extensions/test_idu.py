@@ -1,5 +1,4 @@
 import json
-import tempfile
 import unittest
 from os import makedirs
 from typing import List
@@ -12,19 +11,12 @@ from pystac_monty.extension import MontyExtension
 from pystac_monty.geocoding import MockGeocoder
 from pystac_monty.sources.common import DataType, File, Memory
 from pystac_monty.sources.idu import IDUDataSourceV2, IDUTransformer
+from pystac_monty.sources.utils import save_json_data_into_tmp_file
 from tests.conftest import get_data_file
 from tests.extensions.test_monty import CustomValidator
 
 CURRENT_SCHEMA_URI = "https://ifrcgo.github.io/monty/v0.1.0/schema.json"
 CURRENT_SCHEMA_MAPURL = "https://raw.githubusercontent.com/IFRCGo/monty-stac-extension/refs/heads/main/json-schema/schema.json"
-
-
-def save_data_to_tmp_file(data):
-    tmpfile = tempfile.NamedTemporaryFile(suffix=".json", delete=False)
-    data = json.dumps(data).encode("utf-8")
-    tmpfile.write(data)
-    tmpfile.close()
-    return tmpfile
 
 
 def load_scenarios_from_file(scenarios: List[str], timeout: int = 30) -> List[IDUTransformer]:
@@ -33,7 +25,7 @@ def load_scenarios_from_file(scenarios: List[str], timeout: int = 30) -> List[ID
         response = requests.get(scenario[1], timeout=timeout)
         response_data = response.json()
 
-        data_file = save_data_to_tmp_file(response_data)
+        data_file = save_json_data_into_tmp_file(response_data)
 
         data = {"source_url": scenario[1], "source_data": File(path=data_file.name, data_type=DataType.FILE)}
 
