@@ -73,7 +73,6 @@ class GDACSDataSourceV3(MontyDataSourceV3):
 
     def __init__(self, data: GdacsDataSourceType):
         super().__init__(data)
-        print("DATA", data)
         self.source_url = data.source_url
         self.episodes = data.episodes
 
