@@ -24,7 +24,14 @@ from pystac_monty.extension import (
     MontyImpactType,
 )
 from pystac_monty.hazard_profiles import MontyHazardProfiles
-from pystac_monty.sources.common import DataType, GdacsDataSourceType, MontyDataSource, MontyDataSourceV3, MontyDataTransformer
+from pystac_monty.sources.common import (
+    DataType,
+    GdacsDataSourceType,
+    GdacsEpisodes,
+    MontyDataSource,
+    MontyDataSourceV3,
+    MontyDataTransformer,
+)
 from pystac_monty.validators.gdacs_events import GdacsEventDataValidator, Sendai
 from pystac_monty.validators.gdacs_geometry import GdacsGeometryDataValidator
 
@@ -69,7 +76,7 @@ class GDACSDataSourceV3(MontyDataSourceV3):
     source_url: str
     event_data: [str, dict]
     event_data_file_path: str
-    episodes: list[Dict]
+    episodes: list[Tuple[GdacsEpisodes, GdacsEpisodes]]
 
     def __init__(self, data: GdacsDataSourceType):
         super().__init__(data)
@@ -131,7 +138,36 @@ class GDACSTransformer(MontyDataTransformer[GDACSDataSourceV3]):
                 typing.assert_never(data_type)
 
     def get_stac_items_from_memory(self) -> typing.Generator[Item, None, None]:
-        pass
+        """Create STAC Items"""
+        self.transform_summary.mark_as_started()
+        self.transform_summary.increment_rows(1)
+
+        try:
+            validated_event_data = GdacsEventDataValidator(**self.data_source.get_data())
+            source_event_item = self.make_source_event_item(data=validated_event_data, source_url=self.data_source.source_url)
+            yield source_event_item
+
+            if self.data_source.episodes:
+                for episode_data in self.data_source.episodes:
+                    validated_episode_data = GdacsEventDataValidator(**episode_data[0].data.data_source.content)
+                    episode_data_url = episode_data[0].data.source_url
+                    if GDACSDataSourceType.GEOMETRY in episode_data:
+                        validated_geometry_data = GdacsGeometryDataValidator(**episode_data[1].data.data_source.content)
+                        geometry_data_url = episode_data[1].data.source_url
+                    else:
+                        validated_geometry_data = None
+                        geometry_data_url = None
+                    episode_hazard_item = self.make_hazard_event_item(
+                        episode_event_data=(validated_episode_data, episode_data_url),
+                        episode_geometry_data=(validated_geometry_data, geometry_data_url),
+                    )
+                    yield episode_hazard_item
+                    yield from self.make_impact_items(episode_hazard_item, validated_episode_data)
+        except Exception:
+            self.transform_summary.increment_failed_rows(1)
+            logger.warning("Failed to process the GDACS data", exc_info=True)
+        finally:
+            self.transform_summary.mark_as_complete()
 
     def get_stac_items_from_file(self) -> typing.Generator[Item, None, None]:
         """Create STAC Items"""
