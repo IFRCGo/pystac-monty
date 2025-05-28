@@ -1,19 +1,14 @@
 import json
 import logging
+import os
 import typing
-from typing import List
+from typing import List, Union
 
 from pystac import Item
 
-from pystac_monty.extension import (
-    ImpactDetail,
-    MontyEstimateType,
-    MontyExtension,
-    MontyImpactExposureCategory,
-    MontyImpactType,
-)
+from pystac_monty.extension import ImpactDetail, MontyEstimateType, MontyExtension, MontyImpactExposureCategory, MontyImpactType
 from pystac_monty.hazard_profiles import MontyHazardProfiles
-from pystac_monty.sources.common import MontyDataSource, MontyDataTransformer
+from pystac_monty.sources.common import DataType, File, GenericDataSource, Memory, MontyDataSourceV3, MontyDataTransformer
 from pystac_monty.validators.ifrc import IFRCsourceValidator
 
 logger = logging.getLogger(__name__)
@@ -22,10 +17,46 @@ STAC_EVENT_ID_PREFIX = "ifrcevent-event-"
 STAC_IMPACT_ID_PREFIX = "ifrcevent-impact-"
 
 
-class IFRCEventDataSource(MontyDataSource):
-    def __init__(self, source_url: str, data: str):
+class IFRCEventDataSource(MontyDataSourceV3):
+    file_path: str
+    source_url: str
+    data: Union[str, dict]
+    data_source: Union[File, Memory]
+
+    def __init__(self, data: GenericDataSource):
         # FIXME: Why do we load using json
-        super().__init__(source_url, json.loads(data))
+        super().__init__(data)
+        self.source_url = data.source_url
+        self.data_source = data.data_source
+
+        def handle_file_data():
+            if os.path.isfile(self.data_source.path):
+                self.file_path = self.data_source.path
+            else:
+                raise ValueError("File path does not exists", exc_info=True)
+
+        def handle_memory_data():
+            if isinstance(self.data_source.content, dict):
+                self.data = self.data_source.content
+            else:
+                raise ValueError("Data must be in Json", exc_info=True)
+
+        input_data_type = self.data_source.data_type
+        match input_data_type:
+            case DataType.FILE:
+                handle_file_data()
+            case DataType.MEMORY:
+                handle_memory_data()
+            case _:
+                typing.assert_never(input_data_type)
+
+    def get_data(self) -> Union[dict, str]:
+        if self.data_source.data_type == DataType.FILE:
+            return self.file_path
+        return self.data
+
+    def get_input_data_type(self) -> DataType:
+        return self.data_source.data_type
 
 
 class IFRCEventTransformer(MontyDataTransformer[IFRCEventDataSource]):
@@ -36,11 +67,47 @@ class IFRCEventTransformer(MontyDataTransformer[IFRCEventDataSource]):
     def make_items(self):
         return list(self.get_stac_items())
 
-    def get_stac_items(self) -> typing.Generator[Item, None, None]:
-        ifrcevent_data: List[typing.Dict[str, typing.Any]] = self.data_source.data
+    def get_stac_items_from_file(self) -> typing.Generator[Item, None, None]:
+        data_path = self.data_source.get_data()
+        with open(data_path, "r", encoding="utf-8") as f:
+            filtered_ifrcevent_data = []
+            for item in json.load(f):
+                appeals: list[typing.Dict] | None = item.get("appeals")
+                if not appeals:
+                    continue
 
+                first_appeal: typing.Dict = appeals[0]
+                if first_appeal.get("atype", None) not in {0, 1}:
+                    continue
+
+                dtype: typing.Dict | None = item.get("dtype")
+                if not dtype:
+                    continue
+
+                dtype_name: str | None = dtype.get("name")
+                if not self.check_accepted_disaster_types(dtype_name):
+                    continue
+                filtered_ifrcevent_data.append(item)
+
+            self.transform_summary.mark_as_started()
+            for data in filtered_ifrcevent_data:
+                self.transform_summary.increment_rows()
+                try:
+                    ifrcdata = IFRCsourceValidator(**data)
+                    if event_item := self.make_source_event_item(ifrcdata):
+                        yield event_item
+                        yield from self.make_impact_items(event_item, ifrcdata)
+                    else:
+                        self.transform_summary.increment_failed_rows()
+                except Exception:
+                    self.transform_summary.increment_failed_rows()
+                    logger.error("Failed to process ifrc events", exc_info=True)
+            self.transform_summary.mark_as_complete()
+
+    def get_stac_items_from_memory(self) -> typing.Generator[Item, None, None]:
+        data = self.data_source.get_data()
         filtered_ifrcevent_data = []
-        for item in ifrcevent_data:
+        for item in data:
             appeals: list[typing.Dict] | None = item.get("appeals")
             if not appeals:
                 continue
@@ -72,6 +139,16 @@ class IFRCEventTransformer(MontyDataTransformer[IFRCEventDataSource]):
                 self.transform_summary.increment_failed_rows()
                 logger.error("Failed to process ifrc events", exc_info=True)
         self.transform_summary.mark_as_complete()
+
+    def get_stac_items(self) -> typing.Generator[Item, None, None]:
+        data_type = self.data_source.get_input_data_type()
+        match data_type:
+            case DataType.FILE:
+                yield from self.get_stac_items_from_file()
+            case DataType.MEMORY:
+                yield from self.get_stac_items_from_memory()
+            case _:
+                typing.assert_never(data_type)
 
     def make_source_event_item(self, data: IFRCsourceValidator) -> Item:
         """Create an event item"""
