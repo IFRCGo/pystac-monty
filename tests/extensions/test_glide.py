@@ -12,7 +12,7 @@ from parameterized import parameterized
 
 from pystac_monty.extension import MontyExtension
 from pystac_monty.geocoding import MockGeocoder
-from pystac_monty.sources.common import DataType, File, Memory
+from pystac_monty.sources.common import DataType, File, GenericDataSource, Memory
 from pystac_monty.sources.glide import GlideDataSource, GlideTransformer
 from pystac_monty.sources.utils import save_json_data_into_tmp_file
 from tests.conftest import get_data_file
@@ -59,10 +59,10 @@ def load_scenarios(
     transformers = []
     if isinstance(scenarios, tempfile._TemporaryFileWrapper):
         glide_data_source = GlideDataSource(
-            {
-                "source_url": "https://www.glidenumber.net/glide/jsonglideset.jsp?level1=ESP&fromyear=2024&toyear=2024&events=FL&number=2024-000199",
-                "source_data": File(path=DATA_FILE.name, data_type=DataType.FILE),
-            }
+            data=GenericDataSource(
+                source_url="https://www.glidenumber.net/glide/jsonglideset.jsp?level1=ESP&fromyear=2024&toyear=2024&events=FL&number=2024-000199",
+                data_source=File(path=DATA_FILE.name, data_type=DataType.FILE),
+            )
         )
         geocoder = MockGeocoder()
         transformers.append(GlideTransformer(glide_data_source, geocoder))
@@ -71,7 +71,7 @@ def load_scenarios(
             response = requests.get(scenario[1])
             data = json.loads(response.content)
             glide_data_source = GlideDataSource(
-                {"source_url": scenario[1], "source_data": Memory(content=data, data_type=DataType.MEMORY)}
+                data=GenericDataSource(source_url=scenario[1], data_source=Memory(content=data, data_type=DataType.MEMORY))
             )
             geocoder = MockGeocoder()
             transformers.append(GlideTransformer(glide_data_source, geocoder))

@@ -34,7 +34,7 @@ class DesinventarScenario(TypedDict):
 grenada_data: DesinventarScenario = {
     "name": "Grenada subset",
     "data": {
-        "zip_file_url": "https://github.com/IFRCGo/monty-stac-extension/raw/refs/heads/main/model/sources/DesInventar/DI_export_grd.zip",  # noqa: E501
+        "zip_file_url": "https://github.com/IFRCGo/monty-stac-extension/raw/refs/heads/main/docs/model/sources/DesInventar/DI_export_grd.zip",
         "country_code": "grd",
         "iso3": "GRD",
     },

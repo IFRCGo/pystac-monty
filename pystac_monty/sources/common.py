@@ -3,7 +3,7 @@ import json
 import typing
 from dataclasses import dataclass
 from enum import Enum
-from typing import Literal, Union
+from typing import List, Literal, Tuple, Union
 
 import requests
 from pydantic import BaseModel, Field
@@ -62,6 +62,22 @@ class SourceSchemaValidator(BaseModel):
     source_data: Union[File, Memory] = Field(discriminator="data_type")
 
 
+class GenericDataSource(BaseModel):
+    source_url: str
+    data_source: Union[File, Memory]
+
+
+class GdacsEpisodes(BaseModel):
+    type: str
+    data: GenericDataSource
+
+
+class GdacsDataSourceType(BaseModel):
+    source_url: str
+    event_data: Union[File, Memory]
+    episodes: List[Tuple[GdacsEpisodes, GdacsEpisodes]]
+
+
 @dataclass
 class MontyDataSource:
     source_url: str
@@ -97,6 +113,11 @@ class MontyDataSourceV2:
 
     def get_data(self) -> typing.Any:
         return self.data
+
+
+@dataclass
+class MontyDataSourceV3:
+    root: Union[GenericDataSource, GdacsDataSourceType]
 
 
 DataSource = typing.TypeVar("DataSource")

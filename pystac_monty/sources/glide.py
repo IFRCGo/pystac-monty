@@ -2,6 +2,7 @@ import logging
 import mimetypes
 import os
 import typing
+from dataclasses import dataclass
 from datetime import datetime
 from typing import Any, List, Union
 
@@ -11,7 +12,14 @@ from shapely.geometry import Point, mapping
 
 from pystac_monty.extension import HazardDetail, MontyEstimateType, MontyExtension
 from pystac_monty.hazard_profiles import MontyHazardProfiles
-from pystac_monty.sources.common import DataType, MontyDataSourceV2, MontyDataTransformer
+from pystac_monty.sources.common import (
+    DataType,
+    File,
+    GenericDataSource,
+    Memory,
+    MontyDataSourceV3,
+    MontyDataTransformer,
+)
 from pystac_monty.validators.glide import GlideSetValidator
 
 logger = logging.getLogger(__name__)
@@ -20,12 +28,17 @@ STAC_EVENT_ID_PREFIX = "glide-event-"
 STAC_HAZARD_ID_PREFIX = "glide-hazard-"
 
 
-class GlideDataSource(MontyDataSourceV2):
+@dataclass
+class GlideDataSource(MontyDataSourceV3):
     file_path: str
+    source_url: str
     data: Union[str, dict]
+    data_source: Union[File, Memory]
 
-    def __init__(self, data: dict):
+    def __init__(self, data: GenericDataSource):
         super().__init__(data)
+        self.source_url = data.source_url
+        self.data_source = data.data_source
 
         def handle_file_data():
             if os.path.isfile(self.data_source.path):
@@ -203,7 +216,7 @@ class GlideTransformer(MontyDataTransformer[GlideDataSource]):
 
         monty.compute_and_set_correlation_id(hazard_profiles=self.hazard_profiles)
 
-        item.add_link(Link("via", self.data_source.get_source_url(), "application/json", "Glide Event Data"))
+        item.add_link(Link("via", self.data_source.source_url, "application/json", "Glide Event Data"))
         item.add_asset(
             "report",
             Asset(
