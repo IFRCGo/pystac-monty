@@ -12,7 +12,7 @@ from parameterized import parameterized
 
 from pystac_monty.extension import MontyExtension
 from pystac_monty.geocoding import MockGeocoder
-from pystac_monty.sources.common import DataType, File, Memory
+from pystac_monty.sources.common import DataType, File, GenericDataSource, Memory
 from pystac_monty.sources.emdat import EMDATDataSource, EMDATTransformer
 from tests.conftest import get_data_file
 from tests.extensions.test_monty import CustomValidator
@@ -184,17 +184,6 @@ def save_data_to_tmp_file(data):
     data = json.dumps(data).encode("utf-8")
     tmpfile.write(data)
     tmpfile.close()
-    return tmpfile.name
-
-
-DATA_FILE = save_data_to_tmp_file(json_mock_data)
-
-
-def save_data_to_tmp_file(data):
-    tmpfile = tempfile.NamedTemporaryFile(suffix=".json", delete=False)
-    data = json.dumps(data).encode("utf-8")
-    tmpfile.write(data)
-    tmpfile.close()
     return tmpfile
 
 
@@ -214,13 +203,21 @@ def load_scenarios(
     """
     transformers = []
     if isinstance(scenarios, tempfile._TemporaryFileWrapper):
-        emdat_data_source = EMDATDataSource({"source_url": "", "source_data": File(path=DATA_FILE.name, data_type=DataType.FILE)})
+        emdat_data_source = EMDATDataSource(
+            data=GenericDataSource(
+                source_url="www.test.com",
+                input_data=File(path=DATA_FILE.name, data_type=DataType.FILE),
+            )
+        )
         geocoder = MockGeocoder()
         transformers.append(EMDATTransformer(emdat_data_source, geocoder))
 
     elif isinstance(scenarios, dict):
         emdat_data_source = EMDATDataSource(
-            {"source_url": "", "source_data": Memory(content=scenarios, data_type=DataType.MEMORY)}
+            data=GenericDataSource(
+                source_url="www.test.com",
+                input_data=Memory(content=scenarios, data_type=DataType.MEMORY),
+            )
         )
         geocoder = MockGeocoder()
         transformers.append(EMDATTransformer(emdat_data_source, geocoder))
@@ -229,7 +226,10 @@ def load_scenarios(
             # Read Excel file using pandas
             df = pd.read_excel(scenario[1])
             emdat_data_source = EMDATDataSource(
-                {"source_url": scenario[1], "source_data": Memory(content=df, data_type=DataType.MEMORY)}
+                data=GenericDataSource(
+                    source_url=scenario[1],
+                    input_data=Memory(content=df, data_type=DataType.MEMORY),
+                )
             )
             geocoder = MockGeocoder()
             transformers.append(EMDATTransformer(emdat_data_source, geocoder))
