@@ -21,7 +21,7 @@ from pystac_monty.extension import (
     MontyImpactType,
 )
 from pystac_monty.hazard_profiles import MontyHazardProfiles
-from pystac_monty.sources.common import DataType, MontyDataSourceV2, MontyDataTransformer
+from pystac_monty.sources.common import DataType, File, GenericDataSource, Memory, MontyDataSourceV3, MontyDataTransformer
 from pystac_monty.validators.em_dat import EmdatDataValidator
 
 logger = logging.getLogger(__name__)
@@ -32,30 +32,32 @@ STAC_IMPACT_ID_PREFIX = "emdat-impact-"
 
 
 @dataclass
-class EMDATDataSource(MontyDataSourceV2):
+class EMDATDataSource(MontyDataSourceV3):
     """EM-DAT data source that can handle both Excel files and pandas DataFrames"""
 
     df: pd.DataFrame
     file_path: str
+    source_url: str
+    data_source: Union[File, Memory]
 
-    def __init__(self, data: dict):
+    def __init__(self, data: GenericDataSource):
         super().__init__(data)
 
         def handle_file_data():
-            if os.path.isfile(self.data_source.path):
-                self.file_path = self.data_source.path
+            if os.path.isfile(self.input_data.path):
+                self.file_path = self.input_data.path
 
         def handle_memory_data():
-            if isinstance(self.data_source.content, str):
+            if isinstance(self.input_data.content, str):
                 # If data is a string, assume it's Excel content
-                self.df = pd.read_excel(self.data_source.content)
+                self.df = pd.read_excel(self.input_data.content)
                 rename_excel_df(self.df)
-            elif isinstance(self.data_source.content, pd.DataFrame):
-                self.df = self.data_source.content
+            elif isinstance(self.input_data.content, pd.DataFrame):
+                self.df = self.input_data.content
                 rename_excel_df(self.df)
-            elif isinstance(self.data_source.content, dict):
+            elif isinstance(self.input_data.content, dict):
                 # If data is a dict, assume it's Json content
-                data = self.data_source.content["data"]["public_emdat"]["data"]
+                data = self.input_data.content["data"]["public_emdat"]["data"]
                 self.df = pd.DataFrame(data)
             else:
                 raise ValueError("Data must be either Excel content (str) or pandas DataFrame or Json")
@@ -113,7 +115,7 @@ class EMDATDataSource(MontyDataSourceV2):
                 inplace=True,
             )
 
-        input_data_type = self.data_source.data_type
+        input_data_type = self.input_data.data_type
         match input_data_type:
             case DataType.FILE:
                 handle_file_data()
@@ -123,12 +125,12 @@ class EMDATDataSource(MontyDataSourceV2):
                 typing.assert_never(input_data_type)
 
     def get_data(self) -> Union[pd.DataFrame, str]:
-        if self.data_source.data_type == DataType.FILE:
+        if self.input_data.data_type == DataType.FILE:
             return self.file_path
         return self.df
 
     def get_input_data_type(self) -> DataType:
-        return self.data_source.data_type
+        return self.input_data.data_type
 
 
 class EMDATTransformer(MontyDataTransformer[EMDATDataSource]):
