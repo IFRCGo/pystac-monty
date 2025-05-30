@@ -5,12 +5,13 @@ import unittest
 from os import makedirs
 
 import pytest
-import requests
 from parameterized import parameterized
 
 from pystac_monty.extension import MontyExtension
 from pystac_monty.geocoding import WorldAdministrativeBoundariesGeocoder
-from pystac_monty.sources.usgs import USGSDataSource, USGSTransformer
+from pystac_monty.sources.common import File, USGSDataSourceType
+from pystac_monty.sources.gdacs import DataType
+from pystac_monty.sources.usgs import USGSDataSourceV3, USGSTransformer
 from tests.conftest import get_data_file
 from tests.extensions.test_monty import CustomValidator
 
@@ -40,12 +41,16 @@ def load_scenarios(scenarios: list[tuple[str, str, str]]) -> list[USGSTransforme
         losses_data = None
         if losses_url:
             losses_data = losses_url
-            print("this is losses data", losses_data)
 
         # Create data source and transformer
-        data_source = USGSDataSource(event_url, event_data, losses_data)
+        data_source = USGSDataSourceV3(
+            data=USGSDataSourceType(
+                source_url=event_url,
+                event_data=File(path=event_data, data_type=DataType.FILE),
+                loss_data=File(path=losses_data, data_type=DataType.FILE),
+            )
+        )
         transformers.append(USGSTransformer(data_source, geocoder))
-        print(f"Loaded scenario: {transformers}")
 
     return transformers
 
@@ -107,7 +112,6 @@ class USGSTest(unittest.TestCase):
             elif monty_item_ext.is_source_impact():
                 impact_items.append(item)
 
-
         # Verify required items were created
         self.assertIsNotNone(source_event_item)
         self.assertIsNotNone(source_hazard_item)
@@ -129,7 +133,12 @@ class USGSTest(unittest.TestCase):
             - Items still validate
         """
         event_data = tibetan_plateau_eq[1]
-        data_source = USGSDataSource(tibetan_plateau_eq[1], event_data)
+        data_source = USGSDataSourceV3(
+            data=USGSDataSourceType(
+                source_url=tibetan_plateau_eq[1],
+                event_data=File(path=event_data, data_type=DataType.FILE),
+            )
+        )
         transformer = USGSTransformer(data_source, geocoder)
 
         found_event = False
@@ -187,9 +196,14 @@ class USGSTest(unittest.TestCase):
 
         # Test with empty losses data - should still create event and hazard
         empty_losses = "./tests/data/usgs/empty_losses.json"
-        data_source = USGSDataSource("test_url", event_data, empty_losses)
+        data_source = USGSDataSourceV3(
+            data=USGSDataSourceType(
+                source_url="test_url",
+                event_data=File(path=event_data, data_type=DataType.FILE),
+                loss_data=File(path=empty_losses, data_type=DataType.FILE),
+            )
+        )
         transformer = USGSTransformer(data_source, geocoder)
         items = transformer.make_items()
 
         self.assertEqual(len(items), 2)  # Should still get event and hazard
-
