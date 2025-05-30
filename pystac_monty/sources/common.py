@@ -1,7 +1,7 @@
 import abc
 import json
 import typing
-from dataclasses import dataclass
+from dataclasses import dataclass, field
 from enum import Enum
 from typing import List, Literal, Tuple, Union
 
@@ -118,6 +118,7 @@ class MontyDataSourceV2:
 @dataclass
 class MontyDataSourceV3:
     root: Union[GenericDataSource, GdacsDataSourceType]
+    source_url: str = field(init=False)
 
     def __post_init__(self):
         self.source_url = self.root.source_url

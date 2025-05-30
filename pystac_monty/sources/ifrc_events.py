@@ -2,6 +2,7 @@ import json
 import logging
 import os
 import typing
+from dataclasses import dataclass, field
 from typing import List, Union
 
 from pystac import Item
@@ -17,31 +18,28 @@ STAC_EVENT_ID_PREFIX = "ifrcevent-event-"
 STAC_IMPACT_ID_PREFIX = "ifrcevent-impact-"
 
 
+@dataclass
 class IFRCEventDataSource(MontyDataSourceV3):
-    file_path: str
-    source_url: str
-    data: Union[str, dict]
-    data_source: Union[File, Memory]
+    file_path: str = field(init=False)
+    data: Union[str, dict] = field(init=False)
+    input_data: Union[File, Memory] = field(init=False)
 
     def __init__(self, data: GenericDataSource):
-        # FIXME: Why do we load using json
         super().__init__(data)
-        self.source_url = data.source_url
-        self.data_source = data.data_source
 
         def handle_file_data():
-            if os.path.isfile(self.data_source.path):
-                self.file_path = self.data_source.path
+            if os.path.isfile(self.input_data.path):
+                self.file_path = self.input_data.path
             else:
-                raise ValueError("File path does not exists", exc_info=True)
+                raise ValueError("File path does not exist")
 
         def handle_memory_data():
-            if isinstance(self.data_source.content, dict):
-                self.data = self.data_source.content
+            if isinstance(self.input_data.content, list):
+                self.data = self.input_data.content
             else:
-                raise ValueError("Data must be in Json", exc_info=True)
+                raise ValueError("Data must be list of dictionary")
 
-        input_data_type = self.data_source.data_type
+        input_data_type = self.input_data.data_type
         match input_data_type:
             case DataType.FILE:
                 handle_file_data()
@@ -51,12 +49,12 @@ class IFRCEventDataSource(MontyDataSourceV3):
                 typing.assert_never(input_data_type)
 
     def get_data(self) -> Union[dict, str]:
-        if self.data_source.data_type == DataType.FILE:
+        if self.input_data.data_type == DataType.FILE:
             return self.file_path
         return self.data
 
     def get_input_data_type(self) -> DataType:
-        return self.data_source.data_type
+        return self.input_data.data_type
 
 
 class IFRCEventTransformer(MontyDataTransformer[IFRCEventDataSource]):
@@ -279,8 +277,8 @@ class IFRCEventTransformer(MontyDataTransformer[IFRCEventDataSource]):
 
             # only save impact value if not null
             value = None
-            for field in impact_field:
-                value = getattr(ifrcevent_data.field_reports[0], field)
+            for field_name in impact_field:
+                value = getattr(ifrcevent_data.field_reports[0], field_name)
                 if value:
                     break
 
