@@ -9,8 +9,8 @@ from parameterized import parameterized
 
 from pystac_monty.extension import MontyExtension
 from pystac_monty.geocoding import MockGeocoder
-from pystac_monty.sources.common import DataType, File, Memory
-from pystac_monty.sources.idu import IDUDataSourceV2, IDUTransformer
+from pystac_monty.sources.common import DataType, File, GenericDataSource, Memory
+from pystac_monty.sources.idu import IDUDataSource, IDUTransformer
 from pystac_monty.sources.utils import save_json_data_into_tmp_file
 from tests.conftest import get_data_file
 from tests.extensions.test_monty import CustomValidator
@@ -27,9 +27,9 @@ def load_scenarios_from_file(scenarios: List[str], timeout: int = 30) -> List[ID
 
         data_file = save_json_data_into_tmp_file(response_data)
 
-        data = {"source_url": scenario[1], "source_data": File(path=data_file.name, data_type=DataType.FILE)}
+        data = GenericDataSource(source_url=scenario[1], input_data=File(path=data_file.name, data_type=DataType.FILE))
 
-        idu_data_source = IDUDataSourceV2(data=data)
+        idu_data_source = IDUDataSource(data=data)
         geocoder = MockGeocoder()
         transformers.append(IDUTransformer(idu_data_source, geocoder))
     return transformers
@@ -40,8 +40,10 @@ def load_scenarios(scenarios: List[str], timeout: int = 30) -> List[IDUTransform
     for scenario in scenarios:
         response = requests.get(scenario[1], timeout=timeout)
         response_data = response.json()
-        data = {"source_url": scenario[1], "source_data": Memory(content=json.dumps(response_data), data_type=DataType.MEMORY)}
-        idu_data_source = IDUDataSourceV2(data=data)
+        data = GenericDataSource(
+            source_url=scenario[1], input_data=Memory(content=json.dumps(response_data), data_type=DataType.MEMORY)
+        )
+        idu_data_source = IDUDataSource(data=data)
         geocoder = MockGeocoder()
         transformers.append(IDUTransformer(idu_data_source, geocoder))
     return transformers
