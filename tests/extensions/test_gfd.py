@@ -8,12 +8,26 @@ from parameterized import parameterized
 
 from pystac_monty.extension import MontyExtension
 from pystac_monty.geocoding import MockGeocoder
+from pystac_monty.sources.common import DataType, File, GenericDataSource, Memory
 from pystac_monty.sources.gfd import GFDDataSource, GFDTransformer
+from pystac_monty.sources.utils import save_json_data_into_tmp_file
 from tests.conftest import get_data_file
 from tests.extensions.test_monty import CustomValidator
 
-CURRENT_SCHEMA_URI = "https://ifrcgo.github.io/monty/v0.1.0/schema.json"
+CURRENT_SCHEMA_URI = "https://ifrcgo.org/monty-stac-extension/v1.0.0/schema.json"
 CURRENT_SCHEMA_MAPURL = "https://raw.githubusercontent.com/IFRCGo/monty-stac-extension/refs/heads/main/json-schema/schema.json"
+
+
+def load_scenarios_from_file(data: List[dict]):
+    transformers = []
+
+    geocoder = MockGeocoder()
+
+    data_file = save_json_data_into_tmp_file(data)
+    gfd_data = GenericDataSource(source_url="", input_data=File(path=data_file.name, data_type=DataType.FILE))
+    gfd_data_source = GFDDataSource(data=gfd_data)
+    transformers.append(GFDTransformer(gfd_data_source, geocoder))
+    return transformers
 
 
 def load_scenarios(data: List[dict]):
@@ -21,7 +35,8 @@ def load_scenarios(data: List[dict]):
 
     geocoder = MockGeocoder()
 
-    gfd_data_source = GFDDataSource(source_url="", data=json.dumps(data))
+    gfd_data = GenericDataSource(source_url="", input_data=Memory(content=data, data_type=DataType.MEMORY))
+    gfd_data_source = GFDDataSource(data=gfd_data)
     transformers.append(GFDTransformer(gfd_data_source, geocoder))
     return transformers
 
@@ -135,6 +150,32 @@ class GFDTest(unittest.TestCase):
     @parameterized.expand(load_scenarios(data))
     @pytest.mark.vcr()
     def test_transformer(self, transformer: GFDTransformer) -> None:
+        items = transformer.make_items()
+        self.assertTrue(len(items) > 0)
+        source_event_item = None
+        source_hazard_item = None
+        source_impact_item = None
+
+        for item in items:
+            item_path = get_data_file(f"temp/gfd/{item.id}.json")
+            with open(item_path, "w", encoding="utf-8") as f:
+                json.dump(item.to_dict(), f, indent=2)
+            item.validate(validator=self.validator)
+            monty_item_ext = MontyExtension.ext(item)
+            if monty_item_ext.is_source_event():
+                source_event_item = item
+            elif monty_item_ext.is_source_hazard():
+                source_hazard_item = item
+            elif monty_item_ext.is_source_impact():
+                source_impact_item = item
+
+        self.assertIsNotNone(source_event_item)
+        self.assertIsNotNone(source_hazard_item)
+        self.assertIsNotNone(source_impact_item)
+
+    @parameterized.expand(load_scenarios_from_file(data))
+    @pytest.mark.vcr()
+    def test_transformer_from_file(self, transformer: GFDTransformer) -> None:
         items = transformer.make_items()
         self.assertTrue(len(items) > 0)
         source_event_item = None
