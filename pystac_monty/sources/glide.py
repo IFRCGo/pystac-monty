@@ -37,22 +37,20 @@ class GlideDataSource(MontyDataSourceV3):
 
     def __init__(self, data: GenericDataSource):
         super().__init__(data)
-        self.source_url = data.source_url
-        self.data_source = data.data_source
 
         def handle_file_data():
-            if os.path.isfile(self.data_source.path):
-                self.file_path = self.data_source.path
+            if os.path.isfile(self.input_data.path):
+                self.file_path = self.input_data.path
             else:
                 raise ValueError("File path does not exists", exc_info=True)
 
         def handle_memory_data():
-            if isinstance(self.data_source.content, dict):
-                self.data = self.data_source.content
+            if isinstance(self.input_data.content, dict):
+                self.data = self.input_data.content
             else:
                 raise ValueError("Data must be in Json", exc_info=True)
 
-        input_data_type = self.data_source.data_type
+        input_data_type = self.input_data.data_type
         match input_data_type:
             case DataType.FILE:
                 handle_file_data()
@@ -62,12 +60,12 @@ class GlideDataSource(MontyDataSourceV3):
                 typing.assert_never(input_data_type)
 
     def get_data(self) -> Union[dict, str]:
-        if self.data_source.data_type == DataType.FILE:
+        if self.input_data.data_type == DataType.FILE:
             return self.file_path
         return self.data
 
     def get_input_data_type(self) -> DataType:
-        return self.data_source.data_type
+        return self.input_data.data_type
 
 
 class GlideTransformer(MontyDataTransformer[GlideDataSource]):
@@ -265,8 +263,9 @@ class GlideTransformer(MontyDataTransformer[GlideDataSource]):
     def check_and_get_glide_events(self) -> list[Any]:
         """Validate the source fields"""
         glideset: list[Any] = self.data_source.get_data()["glideset"]
-        if glideset == []:
+        if not glideset:
             print(f"No Glide data found in {self.data_source.get_source_url()}")
+            return []
         for obj in glideset:
             required_fields = ["latitude", "longitude", "event", "number", "geocode"]
             missing_fields = [field for field in required_fields if field not in obj]

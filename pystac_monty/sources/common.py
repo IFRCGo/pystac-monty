@@ -64,7 +64,7 @@ class SourceSchemaValidator(BaseModel):
 
 class GenericDataSource(BaseModel):
     source_url: str
-    data_source: Union[File, Memory]
+    input_data: Union[File, Memory]
 
 
 class GdacsEpisodes(BaseModel):
@@ -118,6 +118,15 @@ class MontyDataSourceV2:
 @dataclass
 class MontyDataSourceV3:
     root: Union[GenericDataSource, GdacsDataSourceType]
+
+    def __post_init__(self):
+        self.source_url = self.root.source_url
+        if isinstance(self.root, GenericDataSource):
+            self.input_data = self.root.input_data
+
+    def get_source_url(self) -> str:
+        """Get the Source URL"""
+        return self.source_url
 
 
 DataSource = typing.TypeVar("DataSource")

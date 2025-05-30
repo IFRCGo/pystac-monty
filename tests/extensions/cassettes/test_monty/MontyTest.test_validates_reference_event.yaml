@@ -64,7 +64,7 @@ interactions:
       Content-Type:
       - text/html; charset=utf-8
       Date:
-      - Wed, 28 May 2025 10:14:20 GMT
+      - Fri, 30 May 2025 06:02:51 GMT
       Location:
       - https://raw.githubusercontent.com/IFRCGo/monty-stac-extension/refs/heads/main/examples/reference-events/20241027T150000-ESP-HM-FLOOD-001-GCDB.json
       Referrer-Policy:
@@ -81,7 +81,7 @@ interactions:
       X-Frame-Options:
       - deny
       X-GitHub-Request-Id:
-      - D0E4:1132FD:9FBF84:BA359E:6836E1FC
+      - 850A:14B69:131FE73:162123B:68394A0B
       X-XSS-Protection:
       - '0'
     status:
@@ -133,11 +133,11 @@ interactions:
       Cross-Origin-Resource-Policy:
       - cross-origin
       Date:
-      - Wed, 28 May 2025 10:14:21 GMT
+      - Fri, 30 May 2025 06:02:52 GMT
       ETag:
       - W/"238e75cf5f25c282fd232d173649a9a7437be7eea0d8ffb211019a1b736ac18e"
       Expires:
-      - Wed, 28 May 2025 10:19:21 GMT
+      - Fri, 30 May 2025 06:07:52 GMT
       Source-Age:
       - '0'
       Strict-Transport-Security:
@@ -153,15 +153,15 @@ interactions:
       X-Content-Type-Options:
       - nosniff
       X-Fastly-Request-ID:
-      - aaf3baee43bcbcdaf35f35e759e739b88293f0e5
+      - 1782959042b753135a14f5e58fb8dfc5404b449c
       X-Frame-Options:
       - deny
       X-GitHub-Request-Id:
-      - DD08:24156E:B192E:1E9173:6836CE88
+      - 61FC:176A8F:16D16:2D96E:683941C4
       X-Served-By:
-      - cache-maa10238-MAA
+      - cache-maa10232-MAA
       X-Timer:
-      - S1748427261.738543,VS0,VE298
+      - S1748584972.019348,VS0,VE269
       X-XSS-Protection:
       - 1; mode=block
     status:
@@ -175,7 +175,7 @@ interactions:
       Host:
       - ifrcgo.org
       User-Agent:
-      - Python-urllib/3.13
+      - Python-urllib/3.12
     method: GET
     uri: https://ifrcgo.org/monty-stac-extension/v1.0.0/schema.json
   response:
@@ -305,7 +305,7 @@ interactions:
       Access-Control-Allow-Origin:
       - '*'
       Age:
-      - '568'
+      - '517'
       Cache-Control:
       - max-age=600
       Connection:
@@ -315,11 +315,11 @@ interactions:
       Content-Type:
       - application/json; charset=utf-8
       Date:
-      - Wed, 28 May 2025 10:14:21 GMT
+      - Fri, 30 May 2025 06:02:52 GMT
       ETag:
-      - '"68362515-231e"'
+      - '"68362516-231e"'
       Last-Modified:
-      - Tue, 27 May 2025 20:48:21 GMT
+      - Tue, 27 May 2025 20:48:22 GMT
       Server:
       - GitHub.com
       Vary:
@@ -329,17 +329,17 @@ interactions:
       X-Cache:
       - HIT
       X-Cache-Hits:
-      - '2'
+      - '3'
       X-Fastly-Request-ID:
-      - 257aa835d03c7ffe13c9d4af4192f1e8cd7cf03b
+      - 23b86c0955ce2b888c5c33571a54ccc7463ff587
       X-GitHub-Request-Id:
-      - BE58:23CFB1:5BE28:720B2:6836C622
+      - 5F40:10F1EC:134EF0:172ED1:68394806
       X-Served-By:
-      - cache-maa10226-MAA
+      - cache-maa10251-MAA
       X-Timer:
-      - S1748427261.193591,VS0,VE1
+      - S1748584973.576608,VS0,VE1
       expires:
-      - Wed, 28 May 2025 08:25:31 GMT
+      - Fri, 30 May 2025 06:04:15 GMT
       x-proxy-cache:
       - MISS
     status:
