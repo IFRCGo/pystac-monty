@@ -61,7 +61,7 @@ def load_scenarios(
         glide_data_source = GlideDataSource(
             data=GenericDataSource(
                 source_url="https://www.glidenumber.net/glide/jsonglideset.jsp?level1=ESP&fromyear=2024&toyear=2024&events=FL&number=2024-000199",
-                data_source=File(path=DATA_FILE.name, data_type=DataType.FILE),
+                input_data=File(path=DATA_FILE.name, data_type=DataType.FILE),
             )
         )
         geocoder = MockGeocoder()
@@ -71,7 +71,7 @@ def load_scenarios(
             response = requests.get(scenario[1])
             data = json.loads(response.content)
             glide_data_source = GlideDataSource(
-                data=GenericDataSource(source_url=scenario[1], data_source=Memory(content=data, data_type=DataType.MEMORY))
+                data=GenericDataSource(source_url=scenario[1], input_data=Memory(content=data, data_type=DataType.MEMORY))
             )
             geocoder = MockGeocoder()
             transformers.append(GlideTransformer(glide_data_source, geocoder))

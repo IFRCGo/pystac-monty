@@ -19,7 +19,13 @@ from pystac_monty.extension import (
     MontyImpactType,
 )
 from pystac_monty.hazard_profiles import MontyHazardProfiles
-from pystac_monty.sources.common import DataType, MontyDataSource, MontyDataSourceV2, MontyDataTransformer
+from pystac_monty.sources.common import (
+    DataType,
+    GenericDataSource,
+    MontyDataSource,
+    MontyDataSourceV3,
+    MontyDataTransformer,
+)
 from pystac_monty.sources.utils import IDMCUtils, order_data_file
 from pystac_monty.validators.gidd import GiddValidator
 
@@ -30,24 +36,24 @@ STAC_IMPACT_ID_PREFIX = "idmc-gidd-impact-"
 
 
 @dataclass
-class GIDDDataSourceV2(MontyDataSourceV2):
+class GIDDDataSourceV2(MontyDataSourceV3):
     """GIDD data source version 2"""
 
     parsed_content: List[dict]
     ordered_temp_file: Optional[str] = None
 
-    def __init__(self, data: dict):
-        super().__init__(data=data)
+    def __init__(self, data: GenericDataSource):
+        super().__init__(root=data)
 
         def handle_file_data():
-            if os.path.isfile(self.data_source.path):
+            if os.path.isfile(self.input_data.path):
                 jq_filter = '.features |= sort_by(.properties."Event ID")'
-                self.ordered_temp_file = order_data_file(filepath=self.data_source.path, jq_filter=jq_filter)
+                self.ordered_temp_file = order_data_file(filepath=self.input_data.path, jq_filter=jq_filter)
 
         def handle_memory_data():
-            self.parsed_content = json.loads(self.data_source.content)
+            self.parsed_content = json.loads(self.input_data.content)
 
-        input_data_type = self.data_source.data_type
+        input_data_type = self.input_data.data_type
         match input_data_type:
             case DataType.FILE:
                 handle_file_data()
@@ -62,7 +68,7 @@ class GIDDDataSourceV2(MontyDataSourceV2):
 
     def get_input_data_type(self) -> DataType:
         """Returns the input data type"""
-        return self.data_source.data_type
+        return self.input_data.data_type
 
     def get_memory_data(self):
         """Get the parsed memory data"""

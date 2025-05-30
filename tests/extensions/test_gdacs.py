@@ -47,7 +47,7 @@ def load_scenarios(
                 event_episode_data = GdacsEpisodes(
                     type=GDACSDataSourceType.EVENT,
                     data=GenericDataSource(
-                        source_url="https://www.test.com", data_source=File(path=episode_event_file.name, data_type=DataType.FILE)
+                        source_url="https://www.test.com", input_data=File(path=episode_event_file.name, data_type=DataType.FILE)
                     ),
                 )
 
@@ -56,7 +56,7 @@ def load_scenarios(
                         type=GDACSDataSourceType.GEOMETRY,
                         data=GenericDataSource(
                             source_url="https://www.test.com",
-                            data_source=File(path=episode_geometry_file.name, data_type=DataType.FILE),
+                            input_data=File(path=episode_geometry_file.name, data_type=DataType.FILE),
                         ),
                     )
 
@@ -83,7 +83,7 @@ def load_scenarios(
                 event_episode_data = GdacsEpisodes(
                     type=GDACSDataSourceType.EVENT,
                     data=GenericDataSource(
-                        source_url=episode_event_url, data_source=Memory(content=episode_event, data_type=DataType.MEMORY)
+                        source_url=episode_event_url, input_data=Memory(content=episode_event, data_type=DataType.MEMORY)
                     ),
                 )
 
@@ -92,7 +92,7 @@ def load_scenarios(
                         type=GDACSDataSourceType.GEOMETRY,
                         data=GenericDataSource(
                             source_url=episode_geometry_url,
-                            data_source=Memory(content=episode_geometry, data_type=DataType.MEMORY),
+                            input_data=Memory(content=episode_geometry, data_type=DataType.MEMORY),
                         ),
                     )
                 episode_data_tuple = (event_episode_data, geometry_episode_data)
@@ -206,7 +206,7 @@ class GDACSTest(unittest.TestCase):
         source_impact_item = None
         sendai_data_available = False
         for episode in transformer.data_source.episodes:
-            episode_data = episode[0].data.data_source.content
+            episode_data = episode[0].data.input_data.content
 
             if "sendai" in episode_data["properties"] and len(episode_data["properties"]["sendai"]) > 0:
                 sendai_data_available = True
@@ -240,7 +240,7 @@ class GDACSTest(unittest.TestCase):
         source_impact_item = None
         sendai_data_available = False
         for episode in transformer.data_source.episodes:
-            episode_data_file = episode[0].data.data_source.path
+            episode_data_file = episode[0].data.input_data.path
             with open(episode_data_file, "r", encoding="utf-8") as f:
                 episode_data = json.loads(f.read())
 

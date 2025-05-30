@@ -7,7 +7,7 @@ interactions:
       Host:
       - ifrcgo.org
       User-Agent:
-      - Python-urllib/3.13
+      - Python-urllib/3.12
     method: GET
     uri: https://ifrcgo.org/monty-stac-extension/v1.0.0/schema.json
   response:
@@ -137,7 +137,7 @@ interactions:
       Access-Control-Allow-Origin:
       - '*'
       Age:
-      - '518'
+      - '477'
       Cache-Control:
       - max-age=600
       Connection:
@@ -147,11 +147,11 @@ interactions:
       Content-Type:
       - application/json; charset=utf-8
       Date:
-      - Wed, 28 May 2025 10:13:30 GMT
+      - Fri, 30 May 2025 06:02:12 GMT
       ETag:
-      - '"68362515-231e"'
+      - '"68362516-231e"'
       Last-Modified:
-      - Tue, 27 May 2025 20:48:21 GMT
+      - Tue, 27 May 2025 20:48:22 GMT
       Server:
       - GitHub.com
       Vary:
@@ -163,15 +163,15 @@ interactions:
       X-Cache-Hits:
       - '2'
       X-Fastly-Request-ID:
-      - 46ad7fcb852ed78e036d209c6dfbdba44be249c1
+      - cae2c9a38cc8d02f387505e5aaaea6111f90d918
       X-GitHub-Request-Id:
-      - BE58:23CFB1:5BE28:720B2:6836C622
+      - 5F40:10F1EC:134EF0:172ED1:68394806
       X-Served-By:
-      - cache-maa10245-MAA
+      - cache-maa10223-MAA
       X-Timer:
-      - S1748427211.973849,VS0,VE1
+      - S1748584933.885051,VS0,VE0
       expires:
-      - Wed, 28 May 2025 08:25:31 GMT
+      - Fri, 30 May 2025 06:04:15 GMT
       x-proxy-cache:
       - MISS
     status:

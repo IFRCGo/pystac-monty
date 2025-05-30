@@ -80,7 +80,7 @@ class GDACSDataSourceV3(MontyDataSourceV3):
 
     def __init__(self, data: GdacsDataSourceType):
         super().__init__(data)
-        self.source_url = data.source_url
+        # self.source_url = data.source_url
         self.episodes = data.episodes
 
         def handle_file_data():
@@ -149,10 +149,10 @@ class GDACSTransformer(MontyDataTransformer[GDACSDataSourceV3]):
 
             if self.data_source.episodes:
                 for episode_data in self.data_source.episodes:
-                    validated_episode_data = GdacsEventDataValidator(**episode_data[0].data.data_source.content)
+                    validated_episode_data = GdacsEventDataValidator(**episode_data[0].data.input_data.content)
                     episode_data_url = episode_data[0].data.source_url
                     if GDACSDataSourceType.GEOMETRY in episode_data:
-                        validated_geometry_data = GdacsGeometryDataValidator(**episode_data[1].data.data_source.content)
+                        validated_geometry_data = GdacsGeometryDataValidator(**episode_data[1].data.input_data.content)
                         geometry_data_url = episode_data[1].data.source_url
                     else:
                         validated_geometry_data = None
@@ -181,14 +181,14 @@ class GDACSTransformer(MontyDataTransformer[GDACSDataSourceV3]):
 
             if self.data_source.episodes:
                 for episode_data in self.data_source.episodes:
-                    episode_data_file = episode_data[0].data.data_source.path
+                    episode_data_file = episode_data[0].data.input_data.path
                     with open(episode_data_file, "r", encoding="utf-8") as f:
                         episode_file_data = json.loads(f.read())
 
                     validated_episode_data = GdacsEventDataValidator(**episode_file_data)
                     episode_data_url = episode_data[0].data.source_url
                     if GDACSDataSourceType.GEOMETRY in episode_data:
-                        geometry_data_file = episode_data[1].data.data_source.path
+                        geometry_data_file = episode_data[1].data.input_data.path
                         with open(geometry_data_file, "r", encoding="utf-8") as f:
                             geometry_data = json.loads(f.read())
                         validated_geometry_data = GdacsGeometryDataValidator(**geometry_data)
