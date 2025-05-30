@@ -13,8 +13,8 @@ from pystac_monty.extension import MontyExtension
 from pystac_monty.geocoding import MockGeocoder
 from pystac_monty.sources.common import DataType, File, GdacsDataSourceType, GdacsEpisodes, GenericDataSource, Memory
 from pystac_monty.sources.gdacs import (
+    GDACSDataSource,
     GDACSDataSourceType,
-    GDACSDataSourceV3,
     GDACSTransformer,
 )
 from tests.conftest import get_data_file
@@ -62,7 +62,7 @@ def load_scenarios(
 
                 episode_data_tuple = (event_episode_data, geometry_episode_data)
                 episodes_data.append(episode_data_tuple)
-            gdacs_data_sources = GDACSDataSourceV3(
+            gdacs_data_sources = GDACSDataSource(
                 data=GdacsDataSourceType(
                     source_url="https://github.com/IFRCGo/monty-stac-extension/raw/refs/heads/main/docs/model/sources/GDACS/1102983-1-geteventdata-source.json",
                     event_data=File(path=event_data_file.name, data_type=DataType.FILE),
@@ -98,7 +98,7 @@ def load_scenarios(
                 episode_data_tuple = (event_episode_data, geometry_episode_data)
                 episodes_data.append(episode_data_tuple)
 
-            gdacs_data_sources = GDACSDataSourceV3(
+            gdacs_data_sources = GDACSDataSource(
                 data=GdacsDataSourceType(
                     source_url=event_data_url,
                     event_data=Memory(content=event_data, data_type=DataType.MEMORY),

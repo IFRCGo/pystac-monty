@@ -64,7 +64,7 @@ interactions:
       Content-Type:
       - text/html; charset=utf-8
       Date:
-      - Fri, 30 May 2025 06:02:51 GMT
+      - Fri, 30 May 2025 06:35:31 GMT
       Location:
       - https://raw.githubusercontent.com/IFRCGo/monty-stac-extension/refs/heads/main/examples/reference-events/20241027T150000-ESP-HM-FLOOD-001-GCDB.json
       Referrer-Policy:
@@ -81,7 +81,7 @@ interactions:
       X-Frame-Options:
       - deny
       X-GitHub-Request-Id:
-      - 850A:14B69:131FE73:162123B:68394A0B
+      - B0F0:3B88BA:13A104F:16B0417:683951B2
       X-XSS-Protection:
       - '0'
     status:
@@ -133,11 +133,11 @@ interactions:
       Cross-Origin-Resource-Policy:
       - cross-origin
       Date:
-      - Fri, 30 May 2025 06:02:52 GMT
+      - Fri, 30 May 2025 06:35:31 GMT
       ETag:
       - W/"238e75cf5f25c282fd232d173649a9a7437be7eea0d8ffb211019a1b736ac18e"
       Expires:
-      - Fri, 30 May 2025 06:07:52 GMT
+      - Fri, 30 May 2025 06:40:31 GMT
       Source-Age:
       - '0'
       Strict-Transport-Security:
@@ -153,15 +153,15 @@ interactions:
       X-Content-Type-Options:
       - nosniff
       X-Fastly-Request-ID:
-      - 1782959042b753135a14f5e58fb8dfc5404b449c
+      - 12130394348b0f06e91f4168c8f513323cf6df84
       X-Frame-Options:
       - deny
       X-GitHub-Request-Id:
       - 61FC:176A8F:16D16:2D96E:683941C4
       X-Served-By:
-      - cache-maa10232-MAA
+      - cache-maa10246-MAA
       X-Timer:
-      - S1748584972.019348,VS0,VE269
+      - S1748586932.562730,VS0,VE281
       X-XSS-Protection:
       - 1; mode=block
     status:
@@ -305,7 +305,7 @@ interactions:
       Access-Control-Allow-Origin:
       - '*'
       Age:
-      - '517'
+      - '53'
       Cache-Control:
       - max-age=600
       Connection:
@@ -315,7 +315,7 @@ interactions:
       Content-Type:
       - application/json; charset=utf-8
       Date:
-      - Fri, 30 May 2025 06:02:52 GMT
+      - Fri, 30 May 2025 06:35:32 GMT
       ETag:
       - '"68362516-231e"'
       Last-Modified:
@@ -329,15 +329,15 @@ interactions:
       X-Cache:
       - HIT
       X-Cache-Hits:
-      - '3'
+      - '1'
       X-Fastly-Request-ID:
-      - 23b86c0955ce2b888c5c33571a54ccc7463ff587
+      - 662e8f52c4c9fdbb17563f6b4f4c10080c93aa15
       X-GitHub-Request-Id:
       - 5F40:10F1EC:134EF0:172ED1:68394806
       X-Served-By:
-      - cache-maa10251-MAA
+      - cache-maa10233-MAA
       X-Timer:
-      - S1748584973.576608,VS0,VE1
+      - S1748586932.074498,VS0,VE2
       expires:
       - Fri, 30 May 2025 06:04:15 GMT
       x-proxy-cache:
