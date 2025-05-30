@@ -6,6 +6,7 @@ import itertools
 import logging
 import tempfile
 import typing
+from dataclasses import dataclass
 from typing import Dict, List, Union
 
 import pandas as pd
@@ -15,7 +16,7 @@ from shapely.geometry import LineString, Point, mapping
 
 from pystac_monty.extension import HazardDetail, MontyEstimateType, MontyExtension
 from pystac_monty.hazard_profiles import MontyHazardProfiles
-from pystac_monty.sources.common import DataType, MontyDataSourceV2, MontyDataTransformer
+from pystac_monty.sources.common import DataType, File, GenericDataSource, Memory, MontyDataSourceV3, MontyDataTransformer
 from pystac_monty.validators.ibtracs import IBTracsdataValidator
 
 logger = logging.getLogger(__name__)
@@ -25,12 +26,15 @@ STAC_EVENT_ID_PREFIX = "ibtracs-event-"
 STAC_HAZARD_ID_PREFIX = "ibtracs-hazard-"
 
 
-class IBTrACSDataSource(MontyDataSourceV2):
+@dataclass
+class IBTrACSDataSource(MontyDataSourceV3):
     """IBTrACS data source that handles tropical cyclone track data."""
 
     file_path: str
+    source_url: str
+    data_source: Union[File, Memory]
 
-    def __init__(self, data: dict, version: str = "v04r01"):
+    def __init__(self, data: GenericDataSource, version: str = "v04r01"):
         """Initialize IBTrACS data source.
 
         Args:
@@ -41,7 +45,7 @@ class IBTrACSDataSource(MontyDataSourceV2):
         self.version = version
 
         def handle_file_data():
-            df = pd.read_csv(self.data_source.path)
+            df = pd.read_csv(self.input_data.path)
             df = df.sort_values(by=["SID", "ISO_TIME"])
             with tempfile.NamedTemporaryFile(delete=False, mode="w", newline="", encoding="utf-8") as tmp_file:
                 df.to_csv(tmp_file, index=False)
@@ -49,7 +53,7 @@ class IBTrACSDataSource(MontyDataSourceV2):
 
         def handle_memory_data(): ...
 
-        self.input_data_type = self.data_source.data_type
+        self.input_data_type = self.input_data.data_type
         match self.input_data_type:
             case DataType.FILE:
                 handle_file_data()
@@ -61,7 +65,7 @@ class IBTrACSDataSource(MontyDataSourceV2):
     def _parse_csv(self) -> List[Dict[str, str]]:
         """Parse the CSV data into a list of dictionaries."""
         csv_data = []
-        csv_reader = csv.DictReader(io.StringIO(self.data_source.content))
+        csv_reader = csv.DictReader(io.StringIO(self.input_data.content))
         for row in csv_reader:
             csv_data.append(row)
         return csv_data
@@ -93,7 +97,8 @@ class IBTrACSDataSource(MontyDataSourceV2):
         yield from [list(group) for _, group in itertools.groupby(parsed_data, key=lambda x: x.get("SID", " "))]
 
     def get_input_data_type(self) -> DataType:
-        return self.input_data_type
+        """Get the input data type"""
+        return self.input_data.data_type
 
 
 class IBTrACSTransformer(MontyDataTransformer[IBTrACSDataSource]):

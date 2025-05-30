@@ -12,7 +12,7 @@ from shapely.geometry import LineString
 
 from pystac_monty.extension import MontyExtension
 from pystac_monty.geocoding import WorldAdministrativeBoundariesGeocoder
-from pystac_monty.sources.common import DataType, File, Memory
+from pystac_monty.sources.common import DataType, File, GenericDataSource, Memory
 from pystac_monty.sources.ibtracs import IBTrACSDataSource, IBTrACSTransformer
 from tests.conftest import get_data_file
 from tests.extensions.test_monty import CustomValidator
@@ -137,9 +137,9 @@ def load_scenarios(scenarios) -> list[tuple[str, IBTrACSTransformer]]:  # type: 
             csv_data = requests.get(csv_data).text
 
         data_source = IBTrACSDataSource(
-            data={"source_url": source_url, "source_data": Memory(content=csv_data, data_type=DataType.MEMORY)}
+            GenericDataSource(source_url=source_url, input_data=Memory(content=csv_data, data_type=DataType.MEMORY))
         )
-        transformers.append((name, IBTrACSTransformer(data_source, geocoder)))
+        transformers.append((name, IBTrACSTransformer(data_source, geocoder)))  # type: ignore
 
     return transformers
 
@@ -226,8 +226,12 @@ class IBTrACSTest(unittest.TestCase):
             - Storm data is correctly filtered
         """
         # Test with sample data
+
         data_source = IBTrACSDataSource(
-            data={"source_url": "test_url", "source_data": Memory(content=SAMPLE_IBTRACS_CSV, data_type=DataType.MEMORY)}
+            GenericDataSource(
+                source_url="test_url",
+                input_data=Memory(content=SAMPLE_IBTRACS_CSV, data_type=DataType.MEMORY),
+            )
         )
 
         # Check that data is parsed
@@ -237,7 +241,10 @@ class IBTrACSTest(unittest.TestCase):
 
         # Test with landfall data
         landfall_data_source = IBTrACSDataSource(
-            data={"source_url": "test_url", "source_data": Memory(content=LANDFALL_IBTRACS_CSV, data_type=DataType.MEMORY)}
+            GenericDataSource(
+                source_url="test_url",
+                input_data=Memory(content=LANDFALL_IBTRACS_CSV, data_type=DataType.MEMORY),
+            )
         )
 
         landfall_data = list(landfall_data_source.get_data_for_memory())
@@ -255,7 +262,10 @@ class IBTrACSTest(unittest.TestCase):
 
         # Create a data source using the temporary file
         data_source = IBTrACSDataSource(
-            data={"source_url": "test_url", "source_data": File(path=tmp_file_path.name, data_type=DataType.FILE)}
+            GenericDataSource(
+                source_url="test_url",
+                input_data=File(path=tmp_file_path.name, data_type=DataType.FILE),
+            )
         )
 
         # Check that data is parsed
@@ -275,7 +285,10 @@ class IBTrACSTest(unittest.TestCase):
         """
         # Test with empty CSV data
         empty_data_source = IBTrACSDataSource(
-            data={"source_url": "test_url", "source_data": Memory(content=INVALID_IBTRACS_CSV, data_type=DataType.MEMORY)}
+            GenericDataSource(
+                source_url="test_url",
+                input_data=Memory(content=INVALID_IBTRACS_CSV, data_type=DataType.MEMORY),
+            )
         )
 
         empty_parsed_data = list(empty_data_source.get_data_for_memory())
@@ -289,7 +302,10 @@ class IBTrACSTest(unittest.TestCase):
         # Test with missing fields
         # missing_fields_source = IBTrACSDataSource("test_url", MISSING_FIELDS_CSV)
         missing_fields_source = IBTrACSDataSource(
-            data={"source_url": "test_url", "source_data": Memory(content=MISSING_FIELDS_CSV, data_type=DataType.MEMORY)}
+            GenericDataSource(
+                source_url="test_url",
+                input_data=Memory(content=MISSING_FIELDS_CSV, data_type=DataType.MEMORY),
+            )
         )
 
         missing_fields_data = list(missing_fields_source.get_data_for_memory())
@@ -297,8 +313,12 @@ class IBTrACSTest(unittest.TestCase):
 
     def test_event_item_properties(self) -> None:
         """Test that event items have the correct properties"""
+
         data_source = IBTrACSDataSource(
-            data={"source_url": "test_url", "source_data": Memory(content=SAMPLE_IBTRACS_CSV, data_type=DataType.MEMORY)}
+            GenericDataSource(
+                source_url="test_url",
+                input_data=Memory(content=SAMPLE_IBTRACS_CSV, data_type=DataType.MEMORY),
+            )
         )
 
         transformer = IBTrACSTransformer(data_source, geocoder)
@@ -307,7 +327,6 @@ class IBTrACSTest(unittest.TestCase):
 
         # Find the event item
         event_items = [item for item in transformer.make_items() if "event" in item.properties.get("roles", [])]
-        print("the type of event items is", type(event_items))
 
         self.assertEqual(len(event_items), 1)
 
@@ -331,7 +350,10 @@ class IBTrACSTest(unittest.TestCase):
     def test_hazard_item_properties(self) -> None:
         """Test that hazard items have the correct properties"""
         data_source = IBTrACSDataSource(
-            data={"source_url": "test_url", "source_data": Memory(content=SAMPLE_IBTRACS_CSV, data_type=DataType.MEMORY)}
+            GenericDataSource(
+                source_url="test_url",
+                input_data=Memory(content=SAMPLE_IBTRACS_CSV, data_type=DataType.MEMORY),
+            )
         )
         transformer = IBTrACSTransformer(data_source, geocoder)
 
@@ -364,8 +386,12 @@ class IBTrACSTest(unittest.TestCase):
 
     def test_item_links_and_assets(self) -> None:
         """Test that items have the correct links and assets"""
+
         data_source = IBTrACSDataSource(
-            data={"source_url": "test_url", "source_data": Memory(content=SAMPLE_IBTRACS_CSV, data_type=DataType.MEMORY)}
+            GenericDataSource(
+                source_url="test_url",
+                input_data=Memory(content=SAMPLE_IBTRACS_CSV, data_type=DataType.MEMORY),
+            )
         )
         transformer = IBTrACSTransformer(data_source, geocoder)
 
@@ -416,7 +442,10 @@ class IBTrACSTest(unittest.TestCase):
     def test_helper_methods(self) -> None:
         """Test helper methods in the IBTrACSTransformer class"""
         data_source = IBTrACSDataSource(
-            data={"source_url": "test_url", "source_data": Memory(content=SAMPLE_IBTRACS_CSV, data_type=DataType.MEMORY)}
+            GenericDataSource(
+                source_url="test_url",
+                input_data=Memory(content=SAMPLE_IBTRACS_CSV, data_type=DataType.MEMORY),
+            )
         )
         transformer = IBTrACSTransformer(data_source, geocoder)
 
