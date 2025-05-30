@@ -37,8 +37,6 @@ class GlideDataSource(MontyDataSourceV3):
 
     def __init__(self, data: GenericDataSource):
         super().__init__(data)
-        self.source_url = data.source_url
-        self.data_source = data.data_source
 
         def handle_file_data():
             if os.path.isfile(self.input_data.path):
