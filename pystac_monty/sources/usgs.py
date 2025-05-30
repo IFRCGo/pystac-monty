@@ -2,10 +2,13 @@
 
 import json
 import logging
+import os
 import typing
 from datetime import datetime
+from enum import Enum
 
 import pytz
+from pydantic import BaseModel
 from pystac import Asset, Item, Link
 from shapely.geometry import Point, mapping, shape
 
@@ -18,7 +21,8 @@ from pystac_monty.extension import (
     MontyImpactType,
 )
 from pystac_monty.hazard_profiles import MontyHazardProfiles
-from pystac_monty.sources.common import MontyDataSource, MontyDataTransformer
+from pystac_monty.sources.common import GenericDataSource, MontyDataSource, MontyDataTransformer, USGSDataSourceType
+from pystac_monty.sources.gdacs import DataType, MontyDataSourceV3
 from pystac_monty.validators.usgs import EmpiricalValidator, USGSValidator
 
 logger = logging.getLogger(__name__)
@@ -40,11 +44,11 @@ class USGSDataSource(MontyDataSource):
             losses_data: Optional PAGER losses data as JSON string
         """
         super().__init__(source_url, data)
-        with open(data, 'r') as data_file:
+        with open(data, "r") as data_file:
             self.data = json.load(data_file)
         self.losses_data = None
         if losses_data:
-            with open(losses_data, 'r') as losses_file:
+            with open(losses_data, "r") as losses_file:
                 self.losses_data = json.load(losses_file)
 
     def get_data(self) -> dict[str, typing.Any]:
@@ -56,7 +60,77 @@ class USGSDataSource(MontyDataSource):
         return self.losses_data or []
 
 
-class USGSTransformer(MontyDataTransformer[USGSDataSource]):
+class USGSSourceType(Enum):
+    EVENT = "geteventdata"
+    LOSS = "getlossdata"
+
+
+class USGSEvent(BaseModel):
+    type: str
+    data: GenericDataSource
+
+
+class USGSLossData(BaseModel):
+    type: str
+    data: GenericDataSource
+
+
+class USGSDataSourceV3(MontyDataSourceV3):
+    type: USGSSourceType
+    source_url: str
+    event_data = [str, dict]
+    event_data_file_path: str
+    event: USGSEvent
+    loss_data_file_path: str
+    loss_data = USGSLossData
+
+    def __init__(self, data: USGSDataSourceType):
+        super().__init__(data)
+        self.source_url = data.source_url
+
+        def handle_file_data():
+            if os.path.isfile(data.event_data.path):
+                self.event_data_file_path = data.event_data.path
+            else:
+                raise ValueError("File path does not exists")
+
+            if data.loss_data and os.path.isfile(data.loss_data.path):
+                self.loss_data_file_path = data.loss_data.path
+
+        def handle_memory_data(): ...
+
+        input_data_type = data.event_data.data_type
+        match input_data_type:
+            case DataType.FILE:
+                handle_file_data()
+            case DataType.MEMORY:
+                handle_memory_data()
+            case _:
+                typing.assert_never(input_data_type)
+
+    def get_event_data(self) -> typing.Union[dict, str]:
+        if self.root.event_data.data_type == DataType.FILE:
+            with open(self.event_data_file_path, "r", encoding="utf-8") as f:
+                self.event_data = json.loads(f.read())
+        return self.event_data
+
+    def get_loss_data(self) -> typing.Union[dict, str, None]:
+        if self.root.loss_data is None:
+            return []
+        elif self.root.loss_data and self.root.loss_data.data_type == DataType.FILE:
+            with open(self.loss_data_file_path, "r", encoding="utf-8") as f:
+                self.loss_data = json.loads(f.read())
+                return self.loss_data
+        return self.loss_data
+
+    def get_input_data_type(self) -> DataType:
+        return self.root.event_data.data_type
+
+    def get_source_url(self) -> str:
+        return self.source_url
+
+
+class USGSTransformer(MontyDataTransformer[USGSDataSourceV3]):
     """Transforms USGS earthquake event data into STAC Items."""
 
     hazard_profiles = MontyHazardProfiles()
@@ -318,19 +392,16 @@ class USGSTransformer(MontyDataTransformer[USGSDataSource]):
         """Creates the STAC Items"""
         self.transform_summary.mark_as_started()
 
-        item_data = self.data_source.get_data()
-        losspager_data = self.data_source.get_losses_data()
+        item_data = self.data_source.get_event_data()
+        losspager_data = self.data_source.get_loss_data()
 
         # Note that only one datapoint is sent
         self.transform_summary.increment_rows(1)
         try:
 
             def get_validated_data(items: list[dict[str, typing.Any]]) -> typing.List[EmpiricalValidator]:
-                print("-------->",type(items))
                 validated_losspager_data: list[EmpiricalValidator] = []
                 for item in items:
-                    print("-------->",type(item))
-
                     obj = EmpiricalValidator(**item)
                     validated_losspager_data.append(obj)
                 return validated_losspager_data

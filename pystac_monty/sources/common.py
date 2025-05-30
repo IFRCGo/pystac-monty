@@ -78,6 +78,12 @@ class GdacsDataSourceType(BaseModel):
     episodes: List[Tuple[GdacsEpisodes, GdacsEpisodes]]
 
 
+class USGSDataSourceType(BaseModel):
+    source_url: str
+    event_data: Union[File, Memory]
+    loss_data: Union[File, Memory, None] = None
+
+
 @dataclass
 class MontyDataSource:
     source_url: str
@@ -117,8 +123,7 @@ class MontyDataSourceV2:
 
 @dataclass
 class MontyDataSourceV3:
-    root: Union[GenericDataSource, GdacsDataSourceType]
-    source_url: str = field(init=False)
+    root: Union[GenericDataSource, GdacsDataSourceType, USGSDataSourceType]
 
     def __post_init__(self):
         self.source_url = self.root.source_url
