@@ -3,11 +3,10 @@ import json
 import logging
 import mimetypes
 import os
-import tempfile
 import typing
 from dataclasses import dataclass
 from enum import Enum
-from typing import Any, Dict, List, Optional, Tuple, Union
+from typing import Dict, List, Optional, Tuple, Union
 
 import pytz
 from markdownify import markdownify as md
@@ -28,7 +27,6 @@ from pystac_monty.sources.common import (
     DataType,
     GdacsDataSourceType,
     GdacsEpisodes,
-    MontyDataSource,
     MontyDataSourceV3,
     MontyDataTransformer,
 )
@@ -54,24 +52,7 @@ class GDACSDataSourceType(Enum):
 
 
 @dataclass
-class GDACSDataSource(MontyDataSource):
-    type: GDACSDataSourceType
-
-    def __init__(
-        self,
-        source_url: str,
-        data: tempfile._TemporaryFileWrapper,
-        episodes: Optional[List[Dict[GDACSDataSourceType, Tuple[str, Any]]]] = None,
-    ):
-        super().__init__(source_url, data)
-        self.episodes = episodes
-
-        with open(data, "r", encoding="utf-8") as f:
-            self.data = json.loads(f.read())
-
-
-@dataclass
-class GDACSDataSourceV3(MontyDataSourceV3):
+class GDACSDataSource(MontyDataSourceV3):
     type: GDACSDataSourceType
     source_url: str
     event_data: [str, dict]
@@ -80,7 +61,6 @@ class GDACSDataSourceV3(MontyDataSourceV3):
 
     def __init__(self, data: GdacsDataSourceType):
         super().__init__(data)
-        # self.source_url = data.source_url
         self.episodes = data.episodes
 
         def handle_file_data():
@@ -118,7 +98,7 @@ class GDACSDataSourceV3(MontyDataSourceV3):
         return self.root.event_data.data_type
 
 
-class GDACSTransformer(MontyDataTransformer[GDACSDataSourceV3]):
+class GDACSTransformer(MontyDataTransformer[GDACSDataSource]):
     """
     Transforms GDACS event data into STAC Items
     see https://github.com/IFRCGo/monty-stac-extension/tree/main/model/sources/GDACS

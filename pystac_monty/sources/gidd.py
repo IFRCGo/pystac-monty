@@ -5,7 +5,7 @@ import os
 import typing
 from dataclasses import dataclass
 from datetime import datetime
-from typing import Any, Dict, Generator, Iterator, List, Optional
+from typing import Dict, Generator, Iterator, List, Optional
 
 import ijson
 import pytz
@@ -22,7 +22,6 @@ from pystac_monty.hazard_profiles import MontyHazardProfiles
 from pystac_monty.sources.common import (
     DataType,
     GenericDataSource,
-    MontyDataSource,
     MontyDataSourceV3,
     MontyDataTransformer,
 )
@@ -36,7 +35,7 @@ STAC_IMPACT_ID_PREFIX = "idmc-gidd-impact-"
 
 
 @dataclass
-class GIDDDataSourceV2(MontyDataSourceV3):
+class GIDDDataSource(MontyDataSourceV3):
     """GIDD data source version 2"""
 
     parsed_content: List[dict]
@@ -75,16 +74,7 @@ class GIDDDataSourceV2(MontyDataSourceV3):
         return self.parsed_content
 
 
-@dataclass
-class GIDDDataSource(MontyDataSource):
-    """GIDD data source that can handle Json data"""
-
-    def __init__(self, source_url: str, data: Any):
-        super().__init__(source_url, data)
-        self.data = json.loads(data)
-
-
-class GIDDTransformer(MontyDataTransformer[GIDDDataSourceV2]):
+class GIDDTransformer(MontyDataTransformer[GIDDDataSource]):
     """Transforms GIDD event data into STAC Items"""
 
     hazard_profiles = MontyHazardProfiles()
