@@ -14,9 +14,6 @@ from pystac_monty.sources.utils import save_json_data_into_tmp_file
 from tests.conftest import get_data_file
 from tests.extensions.test_monty import CustomValidator
 
-CURRENT_SCHEMA_URI = "https://ifrcgo.org/monty-stac-extension/v1.0.0/schema.json"
-CURRENT_SCHEMA_MAPURL = "https://raw.githubusercontent.com/IFRCGo/monty-stac-extension/refs/heads/main/json-schema/schema.json"
-
 
 def load_scenarios_from_file(data: List[dict]):
     transformers = []
@@ -24,7 +21,7 @@ def load_scenarios_from_file(data: List[dict]):
     geocoder = MockGeocoder()
 
     data_file = save_json_data_into_tmp_file(data)
-    gfd_data = GenericDataSource(source_url="", input_data=File(path=data_file.name, data_type=DataType.FILE))
+    gfd_data = GenericDataSource(source_url="http://www.gfd.test", input_data=File(path=data_file.name, data_type=DataType.FILE))
     gfd_data_source = GFDDataSource(data=gfd_data)
     transformers.append(GFDTransformer(gfd_data_source, geocoder))
     return transformers
@@ -35,7 +32,7 @@ def load_scenarios(data: List[dict]):
 
     geocoder = MockGeocoder()
 
-    gfd_data = GenericDataSource(source_url="", input_data=Memory(content=data, data_type=DataType.MEMORY))
+    gfd_data = GenericDataSource(source_url="http://www.gfd.test", input_data=Memory(content=data, data_type=DataType.MEMORY))
     gfd_data_source = GFDDataSource(data=gfd_data)
     transformers.append(GFDTransformer(gfd_data_source, geocoder))
     return transformers
