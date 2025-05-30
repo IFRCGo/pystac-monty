@@ -6,7 +6,7 @@ import os
 import re
 import typing
 from dataclasses import dataclass
-from typing import Any, Dict, Iterator, List, Optional
+from typing import Dict, Iterator, List, Optional
 
 import ijson
 import pytz
@@ -22,7 +22,7 @@ from pystac_monty.extension import (
     MontyImpactType,
 )
 from pystac_monty.hazard_profiles import MontyHazardProfiles
-from pystac_monty.sources.common import DataType, MontyDataSource, MontyDataSourceV2, MontyDataTransformer
+from pystac_monty.sources.common import DataType, GenericDataSource, MontyDataSourceV3, MontyDataTransformer
 from pystac_monty.sources.utils import IDMCUtils, order_data_file
 from pystac_monty.validators.idu import IDUSourceValidator
 
@@ -35,24 +35,24 @@ STAC_IMPACT_ID_PREFIX = "idmc-idu-impact-"
 
 
 @dataclass
-class IDUDataSourceV2(MontyDataSourceV2):
+class IDUDataSource(MontyDataSourceV3):
     """IDU Data Source Version 2"""
 
     parsed_content: List[dict]
     ordered_temp_file: Optional[str] = None
 
-    def __init__(self, data: dict):
-        super().__init__(data=data)
+    def __init__(self, data: GenericDataSource):
+        super().__init__(root=data)
 
         def handle_file_data():
-            if os.path.isfile(self.data_source.path):
+            if os.path.isfile(self.input_data.path):
                 jq_filter = "sort_by(.event_id)"
-                self.ordered_temp_file = order_data_file(filepath=self.data_source.path, jq_filter=jq_filter)
+                self.ordered_temp_file = order_data_file(filepath=self.input_data.path, jq_filter=jq_filter)
 
         def handle_memory_data():
-            self.parsed_content = json.loads(self.data_source.content)
+            self.parsed_content = json.loads(self.input_data.content)
 
-        input_data_type = self.data_source.data_type
+        input_data_type = self.input_data.data_type
         match input_data_type:
             case DataType.FILE:
                 handle_file_data()
@@ -67,23 +67,14 @@ class IDUDataSourceV2(MontyDataSourceV2):
 
     def get_input_data_type(self) -> DataType:
         """Returns the input data type"""
-        return self.data_source.data_type
+        return self.input_data.data_type
 
     def get_memory_data(self):
         """Get the parsed memory data"""
         return self.parsed_content
 
 
-@dataclass
-class IDUDataSource(MontyDataSource):
-    """IDU Data directly from the source"""
-
-    def __init__(self, source_url: str, data: Any):
-        super().__init__(source_url, data)
-        self.data = json.loads(data)
-
-
-class IDUTransformer(MontyDataTransformer[IDUDataSourceV2]):
+class IDUTransformer(MontyDataTransformer[IDUDataSource]):
     """Transform the source data into the STAC items"""
 
     hazard_profiles = MontyHazardProfiles()
