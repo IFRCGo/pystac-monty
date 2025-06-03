@@ -21,7 +21,7 @@ from pystac_monty.extension import (
     MontyImpactType,
 )
 from pystac_monty.hazard_profiles import MontyHazardProfiles
-from pystac_monty.sources.common import GenericDataSource, MontyDataSource, MontyDataTransformer, USGSDataSourceType
+from pystac_monty.sources.common import GenericDataSource, MontyDataTransformer, USGSDataSourceType
 from pystac_monty.sources.gdacs import DataType, MontyDataSourceV3
 from pystac_monty.validators.usgs import EmpiricalValidator, USGSValidator
 
@@ -30,34 +30,6 @@ logger = logging.getLogger(__name__)
 STAC_EVENT_ID_PREFIX = "usgs-event-"
 STAC_HAZARD_ID_PREFIX = "usgs-hazard-"
 STAC_IMPACT_ID_PREFIX = "usgs-impact-"
-
-
-class USGSDataSource(MontyDataSource):
-    """USGS data source that can handle both event detail and losses data."""
-
-    def __init__(self, source_url: str, data: str, losses_data: typing.Optional[str] = None):
-        """Initialize USGS data source.
-
-        Args:
-            source_url: URL where the data was retrieved from
-            data: Event detail data as JSON string
-            losses_data: Optional PAGER losses data as JSON string
-        """
-        super().__init__(source_url, data)
-        with open(data, "r") as data_file:
-            self.data = json.load(data_file)
-        self.losses_data = None
-        if losses_data:
-            with open(losses_data, "r") as losses_file:
-                self.losses_data = json.load(losses_file)
-
-    def get_data(self) -> dict[str, typing.Any]:
-        """Get the event detail data."""
-        return self.data
-
-    def get_losses_data(self) -> list[dict[str, typing.Any]] | None:
-        """Get the PAGER losses data if available."""
-        return self.losses_data or []
 
 
 class USGSSourceType(Enum):
@@ -75,7 +47,7 @@ class USGSLossData(BaseModel):
     data: GenericDataSource
 
 
-class USGSDataSourceV3(MontyDataSourceV3):
+class USGSDataSource(MontyDataSourceV3):
     type: USGSSourceType
     source_url: str
     event_data = [str, dict]
@@ -92,7 +64,7 @@ class USGSDataSourceV3(MontyDataSourceV3):
             if os.path.isfile(data.event_data.path):
                 self.event_data_file_path = data.event_data.path
             else:
-                raise ValueError("File path does not exists")
+                raise ValueError("File path does not exist")
 
             if data.loss_data and os.path.isfile(data.loss_data.path):
                 self.loss_data_file_path = data.loss_data.path
@@ -130,7 +102,7 @@ class USGSDataSourceV3(MontyDataSourceV3):
         return self.source_url
 
 
-class USGSTransformer(MontyDataTransformer[USGSDataSourceV3]):
+class USGSTransformer(MontyDataTransformer[USGSDataSource]):
     """Transforms USGS earthquake event data into STAC Items."""
 
     hazard_profiles = MontyHazardProfiles()
