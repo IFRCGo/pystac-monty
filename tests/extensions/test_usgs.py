@@ -11,7 +11,7 @@ from pystac_monty.extension import MontyExtension
 from pystac_monty.geocoding import WorldAdministrativeBoundariesGeocoder
 from pystac_monty.sources.common import File, USGSDataSourceType
 from pystac_monty.sources.gdacs import DataType
-from pystac_monty.sources.usgs import USGSDataSourceV3, USGSTransformer
+from pystac_monty.sources.usgs import USGSDataSource, USGSTransformer
 from tests.conftest import get_data_file
 from tests.extensions.test_monty import CustomValidator
 
@@ -43,7 +43,7 @@ def load_scenarios(scenarios: list[tuple[str, str, str]]) -> list[USGSTransforme
             losses_data = losses_url
 
         # Create data source and transformer
-        data_source = USGSDataSourceV3(
+        data_source = USGSDataSource(
             data=USGSDataSourceType(
                 source_url=event_url,
                 event_data=File(path=event_data, data_type=DataType.FILE),
@@ -133,7 +133,7 @@ class USGSTest(unittest.TestCase):
             - Items still validate
         """
         event_data = tibetan_plateau_eq[1]
-        data_source = USGSDataSourceV3(
+        data_source = USGSDataSource(
             data=USGSDataSourceType(
                 source_url=tibetan_plateau_eq[1],
                 event_data=File(path=event_data, data_type=DataType.FILE),
@@ -196,7 +196,7 @@ class USGSTest(unittest.TestCase):
 
         # Test with empty losses data - should still create event and hazard
         empty_losses = "./tests/data/usgs/empty_losses.json"
-        data_source = USGSDataSourceV3(
+        data_source = USGSDataSource(
             data=USGSDataSourceType(
                 source_url="test_url",
                 event_data=File(path=event_data, data_type=DataType.FILE),

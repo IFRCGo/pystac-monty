@@ -1,7 +1,7 @@
 import abc
 import json
 import typing
-from dataclasses import dataclass, field
+from dataclasses import dataclass
 from enum import Enum
 from typing import List, Literal, Tuple, Union
 
