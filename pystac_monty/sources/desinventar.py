@@ -20,7 +20,7 @@ from pystac_monty.extension import (
     MontyImpactType,
 )
 from pystac_monty.hazard_profiles import MontyHazardProfiles
-from pystac_monty.sources.common import MontyDataTransformer
+from pystac_monty.sources.common import DesInventarData, MontyDataSourceV3, MontyDataTransformer
 from pystac_monty.validators.desinventar import (
     STAC_EVENT_ID_PREFIX,
     STAC_HAZARD_ID_PREFIX,
@@ -164,17 +164,16 @@ hazard_mapping = {
 
 
 # FIXME: cleanup named temporary file
-class DesinventarDataSource:
+class DesinventarDataSource(MontyDataSourceV3):
     tmp_zip_file: tempfile._TemporaryFileWrapper
-    source_url: str | None
     country_code: str
     iso3: str
 
-    def __init__(self, tmp_zip_file: tempfile._TemporaryFileWrapper, country_code: str, iso3: str, source_url: str | None = None):
-        self.tmp_zip_file = tmp_zip_file
-        self.country_code = country_code
-        self.iso3 = iso3
-        self.source_url = source_url
+    def __init__(self, data: DesInventarData):
+        super().__init__(root=data)
+        self.tmp_zip_file = data.tmp_zip_file.path
+        self.country_code = data.country_code
+        self.iso3 = data.iso3
 
     @classmethod
     def from_zip_file(cls, zip_file: ZipFile, country_code: str, iso3: str):

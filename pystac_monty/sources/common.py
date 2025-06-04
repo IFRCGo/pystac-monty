@@ -1,12 +1,13 @@
 import abc
 import json
+import tempfile
 import typing
 from dataclasses import dataclass
 from enum import Enum
-from typing import List, Literal, Tuple, Union
+from typing import List, Literal, Optional, Tuple, Union
 
 import requests
-from pydantic import BaseModel, Field
+from pydantic import BaseModel, ConfigDict, Field
 from pystac import Collection, Item
 
 from pystac_monty.geocoding import MontyGeoCoder
@@ -42,14 +43,18 @@ class TransformSummary:
         return self.total_rows - self.failed_rows
 
 
+class BaseModelWithExtra(BaseModel):
+    model_config = ConfigDict(extra="ignore", arbitrary_types_allowed=True)
+
+
 class DataType(Enum):
     FILE = "file"
     MEMORY = "memory"
 
 
-class File(BaseModel):
+class File(BaseModelWithExtra):
     data_type: Literal[DataType.FILE]
-    path: str
+    path: str | tempfile._TemporaryFileWrapper
 
 
 class Memory(BaseModel):
@@ -82,6 +87,12 @@ class USGSDataSourceType(BaseModel):
     source_url: str
     event_data: Union[File, Memory]
     loss_data: Union[File, Memory, None] = None
+
+class DesInventarData(BaseModel):
+    tmp_zip_file: File
+    country_code: str
+    iso3: str
+    source_url: str | None = None
 
 
 @dataclass
@@ -123,14 +134,15 @@ class MontyDataSourceV2:
 
 @dataclass
 class MontyDataSourceV3:
-    root: Union[GenericDataSource, GdacsDataSourceType, USGSDataSourceType]
+    root: Union[GenericDataSource, GdacsDataSourceType, USGSDataSourceType, DesInventarData]
+    source_url: Optional[str] = Field(init=False)
 
     def __post_init__(self):
         self.source_url = self.root.source_url
         if isinstance(self.root, GenericDataSource):
             self.input_data = self.root.input_data
 
-    def get_source_url(self) -> str:
+    def get_source_url(self) -> Optional[str]:
         """Get the Source URL"""
         return self.source_url
 
