@@ -37,7 +37,6 @@ class EMDATDataSource(MontyDataSourceV3):
 
     df: pd.DataFrame
     file_path: str
-    source_url: str
     data_source: Union[File, Memory]
 
     def __init__(self, data: GenericDataSource):
