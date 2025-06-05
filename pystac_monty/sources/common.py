@@ -96,6 +96,14 @@ class DesinventarDataSourceType(BaseModel):
     source_url: str | None = None
 
 
+class PDCDataSourceType(BaseModel):
+    source_url: str
+    uuid: str
+    hazard_data: Union[File, Memory]
+    exposure_detail_data: Union[File, Memory]
+    geojson_data: Union[File, Memory]
+
+
 @dataclass
 class MontyDataSource:
     source_url: str
@@ -135,7 +143,7 @@ class MontyDataSourceV2:
 
 @dataclass
 class MontyDataSourceV3:
-    root: Union[GenericDataSource, GdacsDataSourceType, USGSDataSourceType, DesinventarDataSourceType]
+    root: Union[GenericDataSource, GdacsDataSourceType, USGSDataSourceType, DesinventarDataSourceType, PDCDataSourceType]
     source_url: Optional[str] = field(init=False)
 
     def __post_init__(self):

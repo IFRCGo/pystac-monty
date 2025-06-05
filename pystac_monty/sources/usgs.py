@@ -52,7 +52,7 @@ class USGSLossData(BaseModel):
 class USGSDataSource(MontyDataSourceV3):
     type: USGSSourceType
     source_url: str
-    event_data = [str, dict]
+    event_data = typing.Union[str, dict]
     event_data_file_path: str
     event: USGSEvent
     loss_data_file_path: str
