@@ -10,7 +10,7 @@ from parameterized import parameterized
 
 from pystac_monty.extension import MontyExtension
 from pystac_monty.geocoding import MockGeocoder
-from pystac_monty.sources.common import DataType, DesInventarData, File
+from pystac_monty.sources.common import DataType, DesinventarDataSourceType, File
 from pystac_monty.sources.desinventar import (
     DesinventarDataSource,
     DesinventarTransformer,
@@ -53,7 +53,7 @@ def load_scenarios(
         tmp_zip_file = tempfile.NamedTemporaryFile(suffix=".zip", delete=False)
         tmp_zip_file.write(response.content)
         data_source = DesinventarDataSource(
-            data=DesInventarData(
+            data=DesinventarDataSourceType(
                 tmp_zip_file=File(path=tmp_zip_file, data_type=DataType.FILE),
                 source_url=data["zip_file_url"],
                 country_code=data["country_code"],
