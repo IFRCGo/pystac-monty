@@ -89,7 +89,7 @@ class USGSDataSourceType(BaseModel):
     loss_data: Union[File, Memory, None] = None
 
 
-class DesInventarData(BaseModel):
+class DesinventarDataSourceType(BaseModel):
     tmp_zip_file: File
     country_code: str
     iso3: str
@@ -135,7 +135,7 @@ class MontyDataSourceV2:
 
 @dataclass
 class MontyDataSourceV3:
-    root: Union[GenericDataSource, GdacsDataSourceType, USGSDataSourceType, DesInventarData]
+    root: Union[GenericDataSource, GdacsDataSourceType, USGSDataSourceType, DesinventarDataSourceType]
     source_url: Optional[str] = field(init=False)
 
     def __post_init__(self):

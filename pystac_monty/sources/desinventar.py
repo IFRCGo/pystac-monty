@@ -20,7 +20,7 @@ from pystac_monty.extension import (
     MontyImpactType,
 )
 from pystac_monty.hazard_profiles import MontyHazardProfiles
-from pystac_monty.sources.common import DesInventarData, MontyDataSourceV3, MontyDataTransformer
+from pystac_monty.sources.common import DesinventarDataSourceType, MontyDataSourceV3, MontyDataTransformer
 from pystac_monty.validators.desinventar import (
     STAC_EVENT_ID_PREFIX,
     STAC_HAZARD_ID_PREFIX,
@@ -169,7 +169,7 @@ class DesinventarDataSource(MontyDataSourceV3):
     country_code: str
     iso3: str
 
-    def __init__(self, data: DesInventarData):
+    def __init__(self, data: DesinventarDataSourceType):
         super().__init__(root=data)
         self.tmp_zip_file = data.tmp_zip_file.path
         self.country_code = data.country_code
