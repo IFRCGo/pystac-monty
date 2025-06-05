@@ -2,7 +2,7 @@ import abc
 import json
 import tempfile
 import typing
-from dataclasses import dataclass
+from dataclasses import dataclass, field
 from enum import Enum
 from typing import List, Literal, Optional, Tuple, Union
 
@@ -88,6 +88,7 @@ class USGSDataSourceType(BaseModel):
     event_data: Union[File, Memory]
     loss_data: Union[File, Memory, None] = None
 
+
 class DesInventarData(BaseModel):
     tmp_zip_file: File
     country_code: str
@@ -135,7 +136,7 @@ class MontyDataSourceV2:
 @dataclass
 class MontyDataSourceV3:
     root: Union[GenericDataSource, GdacsDataSourceType, USGSDataSourceType, DesInventarData]
-    source_url: Optional[str] = Field(init=False)
+    source_url: Optional[str] = field(init=False)
 
     def __post_init__(self):
         self.source_url = self.root.source_url
