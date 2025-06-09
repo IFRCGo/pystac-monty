@@ -80,17 +80,17 @@ class PDCDataSource(MontyDataSourceV3):
             if os.path.isfile(data.hazard_data.path):
                 self.hazard_file_path = data.hazard_data.path
             else:
-                raise ValueError("File path does not exists")
+                raise ValueError("File path does not exist")
 
             if os.path.isfile(data.exposure_detail_data.path):
                 self.exposure_detail_file_path = data.exposure_detail_data.path
             else:
-                raise ValueError("File path does not exists")
+                raise ValueError("File path does not exist")
 
             if os.path.isfile(data.geojson_data.path):
                 self.geojson_file_path = data.geojson_data.path
             else:
-                raise ValueError("File path does not exists")
+                raise ValueError("File path does not exist")
 
         def handle_memory_data(): ...
 
