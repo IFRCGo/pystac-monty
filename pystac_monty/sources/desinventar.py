@@ -33,6 +33,47 @@ logger = logging.getLogger(__name__)
 
 T = typing.TypeVar("T")
 
+import xml.sax
+from typing import Optional
+from pystac_monty.validators.desinventar import DataRow
+
+class DesinventarFullHandler(xml.sax.ContentHandler):
+    def __init__(self):
+        self.current_section = ""
+        self.current_element = ""
+        self.current_data = {}
+        self.buffer = ""
+
+        self.eventos = []  # List of hazard types
+        self.fichas = []   # List of disaster records
+
+    def startElement(self, name, attrs):
+        if name in ("eventos", "fichas"):
+            self.current_section = name
+        elif name == "TR":
+            self.current_data = {}
+        else:
+            self.current_element = name
+            self.buffer = ""
+
+    def characters(self, content):
+        self.buffer += content
+
+    def endElement(self, name):
+        if name == "TR":
+            if self.current_section == "eventos":
+                self.eventos.append(self.current_data.copy())
+            elif self.current_section == "fichas":
+                self.fichas.append(self.current_data.copy())
+            self.current_data = {}
+        elif name in ("eventos", "fichas"):
+            self.current_section = ""
+        elif self.current_element:
+            self.current_data[self.current_element] = self.buffer.strip()
+            self.buffer = ""
+            self.current_element = ""
+
+
 
 # TODO: move to common utils
 def get_list_item_safe(lst: list[T], index: int, default_value: T | None = None) -> T | None:
@@ -228,6 +269,19 @@ class DesinventarTransformer(MontyDataTransformer[DesinventarDataSource]):
     geo_data_mapping: Dict[str, GeoDataEntry] = {}
     geo_data_cache: Dict[str, Tuple[Dict[str, Any], List[float]]] = {}
     errored_events: Dict[str, int] = {}
+
+    def parse_with_sax(self, xml_file):
+        print("entered")
+        handler = DesinventarFullHandler()
+        print("handler")
+        print(handler)
+        xml.sax.parse(xml_file, handler)
+        for e in handler.eventos[:2]:
+            print(e)
+        #print(handler.rows)
+        print("Before sax")
+        return handler
+
 
     def _create_event_item_from_row(self, row: DataRow) -> Optional[Item]:
         # FIXME: Do we treat this as error or noise
@@ -563,8 +617,19 @@ class DesinventarTransformer(MontyDataTransformer[DesinventarDataSource]):
 
     def get_stac_items(self) -> typing.Generator[Item, None, None]:
         # TODO: Use sax xml parser for memory efficient usage
+        print("hello")
+        print("Reached stac items")
         with self.data_source.with_xml_file() as xml_file:
-            tree = etree.parse(xml_file)
+            print("before xml file print -----")
+            #print(xml_file)
+            content = xml_file.read(500)
+            print(content[:200])
+            print("abcd -----")
+            xml_file.seek(0)
+            rows = self.parse_with_sax(xml_file)
+            print("ROWS printing")
+            print(rows)
+
             root = tree.getroot()
 
             self.geo_data_mapping = self._generate_geo_data_mapping(root)
