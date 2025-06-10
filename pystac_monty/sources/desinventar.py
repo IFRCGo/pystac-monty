@@ -580,7 +580,7 @@ class DesinventarTransformer(MontyDataTransformer[DesinventarDataSource]):
         return geo_data
 
     @staticmethod
-    def _generate_hazard_name_mapping(hazard):
+    def _generate_hazard_name_mapping(hazard: dict):
         hazard_name_mapping: Dict[str, str] = {}
 
         for hazard_detail in hazard:

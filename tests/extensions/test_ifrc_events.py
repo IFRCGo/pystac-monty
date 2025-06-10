@@ -85,7 +85,7 @@ class IfrcEventsTest(TestCase):
     @parameterized.expand(load_scenarios(scenarios))
     @pytest.mark.vcr()
     def test_transformer_with_memory_data(self, transformer: IFRCEventTransformer) -> None:
-        """Test EM-DAT transformation to STAC items
+        """Test IFRC transformation to STAC items
 
         Args:
             transformer: IfrcEventTransformer instance to test

@@ -12,14 +12,7 @@ from shapely.geometry import Point, mapping
 
 from pystac_monty.extension import HazardDetail, MontyEstimateType, MontyExtension
 from pystac_monty.hazard_profiles import MontyHazardProfiles
-from pystac_monty.sources.common import (
-    DataType,
-    File,
-    GenericDataSource,
-    Memory,
-    MontyDataSourceV3,
-    MontyDataTransformer,
-)
+from pystac_monty.sources.common import DataType, File, GenericDataSource, Memory, MontyDataSourceV3, MontyDataTransformer
 from pystac_monty.validators.glide import GlideSetValidator
 
 logger = logging.getLogger(__name__)
@@ -42,13 +35,13 @@ class GlideDataSource(MontyDataSourceV3):
             if os.path.isfile(self.input_data.path):
                 self.file_path = self.input_data.path
             else:
-                raise ValueError("File path does not exists", exc_info=True)
+                raise ValueError("File path does not exist")
 
         def handle_memory_data():
             if isinstance(self.input_data.content, dict):
                 self.data = self.input_data.content
             else:
-                raise ValueError("Data must be in Json", exc_info=True)
+                raise ValueError("Data must be in JSON")
 
         input_data_type = self.input_data.data_type
         match input_data_type:
