@@ -67,13 +67,13 @@ class GDACSDataSource(MontyDataSourceV3):
             if os.path.isfile(data.event_data.path):
                 self.event_data_file_path = data.event_data.path
             else:
-                raise ValueError("File path does not exists", exc_info=True)
+                raise ValueError("File path does not exist")
 
         def handle_memory_data():
             if isinstance(data.event_data.content, dict):
                 self.event_data = data.event_data.content
             else:
-                raise ValueError("Data must be in Json", exc_info=True)
+                raise ValueError("Data must be in JSON")
 
         input_data_type = data.event_data.data_type
         match input_data_type:

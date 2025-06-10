@@ -51,13 +51,13 @@ class GFDDataSource(MontyDataSourceV3):
             if os.path.isfile(self.input_data.path):
                 self.file_path = self.input_data.path
             else:
-                raise ValueError("File path does not exists", exc_info=True)
+                raise ValueError("File path does not exist")
 
         def handle_memory_data():
             if isinstance(self.input_data.content, list):
                 self.data = self.input_data.content
             else:
-                raise ValueError("Data must be in JSON", exc_info=True)
+                raise ValueError("Data must be in JSON")
 
         input_data_type = self.input_data.data_type
         match input_data_type:
