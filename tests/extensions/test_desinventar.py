@@ -10,6 +10,7 @@ from parameterized import parameterized
 
 from pystac_monty.extension import MontyExtension
 from pystac_monty.geocoding import MockGeocoder
+from pystac_monty.sources.common import DataType, DesinventarDataSourceType, File
 from pystac_monty.sources.desinventar import (
     DesinventarDataSource,
     DesinventarTransformer,
@@ -34,7 +35,7 @@ class DesinventarScenario(TypedDict):
 grenada_data: DesinventarScenario = {
     "name": "Grenada subset",
     "data": {
-        "zip_file_url": "https://github.com/IFRCGo/monty-stac-extension/raw/refs/heads/main/model/sources/DesInventar/DI_export_grd.zip",  # noqa: E501
+        "zip_file_url": "https://github.com/IFRCGo/monty-stac-extension/raw/refs/heads/main/docs/model/sources/DesInventar/DI_export_grd.zip",
         "country_code": "grd",
         "iso3": "GRD",
     },
@@ -51,7 +52,14 @@ def load_scenarios(
         response = requests.get(data["zip_file_url"])
         tmp_zip_file = tempfile.NamedTemporaryFile(suffix=".zip", delete=False)
         tmp_zip_file.write(response.content)
-        data_source = DesinventarDataSource(tmp_zip_file, data["country_code"], data["iso3"], data["zip_file_url"])
+        data_source = DesinventarDataSource(
+            data=DesinventarDataSourceType(
+                tmp_zip_file=File(path=tmp_zip_file, data_type=DataType.FILE),
+                source_url=data["zip_file_url"],
+                country_code=data["country_code"],
+                iso3=data["iso3"],
+            )
+        )
         transformers.append((data["country_code"], DesinventarTransformer(data_source, geocoder)))
     return transformers
 
@@ -70,7 +78,7 @@ class DesinventarTest(TestCase):
     @pytest.mark.vcr()
     def test_transformer(self, country_code: str, transformer: DesinventarTransformer) -> None:
         items = list(transformer.get_stac_items())
-        print(items)
+
         self.assertTrue(len(items) > 0)
 
         source_event_items = []

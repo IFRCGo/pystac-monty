@@ -1,9 +1,20 @@
+import json
+import subprocess
+import tempfile
 from enum import Enum
 
 from pystac_monty.extension import (
     MontyImpactExposureCategory,
     MontyImpactType,
 )
+
+
+def save_json_data_into_tmp_file(data: dict) -> tempfile._TemporaryFileWrapper:
+    tmpfile = tempfile.NamedTemporaryFile(suffix=".json", delete=False)
+    data = json.dumps(data).encode("utf-8")
+    tmpfile.write(data)
+    tmpfile.close()
+    return tmpfile
 
 
 class IDMCUtils:
@@ -70,3 +81,18 @@ class IDMCUtils:
         if hazard not in hazard_mapping:
             raise KeyError(f"Hazard {hazard} not found.")
         return hazard_mapping.get(hazard)
+
+
+def order_data_file(filepath: str, jq_filter: str):
+    """Order the data based on given filter"""
+    try:
+        result = subprocess.run(["jq", jq_filter, filepath], capture_output=True, text=True, check=True)
+    except subprocess.CalledProcessError as e:
+        print("Error running jq:", e.stderr)
+        raise
+
+    temp_file = tempfile.NamedTemporaryFile(delete=False)
+    temp_file.write(result.stdout.encode())
+    temp_file.close()
+
+    return temp_file

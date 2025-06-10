@@ -1,10 +1,12 @@
 import json
 import logging
+import os
 import typing
 from dataclasses import dataclass
 from datetime import datetime
 from typing import List, Optional, Union
 
+import ijson
 import pandas as pd
 import pytz
 from pystac import Item, Link
@@ -19,7 +21,7 @@ from pystac_monty.extension import (
     MontyImpactType,
 )
 from pystac_monty.hazard_profiles import MontyHazardProfiles
-from pystac_monty.sources.common import MontyDataSource, MontyDataTransformer
+from pystac_monty.sources.common import DataType, File, GenericDataSource, Memory, MontyDataSourceV3, MontyDataTransformer
 from pystac_monty.validators.em_dat import EmdatDataValidator
 
 logger = logging.getLogger(__name__)
@@ -30,13 +32,34 @@ STAC_IMPACT_ID_PREFIX = "emdat-impact-"
 
 
 @dataclass
-class EMDATDataSource(MontyDataSource):
+class EMDATDataSource(MontyDataSourceV3):
     """EM-DAT data source that can handle both Excel files and pandas DataFrames"""
 
     df: pd.DataFrame
+    file_path: str
+    data_source: Union[File, Memory]
 
-    def __init__(self, source_url: str, data: Union[str, dict[str, typing.Any], pd.DataFrame]):
-        super().__init__(source_url, data)
+    def __init__(self, data: GenericDataSource):
+        super().__init__(data)
+
+        def handle_file_data():
+            if os.path.isfile(self.input_data.path):
+                self.file_path = self.input_data.path
+
+        def handle_memory_data():
+            if isinstance(self.input_data.content, str):
+                # If data is a string, assume it's Excel content
+                self.df = pd.read_excel(self.input_data.content)
+                rename_excel_df(self.df)
+            elif isinstance(self.input_data.content, pd.DataFrame):
+                self.df = self.input_data.content
+                rename_excel_df(self.df)
+            elif isinstance(self.input_data.content, dict):
+                # If data is a dict, assume it's Json content
+                data = self.input_data.content["data"]["public_emdat"]["data"]
+                self.df = pd.DataFrame(data)
+            else:
+                raise ValueError("Data must be either Excel content (str) or pandas DataFrame or Json")
 
         def rename_excel_df(df: pd.DataFrame):
             df.rename(
@@ -91,22 +114,22 @@ class EMDATDataSource(MontyDataSource):
                 inplace=True,
             )
 
-        if isinstance(data, str):
-            # If data is a string, assume it's Excel content
-            self.df = pd.read_excel(data)
-            rename_excel_df(self.df)
-        elif isinstance(data, pd.DataFrame):
-            self.df = data
-            rename_excel_df(self.df)
-        elif isinstance(data, dict):
-            # If data is a dict, assume it's Json content
-            data = data["data"]["public_emdat"]["data"]
-            self.df = pd.DataFrame(data)
-        else:
-            raise ValueError("Data must be either Excel content (str) or pandas DataFrame or Json")
+        input_data_type = self.input_data.data_type
+        match input_data_type:
+            case DataType.FILE:
+                handle_file_data()
+            case DataType.MEMORY:
+                handle_memory_data()
+            case _:
+                typing.assert_never(input_data_type)
 
-    def get_data(self) -> pd.DataFrame:
+    def get_data(self) -> Union[pd.DataFrame, str]:
+        if self.input_data.data_type == DataType.FILE:
+            return self.file_path
         return self.df
+
+    def get_input_data_type(self) -> DataType:
+        return self.input_data.data_type
 
 
 class EMDATTransformer(MontyDataTransformer[EMDATDataSource]):
@@ -122,6 +145,38 @@ class EMDATTransformer(MontyDataTransformer[EMDATDataSource]):
         return list(self.get_stac_items())
 
     def get_stac_items(self) -> typing.Generator[Item, None, None]:
+        data_type = self.data_source.get_input_data_type()
+        match data_type:
+            case DataType.FILE:
+                yield from self.get_stac_items_from_file()
+            case DataType.MEMORY:
+                yield from self.get_stac_items_from_memory()
+            case _:
+                typing.assert_never(data_type)
+
+    def get_stac_items_from_file(self) -> typing.Generator[Item, None, None]:
+        data_path = self.data_source.get_data()
+
+        with open(data_path, "rb") as f:
+            data = ijson.items(f, "data.public_emdat.data.item")
+
+            self.transform_summary.mark_as_started()
+            for row_dict in data:
+                self.transform_summary.increment_rows()
+                try:
+                    data = EmdatDataValidator(**row_dict)
+                    if event_item := self.make_source_event_item(data):
+                        yield event_item
+                        yield self.make_hazard_event_item(event_item, data)
+                        yield from self.make_impact_items(data, event_item)
+                    else:
+                        self.transform_summary.increment_failed_rows()
+                except Exception:
+                    self.transform_summary.increment_failed_rows()
+                    logger.error("Failed to process emdat", exc_info=True)
+            self.transform_summary.mark_as_complete()
+
+    def get_stac_items_from_memory(self) -> typing.Generator[Item, None, None]:
         data = self.data_source.get_data()
         data = data.where(pd.notna(data), None)
 
@@ -133,7 +188,7 @@ class EMDATTransformer(MontyDataTransformer[EMDATDataSource]):
                 data = EmdatDataValidator(**row_dict)
                 if event_item := self.make_source_event_item(data):
                     yield event_item
-                    yield self.make_hazard_event_item(event_item)
+                    yield self.make_hazard_event_item(event_item, data)
                     yield from self.make_impact_items(data, event_item)
                 else:
                     self.transform_summary.increment_failed_rows()
@@ -216,7 +271,7 @@ class EMDATTransformer(MontyDataTransformer[EMDATDataSource]):
 
         return item
 
-    def make_hazard_event_item(self, event_item: Item) -> Item:
+    def make_hazard_event_item(self, event_item: Item, row: EmdatDataValidator) -> Item:
         """Create a hazard item from an event item"""
         hazard_item = event_item.clone()
         hazard_item.id = hazard_item.id.replace(STAC_EVENT_ID_PREFIX, STAC_HAZARD_ID_PREFIX)
@@ -226,12 +281,10 @@ class EMDATTransformer(MontyDataTransformer[EMDATDataSource]):
         # Add hazard detail
         monty = MontyExtension.ext(hazard_item)
 
-        original_row = self._get_row_by_disno(hazard_item.id.replace(STAC_HAZARD_ID_PREFIX, ""))
-        if original_row is not None:
+        if row is not None:
             monty.hazard_detail = self._create_hazard_detail(
                 hazard_item,
-                # FIXME: Do we need to do this
-                EmdatDataValidator(**original_row.to_dict()),
+                row,
             )
 
         return hazard_item
@@ -326,13 +379,6 @@ class EMDATTransformer(MontyDataTransformer[EMDATDataSource]):
             severity_unit=row.magnitude_scale or "emdat",
             estimate_type=MontyEstimateType.PRIMARY,
         )
-
-    # FIXME: Do we need to use pandas for this?
-    def _get_row_by_disno(self, disno: str) -> Optional[pd.Series]:
-        """Get original DataFrame row by DisNo"""
-        df = self.data_source.get_data()
-        matching_rows = df[df.disno == disno]
-        return matching_rows.iloc[0] if not matching_rows.empty else None
 
     def _create_title_from_row(self, row: EmdatDataValidator) -> Optional[str]:
         """Create a descriptive title from row data when Event Name is missing"""

@@ -50,11 +50,12 @@ interactions:
         viewscreen.githubusercontent.com notebooks.githubusercontent.com; img-src
         ''self'' data: blob: github.githubassets.com media.githubusercontent.com camo.githubusercontent.com
         identicons.github.com avatars.githubusercontent.com private-avatars.githubusercontent.com
-        github-cloud.s3.amazonaws.com objects.githubusercontent.com secured-user-images.githubusercontent.com/
-        user-images.githubusercontent.com/ private-user-images.githubusercontent.com
-        opengraph.githubassets.com github-production-user-asset-6210df.s3.amazonaws.com
-        customer-stories-feed.github.com spotlights-feed.github.com objects-origin.githubusercontent.com
-        *.githubusercontent.com; manifest-src ''self''; media-src github.com user-images.githubusercontent.com/
+        github-cloud.s3.amazonaws.com objects.githubusercontent.com release-assets.githubusercontent.com
+        secured-user-images.githubusercontent.com/ user-images.githubusercontent.com/
+        private-user-images.githubusercontent.com opengraph.githubassets.com copilotprodattachments.blob.core.windows.net/github-production-copilot-attachments/
+        github-production-user-asset-6210df.s3.amazonaws.com customer-stories-feed.github.com
+        spotlights-feed.github.com objects-origin.githubusercontent.com *.githubusercontent.com;
+        manifest-src ''self''; media-src github.com user-images.githubusercontent.com/
         secured-user-images.githubusercontent.com/ private-user-images.githubusercontent.com
         github-production-user-asset-6210df.s3.amazonaws.com gist.github.com; script-src
         github.githubassets.com; style-src ''unsafe-inline'' github.githubassets.com;
@@ -63,24 +64,24 @@ interactions:
       Content-Type:
       - text/html; charset=utf-8
       Date:
-      - Mon, 24 Mar 2025 18:04:07 GMT
+      - Thu, 05 Jun 2025 06:31:19 GMT
       Location:
       - https://raw.githubusercontent.com/IFRCGo/monty-stac-extension/refs/heads/main/examples/reference-events/20241027T150000-ESP-HM-FLOOD-001-GCDB.json
       Referrer-Policy:
       - no-referrer-when-downgrade
       Server:
-      - GitHub.com
+      - github.com
       Strict-Transport-Security:
       - max-age=31536000; includeSubdomains; preload
       Vary:
-      - X-PJAX, X-PJAX-Container, Turbo-Visit, Turbo-Frame, Accept-Encoding, Accept,
-        X-Requested-With
+      - X-PJAX, X-PJAX-Container, Turbo-Visit, Turbo-Frame, X-Requested-With,Accept-Encoding,
+        Accept, X-Requested-With
       X-Content-Type-Options:
       - nosniff
       X-Frame-Options:
       - deny
       X-GitHub-Request-Id:
-      - BBC6:BA838:33D1DE:3DC24D:67E19E97
+      - EA4C:3BE222:B63555:D6D359:684139B6
       X-XSS-Protection:
       - '0'
     status:
@@ -102,16 +103,16 @@ interactions:
   response:
     body:
       string: !!binary |
-        H4sIAAAAAAAAA5VUUW/aMBB+76+w8tRJJNgkBJTHtWV9WEfV9mnThFznIF6DHdkOK0P8910SAoSi
-        iUUo6O6++77z3cWbK0I867iYrcBYqZWXEI8FNKBebx+CdweqClqM/kA3BjLnCpv0+3JuxEIHC+my
-        8jWQur/Uyq37KxogS9+KDJY8+GWRGPN+1pxuXUAlMwHuSgONkEwr14AOIkYHoxc2pPj4d8+P/v2D
-        P/k6nd76lDL/y83t5yZB6DwH4XYlL1IurA8rUM428ddX/b4v1w+DiCHxMIyGw3gcjmncqwPhOIgp
-        C0MWj+PxKIp27svx+1MtQC/BmTVqbpoWted81FI5r8nHsrVJpeIODs38h955RdTE97bWLYwuwDhZ
-        87XK0uVNi3OtUyIVeS64VG0NKVhhZNH27glS0gWSudHLhAxGZCocqYZC2JA4nRAakW96tXOxYM+I
-        53FyCe0MfUb9eooJpfj73uJwnYybXYoGlZ7BMp9GL4ydYOu1S4QuFc5gJnTa6a+Hi+Q1jevgM/6H
-        m/Qj/OEety/yeh17eGLHJ/bonILQxsz+d7kx2+i8W1K92wdFq0sjoKv4BuvfuF2dtHk12KO0oz1A
-        80ZzHEnejP/gvrOu5EYqINc7xKdTyCTnNvvoLFcS6a6fJF4nmN+mnewstxZcva+NnUv1dqh609Jl
-        BuYXNy5obpl9LQbyKtdCPm/kt73z7PgHBpSA3fVxnufoumnYqg//avsXxFTZLkAFAAA=
+        H4sIAAAAAAAAA5VU32/aMBB+719h5amTSLDJD1Ae15b1YR1V26dNE3KdA7wGO7INK0P877skJBCK
+        JhahoLv77vvOdxdvrwjxrONiugZjpVZeSjwW0IB6vTYE7w5UGbQY/YFuDCycK2za78uZEXMdaDPv
+        L7VyG7/M8NuM/roi61uxgCUPfllUQIKfFbnbFFDqjYG7lYFaUWala0AHEaOD4QuLKT7+3fOjf//g
+        j79OJrc+pcz/cnP7uU4QOs9BuH3t84wL68MalLN1/PVVv7d1+2EQMSSOwyiOk1E4okmvCoSjIKEs
+        DFkySkbDKNq7L8e3p5qDXoIzG9Tc1r1qzvmopXJenY9la5NJxR0cuvoPvfOKqInvXaVbGF2AcbLi
+        a5Sly+sW51pnRCryXHCpmhoysMLIoundE2SkCyQzo5cpGQzJRDhSDoWwmDidEhqRb3q9d7GgZcTz
+        OLmEZoY+o341xZRS/H1vcLglxk0vRYPKzmCZT6MXxk6w1RamQq8UzmAqdNbpr4eL5NWN6+AX/A83
+        2Uf4wz1uX+T1OnZ8Yicn9vCcgtDGTP93uTHb6LxbUrXbB0WrV0ZAV/ENNr9xuzpps3KwR2lHe4Dm
+        jeY4krwe/8F9Z92KG6mAXO8Rn04h45zbxUfnai2R7vpJ4r2C+U3ayc5ya8FV+1rbuVRvh6q3Dd3C
+        wOzixgX1LdPWYiAvcy3ks1p+1zvPjn9gQAnYXx/neY6um5qt/PCvdn8BK3sskkkFAAA=
     headers:
       Accept-Ranges:
       - bytes
@@ -132,37 +133,215 @@ interactions:
       Cross-Origin-Resource-Policy:
       - cross-origin
       Date:
-      - Mon, 24 Mar 2025 18:04:07 GMT
+      - Thu, 05 Jun 2025 06:31:19 GMT
       ETag:
-      - W/"9ea00a9c7f61dc2525a639d3eb02e28ad07aa9640d8cd88adb98221401aced31"
+      - W/"238e75cf5f25c282fd232d173649a9a7437be7eea0d8ffb211019a1b736ac18e"
       Expires:
-      - Mon, 24 Mar 2025 18:09:07 GMT
+      - Thu, 05 Jun 2025 06:36:19 GMT
       Source-Age:
       - '0'
       Strict-Transport-Security:
       - max-age=31536000
       Vary:
-      - Authorization,Accept-Encoding,Origin
+      - Authorization,Accept-Encoding
       Via:
       - 1.1 varnish
       X-Cache:
-      - MISS
+      - HIT
       X-Cache-Hits:
       - '0'
       X-Content-Type-Options:
       - nosniff
       X-Fastly-Request-ID:
-      - b2373831d1578b9e87690eeb2faa721d1cf2549e
+      - 62503c0f2cc16acaaaebb4fb1c16fa69446674ee
       X-Frame-Options:
       - deny
       X-GitHub-Request-Id:
-      - 10FF:14633C:9BE37:145FE0:67E19E91
+      - 3CD9:2DD822:153606:2F7CAE:6841382B
       X-Served-By:
-      - cache-del21740-DEL
+      - cache-maa10225-MAA
       X-Timer:
-      - S1742839448.639304,VS0,VE300
+      - S1749105080.525896,VS0,VE266
       X-XSS-Protection:
       - 1; mode=block
+    status:
+      code: 200
+      message: OK
+- request:
+    body: null
+    headers:
+      Connection:
+      - close
+      Host:
+      - ifrcgo.org
+      User-Agent:
+      - Python-urllib/3.12
+    method: GET
+    uri: https://ifrcgo.org/monty-stac-extension/v1.0.0/schema.json
+  response:
+    body:
+      string: "{\n  \"$schema\": \"http://json-schema.org/draft-07/schema#\",\n  \"$id\":
+        \"https://ifrcgo.org/monty-stac-extension/v1.0.0/schema.json#\",\n  \"title\":
+        \"Monty Extension\",\n  \"description\": \"STAC Monty Extension for STAC Items
+        and STAC Collections.\",\n  \"oneOf\": [\n    {\n      \"$comment\": \"This
+        is the schema for STAC Items.\",\n      \"allOf\": [\n        {\n          \"$ref\":
+        \"#/definitions/stac_extensions\"\n        },\n        {\n          \"type\":
+        \"object\",\n          \"required\": [\n            \"type\",\n            \"properties\"\n
+        \         ],\n          \"properties\": {\n            \"type\": {\n              \"const\":
+        \"Feature\"\n            },\n            \"properties\": {\n              \"allOf\":
+        [\n                {\n                  \"$comment\": \"Require fields here
+        for Item Properties.\",\n                  \"required\": [\n                    \"monty:country_codes\",\n
+        \                   \"monty:hazard_codes\",\n                    \"monty:corr_id\",\n
+        \                   \"roles\"\n                  ]\n                },\n                {\n
+        \                 \"$ref\": \"#/definitions/fields\"\n                },\n
+        \               {\n                  \"$ref\": \"#/definitions/roles\"\n                }\n
+        \             ]\n            }\n          }\n        }\n      ]\n    },\n
+        \   {\n      \"$comment\": \"This is the schema for STAC Collections.\",\n
+        \     \"allOf\": [\n        {\n          \"$ref\": \"#/definitions/stac_extensions\"\n
+        \       },\n        {\n          \"type\": \"object\",\n          \"required\":
+        [\n            \"type\",\n            \"providers\",\n            \"license\"\n
+        \         ],\n          \"properties\": {\n            \"type\": {\n              \"const\":
+        \"Collection\"\n            }\n          }\n        },\n        {\n          \"$ref\":
+        \"#/definitions/roles\"\n        }\n      ],\n      \"anyOf\": [\n        {\n
+        \         \"$comment\": \"This is the schema for the fields in Summaries.
+        By default, only checks the existence of the properties, but not the schema
+        of the summaries.\",\n          \"required\": [\n            \"summaries\"\n
+        \         ],\n          \"properties\": {\n            \"summaries\": {\n
+        \             \"required\": [\n                \"monty:country_codes\",\n
+        \               \"monty:hazard_codes\"\n              ]\n            }\n          }\n
+        \       }\n      ]\n    }\n  ],\n  \"definitions\": {\n    \"stac_extensions\":
+        {\n      \"type\": \"object\",\n      \"required\": [\n        \"stac_extensions\"\n
+        \     ],\n      \"properties\": {\n        \"stac_extensions\": {\n          \"type\":
+        \"array\",\n          \"contains\": {\n            \"const\": \"https://ifrcgo.org/monty-stac-extension/v1.0.0/schema.json\"\n
+        \         }\n        }\n      }\n    },\n    \"fields\": {\n      \"$comment\":
+        \"Monty prefixed fields\",\n      \"type\": \"object\",\n      \"properties\":
+        {\n        \"monty:episode_number\": {\n          \"type\": \"integer\"\n
+        \       },\n        \"monty:country_codes\": {\n          \"type\": \"array\",\n
+        \         \"items\": {\n            \"type\": \"string\",\n            \"pattern\":
+        \"^([A-Z]{3})|AB9$\",\n            \"$comment\": \"AB9 is a special code for
+        the Abyei area used by IDMC\"\n          }\n        },\n        \"monty:hazard_codes\":
+        {\n          \"type\": \"array\",\n          \"items\": {\n            \"type\":
+        \"string\",\n            \"pattern\": \"^([A-Z]{2}(?:\\\\d{4}$){0,1})|([a-z]{3}-[a-z]{3}-[a-z]{3}-[a-z]{3})|([A-Z]{2})$\"\n
+        \         }\n        },\n        \"monty:corr_id\": {\n          \"type\":
+        \"string\"\n        },\n        \"monty:hazard_detail\": {\n          \"type\":
+        \"object\",\n          \"required\": [\n            \"cluster\"\n          ],\n
+        \         \"properties\": {\n            \"cluster\": {\n              \"type\":
+        \"string\"\n            },\n            \"severity_value\": {\n              \"type\":
+        \"number\"\n            },\n            \"severity_unit\": {\n              \"type\":
+        \"string\"\n            },\n            \"severity_label\": {\n              \"type\":
+        \"string\"\n            },\n            \"estimate_type\": {\n              \"$ref\":
+        \"#/definitions/estimate_type\"\n            }\n          },\n          \"additionalProperties\":
+        true\n        },\n        \"monty:impact_detail\": {\n          \"type\":
+        \"object\",\n          \"properties\": {\n            \"category\": {\n              \"type\":
+        \"string\",\n              \"enum\": [\n                \"people\",\n                \"crops\",\n
+        \               \"women\",\n                \"men\",\n                \"children_0_4\",\n
+        \               \"children_5_9\",\n                \"children_10_14\",\n                \"children_15_19\",\n
+        \               \"adult_20_24\",\n                \"adult_25_29\",\n                \"adult_30_34\",\n
+        \               \"adult_35_39\",\n                \"adult_40_44\",\n                \"adult_45_49\",\n
+        \               \"adult_50_54\",\n                \"adult_55_59\",\n                \"adult_60_64\",\n
+        \               \"elderly\",\n                \"wheelchair_users\",\n                \"roads\",\n
+        \               \"railways\",\n                \"vulnerable_employment\",\n
+        \               \"buildings\",\n                \"reconstruction_costs\",\n
+        \               \"hospitals\",\n                \"schools\",\n                \"education_centers\",\n
+        \               \"local_currency\",\n                \"global_currency\",\n
+        \               \"local_currency_adj\",\n                \"global_currency_adj\",\n
+        \               \"usd_uncertain\",\n                \"cattle\",\n                \"aid_general\",\n
+        \               \"ifrc_contribution\",\n                \"ifrc_requested\",\n
+        \               \"alertscore\",\n                \"total_affected\",\n                \"households\"\n
+        \             ]\n            },\n            \"type\": {\n              \"type\":
+        \"string\",\n              \"enum\": [\n                \"unspecified\",\n
+        \               \"unaffected\",\n                \"damaged\",\n                \"destroyed\",\n
+        \               \"potentially_damaged\",\n                \"affected_total\",\n
+        \               \"affected_direct\",\n                \"affected_indirect\",\n
+        \               \"death\",\n                \"missing\",\n                \"injured\",\n
+        \               \"evacuated\",\n                \"relocated\",\n                \"assisted\",\n
+        \               \"shelter_emergency\",\n                \"shelter_temporary\",\n
+        \               \"shelter_longterm\",\n                \"in_need\",\n                \"targeted\",\n
+        \               \"disrupted\",\n                \"cost\",\n                \"homeless\",\n
+        \               \"displaced_internal\",\n                \"displaced_external\",\n
+        \               \"displaced_total\",\n                \"alertscore\",\n                \"potentially_affected\",\n
+        \               \"highest_risk\"\n              ]\n            },\n            \"value\":
+        {\n              \"type\": \"number\"\n            },\n            \"unit\":
+        {\n              \"type\": \"string\"\n            },\n            \"estimate_type\":
+        {\n              \"$ref\": \"#/definitions/estimate_type\"\n            },\n
+        \           \"description\": {\n              \"type\": \"string\"\n            }\n
+        \         },\n          \"additionalProperties\": false\n        }\n      },\n
+        \     \"patternProperties\": {\n        \"^(?!monty:)\": {\n          \"$comment\":
+        \"Prevent additional monty prefixed field\"\n        }\n      },\n      \"additionalProperties\":
+        false\n    },\n    \"estimate_type\": {\n      \"type\": \"string\",\n      \"enum\":
+        [\n        \"primary\",\n        \"secondary\",\n        \"modelled\"\n      ]\n
+        \   },\n    \"roles\": {\n      \"$comment\": \"Roles field\",\n      \"oneOf\":
+        [\n        {\n          \"$comment\": \"Reference Event\",\n          \"allOf\":
+        [\n            {\n              \"$ref\": \"#/definitions/is_event\"\n            },\n
+        \           {\n              \"$ref\": \"#/definitions/is_reference\"\n            }\n
+        \         ]\n        },\n        {\n          \"$comment\": \"Source Event\",\n
+        \         \"allOf\": [\n            {\n              \"$ref\": \"#/definitions/is_event\"\n
+        \           },\n            {\n              \"$ref\": \"#/definitions/is_source\"\n
+        \           }\n          ]\n        },\n        {\n          \"$comment\":
+        \"Hazard\",\n          \"allOf\": [\n            {\n              \"$ref\":
+        \"#/definitions/is_hazard\"\n            }\n          ]\n        },\n        {\n
+        \         \"$comment\": \"Impact\",\n          \"allOf\": [\n            {\n
+        \             \"$ref\": \"#/definitions/is_impact\"\n            }\n          ]\n
+        \       }\n      ]\n    },\n    \"is_event\": {\n      \"properties\": {\n
+        \       \"roles\": {\n          \"type\": \"array\",\n          \"minItems\":
+        2,\n          \"contains\": {\n            \"const\": \"event\"\n          }\n
+        \       }\n      }\n    },\n    \"is_reference\": {\n      \"properties\":
+        {\n        \"roles\": {\n          \"type\": \"array\",\n          \"minItems\":
+        2,\n          \"contains\": {\n            \"const\": \"reference\"\n          }\n
+        \       }\n      }\n    },\n    \"is_source\": {\n      \"properties\": {\n
+        \       \"roles\": {\n          \"type\": \"array\",\n          \"minItems\":
+        2,\n          \"contains\": {\n            \"const\": \"source\"\n          }\n
+        \       }\n      }\n    },\n    \"is_hazard\": {\n      \"properties\": {\n
+        \       \"roles\": {\n          \"type\": \"array\",\n          \"minItems\":
+        1,\n          \"contains\": {\n            \"const\": \"hazard\"\n          }\n
+        \       },\n        \"monty:hazard_codes\": {\n          \"maxItems\": 1\n
+        \       }\n      }\n    },\n    \"is_impact\": {\n      \"properties\": {\n
+        \       \"roles\": {\n          \"type\": \"array\",\n          \"minItems\":
+        1,\n          \"contains\": {\n            \"const\": \"impact\"\n          }\n
+        \       }\n      }\n    }\n  }\n}\n"
+    headers:
+      Accept-Ranges:
+      - bytes
+      Access-Control-Allow-Origin:
+      - '*'
+      Age:
+      - '451'
+      Cache-Control:
+      - max-age=600
+      Connection:
+      - close
+      Content-Length:
+      - '8990'
+      Content-Type:
+      - application/json; charset=utf-8
+      Date:
+      - Thu, 05 Jun 2025 06:31:20 GMT
+      ETag:
+      - '"68362515-231e"'
+      Last-Modified:
+      - Tue, 27 May 2025 20:48:21 GMT
+      Server:
+      - GitHub.com
+      Vary:
+      - Accept-Encoding
+      Via:
+      - 1.1 varnish
+      X-Cache:
+      - HIT
+      X-Cache-Hits:
+      - '2'
+      X-Fastly-Request-ID:
+      - cd4b0ef5533f52c7964776194b66f13407f15384
+      X-GitHub-Request-Id:
+      - 4E22:64F80:87F27:A7133:684137F4
+      X-Served-By:
+      - cache-maa10238-MAA
+      X-Timer:
+      - S1749105080.010237,VS0,VE1
+      expires:
+      - Thu, 05 Jun 2025 06:33:49 GMT
+      x-proxy-cache:
+      - MISS
     status:
       code: 200
       message: OK

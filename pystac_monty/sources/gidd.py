@@ -1,10 +1,13 @@
 import itertools
 import json
 import logging
+import os
+import typing
 from dataclasses import dataclass
 from datetime import datetime
-from typing import Any, Dict, Generator, List
+from typing import Dict, Generator, Iterator, List, Optional
 
+import ijson
 import pytz
 from pystac import Asset, Item, Link
 
@@ -16,8 +19,13 @@ from pystac_monty.extension import (
     MontyImpactType,
 )
 from pystac_monty.hazard_profiles import MontyHazardProfiles
-from pystac_monty.sources.common import MontyDataSource, MontyDataTransformer
-from pystac_monty.sources.utils import IDMCUtils
+from pystac_monty.sources.common import (
+    DataType,
+    GenericDataSource,
+    MontyDataSourceV3,
+    MontyDataTransformer,
+)
+from pystac_monty.sources.utils import IDMCUtils, order_data_file
 from pystac_monty.validators.gidd import GiddValidator
 
 logger = logging.getLogger(__name__)
@@ -27,12 +35,43 @@ STAC_IMPACT_ID_PREFIX = "idmc-gidd-impact-"
 
 
 @dataclass
-class GIDDDataSource(MontyDataSource):
-    """GIDD data source that can handle Json data"""
+class GIDDDataSource(MontyDataSourceV3):
+    """GIDD data source version 2"""
 
-    def __init__(self, source_url: str, data: Any):
-        super().__init__(source_url, data)
-        self.data = json.loads(data)
+    parsed_content: List[dict]
+    ordered_temp_file: Optional[str] = None
+
+    def __init__(self, data: GenericDataSource):
+        super().__init__(root=data)
+
+        def handle_file_data():
+            if os.path.isfile(self.input_data.path):
+                jq_filter = '.features |= sort_by(.properties."Event ID")'
+                self.ordered_temp_file = order_data_file(filepath=self.input_data.path, jq_filter=jq_filter)
+
+        def handle_memory_data():
+            self.parsed_content = json.loads(self.input_data.content)
+
+        input_data_type = self.input_data.data_type
+        match input_data_type:
+            case DataType.FILE:
+                handle_file_data()
+            case DataType.MEMORY:
+                handle_memory_data()
+            case _:
+                typing.assert_never(input_data_type)
+
+    def get_ordered_tmp_file(self):
+        """Get the temp file object which has ordered data"""
+        return self.ordered_temp_file
+
+    def get_input_data_type(self) -> DataType:
+        """Returns the input data type"""
+        return self.input_data.data_type
+
+    def get_memory_data(self):
+        """Get the parsed memory data"""
+        return self.parsed_content
 
 
 class GIDDTransformer(MontyDataTransformer[GIDDDataSource]):
@@ -45,11 +84,8 @@ class GIDDTransformer(MontyDataTransformer[GIDDDataSource]):
         """Creates the STAC Items"""
         self.transform_summary.mark_as_started()
 
-        gidd_data = self.check_and_get_gidd_data()
-        gidd_data.sort(key=lambda x: x["properties"]["Event ID"])
-        for event_id, data_iterator in itertools.groupby(gidd_data, key=lambda x: x["properties"].get("Event ID", " ")):
-            gidd_data_items = list(data_iterator)
-            self.transform_summary.increment_rows(len(gidd_data_items))
+        for gidd_data in self.check_and_get_gidd_data():
+            self.transform_summary.increment_rows(len(gidd_data))
 
             try:
 
@@ -60,15 +96,15 @@ class GIDDTransformer(MontyDataTransformer[GIDDDataSource]):
                         validated_data.append(obj)
                     return validated_data
 
-                validated_data = get_validated_data(gidd_data_items)
+                validated_data = get_validated_data(gidd_data)
 
-                if event_item := self.make_source_event_item(event_id=event_id, data_items=validated_data):
+                if event_item := self.make_source_event_item(data_items=validated_data):
                     yield event_item
                     yield from self.make_impact_items(event_item, validated_data)
                 else:
-                    self.transform_summary.increment_failed_rows(len(gidd_data_items))
+                    self.transform_summary.increment_failed_rows(len(gidd_data))
             except Exception:
-                self.transform_summary.increment_failed_rows(len(gidd_data_items))
+                self.transform_summary.increment_failed_rows(len(gidd_data))
                 logger.error("Failed to process the GIDD data", exc_info=True)
         self.transform_summary.mark_as_complete()
 
@@ -97,7 +133,7 @@ class GIDDTransformer(MontyDataTransformer[GIDDDataSource]):
 
         return [min_x, min_y, max_x, max_y]
 
-    def make_source_event_item(self, event_id: int, data_items: List[GiddValidator]) -> Item | None:
+    def make_source_event_item(self, data_items: List[GiddValidator]) -> Item | None:
         """Create an Event Item"""
         # Get the first item to create the STAC event item
         # as only one event item can create multiple impact items
@@ -232,23 +268,45 @@ class GIDDTransformer(MontyDataTransformer[GIDDDataSource]):
             estimate_type=MontyEstimateType.PRIMARY,
         )
 
-    def check_and_get_gidd_data(self) -> List[Dict[str, Any]]:
+    def check_and_get_gidd_data(self) -> Iterator[List[Dict]]:
         """
         Validate the source fields
 
         Returns:
             List of validated GIDD data dictionaries
         """
-        gidd_data: Dict[str, Any] = self.data_source.get_data()
-        if not gidd_data:
-            print(f"No gidd data found in {self.data_source.get_source_url()}")
-            return []
+        tmp_file = self.data_source.get_ordered_tmp_file()
+        input_data_type = self.data_source.get_input_data_type()
+        match input_data_type:
+            case DataType.FILE:
+                with open(tmp_file.name, "rb") as f:
+                    items = ijson.items(f, "features.item")
+                    current_id = None
+                    group = []
 
-        # FIXME: Only pass disaster
-        data = gidd_data["features"]
-        disaster_data = []
-        for item in data:
-            item_properties = item.get("properties", {})
-            if IDMCUtils.DisplacementType(item_properties.get("Figure cause")) == IDMCUtils.DisplacementType.DISASTER_TYPE:
-                disaster_data.append(item)
-        return disaster_data
+                    for item in items:
+                        item_properties = item.get("properties", {})
+                        if (
+                            IDMCUtils.DisplacementType(item_properties.get("Figure cause"))
+                            == IDMCUtils.DisplacementType.DISASTER_TYPE
+                        ):
+                            item_id = item_properties["Event ID"]
+                            if item_id != current_id:
+                                if group:
+                                    yield group
+                                group = [item]
+                                current_id = item_id
+                            else:
+                                group.append(item)
+
+                    if group:
+                        yield group
+            case DataType.MEMORY:
+                data_contents = self.data_source.get_memory_data()
+                data_contents.sort(key=lambda x: x["properties"]["Event ID"])
+                yield from [
+                    list(group)
+                    for _, group in itertools.groupby(data_contents, key=lambda x: x["properties"].get("Event ID", " "))
+                ]
+            case _:
+                typing.assert_never(input_data_type)

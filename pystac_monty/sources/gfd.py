@@ -1,8 +1,9 @@
 import json
 import logging
+import os
 import typing
 from datetime import datetime
-from typing import Any, List
+from typing import List, Union
 
 import pytz
 from pystac import Item
@@ -16,7 +17,14 @@ from pystac_monty.extension import (
     MontyImpactType,
 )
 from pystac_monty.hazard_profiles import MontyHazardProfiles
-from pystac_monty.sources.common import MontyDataSource, MontyDataTransformer
+from pystac_monty.sources.common import (
+    DataType,
+    File,
+    GenericDataSource,
+    Memory,
+    MontyDataSourceV3,
+    MontyDataTransformer,
+)
 from pystac_monty.validators.gfd import GFDSourceValidator
 
 logger = logging.getLogger(__name__)
@@ -28,12 +36,48 @@ STAC_HAZARD_ID_PREFIX = "gfd-hazard-"
 STAC_IMPACT_ID_PREFIX = "gfd-impact-"
 
 
-class GFDDataSource(MontyDataSource):
+class GFDDataSource(MontyDataSourceV3):
     """GFD Data from the source"""
 
-    def __init__(self, source_url: str, data: Any):
-        super().__init__(source_url, data)
-        self.data = json.loads(data)
+    file_path: str
+    source_url: str
+    data: Union[str, dict]
+    data_source: Union[File, Memory]
+
+    def __init__(self, data: GenericDataSource):
+        super().__init__(root=data)
+
+        def handle_file_data():
+            if os.path.isfile(self.input_data.path):
+                self.file_path = self.input_data.path
+            else:
+                raise ValueError("File path does not exist")
+
+        def handle_memory_data():
+            if isinstance(self.input_data.content, list):
+                self.data = self.input_data.content
+            else:
+                raise ValueError("Data must be in JSON")
+
+        input_data_type = self.input_data.data_type
+        match input_data_type:
+            case DataType.FILE:
+                handle_file_data()
+            case DataType.MEMORY:
+                handle_memory_data()
+            case _:
+                typing.assert_never(input_data_type)
+
+    def get_data(self) -> Union[dict, str]:
+        """Get the data"""
+        if self.input_data.data_type == DataType.FILE:
+            with open(self.file_path, "r", encoding="utf-8") as f:
+                return json.loads(f.read())
+        return self.data
+
+    def get_input_data_type(self) -> DataType:
+        """Get the input data type"""
+        return self.input_data.data_type
 
 
 class GFDTransformer(MontyDataTransformer[GFDDataSource]):

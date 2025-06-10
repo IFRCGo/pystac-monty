@@ -4,16 +4,19 @@ import csv
 import io
 import itertools
 import logging
+import tempfile
 import typing
+from dataclasses import dataclass
 from typing import Dict, List, Union
 
+import pandas as pd
 import pytz
 from pystac import Asset, Item, Link
 from shapely.geometry import LineString, Point, mapping
 
 from pystac_monty.extension import HazardDetail, MontyEstimateType, MontyExtension
 from pystac_monty.hazard_profiles import MontyHazardProfiles
-from pystac_monty.sources.common import MontyDataSource, MontyDataTransformer
+from pystac_monty.sources.common import DataType, File, GenericDataSource, Memory, MontyDataSourceV3, MontyDataTransformer
 from pystac_monty.validators.ibtracs import IBTracsdataValidator
 
 logger = logging.getLogger(__name__)
@@ -23,34 +26,79 @@ STAC_EVENT_ID_PREFIX = "ibtracs-event-"
 STAC_HAZARD_ID_PREFIX = "ibtracs-hazard-"
 
 
-class IBTrACSDataSource(MontyDataSource):
+@dataclass
+class IBTrACSDataSource(MontyDataSourceV3):
     """IBTrACS data source that handles tropical cyclone track data."""
 
-    def __init__(self, source_url: str, data: str, version: str = "v04r01"):
+    file_path: str
+    source_url: str
+    data_source: Union[File, Memory]
+
+    def __init__(self, data: GenericDataSource, version: str = "v04r01"):
         """Initialize IBTrACS data source.
 
         Args:
             source_url: URL where the data was retrieved from
             data: Tropical cyclone track data as CSV string
         """
-        super().__init__(source_url, data)
-        self.data = data
-        self._parsed_data = None
+        super().__init__(data)
         self.version = version
 
-    def get_data(self) -> List[Dict[str, str]]:
-        """Get the tropical cyclone track data as a list of dictionaries."""
-        if self._parsed_data is None:
-            self._parsed_data = self._parse_csv()
-        return self._parsed_data
+        def handle_file_data():
+            df = pd.read_csv(self.input_data.path)
+            df = df.sort_values(by=["SID", "ISO_TIME"])
+            with tempfile.NamedTemporaryFile(delete=False, mode="w", newline="", encoding="utf-8") as tmp_file:
+                df.to_csv(tmp_file, index=False)
+                self.file_path = tmp_file.name
+
+        def handle_memory_data(): ...
+
+        self.input_data_type = self.input_data.data_type
+        match self.input_data_type:
+            case DataType.FILE:
+                handle_file_data()
+            case DataType.MEMORY:
+                handle_memory_data()
+            case _:
+                typing.assert_never(self.input_data_type)
 
     def _parse_csv(self) -> List[Dict[str, str]]:
         """Parse the CSV data into a list of dictionaries."""
         csv_data = []
-        csv_reader = csv.DictReader(io.StringIO(self.data))
+        csv_reader = csv.DictReader(io.StringIO(self.input_data.content))
         for row in csv_reader:
             csv_data.append(row)
         return csv_data
+
+    def get_data_for_file(self):
+        """Yield storm data grouped by SID from a sorted CSV."""
+
+        with open(self.file_path, mode="r", newline="", encoding="utf-8") as f:
+            reader = csv.DictReader(f)
+            current_storm_id = None
+            storm_data = []
+
+            for row in reader:
+                storm_id = row["SID"]
+                if storm_id != current_storm_id:
+                    if storm_data:
+                        yield storm_data
+                    storm_data = [row]
+                    current_storm_id = storm_id
+                else:
+                    storm_data.append(row)
+            if storm_data:
+                yield storm_data
+
+    def get_data_for_memory(self):
+        parsed_data = self._parse_csv()
+        parsed_data = [x for x in parsed_data if "SID" in x and "ISO_TIME" in x]
+        parsed_data.sort(key=lambda x: (x.get("SID", " "), x.get("ISO_TIME", " ")))
+        yield from [list(group) for _, group in itertools.groupby(parsed_data, key=lambda x: x.get("SID", " "))]
+
+    def get_input_data_type(self) -> DataType:
+        """Get the input data type"""
+        return self.input_data.data_type
 
 
 class IBTrACSTransformer(MontyDataTransformer[IBTrACSDataSource]):
@@ -61,13 +109,21 @@ class IBTrACSTransformer(MontyDataTransformer[IBTrACSDataSource]):
 
     def get_stac_items(self) -> typing.Generator[Item, None, None]:
         self.transform_summary.mark_as_started()
-        # TODO: Use sax xml parser for memory efficient usage
-        csv_data = self.data_source._parse_csv()
-        csv_data.sort(key=lambda x: x.get("SID", " "))
-        for storm_id, storm_data_iterator in itertools.groupby(csv_data, key=lambda x: x.get("SID", " ")):
-            storm_data = list(storm_data_iterator)
-            self.transform_summary.increment_rows(len(storm_data))
+        data_type = self.data_source.get_input_data_type()
+        match data_type:
+            case DataType.FILE:
+                csv_data = self.data_source.get_data_for_file()
+            case DataType.MEMORY:
+                csv_data = self.data_source.get_data_for_memory()
+            case _:
+                typing.assert_never(data_type)
 
+        for storm_data in csv_data:
+            if storm_data[0].get("SID", "").strip() == "":
+                logger.warning("SID is empty")
+                continue
+
+            self.transform_summary.increment_rows(len(storm_data))
             try:
 
                 def parse_row_data(rows: list[dict]):
@@ -78,7 +134,7 @@ class IBTrACSTransformer(MontyDataTransformer[IBTrACSDataSource]):
                     return validated_data
 
                 storm_data = parse_row_data(storm_data)
-                if event_item := self.make_source_event_items(storm_id, storm_data):
+                if event_item := self.make_source_event_items(storm_data[0].SID, storm_data):
                     yield event_item
                     yield from self.make_hazard_items(event_item, storm_data)
                 else:
@@ -321,7 +377,6 @@ class IBTrACSTransformer(MontyDataTransformer[IBTrACSDataSource]):
             return []
 
         # Sort storm data by time
-        storm_data.sort(key=lambda x: x.ISO_TIME if x.ISO_TIME else "")
 
         # Create a hazard item for each position
         track_coords = []
@@ -334,6 +389,7 @@ class IBTrACSTransformer(MontyDataTransformer[IBTrACSDataSource]):
             # Get position time
             iso_time = row.ISO_TIME
             if not iso_time:
+                logger.warning("Missing ISO_TIME for storm %s", storm_id)
                 continue
 
             dt = iso_time

@@ -1,11 +1,14 @@
 import json
 import logging
 import os
+import typing
 from datetime import datetime
-from typing import Any, Generator, List, Optional
+from enum import Enum
+from typing import Any, Generator, List, Optional, Union
 
 import pytz
 from markdownify import markdownify as md
+from pydantic import BaseModel
 from pystac import Asset, Item
 from shapely.geometry import Point, mapping
 
@@ -19,7 +22,13 @@ from pystac_monty.extension import (
 )
 from pystac_monty.geocoding import MontyGeoCoder
 from pystac_monty.hazard_profiles import MontyHazardProfiles
-from pystac_monty.sources.common import MontyDataSource, MontyDataTransformer
+from pystac_monty.sources.common import (
+    DataType,
+    GenericDataSource,
+    MontyDataSourceV3,
+    MontyDataTransformer,
+    PDCDataSourceType,
+)
 from pystac_monty.validators.pdc import AdminData, ExposureDetailValidator, HazardEventValidator
 
 logger = logging.getLogger(__name__)
@@ -30,27 +39,96 @@ STAC_HAZARD_ID_PREFIX = "pdc-hazard-"
 STAC_IMPACT_ID_PREFIX = "pdc-impact-"
 
 
-class PDCDataSource(MontyDataSource):
-    """PDC Data from the source"""
+class PDCHazard(BaseModel):
+    type: str
+    data: GenericDataSource
 
-    def __init__(self, source_url: str, data: Any):
-        super().__init__(source_url, data)
-        self.data = json.loads(data)
-        self.hazards_data = []
-        self.exposure_detail = {}
-        self.geojson_data = {}
 
-        if "hazards_file_path" in self.data and os.path.exists(self.data["hazards_file_path"]):
-            with open(self.data["hazards_file_path"], "r", encoding="utf-8") as f:
-                self.hazards_data = json.loads(f.read())
+class PDCExposureDetail(BaseModel):
+    type: str
+    data: GenericDataSource
 
-        if "exposure_detail_file_path" in self.data and os.path.exists(self.data["exposure_detail_file_path"]):
-            with open(self.data["exposure_detail_file_path"], "r", encoding="utf-8") as f:
-                self.exposure_detail = json.loads(f.read())
 
-        if "geojson_file_path" in self.data and os.path.exists(self.data["geojson_file_path"]):
-            with open(self.data["geojson_file_path"], "r", encoding="utf-8") as f:
+class PDCGeojson(BaseModel):
+    type: str
+    data: GenericDataSource
+
+
+class PDCSourceType(Enum):
+    HAZARD = "hazard"
+    EXPOSURE_DETAIL = "exposure_detail"
+    GEOJSON = "geojson"
+
+
+class PDCDataSource(MontyDataSourceV3):
+    type: PDCSourceType
+    source_url: str
+    uuid: str
+    hazard_file_path: str
+    exposure_detail_file_path: str
+    geojson_file_path: str
+    hazard_data: Union[str, dict]
+    exposure_detail_data: Union[str, dict]
+    geojson_data: Union[str, dict]
+
+    def __init__(self, data: PDCDataSourceType):
+        super().__init__(data)
+        self.source_url = data.source_url
+        self.uuid = data.uuid
+
+        def handle_file_data():
+            if os.path.isfile(data.hazard_data.path):
+                self.hazard_file_path = data.hazard_data.path
+            else:
+                raise ValueError("File path does not exist")
+
+            if os.path.isfile(data.exposure_detail_data.path):
+                self.exposure_detail_file_path = data.exposure_detail_data.path
+            else:
+                raise ValueError("File path does not exist")
+
+            if os.path.isfile(data.geojson_data.path):
+                self.geojson_file_path = data.geojson_data.path
+            else:
+                raise ValueError("File path does not exist")
+
+        def handle_memory_data(): ...
+
+        input_data_type = data.hazard_data.data_type
+        match input_data_type:
+            case DataType.FILE:
+                handle_file_data()
+            case DataType.MEMORY:
+                handle_memory_data()
+            case _:
+                typing.assert_never(input_data_type)
+
+    def get_hazard_data(self) -> typing.Union[dict, str]:
+        if self.root.hazard_data.data_type == DataType.FILE:
+            with open(self.hazard_file_path, "r", encoding="utf-8") as f:
+                self.hazard_data = json.loads(f.read())
+        return self.hazard_data
+
+    def get_exposure_detail_data(self) -> typing.Union[dict, str]:
+        if self.root.exposure_detail_data.data_type == DataType.FILE:
+            with open(self.exposure_detail_file_path, "r", encoding="utf-8") as f:
+                self.exposure_detail_data = json.loads(f.read())
+        return self.exposure_detail_data
+
+    def get_geojson_data(self) -> typing.Union[dict, str]:
+        if self.root.geojson_data.data_type == DataType.FILE:
+            with open(self.geojson_file_path, "r", encoding="utf-8") as f:
                 self.geojson_data = json.loads(f.read())
+        return self.geojson_data
+
+    def get_input_data_type(self) -> DataType:
+        return self.root.hazard_data.data_type
+
+    def get_source_url(self) -> str:
+        return self.source_url
+
+    def get_uuid(self) -> str:
+        return self.uuid
 
 
 class PDCTransformer(MontyDataTransformer):
@@ -61,18 +139,14 @@ class PDCTransformer(MontyDataTransformer):
 
     def __init__(self, pdc_data_src: PDCDataSource, geocoder: MontyGeoCoder):
         super().__init__(pdc_data_src, geocoder)
-        self.config_data = pdc_data_src.data
-        self.hazards_data = pdc_data_src.hazards_data
-        self.exposure_detail = pdc_data_src.exposure_detail
-        self.geojson_data = pdc_data_src.geojson_data
+        self.uuid = pdc_data_src.uuid
+        self.hazards_data = pdc_data_src.get_hazard_data()
+        self.exposure_detail = pdc_data_src.get_exposure_detail_data()
+        self.geojson_data = pdc_data_src.get_geojson_data()
 
-        self.uuid = self.config_data.get("uuid", None)
         # NOTE Assigning -1 to episode_number incase of failure just to ignore the item formation (see make_items method)
-        try:
-            self.episode_number = int(float(self.config_data.get("exposure_timestamp", -1)))
-        except ValueError:
-            self.episode_number = -1
 
+        self.episode_number = -1
         self.hazard_data = self._get_hazard_data()
 
     def _get_hazard_data(self):

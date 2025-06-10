@@ -2,11 +2,13 @@ import datetime
 import itertools
 import json
 import logging
+import os
 import re
 import typing
 from dataclasses import dataclass
-from typing import Any, Dict, List
+from typing import Dict, Iterator, List, Optional
 
+import ijson
 import pytz
 from markdownify import markdownify as md
 from pystac import Asset, Item, Link
@@ -20,8 +22,8 @@ from pystac_monty.extension import (
     MontyImpactType,
 )
 from pystac_monty.hazard_profiles import MontyHazardProfiles
-from pystac_monty.sources.common import MontyDataSource, MontyDataTransformer
-from pystac_monty.sources.utils import IDMCUtils
+from pystac_monty.sources.common import DataType, GenericDataSource, MontyDataSourceV3, MontyDataTransformer
+from pystac_monty.sources.utils import IDMCUtils, order_data_file
 from pystac_monty.validators.idu import IDUSourceValidator
 
 logger = logging.getLogger(__name__)
@@ -33,12 +35,43 @@ STAC_IMPACT_ID_PREFIX = "idmc-idu-impact-"
 
 
 @dataclass
-class IDUDataSource(MontyDataSource):
-    """IDU Data directly from the source"""
+class IDUDataSource(MontyDataSourceV3):
+    """IDU Data Source Version 2"""
 
-    def __init__(self, source_url: str, data: Any):
-        super().__init__(source_url, data)
-        self.data = json.loads(data)
+    parsed_content: List[dict]
+    ordered_temp_file: Optional[str] = None
+
+    def __init__(self, data: GenericDataSource):
+        super().__init__(root=data)
+
+        def handle_file_data():
+            if os.path.isfile(self.input_data.path):
+                jq_filter = "sort_by(.event_id)"
+                self.ordered_temp_file = order_data_file(filepath=self.input_data.path, jq_filter=jq_filter)
+
+        def handle_memory_data():
+            self.parsed_content = json.loads(self.input_data.content)
+
+        input_data_type = self.input_data.data_type
+        match input_data_type:
+            case DataType.FILE:
+                handle_file_data()
+            case DataType.MEMORY:
+                handle_memory_data()
+            case _:
+                typing.assert_never(input_data_type)
+
+    def get_ordered_tmp_file(self):
+        """Get the temp file object which has ordered data"""
+        return self.ordered_temp_file
+
+    def get_input_data_type(self) -> DataType:
+        """Returns the input data type"""
+        return self.input_data.data_type
+
+    def get_memory_data(self):
+        """Get the parsed memory data"""
+        return self.parsed_content
 
 
 class IDUTransformer(MontyDataTransformer[IDUDataSource]):
@@ -51,14 +84,8 @@ class IDUTransformer(MontyDataTransformer[IDUDataSource]):
         """Creates the STAC Items"""
         self.transform_summary.mark_as_started()
 
-        idu_data = self.check_and_get_idu_data()
-        idu_data.sort(key=lambda x: x.get("event_id", " "))
-        for event_id, data_iterator in itertools.groupby(idu_data, key=lambda x: x.get("event_id", " ")):
-            idu_data_items = list(data_iterator)
-            # FIXME: Why do we sort using "id"?
-            idu_data_items.sort(key=lambda x: x.get("id"))
-            self.transform_summary.increment_rows(len(idu_data_items))
-
+        for idu_data in self.check_and_get_idu_data():
+            self.transform_summary.increment_rows(len(idu_data))
             try:
 
                 def get_validated_data(items: list[dict]) -> List[IDUSourceValidator]:
@@ -68,14 +95,15 @@ class IDUTransformer(MontyDataTransformer[IDUDataSource]):
                         validated_data.append(obj)
                     return validated_data
 
-                validated_data = get_validated_data(idu_data_items)
-                if event_item := self.make_source_event_item(event_id, validated_data):
+                validated_data = get_validated_data(idu_data)
+
+                if event_item := self.make_source_event_item(validated_data):
                     yield event_item
                     yield from self.make_impact_item(event_item, validated_data)
                 else:
-                    self.transform_summary.increment_failed_rows(len(idu_data_items))
+                    self.transform_summary.increment_failed_rows(len(idu_data))
             except Exception:
-                self.transform_summary.increment_failed_rows(len(idu_data_items))
+                self.transform_summary.increment_failed_rows(len(idu_data))
                 logger.error("Failed to process the IDU data", exc_info=True)
         self.transform_summary.mark_as_complete()
 
@@ -83,7 +111,7 @@ class IDUTransformer(MontyDataTransformer[IDUDataSource]):
     def make_items(self) -> List[Item]:
         return list(self.get_stac_items())
 
-    def make_source_event_item(self, event_id: int, data_items: List[IDUSourceValidator]) -> Item | None:
+    def make_source_event_item(self, data_items: List[IDUSourceValidator]) -> Item | None:
         """Create an Event Item"""
         # For now, get the first item only to create a single event item
         data_item = data_items[0]
@@ -192,24 +220,44 @@ class IDUTransformer(MontyDataTransformer[IDUDataSource]):
             estimate_type=MontyEstimateType.PRIMARY,
         )
 
-    def check_and_get_idu_data(self) -> list[Any]:
+    def check_and_get_idu_data(self) -> Iterator[List[Dict]]:
         """Validate the source fields"""
-        idu_data: List[Dict[str, Any]] = self.data_source.get_data()
+
         required_fields = ["latitude", "longitude", "event_id"]
 
-        filtered_idu_data = []
-        if not idu_data:
-            logger.warning(f"No IDU data found in {self.data_source.get_source_url()}")
-            return []
+        tmp_file = self.data_source.get_ordered_tmp_file()
+        input_data_type = self.data_source.get_input_data_type()
+        match input_data_type:
+            case DataType.FILE:
+                with open(tmp_file.name, "rb") as f:
+                    items = ijson.items(f, "item")  # assumes top-level is a JSON array
+                    current_id = None
+                    group = []
 
-        for item in idu_data:
-            if item["displacement_type"] not in IDMCUtils.DisplacementType._value2member_map_:
-                logging.error(f"Unknown displacement type: {item['displacement_type']} found. Ignore the datapoint.")
-                continue
-            # Get the Disaster type data only
-            if IDMCUtils.DisplacementType(item["displacement_type"]) == IDMCUtils.DisplacementType.DISASTER_TYPE:
-                missing_fields = [field for field in required_fields if field not in item]
-                if missing_fields:
-                    raise ValueError(f"Missing required fields {missing_fields}.")
-                filtered_idu_data.append(item)
-        return filtered_idu_data
+                    for item in items:
+                        if item["displacement_type"] not in IDMCUtils.DisplacementType._value2member_map_:
+                            logging.error(f"Unknown displacement type: {item['displacement_type']} found. Ignore the datapoint.")
+                            continue
+                        # Get the Disaster type data only
+                        if IDMCUtils.DisplacementType(item["displacement_type"]) == IDMCUtils.DisplacementType.DISASTER_TYPE:
+                            missing_fields = [field for field in required_fields if field not in item]
+                            if missing_fields:
+                                raise ValueError(f"Missing required fields {missing_fields}.")
+
+                            item_id = item["event_id"]
+                            if item_id != current_id:
+                                if group:
+                                    yield group
+                                group = [item]
+                                current_id = item_id
+                            else:
+                                group.append(item)
+
+                    if group:
+                        yield group
+            case DataType.MEMORY:
+                data_contents = self.data_source.get_memory_data()
+                data_contents.sort(key=lambda x: x.get("event_id", " "))
+                yield from [list(group) for _, group in itertools.groupby(data_contents, key=lambda x: x.get("event_id", " "))]
+            case _:
+                typing.assert_never(input_data_type)

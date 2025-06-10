@@ -1,9 +1,13 @@
 import abc
 import json
+import tempfile
 import typing
-from dataclasses import dataclass
+from dataclasses import dataclass, field
+from enum import Enum
+from typing import List, Literal, Optional, Tuple, Union
 
 import requests
+from pydantic import BaseModel, ConfigDict, Field
 from pystac import Collection, Item
 
 from pystac_monty.geocoding import MontyGeoCoder
@@ -39,6 +43,67 @@ class TransformSummary:
         return self.total_rows - self.failed_rows
 
 
+class BaseModelWithExtra(BaseModel):
+    model_config = ConfigDict(extra="ignore", arbitrary_types_allowed=True)
+
+
+class DataType(Enum):
+    FILE = "file"
+    MEMORY = "memory"
+
+
+class File(BaseModelWithExtra):
+    data_type: Literal[DataType.FILE]
+    path: str | tempfile._TemporaryFileWrapper
+
+
+class Memory(BaseModel):
+    data_type: Literal[DataType.MEMORY]
+    content: typing.Any
+
+
+class SourceSchemaValidator(BaseModel):
+    source_url: str
+    source_data: Union[File, Memory] = Field(discriminator="data_type")
+
+
+class GenericDataSource(BaseModel):
+    source_url: str
+    input_data: Union[File, Memory]
+
+
+class GdacsEpisodes(BaseModel):
+    type: str
+    data: GenericDataSource
+
+
+class GdacsDataSourceType(BaseModel):
+    source_url: str
+    event_data: Union[File, Memory]
+    episodes: List[Tuple[GdacsEpisodes, GdacsEpisodes]]
+
+
+class USGSDataSourceType(BaseModel):
+    source_url: str
+    event_data: Union[File, Memory]
+    loss_data: Union[File, Memory, None] = None
+
+
+class DesinventarDataSourceType(BaseModel):
+    tmp_zip_file: File
+    country_code: str
+    iso3: str
+    source_url: str | None = None
+
+
+class PDCDataSourceType(BaseModel):
+    source_url: str
+    uuid: str
+    hazard_data: Union[File, Memory]
+    exposure_detail_data: Union[File, Memory]
+    geojson_data: Union[File, Memory]
+
+
 @dataclass
 class MontyDataSource:
     source_url: str
@@ -53,6 +118,42 @@ class MontyDataSource:
 
     def get_data(self) -> typing.Any:
         return self.data
+
+
+@dataclass
+class MontyDataSourceV2:
+    source_url: str
+    data_source: Union[File, Memory]
+
+    class Config:
+        arbitrary_types_allowed = True
+
+    def __init__(self, data: dict):
+        validated = SourceSchemaValidator(**data)
+        if validated:
+            self.source_url = validated.source_url
+            self.data_source = validated.source_data
+
+    def get_source_url(self) -> str:
+        return self.source_url
+
+    def get_data(self) -> typing.Any:
+        return self.data
+
+
+@dataclass
+class MontyDataSourceV3:
+    root: Union[GenericDataSource, GdacsDataSourceType, USGSDataSourceType, DesinventarDataSourceType, PDCDataSourceType]
+    source_url: Optional[str] = field(init=False)
+
+    def __post_init__(self):
+        self.source_url = self.root.source_url
+        if isinstance(self.root, GenericDataSource):
+            self.input_data = self.root.input_data
+
+    def get_source_url(self) -> Optional[str]:
+        """Get the Source URL"""
+        return self.source_url
 
 
 DataSource = typing.TypeVar("DataSource")

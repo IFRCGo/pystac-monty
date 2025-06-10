@@ -1,6 +1,7 @@
 """Tests for pystac.tests.extensions.monty EM-DAT source"""
 
 import json
+import tempfile
 import unittest
 from os import makedirs
 from typing import Union
@@ -11,6 +12,7 @@ from parameterized import parameterized
 
 from pystac_monty.extension import MontyExtension
 from pystac_monty.geocoding import MockGeocoder
+from pystac_monty.sources.common import DataType, File, GenericDataSource, Memory
 from pystac_monty.sources.emdat import EMDATDataSource, EMDATTransformer
 from tests.conftest import get_data_file
 from tests.extensions.test_monty import CustomValidator
@@ -177,6 +179,17 @@ json_mock_data = {
 }
 
 
+def save_data_to_tmp_file(data):
+    tmpfile = tempfile.NamedTemporaryFile(suffix=".json", delete=False)
+    data = json.dumps(data).encode("utf-8")
+    tmpfile.write(data)
+    tmpfile.close()
+    return tmpfile
+
+
+DATA_FILE = save_data_to_tmp_file(json_mock_data)
+
+
 def load_scenarios(
     scenarios: Union[list[tuple[str, str]], dict],
 ) -> list[EMDATTransformer]:
@@ -189,15 +202,35 @@ def load_scenarios(
         List of EMDATTransformer instances initialized with test data
     """
     transformers = []
-    if isinstance(scenarios, dict):
-        emdat_data_source = EMDATDataSource(source_url="", data=scenarios)
+    if isinstance(scenarios, tempfile._TemporaryFileWrapper):
+        emdat_data_source = EMDATDataSource(
+            data=GenericDataSource(
+                source_url="www.test.com",
+                input_data=File(path=DATA_FILE.name, data_type=DataType.FILE),
+            )
+        )
+        geocoder = MockGeocoder()
+        transformers.append(EMDATTransformer(emdat_data_source, geocoder))
+
+    elif isinstance(scenarios, dict):
+        emdat_data_source = EMDATDataSource(
+            data=GenericDataSource(
+                source_url="www.test.com",
+                input_data=Memory(content=scenarios, data_type=DataType.MEMORY),
+            )
+        )
         geocoder = MockGeocoder()
         transformers.append(EMDATTransformer(emdat_data_source, geocoder))
     else:
         for scenario in scenarios:
             # Read Excel file using pandas
             df = pd.read_excel(scenario[1])
-            emdat_data_source = EMDATDataSource(scenario[1], df)
+            emdat_data_source = EMDATDataSource(
+                data=GenericDataSource(
+                    source_url=scenario[1],
+                    input_data=Memory(content=df, data_type=DataType.MEMORY),
+                )
+            )
             geocoder = MockGeocoder()
             transformers.append(EMDATTransformer(emdat_data_source, geocoder))
     return transformers
@@ -297,7 +330,35 @@ class EMDATTest(unittest.TestCase):
             # Write pretty JSON in temporary folder for manual inspection
             item_path = get_data_file(f"temp/emdat/{item.id}.json")
             with open(item_path, "w", encoding="utf-8") as f:
-                # json.dump(item.to_dict(), f, indent=2, ensure_ascii=False)
+                json.dump(item.to_dict(), f, indent=2)
+
+            # Validate item against schema
+            item.validate(validator=self.validator)
+
+            # Check item type
+            monty_item_ext = MontyExtension.ext(item)
+            if monty_item_ext.is_source_event():
+                source_event_item = item
+            elif monty_item_ext.is_source_hazard():
+                source_hazard_item = item
+
+        # Verify required items were created
+        self.assertIsNotNone(source_event_item)
+        self.assertIsNotNone(source_hazard_item)
+
+    @parameterized.expand(load_scenarios(DATA_FILE))
+    @pytest.mark.vcr()
+    def test_transformer_with_file_data(self, transformer: EMDATTransformer) -> None:
+        items = transformer.make_items()
+        self.assertTrue(len(items) > 0)
+
+        source_event_item = None
+        source_hazard_item = None
+
+        for item in items:
+            # Write pretty JSON in temporary folder for manual inspection
+            item_path = get_data_file(f"temp/emdat/{item.id}.json")
+            with open(item_path, "w", encoding="utf-8") as f:
                 json.dump(item.to_dict(), f, indent=2)
 
             # Validate item against schema

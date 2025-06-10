@@ -1,6 +1,7 @@
 import logging
 import tempfile
 import typing
+import xml.sax
 from contextlib import contextmanager
 from pathlib import Path
 from typing import Any, Dict, List, Optional, Tuple
@@ -8,19 +9,12 @@ from zipfile import ZipFile
 
 import requests
 from geopandas import gpd
-from lxml import etree
 from pystac import Link
 from pystac.item import Item
 
-from pystac_monty.extension import (
-    ImpactDetail,
-    MontyEstimateType,
-    MontyExtension,
-    MontyImpactExposureCategory,
-    MontyImpactType,
-)
+from pystac_monty.extension import ImpactDetail, MontyEstimateType, MontyExtension, MontyImpactExposureCategory, MontyImpactType
 from pystac_monty.hazard_profiles import MontyHazardProfiles
-from pystac_monty.sources.common import MontyDataTransformer
+from pystac_monty.sources.common import DesinventarDataSourceType, MontyDataSourceV3, MontyDataTransformer
 from pystac_monty.validators.desinventar import (
     STAC_EVENT_ID_PREFIX,
     STAC_HAZARD_ID_PREFIX,
@@ -34,6 +28,47 @@ logger = logging.getLogger(__name__)
 T = typing.TypeVar("T")
 
 
+class DesinventarXMLHandler(xml.sax.ContentHandler):
+    def __init__(self):
+        self.current_section = ""
+        self.current_element = ""
+        self.current_data = {}
+        self.buffer = ""
+
+        self.eventos = []  # List of hazard types
+        self.fichas = []  # List of disaster records
+        self.level_maps = []  # List of geo records
+
+    def startElement(self, name, attrs):
+        if name in ("eventos", "fichas", "level_maps"):
+            self.current_section = name
+        elif name == "TR":
+            self.current_data = {}
+        else:
+            self.current_element = name
+            self.buffer = ""
+
+    def characters(self, content):
+        self.buffer += content
+
+    def endElement(self, name):
+        if name == "TR":
+            if self.current_section == "eventos":
+                self.eventos.append(self.current_data.copy())
+            elif self.current_section == "fichas":
+                self.fichas.append(self.current_data.copy())
+            elif self.current_section == "level_maps":
+                self.level_maps.append(self.current_data.copy())
+
+            self.current_data = {}
+        elif name in ("eventos", "fichas", "level_maps"):
+            self.current_section = ""
+        elif self.current_element:
+            self.current_data[self.current_element] = self.buffer.strip()
+            self.buffer = ""
+            self.current_element = ""
+
+
 # TODO: move to common utils
 def get_list_item_safe(lst: list[T], index: int, default_value: T | None = None) -> T | None:
     try:
@@ -42,24 +77,18 @@ def get_list_item_safe(lst: list[T], index: int, default_value: T | None = None)
         return default_value
 
 
-def extract_value_from_xml(obj: etree._Element, key: str) -> Any:
-    (xpath_value,) = (obj.xpath(f"{key}/text()"),)
-    value = get_list_item_safe(xpath_value, 0)
-    return value
-
-
 def parse_row_data(
-    xml_row_data: etree._Element,
+    event_data: dict,
     hazard_name_mapping: dict[str, str],
     iso3: str,
     data_source_url: str | None,
 ):
-    serial = extract_value_from_xml(xml_row_data, "serial")
+    serial = event_data["serial"]
     # FIXME: Do we handle this as failure?
     if serial is None:
         return
+    evento = event_data["evento"]
 
-    evento = extract_value_from_xml(xml_row_data, "evento")
     # FIXME: Do we handle this as failure?
     if evento is None:
         return
@@ -67,39 +96,39 @@ def parse_row_data(
     return DataRow(
         serial=serial,
         event=hazard_name_mapping[evento],
-        comment=extract_value_from_xml(xml_row_data, "di_comments"),
-        # source=extract_value(xml_row_data, "fuentes"),
-        deaths=extract_value_from_xml(xml_row_data, "muertos"),
-        injured=extract_value_from_xml(xml_row_data, "heridos"),
-        missing=extract_value_from_xml(xml_row_data, "desaparece"),
-        houses_destroyed=extract_value_from_xml(xml_row_data, "vivdest"),
-        houses_damaged=extract_value_from_xml(xml_row_data, "vivafec"),
-        directly_affected=extract_value_from_xml(xml_row_data, "damnificados"),
-        indirectly_affected=extract_value_from_xml(xml_row_data, "afectados"),
-        relocated=extract_value_from_xml(xml_row_data, "reubicados"),
-        evacuated=extract_value_from_xml(xml_row_data, "evacuados"),
-        losses_in_dollar=extract_value_from_xml(xml_row_data, "valorus"),
-        losses_local_currency=extract_value_from_xml(xml_row_data, "valorloc"),
-        # education_centers=extract_value(xml_row_data, "nescuelas"),
-        # hospitals=extract_value(xml_row_data, "nhospitales"),
-        damages_in_crops_ha=extract_value_from_xml(xml_row_data, "nhectareas"),
-        lost_cattle=extract_value_from_xml(xml_row_data, "cabezas"),
-        damages_in_roads_mts=extract_value_from_xml(xml_row_data, "kmvias"),
-        level0=extract_value_from_xml(xml_row_data, "level0"),
-        level1=extract_value_from_xml(xml_row_data, "level1"),
-        level2=extract_value_from_xml(xml_row_data, "level2"),
-        # name0=extract_value(xml_row_data, "name0"),
-        # name1=extract_value(xml_row_data, "name1"),
-        # name2=extract_value(xml_row_data, "name2"),
-        # latitude=extract_value(xml_row_data, "latitude"),
-        # longitude=extract_value(xml_row_data, "longitude"),
-        # haz_maxvalue=extract_value(xml_row_data, "magnitud2"),
-        # glide=extract_value(xml_row_data, "glide"),
-        location=extract_value_from_xml(xml_row_data, "lugar"),
-        # duration=extract_value(xml_row_data, "duracion"),
-        year=extract_value_from_xml(xml_row_data, "fechano"),
-        month=extract_value_from_xml(xml_row_data, "fechames"),
-        day=extract_value_from_xml(xml_row_data, "fechadia"),
+        comment=event_data["di_comments"],
+        # source=extract_value(event_data, "fuentes"),
+        deaths=event_data["muertos"],
+        injured=event_data["heridos"],
+        missing=event_data["desaparece"],
+        houses_destroyed=event_data["vivdest"],
+        houses_damaged=event_data["vivafec"],
+        directly_affected=event_data["damnificados"],
+        indirectly_affected=event_data["afectados"],
+        relocated=event_data["reubicados"],
+        evacuated=event_data["evacuados"],
+        losses_in_dollar=event_data["valorus"],
+        losses_local_currency=event_data["valorloc"],
+        # education_centers=extract_value(event_data, "nescuelas"],
+        # hospitals=extract_value(event_data, "nhospitales"],
+        damages_in_crops_ha=event_data["nhectareas"],
+        lost_cattle=event_data["cabezas"],
+        damages_in_roads_mts=event_data["kmvias"],
+        level0=event_data["level0"],
+        level1=event_data["level1"],
+        level2=event_data["level2"],
+        # name0=extract_value(event_data, "name0"],
+        # name1=extract_value(event_data, "name1"],
+        # name2=extract_value(event_data, "name2"],
+        # latitude=extract_value(event_data, "latitude"],
+        # longitude=extract_value(event_data, "longitude"],
+        # haz_maxvalue=extract_value(event_data, "magnitud2"],
+        # glide=extract_value(event_data, "glide"],
+        location=event_data["lugar"],
+        # duration=extract_value(event_data, "duracion"],
+        year=event_data["fechano"],
+        month=event_data["fechames"],
+        day=event_data["fechadia"],
         iso3=iso3,
         data_source_url=data_source_url,
     )
@@ -164,17 +193,16 @@ hazard_mapping = {
 
 
 # FIXME: cleanup named temporary file
-class DesinventarDataSource:
+class DesinventarDataSource(MontyDataSourceV3):
     tmp_zip_file: tempfile._TemporaryFileWrapper
-    source_url: str | None
     country_code: str
     iso3: str
 
-    def __init__(self, tmp_zip_file: tempfile._TemporaryFileWrapper, country_code: str, iso3: str, source_url: str | None = None):
-        self.tmp_zip_file = tmp_zip_file
-        self.country_code = country_code
-        self.iso3 = iso3
-        self.source_url = source_url
+    def __init__(self, data: DesinventarDataSourceType):
+        super().__init__(root=data)
+        self.tmp_zip_file = data.tmp_zip_file.path
+        self.country_code = data.country_code
+        self.iso3 = data.iso3
 
     @classmethod
     def from_zip_file(cls, zip_file: ZipFile, country_code: str, iso3: str):
@@ -198,8 +226,8 @@ class DesinventarDataSource:
             return cls(tmp_zip_file, country_code, iso3)
 
     @classmethod
-    def from_url(cls, zip_file_url: str, country_code: str, iso3: str):
-        response = requests.get(zip_file_url)
+    def from_url(cls, zip_file_url: str, country_code: str, iso3: str, timeout: int = 600):
+        response = requests.get(zip_file_url, timeout=timeout)
         tmp_zip_file = tempfile.NamedTemporaryFile(suffix=".zip", delete=False)
         tmp_zip_file.write(response.content)
 
@@ -229,6 +257,12 @@ class DesinventarTransformer(MontyDataTransformer[DesinventarDataSource]):
     geo_data_mapping: Dict[str, GeoDataEntry] = {}
     geo_data_cache: Dict[str, Tuple[Dict[str, Any], List[float]]] = {}
     errored_events: Dict[str, int] = {}
+
+    def parse_with_sax(self, xml_file: typing.Generator[typing.IO[bytes], None, None]):
+        """XML parsing handler"""
+        handler = DesinventarXMLHandler()
+        xml.sax.parse(xml_file, handler)
+        return handler
 
     def _create_event_item_from_row(self, row: DataRow) -> Optional[Item]:
         # FIXME: Do we treat this as error or noise
@@ -523,14 +557,12 @@ class DesinventarTransformer(MontyDataTransformer[DesinventarDataSource]):
 
         return (None, None)
 
-    def _generate_geo_data_mapping(self, root: etree._Element) -> Dict[str, GeoDataEntry]:
+    def _generate_geo_data_mapping(self, level_maps: list) -> Dict[str, GeoDataEntry]:
         geo_data: Dict[str, GeoDataEntry] = {}
-
-        level_maps = root.xpath("//level_maps/TR")
         for level_row in level_maps:
-            file_path = get_list_item_safe(level_row.xpath("filename/text()"), 0)
-            level = get_list_item_safe(level_row.xpath("map_level/text()"), 0)
-            property_code = get_list_item_safe(level_row.xpath("lev_code/text()"), 0)
+            file_path = level_row["filename"]
+            level = level_row["map_level"]
+            property_code = level_row["lev_code"]
 
             if file_path is not None:
                 shp_file_name = Path(str(file_path)).name
@@ -540,23 +572,20 @@ class DesinventarTransformer(MontyDataTransformer[DesinventarDataSource]):
                 )
             else:
                 shapefile_data = None
-
             geo_data[f"level{level}"] = {
                 "level": str(level) if level is not None else None,
                 "property_code": str(property_code) if property_code is not None else None,
                 "shapefile_data": shapefile_data,
             }
-
         return geo_data
 
     @staticmethod
-    def _generate_hazard_name_mapping(root: etree._Element):
+    def _generate_hazard_name_mapping(hazard: dict):
         hazard_name_mapping: Dict[str, str] = {}
 
-        hazard_details = root.xpath("//eventos/TR")
-        for hazard_detail in hazard_details:
-            key = get_list_item_safe(hazard_detail.xpath("nombre/text()"), 0)
-            value = get_list_item_safe(hazard_detail.xpath("nombre_en/text()"), 0)
+        for hazard_detail in hazard:
+            key = hazard_detail["nombre"]
+            value = hazard_detail["nombre_en"]
 
             hazard_name_mapping[str(key)] = str(value)
 
@@ -565,13 +594,13 @@ class DesinventarTransformer(MontyDataTransformer[DesinventarDataSource]):
     def get_stac_items(self) -> typing.Generator[Item, None, None]:
         # TODO: Use sax xml parser for memory efficient usage
         with self.data_source.with_xml_file() as xml_file:
-            tree = etree.parse(xml_file)
-            root = tree.getroot()
+            rows = self.parse_with_sax(xml_file)
 
-            self.geo_data_mapping = self._generate_geo_data_mapping(root)
-            hazard_name_mapping = self._generate_hazard_name_mapping(root)
+            self.geo_data_mapping = self._generate_geo_data_mapping(rows.level_maps)
 
-            events = root.xpath("//fichas/TR")
+            hazard_name_mapping = self._generate_hazard_name_mapping(rows.eventos)
+
+            events = rows.fichas
 
             self.transform_summary.mark_as_started()
             for event_row in events:
