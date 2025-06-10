@@ -9,7 +9,6 @@ from zipfile import ZipFile
 
 import requests
 from geopandas import gpd
-from lxml import etree
 from pystac import Link
 from pystac.item import Item
 
@@ -29,7 +28,7 @@ logger = logging.getLogger(__name__)
 T = typing.TypeVar("T")
 
 
-class DesinventarFullHandler(xml.sax.ContentHandler):
+class DesinventarXMLHandler(xml.sax.ContentHandler):
     def __init__(self):
         self.current_section = ""
         self.current_element = ""
@@ -78,12 +77,6 @@ def get_list_item_safe(lst: list[T], index: int, default_value: T | None = None)
         return default_value
 
 
-def extract_value_from_xml(obj: etree._Element, key: str) -> Any:
-    (xpath_value,) = (obj.xpath(f"{key}/text()"),)
-    value = get_list_item_safe(xpath_value, 0)
-    return value
-
-
 def parse_row_data(
     event_data: dict,
     hazard_name_mapping: dict[str, str],
@@ -95,7 +88,7 @@ def parse_row_data(
     if serial is None:
         return
     evento = event_data["evento"]
-    # evento = extract_value_from_xml(event_data, "evento")
+
     # FIXME: Do we handle this as failure?
     if evento is None:
         return
@@ -233,8 +226,8 @@ class DesinventarDataSource(MontyDataSourceV3):
             return cls(tmp_zip_file, country_code, iso3)
 
     @classmethod
-    def from_url(cls, zip_file_url: str, country_code: str, iso3: str):
-        response = requests.get(zip_file_url)
+    def from_url(cls, zip_file_url: str, country_code: str, iso3: str, timeout: int = 600):
+        response = requests.get(zip_file_url, timeout=timeout)
         tmp_zip_file = tempfile.NamedTemporaryFile(suffix=".zip", delete=False)
         tmp_zip_file.write(response.content)
 
@@ -265,8 +258,9 @@ class DesinventarTransformer(MontyDataTransformer[DesinventarDataSource]):
     geo_data_cache: Dict[str, Tuple[Dict[str, Any], List[float]]] = {}
     errored_events: Dict[str, int] = {}
 
-    def parse_with_sax(self, xml_file):
-        handler = DesinventarFullHandler()
+    def parse_with_sax(self, xml_file: typing.Generator[typing.IO[bytes], None, None]):
+        """XML parsing handler"""
+        handler = DesinventarXMLHandler()
         xml.sax.parse(xml_file, handler)
         return handler
 
@@ -563,7 +557,7 @@ class DesinventarTransformer(MontyDataTransformer[DesinventarDataSource]):
 
         return (None, None)
 
-    def _generate_geo_data_mapping(self, level_maps) -> Dict[str, GeoDataEntry]:
+    def _generate_geo_data_mapping(self, level_maps: list) -> Dict[str, GeoDataEntry]:
         geo_data: Dict[str, GeoDataEntry] = {}
         for level_row in level_maps:
             file_path = level_row["filename"]
