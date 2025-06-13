@@ -48,7 +48,7 @@ class IDUSourceValidator(BaseModelWithExtra):
     def validate_latitude(cls, value: float) -> float | None:
         """Validation for Latitude field"""
         if not (-90 <= value <= 90):
-            logger.error("Latitude must be between -90 and 90.")
+            logger.warning("Latitude must be between -90 and 90.")
             return None
         return value
 
@@ -57,7 +57,7 @@ class IDUSourceValidator(BaseModelWithExtra):
     def validate_longitude(cls, value: float) -> float | None:
         """Validation for Longitude field"""
         if not (-180 <= value <= 180):
-            logger.error("Longitude must be between -180 and 180.")
+            logger.warning("Longitude must be between -180 and 180.")
             return None
         return value
 
@@ -68,14 +68,14 @@ class IDUSourceValidator(BaseModelWithExtra):
         try:
             coords = json.loads(value)  # Parse JSON format list
             if not isinstance(coords, list) or len(coords) != 2:
-                logger.error("Centroid must be a list with two values: [latitude, longitude].")
+                logger.warning("Centroid must be a list with two values: [latitude, longitude].")
                 return None
             latitude, longitude = coords
             if not (-90 <= latitude <= 90) or not (-180 <= longitude <= 180):
-                logger.error("Invalid centroid coordinates.")
+                logger.warning("Invalid centroid coordinates.")
                 return None
         except (json.JSONDecodeError, ValueError):
-            logger.error("Invalid centroid format. Must be a JSON string representing [latitude, longitude].")
+            logger.warning("Invalid centroid format. Must be a JSON string representing [latitude, longitude].")
             return None
         return value
 
@@ -86,7 +86,7 @@ class IDUSourceValidator(BaseModelWithExtra):
     def validate_date(cls, value: date) -> date | None:
         """Validation for date field"""
         if not isinstance(value, date):
-            logger.error(f"Invalid date format: {value}. Expected YYYY-MM-DD.")
+            logger.warning(f"Invalid date format: {value}. Expected YYYY-MM-DD.")
             return None
         return value
 
@@ -96,6 +96,6 @@ class IDUSourceValidator(BaseModelWithExtra):
         """Validation for source_url field"""
         url_regex = r"^(https?://)?([a-zA-Z0-9_-]+(\.[a-zA-Z0-9_-]+)+)(/[^\s]*)?$"
         if not re.match(url_regex, value):
-            logger.error(f"Invalid URL: {value}")
+            logger.warning(f"Invalid URL: {value}")
             return None
         return value

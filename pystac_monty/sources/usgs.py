@@ -394,7 +394,7 @@ class USGSTransformer(MontyDataTransformer[USGSDataSource]):
                 self.transform_summary.increment_failed_rows(1)
         except Exception:
             self.transform_summary.increment_failed_rows(1)
-            logger.error("Failed to process the USGS data.", exc_info=True)
+            logger.warning("Failed to process the USGS data.", exc_info=True)
 
         self.transform_summary.mark_as_complete()
 

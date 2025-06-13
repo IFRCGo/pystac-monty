@@ -104,7 +104,7 @@ class IDUTransformer(MontyDataTransformer[IDUDataSource]):
                     self.transform_summary.increment_failed_rows(len(idu_data))
             except Exception:
                 self.transform_summary.increment_failed_rows(len(idu_data))
-                logger.error("Failed to process the IDU data", exc_info=True)
+                logger.warning("Failed to process the IDU data", exc_info=True)
         self.transform_summary.mark_as_complete()
 
     # FIXME: This is deprecated
@@ -236,7 +236,9 @@ class IDUTransformer(MontyDataTransformer[IDUDataSource]):
 
                     for item in items:
                         if item["displacement_type"] not in IDMCUtils.DisplacementType._value2member_map_:
-                            logging.error(f"Unknown displacement type: {item['displacement_type']} found. Ignore the datapoint.")
+                            logging.warning(
+                                f"Unknown displacement type: {item['displacement_type']} found. Ignore the datapoint."
+                            )
                             continue
                         # Get the Disaster type data only
                         if IDMCUtils.DisplacementType(item["displacement_type"]) == IDMCUtils.DisplacementType.DISASTER_TYPE:

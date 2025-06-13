@@ -99,7 +99,7 @@ class IFRCEventTransformer(MontyDataTransformer[IFRCEventDataSource]):
                         self.transform_summary.increment_failed_rows()
                 except Exception:
                     self.transform_summary.increment_failed_rows()
-                    logger.error("Failed to process ifrc events", exc_info=True)
+                    logger.warning("Failed to process IFRC events data", exc_info=True)
             self.transform_summary.mark_as_complete()
 
     def get_stac_items_from_memory(self) -> typing.Generator[Item, None, None]:
@@ -135,7 +135,7 @@ class IFRCEventTransformer(MontyDataTransformer[IFRCEventDataSource]):
                     self.transform_summary.increment_failed_rows()
             except Exception:
                 self.transform_summary.increment_failed_rows()
-                logger.error("Failed to process ifrc events", exc_info=True)
+                logger.warning("Failed to process IFRC events data", exc_info=True)
         self.transform_summary.mark_as_complete()
 
     def get_stac_items(self) -> typing.Generator[Item, None, None]:

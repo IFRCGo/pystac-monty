@@ -106,7 +106,7 @@ class GlideTransformer(MontyDataTransformer[GlideDataSource]):
                         self.transform_summary.increment_failed_rows()
                 except Exception:
                     self.transform_summary.increment_failed_rows()
-                    logger.error("Failed to process glide", exc_info=True)
+                    logger.warning("Failed to process Glide data", exc_info=True)
             self.transform_summary.mark_as_complete()
 
     def get_stac_items_from_memory(self) -> typing.Generator[Item, None, None]:
@@ -129,7 +129,7 @@ class GlideTransformer(MontyDataTransformer[GlideDataSource]):
                     self.transform_summary.increment_failed_rows()
             except Exception:
                 self.transform_summary.increment_failed_rows()
-                logger.error("Failed to process glide", exc_info=True)
+                logger.warning("Failed to process Glide data", exc_info=True)
         self.transform_summary.mark_as_complete()
 
     def get_hazard_codes(self, hazard: str) -> List[str]:

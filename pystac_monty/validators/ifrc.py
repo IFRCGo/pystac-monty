@@ -117,6 +117,6 @@ class IFRCsourceValidator(BaseModel):
     def validate_countries(cls, value: list) -> list | None:
         """Validate whether the countries field is a empty list"""
         if not value:
-            logger.error("Empty country list.")
+            logger.warning("Empty country list.")
             return None
         return value
