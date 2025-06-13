@@ -244,7 +244,10 @@ class IDUTransformer(MontyDataTransformer[IDUDataSource]):
                         if IDMCUtils.DisplacementType(item["displacement_type"]) == IDMCUtils.DisplacementType.DISASTER_TYPE:
                             missing_fields = [field for field in required_fields if field not in item]
                             if missing_fields:
-                                raise ValueError(f"Missing required fields {missing_fields}.")
+                                logger.warning(
+                                    f"Missing required fields {missing_fields} for the event id {item.get('id', '<None>')}."
+                                )
+                                continue
 
                             item_id = item["event_id"]
                             if item_id != current_id:
