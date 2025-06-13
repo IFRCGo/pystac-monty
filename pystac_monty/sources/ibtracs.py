@@ -141,7 +141,7 @@ class IBTrACSTransformer(MontyDataTransformer[IBTrACSDataSource]):
                     self.transform_summary.increment_failed_rows(len(storm_data))
             except Exception:
                 self.transform_summary.increment_failed_rows(len(storm_data))
-                logger.error("Failed to process ibtracs", exc_info=True)
+                logger.warning("Failed to process IBTrACS data", exc_info=True)
         self.transform_summary.mark_as_complete()
 
     # FIXME: This is deprecated
@@ -640,7 +640,7 @@ class IBTrACSTransformer(MontyDataTransformer[IBTrACSDataSource]):
                     countries.append(country_code)
         except Exception as e:
             # If geocoding fails, default to international waters
-            logger.error(f"Geocoding error: {e}", exc_info=True)
+            logger.warning(f"Geocoding error: {e}", exc_info=True)
             # FIXME: Should we use ["UNK"] instead?
             return ["XYZ"]
 

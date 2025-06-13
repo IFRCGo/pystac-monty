@@ -62,7 +62,7 @@ class Properties(BaseModelWithExtra):
     @field_validator("Figure_cause")
     def check_figure_cause(cls, value: str) -> str | None:
         if value not in ["Conflict", "Disaster", "Other"]:
-            logger.error("Figure cause must be either 'Conflict' or 'Disaster'.")
+            logger.warning("Figure cause must be either 'Conflict' or 'Disaster'.")
             return None
         return value
 

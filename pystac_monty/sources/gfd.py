@@ -106,7 +106,7 @@ class GFDTransformer(MontyDataTransformer[GFDDataSource]):
                     self.transform_summary.increment_failed_rows()
             except Exception:
                 self.transform_summary.increment_failed_rows()
-                logger.error("Failed to process gfd", exc_info=True)
+                logger.warning("Failed to process GFD data", exc_info=True)
         self.transform_summary.mark_as_complete()
 
     def _get_bounding_box(self, polygon: list):
