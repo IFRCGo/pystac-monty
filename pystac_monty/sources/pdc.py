@@ -22,13 +22,7 @@ from pystac_monty.extension import (
 )
 from pystac_monty.geocoding import MontyGeoCoder
 from pystac_monty.hazard_profiles import MontyHazardProfiles
-from pystac_monty.sources.common import (
-    DataType,
-    GenericDataSource,
-    MontyDataSourceV3,
-    MontyDataTransformer,
-    PDCDataSourceType,
-)
+from pystac_monty.sources.common import DataType, GenericDataSource, MontyDataSourceV3, MontyDataTransformer, PDCDataSourceType
 from pystac_monty.validators.pdc import AdminData, ExposureDetailValidator, HazardEventValidator
 
 logger = logging.getLogger(__name__)
@@ -162,14 +156,14 @@ class PDCTransformer(MontyDataTransformer):
     def get_stac_items(self) -> Generator[Item, None, None]:
         """Creates the STAC Items"""
 
-        pdc_hazard_data = self.hazards_data
         pdc_exposure_data = self.exposure_detail
         self.transform_summary.mark_as_started()
 
-        for data in pdc_hazard_data:
+        hazard_item = self._get_hazard_data()
+        if hazard_item:
             self.transform_summary.increment_rows()
             try:
-                pdc_hazard_data = HazardEventValidator(**data)
+                pdc_hazard_data = HazardEventValidator(**hazard_item)
                 exposure_detail = ExposureDetailValidator(**pdc_exposure_data)
 
                 if event_item := self.make_source_event_item(pdc_hazard_data, exposure_detail):
@@ -181,7 +175,9 @@ class PDCTransformer(MontyDataTransformer):
             except Exception:
                 self.transform_summary.increment_failed_rows()
                 logger.warning("Failed to process PDC data", exc_info=True)
-        self.transform_summary.mark_as_complete()
+            self.transform_summary.mark_as_complete()
+        else:
+            logger.warning("No Hazard items found")
 
     def make_source_event_item(self, pdc_hazard_data: HazardEventValidator, pdc_exposure_data: ExposureDetailValidator):
         """Create an Event Item"""
@@ -264,7 +260,7 @@ class PDCTransformer(MontyDataTransformer):
 
         if hazard not in hazard_mapping:
             logger.warning(f"The hazard {hazard} is not in the mapping.")
-            raise KeyError(f"The hazard {hazard} is not in the mapping.")
+            return None
 
         return hazard_mapping.get(hazard)
 
