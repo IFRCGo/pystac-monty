@@ -156,7 +156,6 @@ class PDCTransformer(MontyDataTransformer):
     def get_stac_items(self) -> Generator[Item, None, None]:
         """Creates the STAC Items"""
 
-        pdc_hazard_data = self.hazards_data
         pdc_exposure_data = self.exposure_detail
         self.transform_summary.mark_as_started()
 
@@ -261,7 +260,7 @@ class PDCTransformer(MontyDataTransformer):
 
         if hazard not in hazard_mapping:
             logger.warning(f"The hazard {hazard} is not in the mapping.")
-            raise KeyError(f"The hazard {hazard} is not in the mapping.")
+            return None
 
         return hazard_mapping.get(hazard)
 
