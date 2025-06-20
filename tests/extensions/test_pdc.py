@@ -31,7 +31,7 @@ def load_scenarios(scenarios: List[dict]) -> List[PDCTransformer]:
                     path=scenario_item[1]["exposure_detail_file_path"],
                     data_type=DataType.FILE,
                 ),
-                geojson_data=File(path=scenario_item[1]["geojson_file_path"], data_type=DataType.FILE),
+                geojson_path=scenario_item[1]["geojson_file_path"],
             )
         )
         transformers.append(PDCTransformer(pdc_data_source, geocoder))

@@ -60,15 +60,15 @@ class PDCDataSource(MontyDataSourceV3):
     uuid: str
     hazard_file_path: str
     exposure_detail_file_path: str
-    geojson_file_path: str
+    geojson_path: str
     hazard_data: Union[str, dict]
     exposure_detail_data: Union[str, dict]
-    geojson_data: Union[str, dict]
 
     def __init__(self, data: PDCDataSourceType):
         super().__init__(data)
         self.source_url = data.source_url
         self.uuid = data.uuid
+        self.geojson_path = data.geojson_path
 
         def handle_file_data():
             if os.path.isfile(data.hazard_data.path):
@@ -78,11 +78,6 @@ class PDCDataSource(MontyDataSourceV3):
 
             if os.path.isfile(data.exposure_detail_data.path):
                 self.exposure_detail_file_path = data.exposure_detail_data.path
-            else:
-                raise ValueError("File path does not exist")
-
-            if os.path.isfile(data.geojson_data.path):
-                self.geojson_file_path = data.geojson_data.path
             else:
                 raise ValueError("File path does not exist")
 
@@ -109,12 +104,6 @@ class PDCDataSource(MontyDataSourceV3):
                 self.exposure_detail_data = json.loads(f.read())
         return self.exposure_detail_data
 
-    def get_geojson_data(self) -> typing.Union[dict, str]:
-        if self.root.geojson_data.data_type == DataType.FILE:
-            with open(self.geojson_file_path, "r", encoding="utf-8") as f:
-                self.geojson_data = json.loads(f.read())
-        return self.geojson_data
-
     def get_input_data_type(self) -> DataType:
         return self.root.hazard_data.data_type
 
@@ -136,7 +125,7 @@ class PDCTransformer(MontyDataTransformer):
         self.uuid = pdc_data_src.uuid
         self.hazards_data = pdc_data_src.get_hazard_data()
         self.exposure_detail = pdc_data_src.get_exposure_detail_data()
-        self.geojson_data = pdc_data_src.get_geojson_data()
+        self.geojson_path = pdc_data_src.geojson_path
 
         # NOTE Assigning -1 to episode_number incase of failure just to ignore the item formation (see make_items method)
 
@@ -210,7 +199,6 @@ class PDCTransformer(MontyDataTransformer):
                 "start_datetime": startdate.isoformat(),
                 "end_datetime": enddate.isoformat(),
                 "category_id": pdc_hazard_data.category_ID,
-                "geometry_geojson": self.geojson_data,
             },
         )
 
@@ -232,6 +220,9 @@ class PDCTransformer(MontyDataTransformer):
         # TODO: Deal with correlation id if country_codes is a empty list
         if monty.country_codes:
             monty.compute_and_set_correlation_id(hazard_profiles=self.hazard_profiles)
+
+        if self.geojson_path:
+            item.add_asset("Maps", Asset(href=self.geojson_path, media_type="geojson", title="Polygon"))
 
         if pdc_hazard_data.snc_url:
             item.add_asset("report", Asset(href=pdc_hazard_data.snc_url, media_type="html", title="Report"))
