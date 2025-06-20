@@ -101,7 +101,7 @@ class PDCDataSourceType(BaseModel):
     uuid: str
     hazard_data: Union[File, Memory]
     exposure_detail_data: Union[File, Memory]
-    geojson_data: Union[File, Memory]
+    geojson_path: str
 
 
 @dataclass
