@@ -1,4 +1,5 @@
 import json
+import re
 import subprocess
 import tempfile
 from enum import Enum
@@ -7,6 +8,10 @@ from pystac_monty.extension import (
     MontyImpactExposureCategory,
     MontyImpactType,
 )
+
+
+def phrase_to_dashed(phrase: str) -> str:
+    return re.sub(r"[^\w]+", "-", phrase).strip("-").lower()
 
 
 def save_json_data_into_tmp_file(data: dict) -> tempfile._TemporaryFileWrapper:

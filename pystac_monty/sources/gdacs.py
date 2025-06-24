@@ -30,6 +30,7 @@ from pystac_monty.sources.common import (
     MontyDataSourceV3,
     MontyDataTransformer,
 )
+from pystac_monty.sources.utils import phrase_to_dashed
 from pystac_monty.validators.gdacs_events import GdacsEventDataValidator, Sendai
 from pystac_monty.validators.gdacs_geometry import GdacsGeometryDataValidator
 
@@ -372,8 +373,8 @@ class GDACSTransformer(MontyDataTransformer[GDACSDataSource]):
         self, entry: Sendai, hazard_item: Item, data: Optional[GdacsEventDataValidator] = None
     ) -> Item:
         item = hazard_item.clone()
-        item.id = (
-            item.id.replace(STAC_EVENT_ID_PREFIX, STAC_IMPACT_ID_PREFIX)
+        item.id = phrase_to_dashed(
+            item.id.replace(STAC_HAZARD_ID_PREFIX, STAC_IMPACT_ID_PREFIX)
             + "-"
             + entry.sendaitype
             + "-"

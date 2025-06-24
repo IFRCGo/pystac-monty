@@ -62,6 +62,7 @@ class AdminData(BaseModelWithExtra):
 class ExposureDetailValidator(BaseModelWithExtra):
     totalByAdmin: List[AdminData]
     totalByCountry: List[AdminData]
+    timestamp: float
 
 
 # Example Usage:
