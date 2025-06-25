@@ -189,7 +189,7 @@ class PDCTransformer(MontyDataTransformer):
             enddate = pytz.utc.localize(datetime.fromtimestamp(enddate / 1_000))
 
         item = Item(
-            id=f"{STAC_EVENT_ID_PREFIX}{self.hazard_data['uuid']}-{self.hazard_data['hazard_ID']}",
+            id=f"{STAC_EVENT_ID_PREFIX}{self.hazard_data['uuid']}-{self.hazard_data['hazard_ID']}-{int(float(pdc_exposure_data.timestamp))}",
             geometry=geometry,
             bbox=bbox,
             datetime=startdate,
@@ -319,7 +319,7 @@ class PDCTransformer(MontyDataTransformer):
                 continue
             for admin_item in exposure_detail.totalByAdmin:
                 impact_item = event_item.clone()
-                impact_item.id = f"{impact_item.id.replace(STAC_EVENT_ID_PREFIX, STAC_IMPACT_ID_PREFIX)}-{self.episode_number}-{'-'.join(field_key[:-1])}-{exposure_detail.timestamp}-{admin_item.country}"  # noqa
+                impact_item.id = f"{impact_item.id.replace(STAC_EVENT_ID_PREFIX, STAC_IMPACT_ID_PREFIX)}-{self.episode_number}-{'-'.join(field_key[:-1])}-{admin_item.country}"  # noqa
                 impact_item.set_collection(self.get_impact_collection())
                 impact_item.properties["roles"] = ["source", "impact"]
                 monty = MontyExtension.ext(impact_item)
