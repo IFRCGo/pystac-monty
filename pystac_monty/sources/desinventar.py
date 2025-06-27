@@ -593,7 +593,7 @@ class DesinventarTransformer(MontyDataTransformer[DesinventarDataSource]):
 
     def get_stac_items(self) -> typing.Generator[Item, None, None]:
         # TODO: Use sax xml parser for memory efficient usage
-        with self.data_source.with_xml_file() as xml_file:
+        with self.data_source[0].with_xml_file() as xml_file:
             rows = self.parse_with_sax(xml_file)
 
             self.geo_data_mapping = self._generate_geo_data_mapping(rows.level_maps)
