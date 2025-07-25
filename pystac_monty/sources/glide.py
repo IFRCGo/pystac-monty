@@ -259,10 +259,4 @@ class GlideTransformer(MontyDataTransformer[GlideDataSource]):
         if not glideset:
             print(f"No Glide data found in {self.data_source.get_source_url()}")
             return []
-        for obj in glideset:
-            required_fields = ["latitude", "longitude", "event", "number", "geocode"]
-            missing_fields = [field for field in required_fields if field not in obj]
-
-            if missing_fields:
-                raise ValueError(f"Missing required fields {missing_fields} in glide number {obj.get('number')}")
         return glideset
