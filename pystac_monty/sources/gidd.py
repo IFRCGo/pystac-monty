@@ -286,11 +286,16 @@ class GIDDTransformer(MontyDataTransformer[GIDDDataSource]):
 
                     for item in items:
                         item_properties = item.get("properties", {})
+                        figure_type = item_properties.get("Figure cause")
+                        if figure_type not in IDMCUtils.DisplacementType._value2member_map_:
+                            logger.warning("Invalid Figure cause. Skipping the event.")
+                            continue
+
                         if (
                             IDMCUtils.DisplacementType(item_properties.get("Figure cause"))
                             == IDMCUtils.DisplacementType.DISASTER_TYPE
                         ):
-                            item_id = item_properties["Event ID"]
+                            item_id = item_properties["Event ID"] if "Event ID" in item_properties else ""
                             if item_id != current_id:
                                 if group:
                                     yield group
