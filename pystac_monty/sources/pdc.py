@@ -127,9 +127,9 @@ class PDCTransformer(MontyDataTransformer):
         self.exposure_detail = pdc_data_src.get_exposure_detail_data()
         self.geojson_path = pdc_data_src.geojson_path
 
-        # NOTE Assigning -1 to episode_number incase of failure just to ignore the item formation (see make_items method)
+        # NOTE Setting 1 to the episode_number as it is missing in the source data.
 
-        self.episode_number = -1
+        self.episode_number = 1
         self.hazard_data = self._get_hazard_data()
 
     def _get_hazard_data(self):
