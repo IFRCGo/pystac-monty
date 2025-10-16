@@ -80,7 +80,7 @@ class GdacsEpisodes(BaseModel):
 class GdacsDataSourceType(BaseModel):
     source_url: str
     event_data: Union[File, Memory]
-    episodes: List[Tuple[GdacsEpisodes, GdacsEpisodes]]
+    episodes: List[Tuple[GdacsEpisodes, GdacsEpisodes, GdacsEpisodes]]
 
 
 class USGSDataSourceType(BaseModel):
