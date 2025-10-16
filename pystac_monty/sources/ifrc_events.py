@@ -154,9 +154,9 @@ class IFRCEventTransformer(MontyDataTransformer[IFRCEventDataSource]):
         bbox = None
 
         if data.countries:
-            geom_data = self.geocoder.get_geometry_from_iso3(data.countries[0].iso3)
+            geom_data = self.geocoder.get_geometry_from_iso3(data.countries[0].iso3, simplified=True)
             if not geom_data:
-                geom_data = self.geocoder.get_geometry_by_country_name(data.countries[0].name)
+                geom_data = self.geocoder.get_geometry_by_country_name(data.countries[0].name, simplified=True)
             if geom_data:
                 geometry = geom_data["geometry"]
                 bbox = geom_data["bbox"]

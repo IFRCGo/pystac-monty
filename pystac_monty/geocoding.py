@@ -15,11 +15,11 @@ GAUL2014_2015_GPCK_ZIP = "gaul2014_2015.gpkg"
 
 class MontyGeoCoder(ABC):
     @abstractmethod
-    def get_geometry_from_admin_units(self, admin_units: str) -> Optional[Dict[str, Any]]:
+    def get_geometry_from_admin_units(self, admin_units: str, simplified: bool) -> Optional[Dict[str, Any]]:
         pass
 
     @abstractmethod
-    def get_geometry_by_country_name(self, country_name: str) -> Optional[Dict[str, Any]]:
+    def get_geometry_by_country_name(self, country_name: str, simplified: bool) -> Optional[Dict[str, Any]]:
         pass
 
     @abstractmethod
@@ -31,7 +31,7 @@ class MontyGeoCoder(ABC):
         pass
 
     @abstractmethod
-    def get_geometry_from_iso3(self, iso3: str) -> Optional[Dict[str, Any]]:
+    def get_geometry_from_iso3(self, iso3: str, simplified: bool) -> Optional[Dict[str, Any]]:
         pass
 
 
@@ -51,7 +51,7 @@ class TheirGeocoder(MontyGeoCoder):
             return response.json()
         return None
 
-    def get_geometry_from_admin_units(self, admin_units: str) -> Optional[Dict[str, Any]]:
+    def get_geometry_from_admin_units(self, admin_units: str, simplified: bool = False) -> Optional[Dict[str, Any]]:
         admin_list = json.loads(admin_units)
         # Collect admin1 codes from both direct references and admin2 mappings
         admin1_codes: Set[int] = set()
@@ -63,14 +63,11 @@ class TheirGeocoder(MontyGeoCoder):
                 admin2_codes.add(int(entry["adm2_code"]))
         return self._request(
             "/admin2/geometries",
-            {
-                "admin1_codes": list(admin1_codes),
-                "admin2_codes": list(admin2_codes),
-            },
+            {"admin1_codes": list(admin1_codes), "admin2_codes": list(admin2_codes), "simplified": simplified},
         )
 
-    def get_geometry_by_country_name(self, country_name: str) -> Optional[Dict[str, Any]]:
-        return self._request("/country/geometry", {"country_name": country_name})
+    def get_geometry_by_country_name(self, country_name: str, simplified: bool = False) -> Optional[Dict[str, Any]]:
+        return self._request("/country/geometry", {"country_name": country_name, "simplified": simplified})
 
     def get_iso3_from_point(self, point: Point) -> Optional[str]:
         response = self._request("/country/iso3", {"lat": point.y, "lng": point.x})
@@ -80,8 +77,8 @@ class TheirGeocoder(MontyGeoCoder):
     def get_iso3_from_geometry(self, geometry: Dict[str, Any]) -> Optional[str]:
         return "UNK"
 
-    def get_geometry_from_iso3(self, iso3: str) -> Optional[Dict[str, Any]]:
-        return self._request("/country/geometry", {"iso3": iso3})
+    def get_geometry_from_iso3(self, iso3: str, simplified: bool = False) -> Optional[Dict[str, Any]]:
+        return self._request("/country/geometry", {"iso3": iso3, "simplified": simplified})
 
 
 class WorldAdministrativeBoundariesGeocoder(MontyGeoCoder):
