@@ -198,13 +198,13 @@ class WorldAdministrativeBoundariesGeocoder(MontyGeoCoder):
     def get_iso3_from_point(self, point: Point) -> Optional[str]:
         self.get_iso3_from_geometry(point.__geo_interface__)
 
-    def get_geometry_from_admin_units(self, admin_units: str) -> Optional[Dict[str, Any]]:
+    def get_geometry_from_admin_units(self, admin_units: str, simplified: bool = False) -> Optional[Dict[str, Any]]:
         raise NotImplementedError("Method not implemented")
 
-    def get_geometry_by_country_name(self, country_name: str) -> Optional[Dict[str, Any]]:
+    def get_geometry_by_country_name(self, country_name: str, simplified: bool = False) -> Optional[Dict[str, Any]]:
         raise NotImplementedError("Method not implemented")
 
-    def get_geometry_from_iso3(self, iso3: str) -> Optional[Dict[str, Any]]:
+    def get_geometry_from_iso3(self, iso3: str, simplified: bool = False) -> Optional[Dict[str, Any]]:
         # Check cache first
         cache_key = f"iso3_geom_{iso3}"
         cached_value = self._cache.get(cache_key)
@@ -433,7 +433,7 @@ class GAULGeocoder(MontyGeoCoder):
                 return adm0_code
         return None
 
-    def get_geometry_from_admin_units(self, admin_units: str) -> Optional[Dict[str, Any]]:
+    def get_geometry_from_admin_units(self, admin_units: str, simplified: bool = False) -> Optional[Dict[str, Any]]:
         """
         Get geometry from admin units JSON string
 
@@ -496,7 +496,7 @@ class GAULGeocoder(MontyGeoCoder):
             print(f"Error getting geometry from admin units: {str(e)}")
             return None
 
-    def get_geometry_by_country_name(self, country_name: str) -> Optional[Dict[str, Any]]:
+    def get_geometry_by_country_name(self, country_name: str, simplified: bool = False) -> Optional[Dict[str, Any]]:
         """
         Get geometry for a country by its name
 
@@ -542,7 +542,7 @@ class GAULGeocoder(MontyGeoCoder):
         return "UNK"
 
     # FIXME: This is not implemented
-    def get_geometry_from_iso3(self, iso3: str) -> Optional[Dict[str, Any]]:
+    def get_geometry_from_iso3(self, iso3: str, simplified: bool = False) -> Optional[Dict[str, Any]]:
         return None
 
 
@@ -632,7 +632,7 @@ class MockGeocoder(MontyGeoCoder):
             },
         }
 
-    def get_geometry_from_admin_units(self, admin_units: str) -> Optional[Dict[str, Any]]:
+    def get_geometry_from_admin_units(self, admin_units: str, simplified: bool = False) -> Optional[Dict[str, Any]]:
         """
         Get mock geometry for admin units.
         Returns a simple test polygon for any valid admin unit JSON.
@@ -660,7 +660,7 @@ class MockGeocoder(MontyGeoCoder):
             print(f"Error getting mock geometry from admin units: {str(e)}")
             return None
 
-    def get_geometry_by_country_name(self, country_name: str) -> Optional[Dict[str, Any]]:
+    def get_geometry_by_country_name(self, country_name: str, simplified: bool = False) -> Optional[Dict[str, Any]]:
         """
         Get mock geometry for a country.
         Returns a simple test polygon for Spain ("ESP").
@@ -737,7 +737,7 @@ class MockGeocoder(MontyGeoCoder):
 
         return self.get_iso3_from_geometry(point.__geo_interface__)
 
-    def get_geometry_from_iso3(self, iso3: str) -> Optional[Dict[str, Any]]:
+    def get_geometry_from_iso3(self, iso3: str, simplified: bool = False) -> Optional[Dict[str, Any]]:
         """
         Get geometry for an ISO3 code.
         Returns the test geometry for the given ISO3 code.
