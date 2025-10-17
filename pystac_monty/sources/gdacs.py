@@ -50,6 +50,7 @@ logger = logging.getLogger(__name__)
 class GDACSDataSourceType(Enum):
     EVENT = "geteventdata"
     GEOMETRY = "getgeometry"
+    IMPACT = "getimpact"
 
 
 @dataclass
@@ -58,7 +59,7 @@ class GDACSDataSource(MontyDataSourceV3):
     source_url: str
     event_data: [str, dict]
     event_data_file_path: str
-    episodes: list[Tuple[GdacsEpisodes, GdacsEpisodes]]
+    episodes: list[Tuple[GdacsEpisodes, GdacsEpisodes, GdacsEpisodes]]
 
     def __init__(self, data: GdacsDataSourceType):
         super().__init__(data)
