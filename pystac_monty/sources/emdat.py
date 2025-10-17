@@ -208,7 +208,9 @@ class EMDATTransformer(MontyDataTransformer[EMDATDataSource]):
         # 1. Try admin units first if geocoder is available
         if self.geocoder and row.admin_units:
             # FIXME: convert this to json str
-            geom_data = self.geocoder.get_geometry_from_admin_units(json.dumps([unit.model_dump() for unit in row.admin_units]))
+            geom_data = self.geocoder.get_geometry_from_admin_units(
+                json.dumps([unit.model_dump() for unit in row.admin_units]), simplified=True
+            )
             if geom_data:
                 geometry = geom_data["geometry"]
                 bbox = geom_data["bbox"]
@@ -221,14 +223,14 @@ class EMDATTransformer(MontyDataTransformer[EMDATDataSource]):
 
         # 3. Finally, try country geometry if geocoder is available
         if geometry is None and self.geocoder and row.iso:
-            geom_data = self.geocoder.get_geometry_from_iso3(row.iso)
+            geom_data = self.geocoder.get_geometry_from_iso3(row.iso, simplified=True)
             if geom_data:
                 geometry = geom_data["geometry"]
                 bbox = geom_data["bbox"]
 
         # 4. Finally, try country geometry if geocoder is available
         if geometry is None and self.geocoder and row.country:
-            geom_data = self.geocoder.get_geometry_by_country_name(row.country)
+            geom_data = self.geocoder.get_geometry_by_country_name(row.country, simplified=True)
             if geom_data:
                 geometry = geom_data["geometry"]
                 bbox = geom_data["bbox"]

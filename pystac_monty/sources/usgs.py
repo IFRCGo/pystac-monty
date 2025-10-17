@@ -624,7 +624,7 @@ class USGSTransformer(MontyDataTransformer[USGSDataSource]):
             unit=unit,
             estimate_type=MontyEstimateType.MODELLED,
         )
-        geom = self.geocoder.get_geometry_from_iso3(monty.country_codes[0])
+        geom = self.geocoder.get_geometry_from_iso3(monty.country_codes[0], simplified=True)
         if geom:
             # intersect with the hazard geometry
             geom = shape(geom["geometry"]).intersection(shape(hazard_item.geometry))
