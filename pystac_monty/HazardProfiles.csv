@@ -1,66 +1,67 @@
-﻿undrr_key,label,link_group,link_maingroup,glide_code,emdat_key
-MH0001,Downburst,hazhmconv,haztypehydromet,ST,nat-met-sto-sev
-MH0002,Lightning (Electrical Storm),hazhmconv,haztypehydromet,ST,nat-met-sto-lig
-MH0003,Thunderstorm,hazhmconv,haztypehydromet,ST,nat-met-sto-sto
-MH0004,Coastal Flood,hazhmflood,haztypehydromet,FL,nat-hyd-flo-coa
-MH0005,Estuarine (Coastal) Flood,hazhmflood,haztypehydromet,OT,
-MH0006,Flash Flood,hazhmflood,haztypehydromet,FF,nat-hyd-flo-fla
-MH0007,Fluvial (Riverine) Flood,hazhmflood,haztypehydromet,FL,nat-hyd-flo-riv
-MH0008,Groundwater Flood,hazhmflood,haztypehydromet,FL,nat-hyd-flo-flo
-MH0009,Ice-Jam Flood Including Debris,hazhmflood,haztypehydromet,FL,nat-hyd-flo-ice
-MH0010,Ponding (Drainage) Flood,hazhmflood,haztypehydromet,FL,nat-hyd-flo-flo
-MH0011,Snowmelt Flood,hazhmflood,haztypehydromet,FL,nat-hyd-flo-flo
-MH0012,Surface Water Flooding,hazhmflood,haztypehydromet,FL,nat-hyd-flo-flo
-MH0013,Glacial Lake Outburst Flood,hazhmflood,haztypehydromet,FL,nat-cli-glo-glo
-MH0014,Black Carbon (Brown Clouds),hazhmlitho,haztypehydromet,OT,
-MH0015,Dust storm or Sandstorm,hazhmlitho,haztypehydromet,VW,nat-met-sto-san
-MH0016,Fog,hazhmlitho,haztypehydromet,OT,nat-met-fog-fog
-MH0017,Haze,hazhmlitho,haztypehydromet,OT,
-MH0018,Polluted Air,hazhmlitho,haztypehydromet,OT,
-MH0019,Sand haze,hazhmlitho,haztypehydromet,OT,
-MH0020,Smoke,hazhmlitho,haztypehydromet,OT,
-MH0021,Ocean Acidification,hazhmmarine,haztypehydromet,OT,
-MH0022,Rogue Wave,hazhmmarine,haztypehydromet,OT,nat-hyd-wav-rog
-MH0023,Sea Water Intrusion,hazhmmarine,haztypehydromet,OT,
-MH0024,Sea Ice (Icebergs),hazhmmarine,haztypehydromet,OT,
-MH0025,Ice Flow,hazhmmarine,haztypehydromet,OT,
-MH0026,Seiche,hazhmmarine,haztypehydromet,OT,nat-hyd-wav-sei
-MH0027,Storm Surge,hazhmmarine,haztypehydromet,SS,nat-met-sto-sur
-MH0028,Storm Tides,hazhmmarine,haztypehydromet,SS,nat-hyd-wav-rog
-MH0029,Tsunami,hazhmmarine,haztypehydromet,TS,nat-geo-ear-tsu
-MH0030,Depression or Cyclone (Low Pressure Area),hazhmpress,haztypehydromet,TC,nat-met-sto-tro
-MH0031,Extra-tropical Cyclone,hazhmpress,haztypehydromet,EC,nat-met-sto-ext
-MH0032,Sub-Tropical Cyclone,hazhmpress,haztypehydromet,TC,nat-met-sto-tro
-MH0033,Acid Rain,hazhmprecip,haztypehydromet,OT,
-MH0034,Blizzard,hazhmprecip,haztypehydromet,OT,nat-met-sto-bli
-MH0035,Drought,hazhmprecip,haztypehydromet,DR,nat-cli-dro-dro
-MH0036,Hail,hazhmprecip,haztypehydromet,ST,nat-met-sto-hai
-MH0037,Ice Storm,hazhmprecip,haztypehydromet,OT,
-MH0038,Snow,hazhmprecip,haztypehydromet,OT,
-MH0039,Snow Storm,hazhmprecip,haztypehydromet,OT,
-MH0040,Cold Wave,hazhmtemp,haztypehydromet,CW,nat-met-ext-col
-MH0041,Dzud,hazhmtemp,haztypehydromet,OT,nat-met-ext-sev
-MH0042,Freeze,hazhmtemp,haztypehydromet,OT,nat-met-ext-sev
-MH0043,Frost (Hoar Frost),hazhmtemp,haztypehydromet,OT,nat-met-ext-sev
-MH0044,Freezing Rain (Supercooled Rain),hazhmtemp,haztypehydromet,OT,nat-met-ext-sev
-MH0045,Glaze,hazhmtemp,haztypehydromet,OT,nat-met-ext-sev
-MH0046,Ground Frost,hazhmtemp,haztypehydromet,OT,nat-met-ext-sev
-MH0047,Heatwave,hazhmtemp,haztypehydromet,HT,nat-met-ext-hea
-MH0048,Icing (including Ice),hazhmtemp,haztypehydromet,OT,nat-met-ext-sev
-MH0049,Thaw,hazhmtemp,haztypehydromet,OT,nat-met-ext-sev
-MH0050,Avalanche,hazhmterr,haztypehydromet,AV,nat-geo-mmd-ava
-MH0050,Avalanche,hazhmterr,haztypehydromet,AV,nat-hyd-mmw-ava
-MH0051,Mud Flow,hazhmterr,haztypehydromet,MS,nat-hyd-mmw-mud
-MH0052,Rock Slide,hazhmterr,haztypehydromet,OT,
-MH0053,Derecho,hazhmwind,haztypehydromet,VW,nat-met-sto-der
-MH0054,Gale (Strong Gale),hazhmwind,haztypehydromet,OT,
-MH0055,Squall,hazhmwind,haztypehydromet,OT,
-MH0056,Subtropical Storm,hazhmwind,haztypehydromet,TC,nat-met-sto-tro
-MH0057,"Tropical Cyclone (Cyclonic Wind, Rain [Storm] surge)",hazhmwind,haztypehydromet,TC,nat-met-sto-tro
-MH0058,Tropical Storm,hazhmwind,haztypehydromet,TC,nat-met-sto-tro
-MH0099,Extra-tropical Storm,hazhmwind,haztypehydromet,EC,nat-met-sto-ext
-MH0059,Tornado,hazhmwind,haztypehydromet,TO,nat-met-sto-tor
-MH0060,Wind,hazhmwind,haztypehydromet,VW,nat-met-sto-sto
+﻿undrr_2025_key,undrr_key,label,cluster_label,family_label,link_group,link_maingroup,glide_code,emdat_key
+MH0101,MH0001,Downburst,Convective-Related,Meteorological & Hydrological,hazhmconv,haztypehydromet,ST,nat-met-sto-sev
+MH0102,MH0002,Lightning (electrical storm),Convective-Related,Meteorological & Hydrological,hazhmconv,haztypehydromet,ST,nat-met-sto-lig
+MH0103,MH0003,Thunderstorm,Convective-Related,Meteorological & Hydrological,hazhmconv,haztypehydromet,ST,nat-met-sto-sto
+MH0600,,Flooding,Water-related,Meteorological & Hydrological,hazhmflood,haztypehydromet,FL,nat-hyd-flo-flo
+MH0601,MH0004,Coastal Flooding,Water-related,Meteorological & Hydrological,hazhmflood,haztypehydromet,FL,nat-hyd-flo-coa
+MH0602,MH0005,Estuarine (Coastal) Flooding,Water-related,Meteorological & Hydrological,hazhmflood,haztypehydromet,OT,
+MH0603,MH0006,Flash Flooding,Water-related,Meteorological & Hydrological,hazhmflood,haztypehydromet,FF,nat-hyd-flo-fla
+MH0604,MH0007,Fluvial (Riverine) Flooding,Water-related,Meteorological & Hydrological,hazhmflood,haztypehydromet,FL,nat-hyd-flo-riv
+MH0605,MH0008,Groundwater Flooding,Water-related,Meteorological & Hydrological,hazhmflood,haztypehydromet,FL,nat-hyd-flo-flo
+MH0608,MH0009,Ice-Jam Flooding Including Debris,Water-related,Meteorological & Hydrological,hazhmflood,haztypehydromet,FL,nat-hyd-flo-ice
+MH0609,MH0010,Ponding (Drainage) Flooding,Water-related,Meteorological & Hydrological,hazhmflood,haztypehydromet,FL,nat-hyd-flo-flo
+MH0610,MH0011,Snowmelt Flooding,Water-related,Meteorological & Hydrological,hazhmflood,haztypehydromet,FL,nat-hyd-flo-flo
+MH0606,MH0012,Surface water Flooding,Water-related,Meteorological & Hydrological,hazhmflood,haztypehydromet,FL,nat-hyd-flo-flo
+MH0607,MH0013,Glacial Lake Outburst Flooding,Water-related,Meteorological & Hydrological,hazhmflood,haztypehydromet,FL,nat-cli-glo-glo
+EN0104,MH0014,Black Carbon,Environmental Degradation,Environmental,hazhmlitho,haztypehydromet,OT,
+MH0201,MH0015,Dust Storm or Sandstorm,Particle-related,Meteorological & Hydrological,hazhmlitho,haztypehydromet,VW,nat-met-sto-san
+MH0202,MH0016,Fog,Particle-related,Meteorological & Hydrological,hazhmlitho,haztypehydromet,OT,nat-met-fog-fog
+MH0203,MH0017,Haze,Particle-related,Meteorological & Hydrological,hazhmlitho,haztypehydromet,OT,
+EN0103,MH0018,Ambient (Outdoor) Air Pollution,Environmental Degradation,Environmental,hazhmlitho,haztypehydromet,OT,
+MH0204,MH0019,Sand Haze,Particle-related,Meteorological & Hydrological,hazhmlitho,haztypehydromet,OT,
+MH0205,MH0020,Smoke,Particle-related,Meteorological & Hydrological,hazhmlitho,haztypehydromet,OT,
+EN0401,MH0021,Ocean Acidification,Environmental Degradation,Environmental,hazhmmarine,haztypehydromet,OT,
+MH0701,MH0022,Rogue Wave,Marine-related,Meteorological & Hydrological,hazhmmarine,haztypehydromet,OT,nat-hyd-wav-rog
+EN0302,MH0023,Seawater intrusion,Environmental Degradation,Environmental,hazhmmarine,haztypehydromet,OT,
+MH0706,MH0024,Sea ice,Marine-related,Meteorological & Hydrological,hazhmmarine,haztypehydromet,OT,
+MH0707,MH0025,Ice flow,Marine-related,Meteorological & Hydrological,hazhmmarine,haztypehydromet,OT,
+MH0702,MH0026,Seiche,Marine-related,Meteorological & Hydrological,hazhmmarine,haztypehydromet,OT,nat-hyd-wav-sei
+MH0703,MH0027,Storm Surge,Marine-related,Meteorological & Hydrological,hazhmmarine,haztypehydromet,SS,nat-met-sto-sur
+MH0704,MH0028,Storm Tides,Marine-related,Meteorological & Hydrological,hazhmmarine,haztypehydromet,SS,nat-hyd-wav-rog
+MH0705,MH0029,Tsunami,Marine-related,Meteorological & Hydrological,hazhmmarine,haztypehydromet,TS,nat-geo-ear-tsu
+MH0306,MH0030,Depression or Cyclone,Wind & Pressure-related,Meteorological & Hydrological,hazhmpress,haztypehydromet,TC,nat-met-sto-tro
+MH0307,MH0031,Extra-tropical Cyclone,Wind & Pressure-related,Meteorological & Hydrological,hazhmpress,haztypehydromet,EC,nat-met-sto-ext
+MH0308,MH0032,Sub-tropical Cyclone,Wind & Pressure-related,Meteorological & Hydrological,hazhmpress,haztypehydromet,TC,nat-met-sto-tro
+EN0105,MH0033,Acid Rain,Environmental Degradation,Environmental,hazhmprecip,haztypehydromet,OT,
+MH0403,MH0034,Blizzard,Precipitation-related,Meteorological & Hydrological,hazhmprecip,haztypehydromet,OT,nat-met-sto-bli
+MH0401,MH0035,Drought,Precipitation-related,Meteorological & Hydrological,hazhmprecip,haztypehydromet,DR,nat-cli-dro-dro
+MH0404,MH0036,Hail,Precipitation-related,Meteorological & Hydrological,hazhmprecip,haztypehydromet,ST,nat-met-sto-hai
+,MH0037,Ice Storm,Precipitation-related,Meteorological & Hydrological,hazhmprecip,haztypehydromet,OT,
+MH0405,MH0038,Snow,Precipitation-related,Meteorological & Hydrological,hazhmprecip,haztypehydromet,OT,
+MH0406,MH0039,Snow Storm,Precipitation-related,Meteorological & Hydrological,hazhmprecip,haztypehydromet,OT,
+MH0502,MH0040,Cold Wave,Temperature-related,Meteorological & Hydrological,hazhmtemp,haztypehydromet,CW,nat-met-ext-col
+MH0503,MH0041,Dzud,Temperature-related,Meteorological & Hydrological,hazhmtemp,haztypehydromet,OT,nat-met-ext-sev
+MH0504,MH0042,Freeze,Temperature-related,Meteorological & Hydrological,hazhmtemp,haztypehydromet,OT,nat-met-ext-sev
+MH0505,MH0043,Frost (Hoar Frost),Temperature-related,Meteorological & Hydrological,hazhmtemp,haztypehydromet,OT,nat-met-ext-sev
+MH0506,MH0044,Freezing Rain (Supercooled Rain),Temperature-related,Meteorological & Hydrological,hazhmtemp,haztypehydromet,OT,nat-met-ext-sev
+MH0507,MH0045,Glaze,Temperature-related,Meteorological & Hydrological,hazhmtemp,haztypehydromet,OT,nat-met-ext-sev
+MH0508,MH0046,Ground Frost,Temperature-related,Meteorological & Hydrological,hazhmtemp,haztypehydromet,OT,nat-met-ext-sev
+MH0501,MH0047,Heatwave,Temperature-related,Meteorological & Hydrological,hazhmtemp,haztypehydromet,HT,nat-met-ext-hea
+MH0509,MH0048,Icing (Including Ice),Temperature-related,Meteorological & Hydrological,hazhmtemp,haztypehydromet,OT,nat-met-ext-sev
+MH0510,MH0049,Thaw,Temperature-related,Meteorological & Hydrological,hazhmtemp,haztypehydromet,OT,nat-met-ext-sev
+MH0801,MH0050,Avalanche,Terrestrial,Meteorological & Hydrological,hazhmterr,haztypehydromet,AV,nat-geo-mmd-ava
+MH0801,MH0050,Avalanche,Terrestrial,Meteorological & Hydrological,hazhmterr,haztypehydromet,AV,nat-hyd-mmw-ava
+GH0303,MH0051,Flows,Ground Failure,Geological,hazhmterr,haztypehydromet,MS,nat-hyd-mmw-mud
+,MH0052,Rock Slide,Ground Failure,Geological,hazhmterr,haztypehydromet,OT,
+MH0302,MH0053,Derecho,Wind & Pressure-related,Meteorological & Hydrological,hazhmwind,haztypehydromet,VW,nat-met-sto-der
+MH0303,MH0054,Gale,Wind & Pressure-related,Meteorological & Hydrological,hazhmwind,haztypehydromet,OT,
+MH0304,MH0055,Squall,Wind & Pressure-related,Meteorological & Hydrological,hazhmwind,haztypehydromet,OT,
+MH0308,MH0056,Sub-tropical Cyclone,Wind & Pressure-related,Meteorological & Hydrological,hazhmwind,haztypehydromet,TC,nat-met-sto-tro
+MH0309,MH0057,Tropical Cyclone,Wind & Pressure-related,Meteorological & Hydrological,hazhmwind,haztypehydromet,TC,nat-met-sto-tro
+MH0309,MH0058,Tropical Cyclone,Wind & Pressure-related,Meteorological & Hydrological,hazhmwind,haztypehydromet,TC,nat-met-sto-tro
+MH0307,MH0099,Extra-tropical Cyclone,Wind & Pressure-related,Meteorological & Hydrological,hazhmwind,haztypehydromet,EC,nat-met-sto-ext
+MH0305,MH0059,Tornado,Wind & Pressure-related,Meteorological & Hydrological,hazhmwind,haztypehydromet,TO,nat-met-sto-tor
+MH0301,MH0060,Wind,Wind & Pressure-related,Meteorological & Hydrological,hazhmwind,haztypehydromet,VW,nat-met-sto-sto
 ET0001,Airburst,hazetextraterr,haztypeextraterr,OT,nat-ext-imp-air
 ET0002,"Geomagnetic Storm (including energetic particles related to space weather, and solar flare radio blackout [R Scale])",hazetextraterr,haztypeextraterr,OT,nat-ext-spa-geo
 ET0003,UV Radiation,hazetextraterr,haztypeextraterr,OT,
@@ -70,26 +71,26 @@ ET0006,Radio Blackout,hazetextraterr,haztypeextraterr,OT,nat-ext-spa-rad
 ET0007,Solar Storm (Solar Radiation Storm) (S Scale),hazetextraterr,haztypeextraterr,OT,
 ET0008,Space Hazard / Accident,hazetextraterr,haztypeextraterr,OT,nat-ext-spa-sho
 ET0009,Near-Earth Object,hazetextraterr,haztypeextraterr,OT,
-GH0001,Earthquake,hazgeoseis,haztypegeohaz,EQ,nat-geo-ear-gro
-GH0002,Ground Shaking (Earthquake),hazgeoseis,haztypegeohaz,EQ,nat-geo-ear-gro
-GH0003,Liquefaction (Earthquake Trigger),hazgeoseis,haztypegeohaz,EQ,nat-geo-ear-gro
-GH0004,"Earthquake Surface Rupture, Fissures, and Tectonic Uplift/Subsidence",hazgeoseis,haztypegeohaz,EQ,nat-geo-ear-gro
-GH0005,"Subsidence and Uplift, Including Shoreline Change (Earthquake Trigger)",hazgeoseis,haztypegeohaz,EQ,nat-geo-ear-gro
-GH0006,Tsunami (Earthquake Trigger),hazgeoseis,haztypegeohaz,TS,nat-geo-ear-tsu
-GH0007,Landslide or Debris Flow (Earthquake Trigger),hazgeoseis,haztypegeohaz,LS,nat-geo-mmd-lan
-GH0008,Ground Gases (Seismogenic),hazgeoseis,haztypegeohaz,OT,
-GH0009,Lava Flows (Lava Domes),hazgeovolc,haztypegeohaz,VO,nat-geo-vol-lav
-GH0010,Ash/Tephra Fall (Physical and Chemical),hazgeovolc,haztypegeohaz,VO,nat-geo-vol-ash
-GH0011,Ballistics (Volcanic),hazgeovolc,haztypegeohaz,OT,
-GH0012,Pyroclastic Density Current,hazgeovolc,haztypegeohaz,VO,nat-geo-vol-pyr
-GH0013,Debris Flow/Lahars/Floods,hazgeovolc,haztypegeohaz,VO,nat-geo-vol-lah
-GH0014,Landslide (Volcanic Trigger),hazgeovolc,haztypegeohaz,LS,nat-geo-mmd-lan
-GH0015,Ground Shaking (Volcanic Earthquake),hazgeovolc,haztypegeohaz,OT,
-GH0016,Volcanic Gases and Aerosols,hazgeovolc,haztypegeohaz,VO,nat-geo-vol-vol
-GH0017,Tsunami (Volcanic Trigger),hazgeovolc,haztypegeohaz,TS,nat-geo-ear-tsu
-GH0018,Lightning (Volcanic Trigger),hazgeovolc,haztypegeohaz,OT,
-GH0019,Urban Fire (During/Following Volcanic Eruption),hazgeovolc,haztypegeohaz,OT,
-GH0020,"Subsidence and Uplift, Including Shoreline Change (Magmatic/Volcanic Trigger)",hazgeovolc,haztypegeohaz,OT,
+GH0101,GH0001,Earthquake,Seismic,Geological,hazgeoseis,haztypegeohaz,EQ,nat-geo-ear-gro
+GH0101,GH0002,Earthquake,Seismic,Geological,hazgeoseis,haztypegeohaz,EQ,nat-geo-ear-gro
+GH0307,GH0003,Liquefaction,Ground Failure,Geological,hazgeoseis,haztypegeohaz,EQ,nat-geo-ear-gro
+GH0311,GH0004,Surface Rupture & Fissure,Ground Failure,Geological,hazgeoseis,haztypegeohaz,EQ,nat-geo-ear-gro
+GH0309,GH0005,Subsidence and Uplift,Ground Failure,Geological,hazgeoseis,haztypegeohaz,EQ,nat-geo-ear-gro
+MH0705,GH0006,Tsunami,Marine-related,Meteorological & Hydrological,hazgeoseis,haztypegeohaz,TS,nat-geo-ear-tsu
+GH0300,GH0007,Gravitational Mass Movement (Landslide),Ground Failure,Geological,hazgeoseis,haztypegeohaz,LS,nat-geo-mmd-lan
+GH0407,GH0008,Ground Gases (CH4 Rn etc.),Other Hazards,Geological,hazgeoseis,haztypegeohaz,OT,
+GH0201,GH0009,Lava Flows (Lava Domes),Volcanic,Geological,hazgeovolc,haztypegeohaz,VO,nat-geo-vol-lav
+GH0202,GH0010,Ash/Tephra Fall (including Volcanic Ballistic projectiles),Volcanic,Geological,hazgeovolc,haztypegeohaz,VO,nat-geo-vol-ash
+GH0202,GH0011,Ash/Tephra Fall (including Volcanic Ballistic projectiles),Volcanic,Geological,hazgeovolc,haztypegeohaz,OT,
+GH0203,GH0012,Pyroclastic Density Current,Volcanic,Geological,hazgeovolc,haztypegeohaz,VO,nat-geo-vol-pyr
+GH0204,GH0013,Lahars,Volcanic,Geological,hazgeovolc,haztypegeohaz,VO,nat-geo-vol-lah
+GH0300,GH0014,Gravitational Mass Movement (Landslide),Ground Failure,Geological,hazgeovolc,haztypegeohaz,LS,nat-geo-mmd-lan
+GH0101,GH0015,Earthquake,Seismic,Geological,hazgeovolc,haztypegeohaz,OT,
+GH0205,GH0016,Volcanic Gases and Aerosols,Volcanic,Geological,hazgeovolc,haztypegeohaz,VO,nat-geo-vol-vol
+MH0705,GH0017,Tsunami,Marine-related,Meteorological & Hydrological,hazgeovolc,haztypegeohaz,TS,nat-geo-ear-tsu
+,GH0018,Lightning (Volcanic Trigger),Convective-Related,Meteorological & Hydrological,hazgeovolc,haztypegeohaz,OT,
+,GH0019,Urban Fire (During/Following Volcanic Eruption),Industrial Failure,Technological,hazgeovolc,haztypegeohaz,OT,
+GH0309,GH0020,Subsidence and Uplift,Ground Failure,Geological,hazgeovolc,haztypegeohaz,OT,
 GH0021,"Ground Shaking (induced earthquake, reservoir fill, dams, cavity collapse, underground explosion, impact, hydrocarbon fields, shale exploration, etc.)",hazgeoother,haztypegeohaz,OT,
 GH0022,Liquefaction (Groundwater Trigger),hazgeoother,haztypegeohaz,OT,
 GH0023,Ground Fissuring,hazgeoother,haztypegeohaz,OT,
@@ -117,9 +118,9 @@ EN0009,Deforestation,hazenvenvdeg,haztypeenviron,OT,
 EN0010,Forest Declines and Diebacks,hazenvenvdeg,haztypeenviron,OT,
 EN0011,Forest Disturbances,hazenvenvdeg,haztypeenviron,OT,
 EN0012,Forest Invasive Species,hazenvenvdeg,haztypeenviron,OT,
-EN0013,Wildfires,hazenvenvdeg,haztypeenviron,WF,nat-cli-wil-wil
-EN0013,Forest fire,hazenvenvdeg,haztypeenviron,WF,nat-cli-wil-for
-EN0013,Land fire,hazenvenvdeg,haztypeenviron,WF,nat-cli-wil-lan
+EN0205,EN0013,Wildfires,Environmental Degradation,Environmental,hazenvenvdeg,haztypeenviron,WF,nat-cli-wil-wil
+EN0205,EN0013,Wildfires,Environmental Degradation,Environmental,hazenvenvdeg,haztypeenviron,WF,nat-cli-wil-for
+EN0205,EN0013,Wildfires,Environmental Degradation,Environmental,hazenvenvdeg,haztypeenviron,WF,nat-cli-wil-lan
 EN0014,Desertification,hazenvenvdeg,haztypeenviron,OT,nat-geo-env-des
 EN0015,Loss of Mangroves,hazenvenvdeg,haztypeenviron,OT,
 EN0016,Wetland Loss/Degradation,hazenvenvdeg,haztypeenviron,OT,
@@ -192,18 +193,18 @@ SO0005,Environmental Degradation from Conflict,hazsocpostconf,haztypesoc,CE,
 SO0006,Violence,hazsocbeh,haztypesoc,OT,
 SO0007,Stampede or Crushing (Human),hazsocbeh,haztypesoc,OT,
 SO0008,Financial shock,hazsoceco,haztypesoc,OT,
-,Sedimentation,hazenvenvdeg,haztypeenviron,OT,nat-geo-env-sed
-,Mixed Hazards,hazmixed,haztypeother,OT,mix-mix-mix-mix
-,General Flood,hazhmflood,haztypehydromet,FL,nat-hyd-flo-flo
-,General Earthquake,hazgeoseis,haztypegeohaz,EQ,nat-geo-ear-gro
-,General Volcano,hazgeovolc,haztypegeohaz,VO,nat-geo-vol-vol
-,General Storm,hazhmwind,haztypehydromet,ST,nat-met-sto-sto
-,Complex Emergency,hazsocconf,haztypesoc,CE,
-,General Technological,haztechother,haztypetech,AC,tec-ind-ind-ind
-,Drought,hazhmprecip,haztypehydromet,DR,nat-cli-dro-dro
-,Infectious disease (general),hazsocbio,haztypesoc,OT,nat-bio-epi-dis
-,Explosion (Miscellaneous),haztechindfail,haztypetech,AC,tec-mis-exp-exp
-,Sudden Subsidence,hazgeoother,haztypegeohaz,OT,nat-geo-mmd-sub
-,Landslide,hazgeoother,haztypegeohaz,LS,nat-hyd-mmw-lan
-,Fire (Miscellaneous),haztechindfail,haztypetech,OT,tec-mis-fir-fir
-,Collapse (Industrial),haztechstrfail,haztypetech,AC,tec-ind-col-col
+GH0405,,Coastal Erosion & Accretion,Other Hazards,Geological,hazenvenvdeg,haztypeenviron,OT,nat-geo-env-sed
+,,Mixed Hazards,Other,Other,hazmixed,haztypeother,OT,mix-mix-mix-mix
+MH0600,,Flooding,Water-related,Meteorological & Hydrological,hazhmflood,haztypehydromet,FL,nat-hyd-flo-flo
+GH0101,,Earthquake,Seismic,Geological,hazgeoseis,haztypegeohaz,EQ,nat-geo-ear-gro
+GH0201,,Lava Flows (Lava Domes),Volcanic,Geological,hazgeovolc,haztypegeohaz,VO,nat-geo-vol-vol
+,,Storm,Wind & Pressure-related,Meteorological & Hydrological,hazhmwind,haztypehydromet,ST,nat-met-sto-sto
+SO0103,,Civil Unrest,Conflict,Societal,hazsocconf,haztypesoc,CE,
+TL0305,,Fire,Industrial Failure,Technological,haztechother,haztypetech,AC,tec-ind-ind-ind
+MH0401,,Drought,Precipitation-related,Meteorological & Hydrological,hazhmprecip,haztypehydromet,DR,nat-cli-dro-dro
+BI0101,,Airborne Diseases (human and Animal),Infectious Diseases,Biological,hazsocbio,haztypesoc,OT,nat-bio-epi-dis
+TL0304,,Explosion,Industrial Failure,Technological,haztechindfail,haztypetech,AC,tec-mis-exp-exp
+GH0309,,Subsidence and Uplift,Ground Failure,Geological,hazgeoother,haztypegeohaz,OT,nat-geo-mmd-sub
+GH0300,,Gravitational Mass Movement (Landslide),Ground Failure,Geological,hazgeoother,haztypegeohaz,LS,nat-hyd-mmw-lan
+TL0305,,Fire,Industrial Failure,Technological,haztechindfail,haztypetech,OT,tec-mis-fir-fir
+TL0201,,Building Collapse,Construction / Structural Failure,Technological,haztechstrfail,haztypetech,AC,tec-ind-col-col
