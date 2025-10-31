@@ -7,6 +7,7 @@ This document provides guidance for migrating from UNDRR-ISC 2020 Hazard Informa
 ## Key Changes in HIPs 2025
 
 ### New Code Format
+
 - **2025 Format**: 2 letters + 4 digits (e.g., `MH0600`, `GH0101`)
 - **Organized Structure**: 281 hazards across 8 hazard types and 39 clusters
 - **Chapeau HIPs**: General umbrella hazards (e.g., `MH0600` for "Flooding")
@@ -19,11 +20,13 @@ According to the [Monty STAC Extension PR #32](https://github.com/IFRCGo/monty-s
 > Optionally, the array may also include **at most one GLIDE code** and **at most one EM-DAT code**.
 
 **Valid examples:**
+
 - `["MH0600"]` - Only UNDRR 2025 code
 - `["FL", "MH0600"]` - GLIDE + UNDRR 2025
 - `["FL", "nat-hyd-flo-flo", "MH0600"]` - GLIDE + EM-DAT + UNDRR 2025
 
 **Invalid examples:**
+
 - `["FL"]` - Missing UNDRR 2025 code
 - `["MH0600", "MH0601"]` - Multiple UNDRR codes
 - `["FL", "TC", "MH0600"]` - Multiple GLIDE codes
@@ -46,9 +49,48 @@ The CSV now includes the following columns:
 
 ## New Functions in `hazard_profiles.py`
 
+### `get_canonical_hazard_codes(item: Item) -> List[str]` ⭐ **RECOMMENDED**
+
+**Primary method for HIPs 2025 compliance**. Returns the canonical trio of hazard codes: exactly one UNDRR-ISC 2025 code, optionally one GLIDE code, and optionally one EM-DAT code (max 3 total).
+
+This method:
+- Extracts existing UNDRR 2025, GLIDE, and EM-DAT codes from the item
+- Derives missing UNDRR 2025 code from other codes if needed
+- Returns a normalized, validated set conforming to the HIPs 2025 specification
+
+```python
+from pystac_monty.hazard_profiles import MontyHazardProfiles
+
+hazard_profiles = MontyHazardProfiles()
+
+# Example 1: Derive UNDRR 2025 from GLIDE + EM-DAT
+item.properties["monty:hazard_codes"] = ["FL", "nat-hyd-flo-flo"]
+canonical = hazard_profiles.get_canonical_hazard_codes(item)
+# Returns: ["MH0600", "FL", "nat-hyd-flo-flo"]
+
+# Example 2: Already has UNDRR 2025
+item.properties["monty:hazard_codes"] = ["MH0604", "FL"]
+canonical = hazard_profiles.get_canonical_hazard_codes(item)
+# Returns: ["MH0604", "FL"]
+
+# Example 3: Earthquake
+item.properties["monty:hazard_codes"] = ["EQ", "nat-geo-ear-gro"]
+canonical = hazard_profiles.get_canonical_hazard_codes(item)
+# Returns: ["GH0101", "EQ", "nat-geo-ear-gro"]
+```
+
+**Usage in source transformers:**
+```python
+# After setting initial hazard codes
+monty.hazard_codes = self.get_hazard_codes(source_hazard_type)
+
+# Normalize to canonical trio
+monty.hazard_codes = hazard_profiles.get_canonical_hazard_codes(item)
+```
+
 ### `get_undrr_2025_code(hazard_codes: List[str]) -> Optional[str]`
 
-Extracts the UNDRR-ISC 2025 code from a list of hazard codes.
+Static method that extracts the UNDRR-ISC 2025 code from a list of hazard codes.
 
 ```python
 from pystac_monty.hazard_profiles import MontyHazardProfiles
@@ -71,6 +113,12 @@ codes = ["MH0600", "FL"]
 keywords = hazard_profiles.get_keywords(codes)
 # Returns: ["Flooding", "Meteorological & Hydrological", "Water-related"]
 ```
+
+### `get_cluster_code(item: Item) -> str` ⚠️ **DEPRECATED**
+
+**This method is deprecated**. The name is misleading as it returns a hazard code, not a cluster code. The "cluster" field has been removed from HazardDetail in the Monty STAC Extension specification.
+
+Use `get_canonical_hazard_codes()` instead for HIPs 2025 compliance.
 
 ## Migration Steps for Source Transformers
 
@@ -195,6 +243,7 @@ As you update each source transformer, please create GitHub issues to track:
 ## Questions?
 
 If you have questions about the migration, please:
+
 1. Check the [Monty Extension documentation](https://ifrcgo.org/monty-stac-extension/)
 2. Review examples in the [monty-stac-extension examples folder](https://github.com/IFRCGo/monty-stac-extension/tree/main/examples)
 3. Open a discussion in the pystac-monty repository
