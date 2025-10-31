@@ -33,10 +33,10 @@ class TestHazardProfilesAbstract:
         class ConcreteHazardProfiles(HazardProfiles):
             def get_canonical_hazard_codes(self, item: Item) -> List[str]:
                 return ["MH0600", "FL", "nat-hyd-flo-flo"]
-            
+
             def get_cluster_code(self, item: Item) -> str:
                 return "test-code"
-            
+
             def get_keywords(self, hazard_codes: List[str]) -> List[str]:
                 return ["test-keyword"]
 

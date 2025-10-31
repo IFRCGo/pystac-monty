@@ -310,9 +310,7 @@ class MontyHazardProfiles(HazardProfiles):
             # then try the emdat key column
             if not cluster_code:
                 try:
-                    cluster_code = profiles.loc[
-                        profiles[self.EMDAT_KEY_COLUMN] == c, self.IMPACT_CLUSTER_CODE_COLUMN
-                    ].values[-1]
+                    cluster_code = profiles.loc[profiles[self.EMDAT_KEY_COLUMN] == c, self.IMPACT_CLUSTER_CODE_COLUMN].values[-1]
                 except IndexError:
                     pass
             # finally try the glide key column
