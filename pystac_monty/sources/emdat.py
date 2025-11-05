@@ -262,6 +262,14 @@ class EMDATTransformer(MontyDataTransformer[EMDATDataSource]):
         monty.hazard_codes = [row.classif_key]
         monty.country_codes = [row.iso] if row.iso else []
 
+        # Normalize to canonical trio (UNDRR 2025 + EM-DAT + GLIDE)
+        monty.hazard_codes = self.hazard_profiles.get_canonical_hazard_codes(item)
+
+        # Generate keywords for discoverability
+        hazard_keywords = self.hazard_profiles.get_keywords(monty.hazard_codes)
+        country_keywords = [row.country] if row.country else []
+        item.properties["keywords"] = list(set(hazard_keywords + country_keywords))
+
         monty.compute_and_set_correlation_id()
 
         # Set collection and roles
