@@ -167,3 +167,145 @@ def test_get_cluster_code_glide_multiple_fallback() -> None:
     # Then fall back to first row with no UNDRR key
     cluster_code = profile.get_cluster_code(item)
     assert cluster_code == "nat-hyd-flo-flo"
+
+
+# Tests for get_canonical_hazard_codes (HIPs 2025)
+
+
+def test_get_canonical_hazard_codes_with_undrr_2025() -> None:
+    """Test getting canonical codes when UNDRR 2025 code is already present."""
+    profile = MontyHazardProfiles()
+    item = Item(id="test", geometry=None, bbox=None, datetime=TEST_DATETIME, properties={})
+    # Flood with UNDRR 2025 + GLIDE
+    MontyExtension.ext(item, add_if_missing=True).hazard_codes = ["MH0600", "FL"]
+
+    canonical = profile.get_canonical_hazard_codes(item)
+    assert len(canonical) == 2
+    assert canonical[0] == "MH0600"  # UNDRR 2025
+    assert canonical[1] == "FL"  # GLIDE
+
+
+def test_get_canonical_hazard_codes_derive_from_glide() -> None:
+    """Test deriving UNDRR 2025 code from GLIDE code."""
+    profile = MontyHazardProfiles()
+    item = Item(id="test", geometry=None, bbox=None, datetime=TEST_DATETIME, properties={})
+    # Only GLIDE code - should derive MH0600 (General Flooding)
+    MontyExtension.ext(item, add_if_missing=True).hazard_codes = ["FL"]
+
+    canonical = profile.get_canonical_hazard_codes(item)
+    assert len(canonical) >= 1
+    # First should be UNDRR 2025 code
+    assert canonical[0].startswith("MH")  # Should be a Met & Hydro code
+    assert len(canonical[0]) == 6  # Format: XX0000
+
+
+def test_get_canonical_hazard_codes_full_trio() -> None:
+    """Test getting full trio: UNDRR 2025 + GLIDE + EM-DAT."""
+    profile = MontyHazardProfiles()
+    item = Item(id="test", geometry=None, bbox=None, datetime=TEST_DATETIME, properties={})
+    # Complete set for riverine flooding
+    MontyExtension.ext(item, add_if_missing=True).hazard_codes = ["MH0604", "FL", "nat-hyd-flo-riv"]
+
+    canonical = profile.get_canonical_hazard_codes(item)
+    assert len(canonical) == 3
+    assert canonical[0] == "MH0604"  # UNDRR 2025
+    assert canonical[1] == "FL"  # GLIDE
+    assert canonical[2] == "nat-hyd-flo-riv"  # EM-DAT
+
+
+def test_get_canonical_hazard_codes_earthquake() -> None:
+    """Test canonical codes for earthquake."""
+    profile = MontyHazardProfiles()
+    item = Item(id="test", geometry=None, bbox=None, datetime=TEST_DATETIME, properties={})
+    # Earthquake with GLIDE + EM-DAT
+    MontyExtension.ext(item, add_if_missing=True).hazard_codes = ["EQ", "nat-geo-ear-gro"]
+
+    canonical = profile.get_canonical_hazard_codes(item)
+    assert len(canonical) >= 2
+    assert canonical[0] == "GH0101"  # UNDRR 2025 Earthquake
+    assert canonical[1] == "EQ"  # GLIDE
+
+
+def test_get_canonical_hazard_codes_only_emdat() -> None:
+    """Test deriving canonical codes from only EM-DAT code."""
+    profile = MontyHazardProfiles()
+    item = Item(id="test", geometry=None, bbox=None, datetime=TEST_DATETIME, properties={})
+    # Only EM-DAT code
+    MontyExtension.ext(item, add_if_missing=True).hazard_codes = ["nat-cli-dro-dro"]
+
+    canonical = profile.get_canonical_hazard_codes(item)
+    assert len(canonical) >= 1
+    # Should derive UNDRR 2025 code for drought
+    assert canonical[0] == "MH0401"  # Drought
+    assert "nat-cli-dro-dro" in canonical  # EM-DAT should be preserved
+
+
+def test_get_canonical_hazard_codes_tropical_cyclone() -> None:
+    """Test canonical codes for tropical cyclone.
+
+    Note: TC + nat-met-sto-tro maps to MH0306 (Depression or Cyclone) by default.
+    For specific tropical cyclone (MH0309), it should be provided explicitly.
+    """
+    profile = MontyHazardProfiles()
+    item = Item(id="test", geometry=None, bbox=None, datetime=TEST_DATETIME, properties={})
+    # TC with EM-DAT code - defaults to first match (MH0306 Depression/Cyclone)
+    MontyExtension.ext(item, add_if_missing=True).hazard_codes = ["TC", "nat-met-sto-tro"]
+
+    canonical = profile.get_canonical_hazard_codes(item)
+    assert len(canonical) >= 2
+    assert canonical[0] == "MH0306"  # Depression or Cyclone (first match)
+    assert "TC" in canonical  # GLIDE
+
+
+def test_get_canonical_hazard_codes_tropical_cyclone_specific() -> None:
+    """Test canonical codes when specific tropical cyclone code is provided."""
+    profile = MontyHazardProfiles()
+    item = Item(id="test", geometry=None, bbox=None, datetime=TEST_DATETIME, properties={})
+    # Explicit MH0309 for specific Tropical Cyclone
+    MontyExtension.ext(item, add_if_missing=True).hazard_codes = ["MH0309", "TC", "nat-met-sto-tro"]
+
+    canonical = profile.get_canonical_hazard_codes(item)
+    assert len(canonical) == 3
+    assert canonical[0] == "MH0309"  # Specific Tropical Cyclone
+    assert canonical[1] == "TC"  # GLIDE
+    assert canonical[2] == "nat-met-sto-tro"  # EM-DAT
+
+
+def test_get_canonical_hazard_codes_no_codes() -> None:
+    """Test error handling when no hazard codes present."""
+    profile = MontyHazardProfiles()
+    item = Item(id="test", geometry=None, bbox=None, datetime=TEST_DATETIME, properties={})
+    MontyExtension.ext(item, add_if_missing=True).hazard_codes = []
+
+    with pytest.raises(ValueError, match="No hazard codes found in item"):
+        profile.get_canonical_hazard_codes(item)
+
+
+def test_get_canonical_hazard_codes_multiple_glide() -> None:
+    """Test that only first GLIDE code is included in canonical set."""
+    profile = MontyHazardProfiles()
+    item = Item(id="test", geometry=None, bbox=None, datetime=TEST_DATETIME, properties={})
+    # Multiple GLIDE codes (invalid per spec, but test graceful handling)
+    MontyExtension.ext(item, add_if_missing=True).hazard_codes = ["FL", "DR", "MH0600"]
+
+    canonical = profile.get_canonical_hazard_codes(item)
+    # Should have UNDRR 2025 + first GLIDE only (max 3 total)
+    assert len(canonical) <= 3
+    assert canonical[0] == "MH0600"  # UNDRR 2025
+    # Only first GLIDE code should be included
+    glide_codes = [c for c in canonical if c in ["FL", "DR"]]
+    assert len(glide_codes) == 1
+    assert glide_codes[0] == "FL"  # First one
+
+
+def test_get_canonical_hazard_codes_wildfire() -> None:
+    """Test canonical codes for wildfire."""
+    profile = MontyHazardProfiles()
+    item = Item(id="test", geometry=None, bbox=None, datetime=TEST_DATETIME, properties={})
+    # Wildfire
+    MontyExtension.ext(item, add_if_missing=True).hazard_codes = ["WF", "nat-cli-wil-wil"]
+
+    canonical = profile.get_canonical_hazard_codes(item)
+    assert len(canonical) >= 2
+    assert canonical[0] == "EN0205"  # UNDRR 2025 Wildfires
+    assert "WF" in canonical  # GLIDE

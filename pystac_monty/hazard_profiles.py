@@ -1,5 +1,6 @@
 import importlib.resources
 from abc import ABC, abstractmethod
+from typing import List, Optional
 
 import pandas as pd
 from pystac import Item
@@ -7,7 +8,39 @@ from pystac import Item
 
 class HazardProfiles(ABC):
     @abstractmethod
+    def get_canonical_hazard_codes(self, item: Item) -> List[str]:
+        """Get the canonical trio of hazard codes for a STAC item.
+
+        Returns the recommended set of hazard classification codes following the
+        HIPs 2025 specification: exactly one UNDRR-ISC 2025 code, optionally
+        one GLIDE code, and optionally one EM-DAT code (max 3 total).
+
+        Args:
+            item: STAC Item with hazard_codes property
+
+        Returns:
+            List of 1-3 hazard codes: [UNDRR-2025, GLIDE, EM-DAT]
+        """
+        pass
+
+    @abstractmethod
     def get_cluster_code(self, item: Item) -> str:
+        """DEPRECATED: Get the most relevant hazard code.
+
+        Use get_canonical_hazard_codes() instead.
+        """
+        pass
+
+    @abstractmethod
+    def get_keywords(self, hazard_codes: List[str]) -> List[str]:
+        """Get human-readable keywords for a list of hazard codes.
+
+        Args:
+            hazard_codes: List of hazard codes (UNDRR 2025, GLIDE, or EM-DAT)
+
+        Returns:
+            List of human-readable keywords describing the hazards
+        """
         pass
 
 
@@ -15,6 +48,17 @@ class MontyHazardProfiles(HazardProfiles):
     impact_information_profile_path = "HazardProfiles.csv"
     impact_information_profile_data = None
     IMPACT_CLUSTER_CODE_COLUMN = "emdat_key"
+
+    # Column names for hazard code lookups
+    # HIPs 2025 is the primary reference classification
+    UNDRR_2025_KEY_COLUMN = "undrr_2025_key"
+    # HIPs 2020 for backward compatibility
+    UNDRR_2020_KEY_COLUMN = "undrr_key"
+    GLIDE_CODE_COLUMN = "glide_code"
+    EMDAT_KEY_COLUMN = "emdat_key"
+    LABEL_COLUMN = "label"
+    CLUSTER_LABEL_COLUMN = "cluster_label"
+    FAMILY_LABEL_COLUMN = "family_label"
 
     # free impact_information_profile_data when the object is destroyed
     def __del__(self) -> None:
@@ -27,7 +71,212 @@ class MontyHazardProfiles(HazardProfiles):
                 self.impact_information_profile_data = pd.read_csv(f)
         return self.impact_information_profile_data
 
+    @staticmethod
+    def get_undrr_2025_code(hazard_codes: List[str]) -> Optional[str]:
+        """Extract the UNDRR-ISC 2025 code from a list of hazard codes.
+
+        According to HIPs 2025 specification, hazard items MUST have exactly one
+        UNDRR-ISC 2025 code (format: 2 letters + 4 digits, e.g., MH0600, GH0101).
+
+        Args:
+            hazard_codes: List of hazard codes that may contain UNDRR 2025, GLIDE, and/or EM-DAT codes
+
+        Returns:
+            The UNDRR-ISC 2025 code if found, None otherwise
+        """
+        import re
+
+        # UNDRR-ISC 2025 code pattern: 2 letters + 4 digits
+        undrr_2025_pattern = re.compile(r"^[A-Z]{2}\d{4}$")
+
+        for code in hazard_codes:
+            if undrr_2025_pattern.match(code):
+                return code
+        return None
+
+    def get_keywords(self, hazard_codes: List[str]) -> List[str]:
+        """Get human-readable keywords for a list of hazard codes.
+
+        Generates keywords from hazard codes including:
+        - Hazard labels (e.g., "Flooding", "Earthquake")
+        - Cluster labels (e.g., "Water-related", "Seismic")
+        - Family labels (e.g., "Meteorological & Hydrological", "Geological")
+
+        Args:
+            hazard_codes: List of hazard codes (UNDRR 2025/2020, GLIDE, or EM-DAT)
+
+        Returns:
+            List of unique human-readable keywords
+        """
+        if not hazard_codes:
+            return []
+
+        profiles = self.get_profiles()
+        keywords = set()
+
+        for code in hazard_codes:
+            # Try to find the code in the profiles using all available columns
+            row = None
+
+            # Priority order: UNDRR 2025, UNDRR 2020, EM-DAT, GLIDE
+            for col in [
+                self.UNDRR_2025_KEY_COLUMN,
+                self.UNDRR_2020_KEY_COLUMN,
+                self.EMDAT_KEY_COLUMN,
+                self.GLIDE_CODE_COLUMN,
+            ]:
+                if col in profiles.columns:
+                    matching_rows = profiles[profiles[col] == code]
+                    if not matching_rows.empty:
+                        row = matching_rows.iloc[0]
+                        break
+
+            if row is not None:
+                # Add label (hazard name)
+                if self.LABEL_COLUMN in row and pd.notna(row[self.LABEL_COLUMN]):
+                    keywords.add(row[self.LABEL_COLUMN])
+
+                # Add cluster label
+                if self.CLUSTER_LABEL_COLUMN in row and pd.notna(row[self.CLUSTER_LABEL_COLUMN]):
+                    keywords.add(row[self.CLUSTER_LABEL_COLUMN])
+
+                # Add family label
+                if self.FAMILY_LABEL_COLUMN in row and pd.notna(row[self.FAMILY_LABEL_COLUMN]):
+                    keywords.add(row[self.FAMILY_LABEL_COLUMN])
+
+        return sorted(list(keywords))
+
+    def get_canonical_hazard_codes(self, item: Item) -> List[str]:
+        """Get the canonical trio of hazard codes for a STAC item.
+
+        Returns the recommended set of hazard classification codes following the
+        HIPs 2025 specification: exactly one UNDRR-ISC 2025 code, optionally
+        one GLIDE code, and optionally one EM-DAT code (max 3 total).
+
+        This method analyzes the hazard codes already present in the item and
+        returns a normalized, validated set that conforms to the specification.
+
+        Args:
+            item: STAC Item with monty:hazard_codes property
+
+        Returns:
+            List of hazard codes in priority order: [UNDRR-2025, GLIDE, EM-DAT]
+            containing 1-3 codes as appropriate for the hazard
+
+        Raises:
+            ValueError: If no valid hazard codes can be determined from the item
+
+        Example:
+            >>> item.properties["monty:hazard_codes"] = ["FL", "nat-hyd-flo-flo"]
+            >>> hp.get_canonical_hazard_codes(item)
+            ["MH0600", "FL", "nat-hyd-flo-flo"]
+        """
+        from pystac_monty.extension import MontyExtension
+
+        monty = MontyExtension.ext(item)
+        if not monty.hazard_codes:
+            raise ValueError("No hazard codes found in item")
+
+        profiles = self.get_profiles()
+
+        # Extract existing codes by type
+        undrr_2025_code = None
+        glide_code = None
+        emdat_code = None
+
+        # First pass: identify what codes are already present
+        for code in monty.hazard_codes:
+            if self.get_undrr_2025_code([code]):
+                undrr_2025_code = code
+            elif code in profiles[self.GLIDE_CODE_COLUMN].values:
+                if not glide_code:  # Take the first GLIDE code found
+                    glide_code = code
+            elif code in profiles[self.EMDAT_KEY_COLUMN].values:
+                if not emdat_code:  # Take the first EM-DAT code found
+                    emdat_code = code
+
+        # If we don't have a UNDRR 2025 code, derive it from other codes
+        if not undrr_2025_code:
+            undrr_2025_code = self._derive_undrr_2025_code(monty.hazard_codes, profiles)
+
+        # Build the canonical list
+        canonical_codes = [undrr_2025_code]
+        if glide_code:
+            canonical_codes.append(glide_code)
+        if emdat_code:
+            canonical_codes.append(emdat_code)
+
+        return canonical_codes
+
+    def _derive_undrr_2025_code(self, hazard_codes: List[str], profiles: pd.DataFrame) -> str:
+        """Derive the most appropriate UNDRR 2025 code from a list of hazard codes.
+
+        This is a helper method that looks up UNDRR 2025 codes from GLIDE, EM-DAT,
+        or legacy UNDRR 2020 codes in the hazard profiles.
+
+        Args:
+            hazard_codes: List of hazard codes to analyze
+            profiles: DataFrame of hazard profiles
+
+        Returns:
+            The most appropriate UNDRR 2025 code
+
+        Raises:
+            ValueError: If no UNDRR 2025 code can be derived
+        """
+        candidate_codes = []
+
+        for code in hazard_codes:
+            undrr_2025 = None
+
+            # Try to find matching row and extract UNDRR 2025 code
+            # Priority: UNDRR 2020, EM-DAT, GLIDE
+            for lookup_col in [self.UNDRR_2020_KEY_COLUMN, self.EMDAT_KEY_COLUMN, self.GLIDE_CODE_COLUMN]:
+                if lookup_col in profiles.columns:
+                    matching_rows = profiles[profiles[lookup_col] == code]
+                    if not matching_rows.empty:
+                        # Get the UNDRR 2025 code from the first matching row
+                        if self.UNDRR_2025_KEY_COLUMN in matching_rows.columns:
+                            undrr_2025 = matching_rows.iloc[0][self.UNDRR_2025_KEY_COLUMN]
+                            if pd.notna(undrr_2025):
+                                candidate_codes.append(undrr_2025)
+                        break
+
+        if not candidate_codes:
+            raise ValueError(f"Cannot derive UNDRR 2025 code from hazard codes: {hazard_codes}")
+
+        # If multiple candidates, use voting to find the most common one
+        if len(candidate_codes) > 1:
+            from collections import Counter
+
+            counter = Counter(candidate_codes)
+            most_common = counter.most_common(1)[0][0]
+            return most_common
+
+        return candidate_codes[0]
+
     def get_cluster_code(self, item: Item) -> str:
+        """Get the most relevant hazard code for the item (legacy method).
+
+        **DEPRECATED**: This method name is misleading as it returns a hazard code,
+        not a cluster code. The "cluster" field in HazardDetail has been removed
+        from the Monty STAC Extension specification.
+
+        Use `get_canonical_hazard_codes()` instead to get the recommended trio
+        of UNDRR 2025, GLIDE, and EM-DAT codes per the HIPs 2025 specification.
+
+        This method is maintained for backward compatibility and returns the
+        most relevant single hazard code, prioritizing UNDRR 2025 codes.
+
+        Args:
+            item: STAC Item with monty:hazard_codes property
+
+        Returns:
+            The most relevant hazard code (typically EM-DAT for legacy compatibility)
+
+        Raises:
+            ValueError: If no hazard codes can be found
+        """
         from pystac_monty.extension import MontyExtension
 
         monty = MontyExtension.ext(item)
@@ -39,42 +288,67 @@ class MontyHazardProfiles(HazardProfiles):
         cluster_codes = []
         for c in monty.hazard_codes:
             cluster_code = None
-            # first try to get the cluster code from the hazard undrr key column
-            try:
-                cluster_code = profiles.loc[profiles["undrr_key"] == c, self.IMPACT_CLUSTER_CODE_COLUMN].values[-1]
-            except IndexError:
-                pass
+            # Priority order: UNDRR 2025 (primary), UNDRR 2020 (backward compat), EM-DAT, GLIDE
+            # first try to get the cluster code from the UNDRR 2025 key column
+            if self.UNDRR_2025_KEY_COLUMN in profiles.columns:
+                try:
+                    cluster_code = profiles.loc[
+                        profiles[self.UNDRR_2025_KEY_COLUMN] == c, self.IMPACT_CLUSTER_CODE_COLUMN
+                    ].values[-1]
+                except IndexError:
+                    pass
+
+            # then try the UNDRR 2020 key column for backward compatibility
+            if not cluster_code:
+                try:
+                    cluster_code = profiles.loc[
+                        profiles[self.UNDRR_2020_KEY_COLUMN] == c, self.IMPACT_CLUSTER_CODE_COLUMN
+                    ].values[-1]
+                except IndexError:
+                    pass
+
             # then try the emdat key column
             if not cluster_code:
                 try:
-                    cluster_code = profiles.loc[profiles["emdat_key"] == c, self.IMPACT_CLUSTER_CODE_COLUMN].values[-1]
+                    cluster_code = profiles.loc[profiles[self.EMDAT_KEY_COLUMN] == c, self.IMPACT_CLUSTER_CODE_COLUMN].values[-1]
                 except IndexError:
                     pass
             # finally try the glide key column
             if not cluster_code:
                 try:
-                    rows = profiles[profiles["glide_code"] == c]
-                    # Several raow may match the glide code, so we must associate the rest of the hazard codes
+                    rows = profiles[profiles[self.GLIDE_CODE_COLUMN] == c]
+                    # Several rows may match the glide code, so we must associate the rest of the hazard codes
                     # to find the most relevant cluster code
                     if len(rows) > 1:
-                        # get the first having the undrr key in the hazard codes
-                        for i, row in rows.iterrows():
-                            if row["undrr_key"] in monty.hazard_codes:
-                                cluster_code = row[self.IMPACT_CLUSTER_CODE_COLUMN]
-                                break
-                            if row["emdat_key"] in monty.hazard_codes:
-                                cluster_code = row[self.IMPACT_CLUSTER_CODE_COLUMN]
-                                break
+                        # get the first having the undrr 2025 key in the hazard codes
+                        if self.UNDRR_2025_KEY_COLUMN in profiles.columns:
+                            for i, row in rows.iterrows():
+                                if row[self.UNDRR_2025_KEY_COLUMN] in monty.hazard_codes:
+                                    cluster_code = row[self.IMPACT_CLUSTER_CODE_COLUMN]
+                                    break
+                        # get the first having the undrr 2020 key in the hazard codes
+                        if not cluster_code:
+                            for i, row in rows.iterrows():
+                                if row[self.UNDRR_2020_KEY_COLUMN] in monty.hazard_codes:
+                                    cluster_code = row[self.IMPACT_CLUSTER_CODE_COLUMN]
+                                    break
+                                if row[self.EMDAT_KEY_COLUMN] in monty.hazard_codes:
+                                    cluster_code = row[self.IMPACT_CLUSTER_CODE_COLUMN]
+                                    break
 
                         # Get the first having no undrr key in the hazard codes
-                        rows = rows[rows["undrr_key"].isna()]
-                        if not cluster_code and len(rows) > 0:
-                            cluster_code = rows.iloc[0][self.IMPACT_CLUSTER_CODE_COLUMN]
+                        rows_no_undrr = rows[rows[self.UNDRR_2020_KEY_COLUMN].isna()]
+                        if not cluster_code and len(rows_no_undrr) > 0:
+                            cluster_code = rows_no_undrr.iloc[0][self.IMPACT_CLUSTER_CODE_COLUMN]
                         if not cluster_code or isinstance(cluster_code, float):
                             cluster_code = monty.hazard_codes[-1]
 
                     else:
-                        cluster_code = cluster_codes[-1]
+                        # Single row match - use its cluster code
+                        if len(rows) == 1:
+                            cluster_code = rows.iloc[0][self.IMPACT_CLUSTER_CODE_COLUMN]
+                        else:
+                            cluster_code = cluster_codes[-1] if cluster_codes else None
                 except IndexError:
                     pass
             if cluster_code:

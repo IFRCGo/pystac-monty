@@ -1,4 +1,5 @@
 from datetime import datetime
+from typing import List
 
 import pytest
 from pystac import Item
@@ -30,13 +31,21 @@ class TestHazardProfilesAbstract:
         """Test that a concrete implementation can be created."""
 
         class ConcreteHazardProfiles(HazardProfiles):
+            def get_canonical_hazard_codes(self, item: Item) -> List[str]:
+                return ["MH0600", "FL", "nat-hyd-flo-flo"]
+
             def get_cluster_code(self, item: Item) -> str:
                 return "test-code"
+
+            def get_keywords(self, hazard_codes: List[str]) -> List[str]:
+                return ["test-keyword"]
 
         # This should not raise an exception
         profile = ConcreteHazardProfiles()
         item = Item(id="test", geometry=None, bbox=None, datetime=TEST_DATETIME, properties={})
         assert profile.get_cluster_code(item) == "test-code"
+        assert profile.get_canonical_hazard_codes(item) == ["MH0600", "FL", "nat-hyd-flo-flo"]
+        assert profile.get_keywords(["MH0600"]) == ["test-keyword"]
 
 
 class TestMontyHazardProfiles:
