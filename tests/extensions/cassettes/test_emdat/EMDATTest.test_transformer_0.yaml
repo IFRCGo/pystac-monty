@@ -2,178 +2,108 @@ interactions:
 - request:
     body: null
     headers:
+      Accept:
+      - '*/*'
+      Accept-Encoding:
+      - gzip, deflate
       Connection:
-      - close
-      Host:
-      - ifrcgo.org
+      - keep-alive
       User-Agent:
-      - Python-urllib/3.12
+      - python-requests/2.32.3
     method: GET
-    uri: https://ifrcgo.org/monty-stac-extension/v1.0.0/schema.json
+    uri: https://raw.githubusercontent.com/IFRCGo/monty-stac-extension/refs/heads/main/json-schema/schema.json
   response:
     body:
-      string: "{\n  \"$schema\": \"http://json-schema.org/draft-07/schema#\",\n  \"$id\":
-        \"https://ifrcgo.org/monty-stac-extension/v1.0.0/schema.json#\",\n  \"title\":
-        \"Monty Extension\",\n  \"description\": \"STAC Monty Extension for STAC Items
-        and STAC Collections.\",\n  \"oneOf\": [\n    {\n      \"$comment\": \"This
-        is the schema for STAC Items.\",\n      \"allOf\": [\n        {\n          \"$ref\":
-        \"#/definitions/stac_extensions\"\n        },\n        {\n          \"type\":
-        \"object\",\n          \"required\": [\n            \"type\",\n            \"properties\"\n
-        \         ],\n          \"properties\": {\n            \"type\": {\n              \"const\":
-        \"Feature\"\n            },\n            \"properties\": {\n              \"allOf\":
-        [\n                {\n                  \"$comment\": \"Require fields here
-        for Item Properties.\",\n                  \"required\": [\n                    \"monty:country_codes\",\n
-        \                   \"monty:hazard_codes\",\n                    \"monty:corr_id\",\n
-        \                   \"roles\"\n                  ]\n                },\n                {\n
-        \                 \"$ref\": \"#/definitions/fields\"\n                },\n
-        \               {\n                  \"$ref\": \"#/definitions/roles\"\n                }\n
-        \             ]\n            }\n          }\n        }\n      ]\n    },\n
-        \   {\n      \"$comment\": \"This is the schema for STAC Collections.\",\n
-        \     \"allOf\": [\n        {\n          \"$ref\": \"#/definitions/stac_extensions\"\n
-        \       },\n        {\n          \"type\": \"object\",\n          \"required\":
-        [\n            \"type\",\n            \"providers\",\n            \"license\"\n
-        \         ],\n          \"properties\": {\n            \"type\": {\n              \"const\":
-        \"Collection\"\n            }\n          }\n        },\n        {\n          \"$ref\":
-        \"#/definitions/roles\"\n        }\n      ],\n      \"anyOf\": [\n        {\n
-        \         \"$comment\": \"This is the schema for the fields in Summaries.
-        By default, only checks the existence of the properties, but not the schema
-        of the summaries.\",\n          \"required\": [\n            \"summaries\"\n
-        \         ],\n          \"properties\": {\n            \"summaries\": {\n
-        \             \"required\": [\n                \"monty:country_codes\",\n
-        \               \"monty:hazard_codes\"\n              ]\n            }\n          }\n
-        \       }\n      ]\n    }\n  ],\n  \"definitions\": {\n    \"stac_extensions\":
-        {\n      \"type\": \"object\",\n      \"required\": [\n        \"stac_extensions\"\n
-        \     ],\n      \"properties\": {\n        \"stac_extensions\": {\n          \"type\":
-        \"array\",\n          \"contains\": {\n            \"const\": \"https://ifrcgo.org/monty-stac-extension/v1.0.0/schema.json\"\n
-        \         }\n        }\n      }\n    },\n    \"fields\": {\n      \"$comment\":
-        \"Monty prefixed fields\",\n      \"type\": \"object\",\n      \"properties\":
-        {\n        \"monty:episode_number\": {\n          \"type\": \"integer\"\n
-        \       },\n        \"monty:country_codes\": {\n          \"type\": \"array\",\n
-        \         \"items\": {\n            \"type\": \"string\",\n            \"pattern\":
-        \"^([A-Z]{3})|AB9$\",\n            \"$comment\": \"AB9 is a special code for
-        the Abyei area used by IDMC\"\n          }\n        },\n        \"monty:hazard_codes\":
-        {\n          \"type\": \"array\",\n          \"items\": {\n            \"type\":
-        \"string\",\n            \"pattern\": \"^([A-Z]{2}(?:\\\\d{4}$){0,1})|([a-z]{3}-[a-z]{3}-[a-z]{3}-[a-z]{3})|([A-Z]{2})$\"\n
-        \         }\n        },\n        \"monty:corr_id\": {\n          \"type\":
-        \"string\"\n        },\n        \"monty:hazard_detail\": {\n          \"type\":
-        \"object\",\n          \"required\": [\n            \"cluster\"\n          ],\n
-        \         \"properties\": {\n            \"cluster\": {\n              \"type\":
-        \"string\"\n            },\n            \"severity_value\": {\n              \"type\":
-        \"number\"\n            },\n            \"severity_unit\": {\n              \"type\":
-        \"string\"\n            },\n            \"severity_label\": {\n              \"type\":
-        \"string\"\n            },\n            \"estimate_type\": {\n              \"$ref\":
-        \"#/definitions/estimate_type\"\n            }\n          },\n          \"additionalProperties\":
-        true\n        },\n        \"monty:impact_detail\": {\n          \"type\":
-        \"object\",\n          \"properties\": {\n            \"category\": {\n              \"type\":
-        \"string\",\n              \"enum\": [\n                \"people\",\n                \"crops\",\n
-        \               \"women\",\n                \"men\",\n                \"children_0_4\",\n
-        \               \"children_5_9\",\n                \"children_10_14\",\n                \"children_15_19\",\n
-        \               \"adult_20_24\",\n                \"adult_25_29\",\n                \"adult_30_34\",\n
-        \               \"adult_35_39\",\n                \"adult_40_44\",\n                \"adult_45_49\",\n
-        \               \"adult_50_54\",\n                \"adult_55_59\",\n                \"adult_60_64\",\n
-        \               \"elderly\",\n                \"wheelchair_users\",\n                \"roads\",\n
-        \               \"railways\",\n                \"vulnerable_employment\",\n
-        \               \"buildings\",\n                \"reconstruction_costs\",\n
-        \               \"hospitals\",\n                \"schools\",\n                \"education_centers\",\n
-        \               \"local_currency\",\n                \"global_currency\",\n
-        \               \"local_currency_adj\",\n                \"global_currency_adj\",\n
-        \               \"usd_uncertain\",\n                \"cattle\",\n                \"aid_general\",\n
-        \               \"ifrc_contribution\",\n                \"ifrc_requested\",\n
-        \               \"alertscore\",\n                \"total_affected\",\n                \"households\"\n
-        \             ]\n            },\n            \"type\": {\n              \"type\":
-        \"string\",\n              \"enum\": [\n                \"unspecified\",\n
-        \               \"unaffected\",\n                \"damaged\",\n                \"destroyed\",\n
-        \               \"potentially_damaged\",\n                \"affected_total\",\n
-        \               \"affected_direct\",\n                \"affected_indirect\",\n
-        \               \"death\",\n                \"missing\",\n                \"injured\",\n
-        \               \"evacuated\",\n                \"relocated\",\n                \"assisted\",\n
-        \               \"shelter_emergency\",\n                \"shelter_temporary\",\n
-        \               \"shelter_longterm\",\n                \"in_need\",\n                \"targeted\",\n
-        \               \"disrupted\",\n                \"cost\",\n                \"homeless\",\n
-        \               \"displaced_internal\",\n                \"displaced_external\",\n
-        \               \"displaced_total\",\n                \"alertscore\",\n                \"potentially_affected\",\n
-        \               \"highest_risk\"\n              ]\n            },\n            \"value\":
-        {\n              \"type\": \"number\"\n            },\n            \"unit\":
-        {\n              \"type\": \"string\"\n            },\n            \"estimate_type\":
-        {\n              \"$ref\": \"#/definitions/estimate_type\"\n            },\n
-        \           \"description\": {\n              \"type\": \"string\"\n            }\n
-        \         },\n          \"additionalProperties\": false\n        }\n      },\n
-        \     \"patternProperties\": {\n        \"^(?!monty:)\": {\n          \"$comment\":
-        \"Prevent additional monty prefixed field\"\n        }\n      },\n      \"additionalProperties\":
-        false\n    },\n    \"estimate_type\": {\n      \"type\": \"string\",\n      \"enum\":
-        [\n        \"primary\",\n        \"secondary\",\n        \"modelled\"\n      ]\n
-        \   },\n    \"roles\": {\n      \"$comment\": \"Roles field\",\n      \"oneOf\":
-        [\n        {\n          \"$comment\": \"Reference Event\",\n          \"allOf\":
-        [\n            {\n              \"$ref\": \"#/definitions/is_event\"\n            },\n
-        \           {\n              \"$ref\": \"#/definitions/is_reference\"\n            }\n
-        \         ]\n        },\n        {\n          \"$comment\": \"Source Event\",\n
-        \         \"allOf\": [\n            {\n              \"$ref\": \"#/definitions/is_event\"\n
-        \           },\n            {\n              \"$ref\": \"#/definitions/is_source\"\n
-        \           }\n          ]\n        },\n        {\n          \"$comment\":
-        \"Hazard\",\n          \"allOf\": [\n            {\n              \"$ref\":
-        \"#/definitions/is_hazard\"\n            }\n          ]\n        },\n        {\n
-        \         \"$comment\": \"Impact\",\n          \"allOf\": [\n            {\n
-        \             \"$ref\": \"#/definitions/is_impact\"\n            }\n          ]\n
-        \       }\n      ]\n    },\n    \"is_event\": {\n      \"properties\": {\n
-        \       \"roles\": {\n          \"type\": \"array\",\n          \"minItems\":
-        2,\n          \"contains\": {\n            \"const\": \"event\"\n          }\n
-        \       }\n      }\n    },\n    \"is_reference\": {\n      \"properties\":
-        {\n        \"roles\": {\n          \"type\": \"array\",\n          \"minItems\":
-        2,\n          \"contains\": {\n            \"const\": \"reference\"\n          }\n
-        \       }\n      }\n    },\n    \"is_source\": {\n      \"properties\": {\n
-        \       \"roles\": {\n          \"type\": \"array\",\n          \"minItems\":
-        2,\n          \"contains\": {\n            \"const\": \"source\"\n          }\n
-        \       }\n      }\n    },\n    \"is_hazard\": {\n      \"properties\": {\n
-        \       \"roles\": {\n          \"type\": \"array\",\n          \"minItems\":
-        1,\n          \"contains\": {\n            \"const\": \"hazard\"\n          }\n
-        \       },\n        \"monty:hazard_codes\": {\n          \"maxItems\": 1\n
-        \       }\n      }\n    },\n    \"is_impact\": {\n      \"properties\": {\n
-        \       \"roles\": {\n          \"type\": \"array\",\n          \"minItems\":
-        1,\n          \"contains\": {\n            \"const\": \"impact\"\n          }\n
-        \       }\n      }\n    }\n  }\n}\n"
+      string: !!binary |
+        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
     headers:
       Accept-Ranges:
       - bytes
       Access-Control-Allow-Origin:
       - '*'
-      Age:
-      - '402'
       Cache-Control:
-      - max-age=600
+      - max-age=300
       Connection:
-      - close
+      - keep-alive
+      Content-Encoding:
+      - gzip
       Content-Length:
-      - '8990'
+      - '2143'
+      Content-Security-Policy:
+      - default-src 'none'; style-src 'unsafe-inline'; sandbox
       Content-Type:
-      - application/json; charset=utf-8
+      - text/plain; charset=utf-8
+      Cross-Origin-Resource-Policy:
+      - cross-origin
       Date:
-      - Thu, 05 Jun 2025 06:30:31 GMT
+      - Fri, 07 Nov 2025 08:31:14 GMT
       ETag:
-      - '"68362515-231e"'
-      Last-Modified:
-      - Tue, 27 May 2025 20:48:21 GMT
-      Server:
-      - GitHub.com
+      - W/"ee35e9389dd917068d06c4d4c8d44b701a4e3c6b887f674c0167850cb042a2e2"
+      Expires:
+      - Fri, 07 Nov 2025 08:36:14 GMT
+      Source-Age:
+      - '0'
+      Strict-Transport-Security:
+      - max-age=31536000
       Vary:
-      - Accept-Encoding
+      - Authorization,Accept-Encoding
       Via:
       - 1.1 varnish
       X-Cache:
-      - HIT
+      - MISS
       X-Cache-Hits:
       - '0'
+      X-Content-Type-Options:
+      - nosniff
       X-Fastly-Request-ID:
-      - 0979feb4560e90b0ff7cda2945f2dae7293b3f36
+      - 69e33eed3f3c61c30ae2ffa510d09ff4183088af
+      X-Frame-Options:
+      - deny
       X-GitHub-Request-Id:
-      - 4E22:64F80:87F27:A7133:684137F4
+      - 9E42:9322:16AE84:26C235:690DAE52
       X-Served-By:
-      - cache-maa10222-MAA
+      - cache-bom-vanm7210048-BOM
       X-Timer:
-      - S1749105032.564379,VS0,VE1
-      expires:
-      - Thu, 05 Jun 2025 06:33:49 GMT
-      x-proxy-cache:
-      - MISS
+      - S1762504274.436161,VS0,VE236
+      X-XSS-Protection:
+      - 1; mode=block
     status:
       code: 200
       message: OK

@@ -192,6 +192,7 @@ class EMDATTransformer(MontyDataTransformer[EMDATDataSource]):
                     yield from self.make_impact_items(data, event_item)
                 else:
                     self.transform_summary.increment_failed_rows()
+
             except Exception:
                 self.transform_summary.increment_failed_rows()
                 logger.warning("Failed to process emdat", exc_info=True)
@@ -385,7 +386,7 @@ class EMDATTransformer(MontyDataTransformer[EMDATDataSource]):
 
         return HazardDetail(
             cluster=self.hazard_profiles.get_cluster_code(item),
-            severity_value=row.magnitude,
+            severity_value=row.magnitude or -1,  # Use -1 to avoid schema validation fail for null values
             severity_unit=row.magnitude_scale or "emdat",
             estimate_type=MontyEstimateType.PRIMARY,
         )
