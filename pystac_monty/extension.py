@@ -21,7 +21,7 @@ __version__ = "0.1.0"
 
 T = TypeVar("T", pystac.Collection, pystac.Item, pystac.Asset, item_assets.AssetDefinition)
 
-SCHEMA_URI = "https://ifrcgo.org/monty-stac-extension/v1.0.0/schema.json"
+SCHEMA_URI = "https://ifrcgo.org/monty-stac-extension/v1.1.0/schema.json"
 
 PREFIX: str = "monty:"
 
@@ -261,7 +261,6 @@ class HazardDetail(ABC):
 
     def __init__(
         self,
-        cluster: str,
         severity_value: float | None = None,
         severity_unit: str | None = None,
         severity_label: str | None = None,
@@ -269,7 +268,7 @@ class HazardDetail(ABC):
         **kwargs: Any,
     ) -> None:
         self.properties = {}
-        self.cluster = cluster
+
         if severity_value:
             self.severity_value = severity_value
         if severity_unit:
@@ -282,19 +281,6 @@ class HazardDetail(ABC):
         # Add any additional properties
         for key, value in kwargs.items():
             self.properties[key] = value
-
-    @property
-    def cluster(self) -> str:
-        """The cluster of the hazard."""
-        return get_required(
-            self.properties.get(HAZDET_CLUSTER_PROP),
-            ITEM_HAZARD_DETAIL_PROP,
-            HAZDET_CLUSTER_PROP,
-        )
-
-    @cluster.setter
-    def cluster(self, v: str) -> None:
-        self.properties[HAZDET_CLUSTER_PROP] = v
 
     @property
     def severity_value(self) -> float:
@@ -337,8 +323,6 @@ class HazardDetail(ABC):
 
     @staticmethod
     def from_dict(d: dict[str, Any]) -> HazardDetail:
-        cluster: str = get_required(d.get(HAZDET_CLUSTER_PROP), "hazard_detail", HAZDET_CLUSTER_PROP)
-
         # Extract standard properties
         severity_value = d.get(HAZDET_SEV_VALUE_PROP)
         severity_unit = d.get(HAZDET_SEV_UNIT_PROP)
@@ -347,7 +331,6 @@ class HazardDetail(ABC):
 
         # Create the HazardDetail with standard properties
         hazard_detail = HazardDetail(
-            cluster=cluster,
             severity_value=severity_value,
             severity_unit=severity_unit,
             severity_label=severity_label,
@@ -357,7 +340,6 @@ class HazardDetail(ABC):
         # Add any additional properties
         for key, value in d.items():
             if key not in [
-                HAZDET_CLUSTER_PROP,
                 HAZDET_SEV_VALUE_PROP,
                 HAZDET_SEV_UNIT_PROP,
                 HAZDET_SEV_LABEL_PROP,
