@@ -266,3 +266,41 @@ class GDACSTest(unittest.TestCase):
         self.assertIsNotNone(source_hazard_item)
         if sendai_data_available:
             self.assertIsNotNone(source_impact_item)
+
+    @parameterized.expand(load_scenarios(scenarios_2))
+    @pytest.mark.vcr()
+    def test_gdacs_hazard_codes_2025(self, transformer: GDACSTransformer) -> None:
+        assert transformer.get_hazard_codes("FL") == ["MH0600", "nat-hyd-flo-flo", "FL"]
+        assert transformer.get_hazard_codes("EQ") == ["GH0101", "nat-geo-ear-gro", "EQ"]
+        assert transformer.get_hazard_codes("TC") == ["MH0309", "nat-met-sto-tro", "TC"]
+        assert transformer.get_hazard_codes("DR") == ["MH0401", "nat-cli-dro-dro", "DR"]
+        assert transformer.get_hazard_codes("WF") == ["EN0205", "nat-cli-wil-wil", "WF"]
+        assert transformer.get_hazard_codes("VO") == ["GH0205", "nat-geo-vol-vol", "VO"]
+
+    @parameterized.expand(load_scenarios(scenarios_2))
+    @pytest.mark.vcr()
+    def test_hazard_item_uses_2025_code_only(self, transformer: GDACSTransformer) -> None:
+        for item in transformer.get_stac_items():
+            # write pretty json in a temporary folder
+            item_path = get_data_file(f"temp/gdacs/{item.id}.json")
+            with open(item_path, "w") as f:
+                json.dump(item.to_dict(), f, indent=2)
+            item.validate(validator=self.validator)
+            monty_item_ext = MontyExtension.ext(item)
+            if monty_item_ext.is_source_hazard():
+                # Should contain only the first code (UNDRR-ISC 2025)
+                assert len(monty_item_ext.hazard_codes) == 1
+
+    @parameterized.expand(load_scenarios(scenarios_2))
+    @pytest.mark.vcr()
+    def test_event_item_uses_all_codes(self, transformer: GDACSTransformer) -> None:
+        for item in transformer.get_stac_items():
+            # write pretty json in a temporary folder
+            item_path = get_data_file(f"temp/gdacs/{item.id}.json")
+            with open(item_path, "w") as f:
+                json.dump(item.to_dict(), f, indent=2)
+            item.validate(validator=self.validator)
+            monty_item_ext = MontyExtension.ext(item)
+            if monty_item_ext.is_source_event():
+                # Should contain only the first code (UNDRR-ISC 2025)
+                assert len(monty_item_ext.hazard_codes) == 3
