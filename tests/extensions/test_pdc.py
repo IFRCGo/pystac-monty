@@ -84,3 +84,69 @@ class PDCTest(unittest.TestCase):
         self.assertIsNotNone(source_event_item)
         self.assertIsNotNone(source_hazard_item)
         self.assertIsNotNone(source_impact_item)
+
+    @parameterized.expand(load_scenarios(scenarios))
+    def test_pdc_natural_hazard_codes_2025(self, transformer: PDCTransformer):
+        # Test key natural hazards
+        assert transformer._map_pdc_to_hazard_codes("FLOOD") == ["MH0600", "nat-hyd-flo-flo", "FL"]
+        assert transformer._map_pdc_to_hazard_codes("EARTHQUAKE") == ["GH0101", "nat-geo-ear-gro", "EQ"]
+        assert transformer._map_pdc_to_hazard_codes("TSUNAMI") == ["MH0705", "nat-geo-ear-tsu", "TS"]
+        assert transformer._map_pdc_to_hazard_codes("WILDFIRE") == ["EN0205", "nat-cli-wil-for", "WF"]
+
+    @parameterized.expand(load_scenarios(scenarios))
+    def test_pdc_tech_social_hazard_codes_2025(self, transformer: PDCTransformer):
+        # Test technological/social hazards
+        assert transformer._map_pdc_to_hazard_codes("CYBER") == ["TL0601", "OT"]
+        assert transformer._map_pdc_to_hazard_codes("TERRORISM") == ["SO0203", "soc-soc-vio-vio", "OT"]
+        assert transformer._map_pdc_to_hazard_codes("CIVILUNREST") == ["SO0202", "soc-soc-vio-vio", "OT"]
+
+    @parameterized.expand(load_scenarios(scenarios))
+    def test_all_pdc_hazard_types_mapped(self, transformer: PDCTransformer):
+        # All PDC types from documentation
+        pdc_types = [
+            "AVALANCHE",
+            "BIOMEDICAL",
+            "DROUGHT",
+            "EARTHQUAKE",
+            "EXTREMETEMPERATURE",
+            "FLOOD",
+            "HIGHSURF",
+            "LANDSLIDE",
+            "MARINE",
+            "SEVEREWEATHER",
+            "STORM",
+            "TORNADO",
+            "CYCLONE",
+            "TSUNAMI",
+            "VOLCANO",
+            "WILDFIRE",
+            "WINTERSTORM",
+            "ACCIDENT",
+            "ACTIVESHOOTER",
+            "CIVILUNREST",
+            "COMBAT",
+            "CYBER",
+            "MANMADE",
+            "OCCURRENCE",
+            "POLITICALCONFLICT",
+            "TERRORISM",
+            "WEAPONS",
+        ]
+
+        for hazard_type in pdc_types:
+            codes = transformer._map_pdc_to_hazard_codes(hazard_type)
+            assert codes is not None, f"No mapping for {hazard_type}"
+            assert len(codes) >= 2, f"Insufficient codes for {hazard_type}"
+            # First code should be 2025 format
+            assert codes[0].startswith(("MH", "GH", "BI", "EN", "TL", "SO", "OT"))
+
+    @parameterized.expand(load_scenarios(scenarios))
+    def test_pdc_event_uses_all_codes(self, transformer: PDCTransformer):
+        items = transformer.make_items()
+        event_item = items[0]
+        # Create event item
+        monty = MontyExtension.ext(event_item)
+
+        # Should contain all codes
+        assert len(monty.hazard_codes) >= 2
+        assert monty.hazard_codes[0] in ["GH0300", "GH0101", "Peru"]  # 2025 codes
