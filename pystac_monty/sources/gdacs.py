@@ -195,37 +195,37 @@ class GDACSTransformer(MontyDataTransformer[GDACSDataSource]):
 
     def get_hazard_codes(self, hazard: str) -> List[str]:
         hazard_mapping = {
-            "EQ": ["nat-gem-ear-gro", "EQ"],
-            "TC": ["nat-met-sto-tro", "TC"],
-            "FL": ["nat-hyd-flo-flo", "FL"],
-            "DR": ["nat-cli-dro-dro", "DR"],
-            "WF": ["nat-cli-wil-wil", "WF"],
-            "VO": ["nat-geo-vol-vol", "VO"],
-            "TS": ["nat-geo-ear-tsu", "TS"],
-            "CW": ["nat-met-ext-col", "CW"],
-            "EP": ["nat-bio-epi-dis", "EP"],
-            "EC": ["nat-met-sto-ext", "EC"],
+            "EQ": ["GH0101", "nat-geo-ear-gro", "EQ"],
+            "TC": ["MH0309", "nat-met-sto-tro", "TC"],
+            "FL": ["MH0600", "nat-hyd-flo-flo", "FL"],
+            "DR": ["MH0401", "nat-cli-dro-dro", "DR"],
+            "WF": ["EN0205", "nat-cli-wil-wil", "WF"],
+            "VO": ["GH0205", "nat-geo-vol-vol", "VO"],
+            "TS": ["MH0705", "nat-geo-ear-tsu", "TS"],
+            "CW": ["MH0502", "nat-met-ext-col", "CW"],
+            "EP": ["BI0101", "nat-bio-epi-dis", "EP"],
+            "EC": ["MH0307", "nat-met-sto-ext", "EC"],
             "ET": ["nat-met-ext-col", "ET"],
-            "FR": ["tec-ind-fir-fir", "FR"],
-            "FF": ["nat-hyd-flo-fla", "FF"],
-            "HT": ["nat-met-ext-hea", "HT"],
+            "FR": ["TL0032", "tec-ind-fir-fir", "FR"],
+            "FF": ["MH0603", "nat-hyd-flo-fla", "FF"],
+            "HT": ["MH0501", "nat-met-ext-hea", "HT"],
             "IN": ["nat-bio-inf-inf", "IN"],
-            "LS": ["nat-hyd-mmw-lan", "LS"],
-            "MS": ["nat-hyd-mmw-mud", "MS"],
-            "ST": ["nat-met-sto-sto", "ST"],
+            "LS": ["GH0300", "nat-geo-mmd-lan", "LS"],
+            "MS": ["GH0303", "nat-hyd-mmw-mud", "MS"],
+            "ST": ["MH0103", "nat-met-sto-sto", "ST"],
             "SL": ["nat-hyd-mmw-lan", "SL"],
-            "AV": ["nat-geo-mmd-ava", "AV"],
-            "SS": ["nat-met-sto-sur", "SS"],
-            "AC": ["AC"],
-            "TO": ["nat-met-sto-tor", "TO"],
-            "VW": ["nat-met-sto-tor", "VW"],
+            "AV": ["MH0801", "nat-geo-mmd-ava", "AV"],
+            "SS": ["MH0703", "nat-met-sto-sur", "SS"],
+            "AC": ["TL0053", "tec-tra-roa-roa", "AC"],
+            "TO": ["MH0305", "nat-met-sto-tor", "TO"],
+            "VW": ["MH0201", "nat-met-sto-san", "VW"],
             "WV": ["nat-hyd-wav-rog", "WV"],
-            "OT": ["OT"],
-            "CE": ["CE"],
+            "OT": ["MH0701", "nat-hyd-wav-rog", "OT"],
+            "CE": ["SO0003", "CE"],
         }
         if hazard not in hazard_mapping:
             print(f"Hazard {hazard} not found.")
-        return hazard_mapping.get(hazard)
+        return hazard_mapping.get(hazard, [])
 
     def make_source_event_item(self, data: GdacsEventDataValidator, source_url: str) -> Item:
         # Build the identifier for the item
@@ -271,6 +271,11 @@ class GDACSTransformer(MontyDataTransformer[GDACSDataSource]):
         if hasattr(data.properties, "affectedcountries"):
             cc.update([cc.iso3 for cc in data.properties.affectedcountries])
         monty.country_codes = list(cc)
+
+        hazard_keywords = self.hazard_profiles.get_keywords(monty.hazard_codes)
+
+        item.properties["keywords"] = list(set(hazard_keywords + list(cc)))
+
         monty.compute_and_set_correlation_id(hazard_profiles=self.hazard_profiles)
 
         # assets
@@ -349,7 +354,6 @@ class GDACSTransformer(MontyDataTransformer[GDACSDataSource]):
         severity_label = data.properties.episodealertlevel
 
         return HazardDetail(
-            cluster=self.hazard_profiles.get_cluster_code(item),
             severity_value=severity_value,
             severity_unit="GDACS Severity Score",
             severity_label=severity_label,
