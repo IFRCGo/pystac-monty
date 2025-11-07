@@ -161,3 +161,86 @@ class IfrcEventsTest(TestCase):
         # Verify required items were created
         self.assertIsNotNone(source_event_item)
         self.assertIsNotNone(source_impact_item)
+
+    @parameterized.expand(load_scenarios(scenarios))
+    def test_no_old_2020_codes(self, transformer: IFRCEventTransformer):
+        # Verify earthquake doesn't return old codes
+        eq_codes = transformer.map_ifrc_to_hazard_codes("Earthquake")
+        assert "GH0001" not in eq_codes
+        assert "GH0002" not in eq_codes
+        assert "GH0003" not in eq_codes
+
+        # Verify cyclone doesn't return old codes
+        cy_codes = transformer.map_ifrc_to_hazard_codes("Cyclone")
+        assert "MH0030" not in cy_codes
+        assert "MH0031" not in cy_codes
+
+        # Verify tsunami uses new code
+        ts_codes = transformer.map_ifrc_to_hazard_codes("Tsunami")
+        assert "GH0006" not in ts_codes  # Old geological code
+        assert "MH0705" in ts_codes  # New meteorological code
+
+    @parameterized.expand(load_scenarios(scenarios))
+    def test_ifrc_hazard_codes_2025(self, transformer: IFRCEventTransformer):
+        # Test consolidated codes
+        assert transformer.map_ifrc_to_hazard_codes("Earthquake") == ["GH0101", "nat-geo-ear-gro", "EQ"]
+        assert transformer.map_ifrc_to_hazard_codes("Cyclone") == ["MH0306", "nat-met-sto-tro", "TC"]
+
+        # Test reclassified tsunami
+        assert transformer.map_ifrc_to_hazard_codes("Tsunami") == ["MH0705", "nat-geo-ear-tsu", "TS"]
+
+        # Test other disaster types
+        assert transformer.map_ifrc_to_hazard_codes("Flood") == ["MH0600", "nat-hyd-flo-flo", "FL"]
+        assert transformer.map_ifrc_to_hazard_codes("Flash Flood") == ["MH0603", "nat-hyd-flo-fla", "FF"]
+        assert transformer.map_ifrc_to_hazard_codes("Volcanic Eruption") == ["GH0201", "nat-geo-vol-vol", "VO"]
+        assert transformer.map_ifrc_to_hazard_codes("Drought") == ["MH0401", "nat-cli-dro-dro", "DR"]
+        assert transformer.map_ifrc_to_hazard_codes("Heat Wave") == ["MH0501", "nat-met-ext-hea", "HT"]
+        assert transformer.map_ifrc_to_hazard_codes("Cold Wave") == ["MH0502", "nat-met-ext-col", "CW"]
+        assert transformer.map_ifrc_to_hazard_codes("Landslide") == ["GH0300", "nat-geo-mmd-lan", "LS"]
+        assert transformer.map_ifrc_to_hazard_codes("Storm Surge") == ["MH0703", "nat-met-sto-sur", "SS"]
+        assert transformer.map_ifrc_to_hazard_codes("Fire") == ["TL0305", "tec-ind-fir-fir", "FR"]
+        assert transformer.map_ifrc_to_hazard_codes("Epidemic") == ["BI0101", "nat-bio-epi-dis", "EP"]
+
+    @parameterized.expand(load_scenarios(scenarios))
+    def test_all_disaster_types_return_three_codes(self, transformer: IFRCEventTransformer):
+        ifrc_disaster_types = [
+            "Earthquake",
+            "Cyclone",
+            "Volcanic Eruption",
+            "Tsunami",
+            "Flood",
+            "Cold Wave",
+            "Fire",
+            "Heat Wave",
+            "Drought",
+            "Storm Surge",
+            "Landslide",
+            "Flash Flood",
+            "Epidemic",
+        ]
+
+        for disaster_type in ifrc_disaster_types:
+            codes = transformer.map_ifrc_to_hazard_codes(disaster_type)
+            assert len(codes) == 3, f"{disaster_type} should return exactly 3 codes"
+            # First should be 2025 format
+            assert codes[0].startswith(("MH", "GH", "BI", "TL", "EN"))
+
+    @parameterized.expand(load_scenarios(scenarios))
+    def test_ifrc_event_item_has_all_codes(self, transformer: IFRCEventTransformer):
+        # Create mock IFRC event with earthquake
+        items = transformer.make_items()
+        event_item = items[0]
+
+        monty = MontyExtension.ext(event_item)
+        assert monty.hazard_codes == ["GH0101", "nat-geo-ear-gro", "EQ"]
+
+    @parameterized.expand(load_scenarios([scenarios[0]]))
+    def test_ifrc_event_item_keywords(self, transformer: IFRCEventTransformer):
+        items = transformer.make_items()
+        event_item = items[0]
+
+        hazard_keywords = transformer.hazard_profiles.get_keywords(MontyExtension.ext(event_item).hazard_codes)
+        country_keywords = ["Nepal"]
+
+        expected_keywords = set(hazard_keywords + country_keywords)
+        assert set(event_item.properties["keywords"]) == expected_keywords

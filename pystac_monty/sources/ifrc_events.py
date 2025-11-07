@@ -187,7 +187,13 @@ class IFRCEventTransformer(MontyDataTransformer[IFRCEventDataSource]):
         monty = MontyExtension.ext(item)
         monty.episode_number = 1  # IFRC DREF doesn't have episodes
         monty.hazard_codes = self.map_ifrc_to_hazard_codes(data.dtype.name)
+
         monty.country_codes = [country.iso3 for country in data.countries]
+
+        hazard_keywords = self.hazard_profiles.get_keywords(monty.hazard_codes)
+        country_keywords = [country.name for country in data.countries] if data.countries else []
+        item.properties["keywords"] = list(set(hazard_keywords + country_keywords))
+
         monty.compute_and_set_correlation_id(hazard_profiles=self.hazard_profiles)
         # Set collection and roles
         item.set_collection(self.get_event_collection())
@@ -231,44 +237,10 @@ class IFRCEventTransformer(MontyDataTransformer[IFRCEventDataSource]):
             "Epidemic": ["BI0101", "nat-bio-epi-dis", "EP"],  # Infectious Diseases
         }
 
-        if classification_key in mapping:
-            return mapping[classification_key]
-        else:
+        if classification_key not in mapping:
             logger.warning(f"IFRC disaster type '{classification_key}' not found in UNDRR-ISC 2025 mapping.")
-            return []
 
-    def map_ifrc_to_hazard_codes_2(self, classification_key: str) -> List[str]:
-        """
-        Map IFRC DREF & EA classification key to UNDRR-ISC 2020 Hazard codes
-
-        Args:
-            classification_key: dtype name (e.g., 'Flood')
-
-        Returns:
-            List of UNDRR-ISC hazard codes
-        """
-
-        # IFRC DREF hazards classification mapping to UNDRR-ISC codes
-        mapping = {
-            "Earthquake": ["GH0001", "GH0002", "GH0003", "GH0004", "GH0005"],
-            "Cyclone": ["MH0030", "MH0031", "MH0032"],
-            "Volcanic Eruption": ["GH009", "GH0013", "GH0014", "GH0015", "GH0016"],
-            "Tsunami": ["MH0029", "GH0006"],
-            "Flood": ["FL"],  # General flood
-            "Cold Wave": ["MH0040"],
-            "Fire": ["FR", "tec-ind-fir-fir"],
-            "Heat Wave": ["MH0047"],
-            "Drought": ["MH0035"],
-            "Storm Surge": ["MH0027"],
-            "Landslide": ["GH0007"],
-            "Flash Flood": ["MH0006"],
-            "Epidemic": ["nat-bio-epi-dis"],  # General epidemic
-        }
-
-        if classification_key in mapping:
-            return mapping[classification_key]
-
-        return []
+        return mapping.get(classification_key, [])
 
     def make_impact_items(self, event_item: Item, ifrcevent_data: IFRCsourceValidator) -> List[Item]:
         """Create impact items"""
