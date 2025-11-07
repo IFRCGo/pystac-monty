@@ -38,4 +38,4 @@ jobs:
       - name: Sync
         run: uv sync --all-extras
       - name: Test
-        run: uv run pytest tests
+        run: uv run pytest test_gdacs
