@@ -52,40 +52,44 @@ class IDMCUtils:
     """Utils for IDMC GIDD and IDU"""
 
     @staticmethod
-    def hazard_codes_mapping(hazard: tuple) -> list[str] | None:
+    def hazard_codes_mapping(hazard: tuple) -> list[str]:
         """Map IDU hazards to UNDRR-ISC 2020 Hazard Codes"""
         hazard = tuple((item.lower() if item else item for item in hazard))
         hazard_mapping = {
-            ("geophysical", "geophysical", "earthquake", "earthquake"): ["nat-geo-ear-gro"],
-            ("geophysical", "geophysical", "earthquake", "tsunami"): ["nat-geo-ear-tsu"],
-            ("geophysical", "geophysical", "mass movement", "dry mass movement"): ["nat-geo-mmd-lan"],
-            ("geophysical", "geophysical", "mass movement", "sinkhole"): ["nat-geo-mmd-sub"],
-            ("geophysical", "geophysical", "volcanic activity", "volcanic activity"): ["nat-geo-vol-vol"],
+            ("geophysical", "geophysical", "earthquake", "earthquake"): ["GH0101", "nat-geo-ear-gro", "EQ"],
+            ("geophysical", "geophysical", "earthquake", "tsunami"): ["MH0705", "nat-geo-ear-tsu", "TS"],
+            ("geophysical", "geophysical", "mass movement", "dry mass movement"): ["GH0300", "nat-geo-mmd-lan", "LS"],
+            ("geophysical", "geophysical", "mass movement", "sinkhole"): ["GH0308", "nat-geo-mmd-sub", "OT"],
+            ("geophysical", "geophysical", "volcanic activity", "volcanic activity"): ["GH0205", "nat-geo-vol-vol", "VO"],
             ("mixed disasters", "mixed disasters", "mixed disasters", "mixed disasters"): ["mix-mix-mix-mix"],
-            ("weather related", "climatological", "desertification", "desertification"): ["EN0006", "nat-geo-env-des"],
-            ("weather related", "climatological", "drought", "drought"): ["nat-cli-dro-dro"],
-            ("weather related", "climatological", "erosion", "erosion"): ["EN0019", "nat-geo-env-soi"],
-            ("weather related", "climatological", "salinisation", "salinization"): ["EN0007", "nat-geo-env-slr"],
-            ("weather related", "climatological", "sea level rise", "sea level rise"): ["EN0023", "nat-geo-env-slr"],
-            ("weather related", "climatological", "wildfire", "wildfire"): ["nat-cli-wil-wil"],
-            ("weather related", "hydrological", "flood", "dam release flood"): ["tec-mis-col-col"],
-            ("weather related", "hydrological", "flood", "flood"): ["nat-hyd-flo-flo"],
-            ("weather related", "hydrological", "mass movement", "avalanche"): ["nat-hyd-mmw-ava"],
-            ("weather related", "hydrological", "mass movement", "landslide/wet mass movement"): ["nat-hyd-mmw-lan"],
-            ("weather related", "hydrological", "wave action", "rogue wave"): ["nat-hyd-wav-rog"],
-            ("weather related", "meteorological", "extreme temperature", "cold wave"): ["nat-met-ext-col"],
-            ("weather related", "meteorological", "extreme temperature", "heat wave"): ["nat-met-ext-hea"],
-            ("weather related", "meteorological", "storm", "hailstorm"): ["nat-met-sto-hai"],
-            ("weather related", "meteorological", "storm", "sand/dust storm"): ["nat-met-sto-san"],
-            ("weather related", "meteorological", "storm", "storm surge"): ["nat-met-sto-sur"],
-            ("weather related", "meteorological", "storm", "storm"): ["nat-met-sto-sto"],
-            ("weather related", "meteorological", "storm", "tornado"): ["nat-met-sto-tor"],
-            ("weather related", "meteorological", "storm", "typhoon/hurricane/cyclone"): ["nat-met-sto-tro"],
-            ("weather related", "meteorological", "storm", "winter storm/blizzard"): ["nat-met-sto-bli"],
+            ("weather related", "climatological", "desertification", "desertification"): ["EN0206", "nat-geo-env-des", "OT"],
+            ("weather related", "climatological", "drought", "drought"): ["MH0401", "nat-cli-dro-dro", "DR"],
+            ("weather related", "climatological", "erosion", "erosion"): ["GH0403", "nat-geo-env-soi", "OT"],
+            ("weather related", "climatological", "salinisation", "salinization"): ["EN0303", "nat-geo-env-slr", "OT"],
+            ("weather related", "climatological", "sea level rise", "sea level rise"): ["EN0303", "nat-geo-env-slr", "OT"],
+            ("weather related", "climatological", "wildfire", "wildfire"): ["EN0205", "nat-cli-wil-wil", "WF"],
+            ("weather related", "hydrological", "flood", "dam release flood"): ["TL0009", "tec-mis-col-col", "FL"],
+            ("weather related", "hydrological", "flood", "flood"): ["MH0600", "nat-hyd-flo-flo", "FL"],
+            ("weather related", "hydrological", "mass movement", "avalanche"): ["MH0801", "nat-geo-mmd-ava", "AV"],
+            ("weather related", "hydrological", "mass movement", "landslide/wet mass movement"): [
+                "GH0300",
+                "nat-geo-mmd-lan",
+                "LS",
+            ],
+            ("weather related", "hydrological", "wave action", "rogue wave"): ["MH0701", "nat-hyd-wav-rog", "OT"],
+            ("weather related", "meteorological", "extreme temperature", "cold wave"): ["MH0502", "nat-met-ext-col", "CW"],
+            ("weather related", "meteorological", "extreme temperature", "heat wave"): ["MH0501", "nat-met-ext-hea", "HT"],
+            ("weather related", "meteorological", "storm", "hailstorm"): ["MH0404", "nat-met-sto-hai", "ST"],
+            ("weather related", "meteorological", "storm", "sand/dust storm"): ["MH0201", "nat-met-sto-san", "VW"],
+            ("weather related", "meteorological", "storm", "storm surge"): ["MH0703", "nat-met-sto-sur", "SS"],
+            ("weather related", "meteorological", "storm", "storm"): ["MH0301", "nat-met-sto-sto", "VW"],
+            ("weather related", "meteorological", "storm", "tornado"): ["MH0305", "nat-met-sto-tor", "TO"],
+            ("weather related", "meteorological", "storm", "typhoon/hurricane/cyclone"): ["MH0309", "nat-met-sto-tro", "TC"],
+            ("weather related", "meteorological", "storm", "winter storm/blizzard"): ["MH0403", "nat-met-sto-bli", "OT"],
         }
         if hazard not in hazard_mapping:
             raise KeyError(f"Hazard {hazard} not found.")
-        return hazard_mapping.get(hazard)
+        return hazard_mapping.get(hazard, [])
 
 
 def order_data_file(filepath: str, jq_filter: str):
