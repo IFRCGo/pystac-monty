@@ -519,11 +519,12 @@ class USGSTransformer(MontyDataTransformer[USGSDataSource]):
         # Add hazard detail
         monty = MontyExtension.ext(hazard_item)
         monty.hazard_detail = HazardDetail(
-            cluster="GEO-SEIS",
             severity_value=float(event_item.properties.get("eq:magnitude", 0)),
             severity_unit=event_item.properties.get("eq:magnitude_type", ""),
             estimate_type=MontyEstimateType.PRIMARY,
         )
+
+        monty.hazard_codes = monty.hazard_codes[0:1]
 
         # Add shakemap assets
         # download/pin-thumbnail.png
