@@ -13,7 +13,7 @@ from pystac_monty.extension import MontyExtension
 from pystac_monty.geocoding import MockGeocoder
 from pystac_monty.sources.common import DataType, File, Memory
 from pystac_monty.sources.gidd import GenericDataSource, GIDDDataSource, GIDDTransformer
-from pystac_monty.sources.utils import save_json_data_into_tmp_file
+from pystac_monty.sources.utils import IDMCUtils, save_json_data_into_tmp_file
 from tests.conftest import get_data_file
 from tests.extensions.test_monty import CustomValidator
 
@@ -110,3 +110,50 @@ class GIDDTest(unittest.TestCase):
 
         self.assertIsNotNone(source_event_item)
         self.assertIsNotNone(source_impact_item)
+
+    @parameterized.expand(load_scenarios(scenarios))
+    @pytest.mark.vcr()
+    def test_event_item_uses_all_codes(self, transformer: GIDDTransformer) -> None:
+        for item in transformer.get_stac_items():
+            # write pretty json in a temporary folder
+            item_path = get_data_file(f"temp/idu/{item.id}.json")
+            with open(item_path, "w") as f:
+                json.dump(item.to_dict(), f, indent=2)
+            item.validate(validator=self.validator)
+            monty_item_ext = MontyExtension.ext(item)
+            if monty_item_ext.is_source_event():
+                # Should contain only the first code (UNDRR-ISC 2025)
+                assert len(monty_item_ext.hazard_codes) == 3
+
+    @pytest.mark.vcr()
+    def test_gdacs_hazard_codes_2025(self) -> None:
+        assert IDMCUtils.hazard_codes_mapping(("weather related", "hydrological", "flood", "flood")) == [
+            "MH0600",
+            "nat-hyd-flo-flo",
+            "FL",
+        ]
+        assert IDMCUtils.hazard_codes_mapping(("geophysical", "geophysical", "earthquake", "earthquake")) == [
+            "GH0101",
+            "nat-geo-ear-gro",
+            "EQ",
+        ]
+        assert IDMCUtils.hazard_codes_mapping(("weather related", "meteorological", "storm", "typhoon/hurricane/cyclone")) == [
+            "MH0309",
+            "nat-met-sto-tro",
+            "TC",
+        ]
+        assert IDMCUtils.hazard_codes_mapping(("weather related", "climatological", "drought", "drought")) == [
+            "MH0401",
+            "nat-cli-dro-dro",
+            "DR",
+        ]
+        assert IDMCUtils.hazard_codes_mapping(("weather related", "climatological", "wildfire", "wildfire")) == [
+            "EN0205",
+            "nat-cli-wil-wil",
+            "WF",
+        ]
+        assert IDMCUtils.hazard_codes_mapping(("geophysical", "geophysical", "volcanic activity", "volcanic activity")) == [
+            "GH0205",
+            "nat-geo-vol-vol",
+            "VO",
+        ]
