@@ -184,6 +184,11 @@ class GIDDTransformer(MontyDataTransformer[GIDDDataSource]):
                 data_item.properties.Hazard_sub_type,
             )
             monty.hazard_codes = IDMCUtils.hazard_codes_mapping(hazard=hazard_tuple)
+
+        if monty.hazard_codes:
+            hazard_keywords = self.hazard_profiles.get_keywords(monty.hazard_codes)
+            item.properties["keywords"] = list(set(hazard_keywords + monty.country_codes))
+
         monty.compute_and_set_correlation_id(hazard_profiles=self.hazard_profiles)
 
         item.set_collection(self.get_event_collection())
