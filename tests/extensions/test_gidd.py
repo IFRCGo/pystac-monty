@@ -116,7 +116,7 @@ class GIDDTest(unittest.TestCase):
     def test_event_item_uses_all_codes(self, transformer: GIDDTransformer) -> None:
         for item in transformer.get_stac_items():
             # write pretty json in a temporary folder
-            item_path = get_data_file(f"temp/idu/{item.id}.json")
+            item_path = get_data_file(f"temp/gidd/{item.id}.json")
             with open(item_path, "w") as f:
                 json.dump(item.to_dict(), f, indent=2)
             item.validate(validator=self.validator)
