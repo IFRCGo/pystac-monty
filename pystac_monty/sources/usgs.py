@@ -439,13 +439,16 @@ class USGSTransformer(MontyDataTransformer[USGSDataSource]):
         MontyExtension.add_to(item)
         monty = MontyExtension.ext(item)
         monty.episode_number = 1
-        monty.hazard_codes = ["GH0004"]  # Earthquake surface rupture code
+        monty.hazard_codes = ["GH0311", "nat-geo-ear-gro", "EQ"]  # Earthquake surface rupture code
 
         # TODO Get country code from event data or geometry
         iso3 = self.geocoder.get_iso3_from_point(point) or "UNK"
         country_codes = [iso3]
 
         monty.country_codes = country_codes
+
+        hazard_keywords = self.hazard_profiles.get_keywords(monty.hazard_codes)
+        item.properties["keywords"] = list(set(hazard_keywords + country_codes))
 
         # Compute correlation ID
         monty.compute_and_set_correlation_id(hazard_profiles=self.hazard_profiles)
