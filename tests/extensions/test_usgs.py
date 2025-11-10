@@ -207,3 +207,17 @@ class USGSTest(unittest.TestCase):
         items = transformer.make_items()
 
         self.assertEqual(len(items), 2)  # Should still get event and hazard
+
+    @parameterized.expand(load_scenarios(scenarios))
+    @pytest.mark.vcr()
+    def test_event_item_uses_all_codes(self, transformer: USGSTransformer) -> None:
+        for item in transformer.get_stac_items():
+            # write pretty json in a temporary folder
+            item_path = get_data_file(f"temp/usgs/{item.id}.json")
+            with open(item_path, "w") as f:
+                json.dump(item.to_dict(), f, indent=2)
+            item.validate(validator=self.validator)
+            monty_item_ext = MontyExtension.ext(item)
+            if monty_item_ext.is_source_event():
+                # Should contain only the first code (UNDRR-ISC 2025)
+                assert len(monty_item_ext.hazard_codes) == 3
