@@ -164,6 +164,7 @@ class IDUTransformer(MontyDataTransformer[IDUDataSource]):
         monty.episode_number = episode_number
         monty.country_codes = [data_item.iso3]
         monty.hazard_codes = IDMCUtils.hazard_codes_mapping(hazard=hazard_tuple)
+        monty.hazard_codes = self.hazard_profiles.get_canonical_hazard_codes(item=item)
 
         hazard_keywords = self.hazard_profiles.get_keywords(monty.hazard_codes)
 
