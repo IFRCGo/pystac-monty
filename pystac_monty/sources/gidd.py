@@ -184,6 +184,7 @@ class GIDDTransformer(MontyDataTransformer[GIDDDataSource]):
                 data_item.properties.Hazard_sub_type,
             )
             monty.hazard_codes = IDMCUtils.hazard_codes_mapping(hazard=hazard_tuple)
+            monty.hazard_codes = self.hazard_profiles.get_canonical_hazard_codes(item=item)
 
         if monty.hazard_codes:
             hazard_keywords = self.hazard_profiles.get_keywords(monty.hazard_codes)
