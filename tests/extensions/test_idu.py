@@ -119,7 +119,7 @@ class IDUTest(unittest.TestCase):
                 assert len(monty_item_ext.hazard_codes) == 3
 
     @pytest.mark.vcr()
-    def test_gdacs_hazard_codes_2025(self) -> None:
+    def test_hazard_codes_2025(self) -> None:
         assert IDMCUtils.hazard_codes_mapping(("weather related", "hydrological", "flood", "flood")) == [
             "MH0600",
             "nat-hyd-flo-flo",
