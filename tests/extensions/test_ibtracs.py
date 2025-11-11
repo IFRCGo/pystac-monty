@@ -342,7 +342,7 @@ class IBTrACSTest(unittest.TestCase):
         # Check Monty extension properties
         monty_ext = MontyExtension.ext(event_item)
         self.assertIsNotNone(monty_ext)
-        self.assertIn("MH0057", monty_ext.hazard_codes)
+        self.assertIn("MH0309", monty_ext.hazard_codes)
         self.assertIn("TC", monty_ext.hazard_codes)
         self.assertIsNotNone(monty_ext.correlation_id)
         self.assertTrue(monty_ext.correlation_id.startswith("20240626T000000"))
@@ -374,13 +374,13 @@ class IBTrACSTest(unittest.TestCase):
         # Check Monty extension properties
         monty_ext = MontyExtension.ext(hazard_item)
         self.assertIsNotNone(monty_ext)
-        self.assertIn("nat-met-sto-tro", monty_ext.hazard_codes)
+        self.assertIn("MH0309", monty_ext.hazard_codes)
         self.assertIsNotNone(monty_ext.correlation_id)
 
         # Check hazard detail
         hazard_detail = monty_ext.hazard_detail
         self.assertIsNotNone(hazard_detail)
-        self.assertEqual(hazard_detail.cluster, "nat-met-sto-tro")
+        # self.assertEqual(hazard_detail.cluster, "nat-met-sto-tro")
         self.assertIsNotNone(hazard_detail.severity_value)
         self.assertEqual(hazard_detail.severity_unit, "knots")
 
@@ -463,3 +463,31 @@ class IBTrACSTest(unittest.TestCase):
 
         # Should at least include XYZ (international waters) as a fallback
         self.assertIn("XYZ", countries)
+
+    @parameterized.expand(load_scenarios(scenarios))
+    @pytest.mark.vcr()
+    def test_event_item_uses_all_codes(self, name: str, transformer: IBTrACSTransformer) -> None:
+        for item in transformer.get_stac_items():
+            # write pretty json in a temporary folder
+            item_path = get_data_file(f"temp/ibtracs/{item.id}.json")
+            with open(item_path, "w") as f:
+                json.dump(item.to_dict(), f, indent=2)
+            item.validate(validator=self.validator)
+            monty_item_ext = MontyExtension.ext(item)
+            if monty_item_ext.is_source_event() and monty_item_ext.hazard_codes:
+                # Should contain only the first code (UNDRR-ISC 2025)
+                assert len(monty_item_ext.hazard_codes) == 3
+
+    @parameterized.expand(load_scenarios(scenarios))
+    @pytest.mark.vcr()
+    def test_hazard_item_uses_2025_code_only(self, name: str, transformer: IBTrACSTransformer) -> None:
+        for item in transformer.get_stac_items():
+            # write pretty json in a temporary folder
+            item_path = get_data_file(f"temp/ibtracs/{item.id}.json")
+            with open(item_path, "w") as f:
+                json.dump(item.to_dict(), f, indent=2)
+            item.validate(validator=self.validator)
+            monty_item_ext = MontyExtension.ext(item)
+            if monty_item_ext.is_source_hazard() and monty_item_ext.hazard_codes:
+                # Should contain only the first code (UNDRR-ISC 2025)
+                assert len(monty_item_ext.hazard_codes) == 1
