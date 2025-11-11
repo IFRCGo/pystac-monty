@@ -77,7 +77,7 @@ GH0304,,Slides,Ground Failure,Geological,hazgeoother,haztypegeohaz,OT,
 GH0305,,Topples,Ground Failure,Geological,hazgeoother,haztypegeohaz,OT,
 GH0306,,Submarine Landslide,Ground Failure,Geological,hazgeoother,haztypegeohaz,OT,
 GH0307,GH0003,Liquefaction,Ground Failure,Geological,hazgeoseis,haztypegeohaz,EQ,nat-geo-ear-gro
-GH0308,GH0026,Sinkhole,Ground Failure,Geological,hazgeoother,haztypegeohaz,OT,
+GH0308,GH0026,Sinkhole,Ground Failure,Geological,hazgeoother,haztypegeohaz,OT,nat-geo-mmd-sub
 GH0309,GH0005,Subsidence and Uplift,Ground Failure,Geological,hazgeoseis,haztypegeohaz,EQ,nat-geo-ear-gro
 GH0310,GH0025,Shrink-Swell Subsidence,Ground Failure,Geological,hazgeoother,haztypegeohaz,OT,
 GH0311,GH0004,Surface Rupture & Fissure,Ground Failure,Geological,hazgeoseis,haztypegeohaz,EQ,nat-geo-ear-gro
