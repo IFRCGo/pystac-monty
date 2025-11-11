@@ -286,11 +286,15 @@ class IBTrACSTransformer(MontyDataTransformer[IBTrACSDataSource]):
         MontyExtension.add_to(item)
         monty_ext = MontyExtension.ext(item)
         # Set hazard codes
-        monty_ext.hazard_codes = ["MH0057", "nat-met-sto-tro", "TC"]
+        monty_ext.hazard_codes = ["MH0309", "nat-met-sto-tro", "TC"]
+        monty_ext.hazard_codes = self.hazard_profiles.get_canonical_hazard_codes(item=item)
 
         # Determine affected countries
         countries = self._get_countries_from_track(track_geometry)
         monty_ext.country_codes = countries
+
+        hazard_keywords = self.hazard_profiles.get_keywords(monty_ext.hazard_codes)
+        item.properties["keywords"] = list(set(hazard_keywords + countries))
 
         # Set correlation ID
         # Format: [datetime]-[country]-[hazard type]-[sequence]-[source]
@@ -493,7 +497,9 @@ class IBTrACSTransformer(MontyDataTransformer[IBTrACSDataSource]):
             monty_ext = MontyExtension.ext(item)
 
             # Set hazard codes
-            monty_ext.hazard_codes = ["nat-met-sto-tro"]
+            monty_ext.hazard_codes = MontyExtension.ext(event_item).hazard_codes
+            if monty_ext.hazard_codes and len(monty_ext.hazard_codes) >= 1:
+                monty_ext.hazard_codes = [self.hazard_profiles.get_undrr_2025_code(hazard_codes=monty_ext.hazard_codes)]
 
             # Determine affected countries for the track up to this point
             if i == 0:
@@ -511,7 +517,6 @@ class IBTrACSTransformer(MontyDataTransformer[IBTrACSDataSource]):
 
             # Add hazard detail
             hazard_detail = HazardDetail(
-                cluster="nat-met-sto-tro",
                 severity_value=int(wind),
                 severity_unit="knots",
                 estimate_type=MontyEstimateType.PRIMARY,
