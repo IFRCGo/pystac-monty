@@ -152,7 +152,8 @@ class GFDTransformer(MontyDataTransformer[GFDDataSource]):
         monty = MontyExtension.ext(item)
         monty.episode_number = episode_number
         monty.country_codes = properties.cc.split(",")
-        monty.hazard_codes = ["FL"]  # GFD is a Flood related source
+        monty.hazard_codes = ["MH0600", "nat-hyd-flo-flo", "FL"]  # GFD is a Flood related source
+        monty.hazard_codes = self.hazard_profiles.get_canonical_hazard_codes(item=item)
         monty.compute_and_set_correlation_id(hazard_profiles=self.hazard_profiles)
 
         return item
@@ -166,9 +167,9 @@ class GFDTransformer(MontyDataTransformer[GFDDataSource]):
         hazard_item.set_collection(self.get_hazard_collection())
 
         monty = MontyExtension.ext(hazard_item)
+        monty.hazard_codes = [self.hazard_profiles.get_undrr_2025_code(hazard_codes=monty.hazard_codes)]
         # Hazard Detail
         monty.hazard_detail = HazardDetail(
-            cluster=self.hazard_profiles.get_cluster_code(hazard_item),
             severity_value=row.properties.dfo_severity,
             severity_unit="GFD Flood Severity Score",
             severity_label=None,
