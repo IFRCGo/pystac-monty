@@ -154,6 +154,10 @@ class GFDTransformer(MontyDataTransformer[GFDDataSource]):
         monty.country_codes = properties.cc.split(",")
         monty.hazard_codes = ["MH0600", "nat-hyd-flo-flo", "FL"]  # GFD is a Flood related source
         monty.hazard_codes = self.hazard_profiles.get_canonical_hazard_codes(item=item)
+
+        hazard_keywords = self.hazard_profiles.get_keywords(monty.hazard_codes)
+        item.properties["keywords"] = list(set(hazard_keywords + monty.country_codes))
+
         monty.compute_and_set_correlation_id(hazard_profiles=self.hazard_profiles)
 
         return item
