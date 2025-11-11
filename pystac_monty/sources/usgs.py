@@ -440,6 +440,7 @@ class USGSTransformer(MontyDataTransformer[USGSDataSource]):
         monty = MontyExtension.ext(item)
         monty.episode_number = 1
         monty.hazard_codes = ["GH0311", "nat-geo-ear-gro", "EQ"]  # Earthquake surface rupture code
+        monty.hazard_codes = self.hazard_profiles.get_canonical_hazard_codes(item=item)
 
         # TODO Get country code from event data or geometry
         iso3 = self.geocoder.get_iso3_from_point(point) or "UNK"
@@ -524,7 +525,7 @@ class USGSTransformer(MontyDataTransformer[USGSDataSource]):
             estimate_type=MontyEstimateType.PRIMARY,
         )
 
-        monty.hazard_codes = monty.hazard_codes[0:1]
+        monty.hazard_codes = [self.hazard_profiles.get_undrr_2025_code(hazard_codes=monty.hazard_codes)]
 
         # Add shakemap assets
         # download/pin-thumbnail.png
