@@ -133,34 +133,38 @@ class GlideTransformer(MontyDataTransformer[GlideDataSource]):
         self.transform_summary.mark_as_complete()
 
     def get_hazard_codes(self, hazard: str) -> List[str]:
-        hazard_mapping = {
-            "EQ": ["GH0001", "GH0002", "GH0003", "GH0004", "GH0005"],
-            "TC": ["MH0030", "MH0031", "MH0032"],
-            "FL": ["nat-hyd-flo-flo"],
-            "DR": ["MH0035"],
-            "WF": ["EN0013"],
-            "VO": ["GH009", "GH0013", "GH0014", "GH0015", "GH0016"],
-            "TS": ["MH0029", "GH0006"],
-            "CW": ["MH0040"],
-            "EP": ["nat-bio-epi-dis"],
-            "EC": ["MH0031"],
-            "ET": ["nat-met-ext-col", "nat-met-ext-hea", "nat-met-ext-sev"],
-            "FR": ["tec-ind-fir-fir"],
-            "FF": ["MH0006"],
-            "HT": ["MH0047"],
-            "IN": ["BI0002", "BI0003"],
-            "LS": ["nat-hyd-mmw-lan"],
-            "MS": ["MH0051"],
-            "ST": ["MH0003"],
-            "SL": ["nat-hyd-mmw-lan"],
-            "AV": ["nat-geo-mmd-ava"],
-            "SS": ["MH0027"],
-            "AC": ["AC"],
-            "TO": ["MH0059"],
-            "VW": ["MH0060"],
-            "WV": ["MH0029", "GH0006"],
+        similar_hazard_mapping = {
+            "SL": "LS",
+            "WV": "SS",
         }
-        return hazard_mapping[hazard]
+        hazard = similar_hazard_mapping.get(hazard, hazard)
+        hazard_mapping = {
+            "EQ": ["GH0101", "nat-geo-ear-gro", "EQ"],
+            "TC": ["MH0309", "nat-met-sto-tro", "TC"],
+            "FL": ["MH0600", "nat-hyd-flo-flo", "FL"],
+            "DR": ["MH0401", "nat-cli-dro-dro", "DR"],
+            "WF": ["EN0205", "nat-cli-wil-wil", "WF"],
+            "VO": ["GH0205", "nat-geo-vol-vol", "VO"],
+            "TS": ["MH0705", "nat-geo-ear-tsu", "TS"],
+            "CW": ["MH0502", "nat-met-ext-col", "CW"],
+            "EP": ["BI0101", "nat-bio-epi-dis", "OT"],
+            "EC": ["MH0307", "nat-met-sto-ext", "EC"],
+            "ET": ["nat-met-ext-col", "nat-met-ext-hea", "nat-met-ext-sev"],
+            "FR": ["TL0032", "tec-ind-fir-fir", "FR"],
+            "FF": ["MH0603", "nat-hyd-flo-fla", "FF"],
+            "HT": ["MH0501", "nat-met-ext-hea", "HT"],
+            "LS": ["GH0300", "nat-geo-mmd-lan", "LS"],  # NOTE: Equivalent to SL
+            "MS": ["GH0303", "nat-hyd-mmw-mud", "MS"],
+            "ST": ["MH0102", "nat-met-sto-sto", "ST"],
+            "AV": ["MH0801", "nat-geo-mmd-ava", "AV"],
+            "SS": ["MH0703", "nat-met-sto-sur", "SS"],  # NOTE: Equivalent to WV
+            "TO": ["MH0305", "nat-met-sto-tor", "TO"],
+            "VW": ["MH0301", "nat-met-sto-sto", "VW"],
+        }
+        if hazard not in hazard_mapping:
+            logger.warning(f"GLIDE disaster type '{hazard}' not found in UNDRR-ISC 2025 mapping.")
+
+        return hazard_mapping.get(hazard, [])
 
     def make_source_event_items(self, data: GlideSetValidator) -> Item | None:
         """Create source event items"""
@@ -203,7 +207,13 @@ class GlideTransformer(MontyDataTransformer[GlideDataSource]):
         # in the method monty.compute_and_set_correlation_id(..)
         monty.episode_number = 1
         monty.hazard_codes = self.get_hazard_codes(data.event)
+        monty.hazard_codes = self.hazard_profiles.get_canonical_hazard_codes(item)
+
         monty.country_codes = [data.geocode]
+
+        hazard_keywords = self.hazard_profiles.get_keywords(monty.hazard_codes)
+        country_keywords = [data.geocode] if data.geocode else []
+        item.properties["keywords"] = list(set(hazard_keywords + country_keywords))
 
         monty.compute_and_set_correlation_id(hazard_profiles=self.hazard_profiles)
 
@@ -227,6 +237,8 @@ class GlideTransformer(MontyDataTransformer[GlideDataSource]):
         item.properties["roles"] = ["source", "hazard"]
 
         monty = MontyExtension.ext(item)
+        monty.hazard_codes = [self.hazard_profiles.get_undrr_2025_code(hazard_codes=monty.hazard_codes)]
+
         monty.hazard_detail = self.get_hazard_detail(item)
 
         return item
@@ -234,13 +246,13 @@ class GlideTransformer(MontyDataTransformer[GlideDataSource]):
     def get_hazard_detail(self, item: Item) -> HazardDetail:
         """Get hazard detail"""
         # FIXME: This is not type safe
-        magnitude = item.properties.get("magnitude")
+        magnitude_raw = item.properties.get("magnitude")
+        magnitude = float(magnitude_raw) if magnitude_raw.isnumeric() else -1  # -1 to bypass validation
 
         return HazardDetail(
-            cluster=self.hazard_profiles.get_cluster_code(item),
             # NOTE If the alphanumeric value is present in the magnitude, it is converted to 0 for now.
             # But the actual value of the magnitude can be found in the properties.magnitude
-            severity_value=float(magnitude) if magnitude.isnumeric() else 0,
+            severity_value=magnitude if magnitude else -1,
             severity_unit="glide",
             estimate_type=MontyEstimateType.PRIMARY,
         )
