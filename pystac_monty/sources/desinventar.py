@@ -136,59 +136,59 @@ def parse_row_data(
 
 # TODO: complete this mapping
 hazard_mapping = {
-    "ALLUVION": ["MH0051", "nat-hyd-mmw-mud"],  # Mud flow
-    "AVALANCHE": ["MH0050", "nat-hyd-mmw-ava"],  # Avalanche
-    "ACCIDENT": ["tec-mis-col-col"],
-    "BIOLOGICAL": ["nat-bio-epi-dis"],  # Epidemic
-    "BOAT CAPSIZE": ["tec-tra-wat-wat", "TL0050"],
-    "COASTAL EROSION": ["EN0020", "nat-geo-env-coa "],  # Coastal erosion
-    "COLD WAVE": ["MH0049", "nat-met-ext-col"],  # Cold wave
-    "CYCLONE": ["MH0057", "nat-met-tro-tro"],  # Tropical cyclone
-    "DROUGHT": ["MH0035", "nat-met-dro-dro"],  # Drought
-    "EARTHQUAKE": ["GH0001", "nat-geo-ear-grd"],  # Earthquake
-    "ELECTRIC STORM": ["MH0002", "nat-met-sto-sto"],  # Thunderstorm
-    "EPIDEMIC": ["nat-bio-epi-dis"],  # Epidemic
+    "ALLUVION": ["GH0303", "nat-hyd-mmw-mud", "MS"],  # Mud flow
+    "AVALANCHE": ["MH0801", "nat-geo-mmd-ava", "AV"],  # Avalanche
+    "ACCIDENT": ["TL0007", "tec-mis-col-col", "AC"],  # Structural Failure
+    "BIOLOGICAL": ["BI0101", "nat-bio-epi-dis", "OT"],  # Epidemic
+    "BOAT CAPSIZE": ["TL0050", "tec-tra-wat-wat", "AC"],
+    "COASTAL EROSION": ["GH0405", "nat-geo-env-sed", "OT"],  # Coastal erosion
+    "COLD WAVE": ["MH0502", "nat-met-ext-col", "CW"],  # Cold wave
+    "CYCLONE": ["MH0309", "nat-met-sto-tro", "TC"],  # Tropical cyclone
+    "DROUGHT": ["MH0401", "nat-cli-dro-dro", "DR"],  # Drought
+    "EARTHQUAKE": ["GH0101", "nat-geo-ear-gro", "EQ"],  # Earthquake
+    "ELECTRIC STORM": ["MH0103", "nat-met-sto-sto", "ST"],  # Thunderstorm
+    "EPIDEMIC": ["BI0101", "nat-bio-epi-dis", "OT"],  # Epidemic
     "EPIZOOTIC": ["BI0027", "nat-bio-ani-ani"],  # Animal Diseases (Not Zoonoses)
-    "EROSION": ["EN0019"],  # Soil erosion
-    "ERUPTION": ["VO", "nat-geo-vol-vol"],  # Volcanic eruption
-    "EXPLOSION": ["tec-mis-exp-exp"],  # Explosion
+    "EROSION": ["GH0403", "nat-geo-env-soi", "OT"],  # Soil erosion
+    "ERUPTION": ["GH0205", "nat-geo-vol-vol", "VO"],  # Volcanic eruption
+    "EXPLOSION": ["TL0029", "tec-ind-exp-exp", "AC"],  # Explosion
     "FAMINE": None,
-    "FIRE": ["EN0013", "nat-cli-wil-wil"],  # Fire
-    "FLASH FLOOD": ["MH0006", "nat-hyd-flo-fla"],  # Flash flood
-    "FLOOD": ["nat-hyd-flo-flo"],  # Flood
-    "FOG": ["MH0016", "nat-met-fog-fog"],  # Fog
+    "FIRE": ["EN0205", "nat-cli-wil-wil", "WF"],  # Fire
+    "FLASH FLOOD": ["MH0603", "nat-hyd-flo-fla", "FF"],  # Flash flood
+    "FLOOD": ["MH0600", "nat-hyd-flo-flo", "FL"],  # Flood
+    "FOG": ["MH0202", "nat-met-fog-fog", "OT"],  # Fog
     "FOREST FIRE": ["nat-cli-wil-for"],  # Forest fire
-    "FROST": ["MH0043", "nat-met-ext-sev"],  # Severe frost
-    "HAIL STORM": ["MH0036", "nat-met-sto-hai"],  # Hailstorm
-    "HAILSTORM": ["MH0036", "nat-met-sto-hai"],  # Hailstorm
-    "HEAT WAVE": ["MH0047", "nat-met-ext-hea"],  # Heat wave
-    "LAHAR": ["GH0013", "nat-geo-vol-lah"],  # Lahar
-    "LANDSLIDE": ["GH0007", "nat-hyd-mmw-lan"],  # Landslide
-    "LEAK": ["TL0030", "tec-ind-che-che"],  # Chemical leak
-    "LIQUEFACTION": ["GH0003", "nat-geo-ear-gro"],  # Ground liquefaction
-    "OTHER": ["OT"],  # Other
+    "FROST": ["MH0505", "nat-met-ext-sev", "OT"],  # Severe frost
+    "HAIL STORM": ["MH0404", "nat-met-sto-hai", "ST"],  # Hailstorm
+    "HAILSTORM": ["MH0404", "nat-met-sto-hai", "ST"],  # Hailstorm
+    "HEAT WAVE": ["MH0501", "nat-met-ext-hea", "HT"],  # Heat wave
+    "LAHAR": ["GH0204", "nat-geo-vol-lah", "VO"],  # Lahar
+    "LANDSLIDE": ["GH0300", "nat-geo-mmd-lan", "LS"],  # Landslide
+    "LEAK": ["TL0030", "tec-ind-che-che", "AC"],  # Chemical leak
+    "LIQUEFACTION": ["GH0307", "nat-geo-ear-gro", "EQ"],  # Ground liquefaction
+    "OTHER": None,  # Other
     "PANIC": None,
     "PLAGUE": None,
     "POLLUTION": None,
-    "RAIN": ["nat-met-sto-sto"],  # Storm
-    "RAINS": ["nat-met-sto-sto"],  # Storm
-    "SANDSTORM": ["MH0015", "nat-met-sto-san"],  # Sandstorm
-    "SEDIMENTATION": ["nat-geo-env-sed"],  # Sedimentation
-    "SNOW STORM": ["MH0039", "nat-met-sto-sto"],  # Snow Storm
-    "SNOWSTORM": ["MH0039", "nat-met-sto-sto"],  # Snow Storm
-    "STORM": ["nat-met-sto-sto"],  # Storm
-    "STRONG WIND": ["MH0060", "nat-met-sto-sto"],  # Strong wind
-    "STRUCT.COLLAPSE": ["TL0005", "tec-mis-col-col"],  # Structural collapse
-    "SUBSIDENCE": ["GH0005", "nat-geo-mmd-sub"],  # Subsidence
-    "SURGE": ["MH0027", "nat-met-sto-sur"],  # Storm surge
-    "THUNDERSTORM": ["MH0003", "nat-met-sto-sto"],  # Thunderstorm
-    "TORNADO": ["MH0059", "nat-met-sto-tor"],  # Tornado
-    "TSUNAMI": ["MH0029", "nat-geo-ear-tsu"],  # Tsunami
-    "WINDSTORM": ["MH0060", "nat-met-sto-sto"],  # Strong wind
-    "Inundación": ["nat-hyd-flo-flo"],  # Flood
-    "HURRICANE": ["MH0057", "nat-met-sto-tro"],  # Tropical cyclone
-    "VOLCANO": ["nat-geo-vol-vol"],  # Volcanic eruption
-    "COASTAL FLOOD": ["MH0004", "nat-hyd-flo-coa"],  # Coastal flood
+    "RAIN": ["MH0103", "nat-met-sto-sto", "ST"],  # Storm
+    "RAINS": ["MH0103", "nat-met-sto-sto", "ST"],  # Storm
+    "SANDSTORM": ["MH0201", "nat-met-sto-san", "VW"],  # Sandstorm
+    "SEDIMENTATION": ["GH0405", "nat-geo-env-sed", "OT"],  # Sedimentation
+    "SNOW STORM": ["MH0406", "OT"],  # Snow Storm
+    "SNOWSTORM": ["MH0406", "OT"],  # Snow Storm
+    "STORM": ["MH0103", "nat-met-sto-sto", "ST"],  # Storm
+    "STRONG WIND": ["MH0301", "nat-met-sto-sto", "VW"],  # Strong wind
+    "STRUCT.COLLAPSE": ["TL0005", "tec-mis-col-col", "AC"],  # Structural collapse
+    "SUBSIDENCE": ["GH0309", "nat-geo-ear-gro"],  # Subsidence
+    "SURGE": ["MH0703", "nat-met-sto-sur", "SS"],  # Storm surge
+    "THUNDERSTORM": ["MH0103", "nat-met-sto-sto", "ST"],  # Thunderstorm
+    "TORNADO": ["MH0305", "nat-met-sto-tor", "TO"],  # Tornado
+    "TSUNAMI": ["MH0705", "nat-geo-ear-tsu", "TS"],  # Tsunami
+    "WINDSTORM": ["MH0301", "nat-met-sto-sto", "VW"],  # Strong wind
+    "Inundación": ["MH0600", "nat-hyd-flo-flo", "FL"],  # Flood
+    "HURRICANE": ["MH0309", "nat-met-sto-tro", "TC"],  # Tropical cyclone
+    "VOLCANO": ["GH0205", "nat-geo-vol-vol", "VO"],  # Volcanic eruption
+    "COASTAL FLOOD": ["MH0601", "nat-hyd-flo-coa", "FL"],  # Coastal flood
 }
 
 
@@ -302,7 +302,14 @@ class DesinventarTransformer(MontyDataTransformer[DesinventarDataSource]):
 
         monty.episode_number = 1  # Desinventar doesn't have episodes
         monty.hazard_codes = hazard_codes
+
+        monty.hazard_codes = self.hazard_profiles.get_canonical_hazard_codes(item=item)
+
         monty.country_codes = [row.iso3.upper()]
+
+        hazard_keywords = self.hazard_profiles.get_keywords(monty.hazard_codes)
+        item.properties["keywords"] = list(set(hazard_keywords + monty.country_codes))
+
         monty.compute_and_set_correlation_id(hazard_profiles=self.hazard_profiles)
 
         item.set_collection(self.get_event_collection())
