@@ -17,7 +17,7 @@ from pystac_monty.sources.emdat import EMDATDataSource, EMDATTransformer
 from tests.conftest import get_data_file
 from tests.extensions.test_monty import CustomValidator
 
-CURRENT_SCHEMA_URI = "https://ifrcgo.github.io/monty/v0.1.0/schema.json"
+CURRENT_SCHEMA_URI = "https://ifrcgo.org/monty-stac-extension/v1.1.0/schema.json"
 CURRENT_SCHEMA_MAPURL = "https://raw.githubusercontent.com/IFRCGo/monty-stac-extension/refs/heads/main/json-schema/schema.json"
 
 json_mock_data = {
@@ -374,3 +374,31 @@ class EMDATTest(unittest.TestCase):
         # Verify required items were created
         self.assertIsNotNone(source_event_item)
         self.assertIsNotNone(source_hazard_item)
+
+    @parameterized.expand(load_scenarios(scenarios))
+    @pytest.mark.vcr()
+    def test_event_item_uses_all_codes(self, transformer: EMDATTransformer) -> None:
+        for item in transformer.get_stac_items():
+            # write pretty json in a temporary folder
+            item_path = get_data_file(f"temp/emdat/{item.id}.json")
+            with open(item_path, "w") as f:
+                json.dump(item.to_dict(), f, indent=2)
+            item.validate(validator=self.validator)
+            monty_item_ext = MontyExtension.ext(item)
+            if monty_item_ext.is_source_event() and monty_item_ext.hazard_codes:
+                # Should contain only the first code (UNDRR-ISC 2025)
+                assert len(monty_item_ext.hazard_codes) == 3
+
+    @parameterized.expand(load_scenarios(scenarios))
+    @pytest.mark.vcr()
+    def test_hazard_item_uses_2025_code_only(self, transformer: EMDATTransformer) -> None:
+        for item in transformer.get_stac_items():
+            # write pretty json in a temporary folder
+            item_path = get_data_file(f"temp/emdat/{item.id}.json")
+            with open(item_path, "w") as f:
+                json.dump(item.to_dict(), f, indent=2)
+            item.validate(validator=self.validator)
+            monty_item_ext = MontyExtension.ext(item)
+            if monty_item_ext.is_source_hazard() and monty_item_ext.hazard_codes:
+                # Should contain only the first code (UNDRR-ISC 2025)
+                assert len(monty_item_ext.hazard_codes) == 1
