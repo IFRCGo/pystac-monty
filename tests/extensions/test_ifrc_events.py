@@ -232,7 +232,7 @@ class IfrcEventsTest(TestCase):
         event_item = items[0]
 
         monty = MontyExtension.ext(event_item)
-        assert monty.hazard_codes == ["GH0101", "nat-geo-ear-gro", "EQ"]
+        assert monty.hazard_codes == ["GH0101", "EQ", "nat-geo-ear-gro"]
 
     @parameterized.expand(load_scenarios([scenarios[0]]))
     def test_ifrc_event_item_keywords(self, transformer: IFRCEventTransformer):
