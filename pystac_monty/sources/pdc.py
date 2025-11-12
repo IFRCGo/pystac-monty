@@ -217,6 +217,13 @@ class PDCTransformer(MontyDataTransformer):
         monty.country_codes = list(set(all_iso3))
 
         monty.hazard_codes = self._map_pdc_to_hazard_codes(hazard=pdc_hazard_data.type_ID)
+        monty.hazard_codes = self.hazard_profiles.get_canonical_hazard_codes(item=item)
+
+        # Generate keywords for discoverability
+        hazard_keywords = self.hazard_profiles.get_keywords(monty.hazard_codes)
+        country_keywords = [obj.admin0 for obj in pdc_exposure_data.totalByCountry] if pdc_exposure_data.totalByCountry else []
+        item.properties["keywords"] = list(set(hazard_keywords + country_keywords))
+
         # TODO: Deal with correlation id if country_codes is a empty list
         if monty.country_codes:
             monty.compute_and_set_correlation_id(hazard_profiles=self.hazard_profiles)
@@ -229,31 +236,64 @@ class PDCTransformer(MontyDataTransformer):
         return item
 
     def _map_pdc_to_hazard_codes(self, hazard: str) -> List[str] | None:
-        """Maps the hazard to the standard UNDRR-ISC 2020 Hazard Codes"""
-        hazard_mapping = {
-            "AVALANCHE": ["MH0050", "nat-geo-mmd-ava"],
-            "DROUGHT": ["MH0035", "nat-cli-dro-dro"],
-            "EARTHQUAKE": ["GH0001", "nat-geo-ear-gro"],
-            "EXTREMETEMPERATURE": ["MH0040", "MH0047", "MH0041", "nat-met-ext-col", "nat-met-ext-hea", "nat-met-ext-sev"],
-            "FLOOD": ["MH0012", "nat-hyd-flo-flo"],
-            "HIGHWIND": ["MH0060", "nat-met-sto-sto"],
-            "LANDSLIDE": ["nat-geo-mmd-lan"],
-            "SEVEREWEATHER": ["nat-met-sto-sev"],
-            "STORM": ["nat-met-sto-bli"],
-            "TORNADO": ["nat-met-sto-tor"],
-            "CYCLONE": ["nat-met-sto-tro"],
-            "TSUNAMI": ["MH0029", "nat-geo-ear-tsu"],
-            "VOLCANO": ["GH0020", "nat-geo-vol-vol"],
-            "WILDFIRE": ["EN0013", "nat-cli-wil-for"],
-            "WINTERSTORM": ["nat-met-sto-bli"],
-            "STORMSURGE": ["MH0027", "nat-met-sto-sur"],
+        """
+        Map PDC hazard types to standard classification codes.
+        Returns codes in order: [UNDRR-ISC 2025, EM-DAT, GLIDE]
+
+        The UNDRR-ISC 2025 code is the reference classification for the Monty extension.
+        All three codes are included for maximum interoperability.
+
+        Args:
+            hazard: PDC hazard type (e.g., 'EARTHQUAKE', 'FLOOD')
+
+        Returns:
+            List of classification codes or None if not found
+        """
+        # Natural Hazards
+        natural_hazards = {
+            "AVALANCHE": ["MH0801", "nat-hyd-mmw-ava", "AV"],
+            "BIOMEDICAL": ["BI0101", "nat-bio-epi-dis", "EP"],
+            "DROUGHT": ["MH0401", "nat-cli-dro-dro", "DR"],
+            "EARTHQUAKE": ["GH0101", "nat-geo-ear-gro", "EQ"],
+            "EXTREMETEMPERATURE": ["MH0501", "nat-met-ext-hea", "HT"],  # Default to heat, may need logic for cold
+            "FLOOD": ["MH0600", "nat-hyd-flo-flo", "FL"],
+            "HIGHSURF": ["MH0702", "nat-hyd-wav-wav", "OT"],
+            "LANDSLIDE": ["GH0300", "nat-geo-mmd-lan", "LS"],
+            "MARINE": ["MH0700", "nat-hyd-wav-wav", "OT"],
+            "SEVEREWEATHER": ["MH0103", "nat-met-sto-sto", "ST"],
+            "STORM": ["MH0103", "nat-met-sto-sto", "ST"],
+            "TORNADO": ["MH0305", "nat-met-sto-tor", "TO"],
+            "CYCLONE": ["MH0306", "nat-met-sto-tro", "TC"],
+            "TSUNAMI": ["MH0705", "nat-geo-ear-tsu", "TS"],
+            "VOLCANO": ["GH0201", "nat-geo-vol-vol", "VO"],
+            "WILDFIRE": ["EN0205", "nat-cli-wil-for", "WF"],
+            "WINTERSTORM": ["MH0403", "nat-met-sto-bli", "OT"],
         }
 
+        # Geopolitical & Technological Hazards
+        tech_social_hazards = {
+            "ACCIDENT": ["TL0200", "tec-mis-col-col", "AC"],
+            "ACTIVESHOOTER": ["SO0201", "soc-soc-vio-vio", "OT"],
+            "CIVILUNREST": ["SO0202", "soc-soc-vio-vio", "OT"],
+            "COMBAT": ["SO0201", "soc-soc-vio-vio", "OT"],
+            "CYBER": ["TL0601", "", "OT"],  # No EM-DAT equivalent
+            "MANMADE": ["TL0000", "tec-tec-tec-tec", "OT"],
+            "OCCURRENCE": ["OT0000", "", "OT"],  # No EM-DAT equivalent
+            "POLITICALCONFLICT": ["SO0201", "soc-soc-vio-vio", "OT"],
+            "TERRORISM": ["SO0203", "soc-soc-vio-vio", "OT"],
+            "WEAPONS": ["SO0201", "soc-soc-vio-vio", "OT"],
+        }
+
+        # Combine all mappings
+        hazard_mapping = {**natural_hazards, **tech_social_hazards}
+
         if hazard not in hazard_mapping:
-            logger.warning(f"The hazard {hazard} is not in the mapping.")
+            logger.warning(f"PDC hazard type '{hazard}' not found in UNDRR-ISC 2025 mapping.")
             return None
 
-        return hazard_mapping.get(hazard)
+        codes = hazard_mapping.get(hazard)
+        # Filter out empty strings (for codes without EM-DAT equivalents)
+        return [code for code in codes if code] if codes else None
 
     def make_hazard_item(self, event_item: Item, hazard_data: HazardEventValidator) -> Item:
         """Create Hazard Item"""
@@ -266,10 +306,10 @@ class PDCTransformer(MontyDataTransformer):
         hazard_item.set_collection(self.get_hazard_collection())
 
         monty = MontyExtension.ext(hazard_item)
+        monty.hazard_codes = [self.hazard_profiles.get_undrr_2025_code(hazard_codes=monty.hazard_codes)]
         # Hazard Detail
         monty.hazard_detail = HazardDetail(
-            cluster=self.hazard_profiles.get_cluster_code(hazard_item),
-            severity_value=None,
+            severity_value=0.1,  # 0.1 is passed inorder to pass validation it means None in this case
             severity_unit="PDC Severity Score",
             severity_label=hazard_data.severity_ID,
             estimate_type=MontyEstimateType.PRIMARY,
