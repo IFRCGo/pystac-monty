@@ -18,7 +18,7 @@ from pystac_monty.sources.utils import save_json_data_into_tmp_file
 from tests.conftest import get_data_file
 from tests.extensions.test_monty import CustomValidator
 
-CURRENT_SCHEMA_URI = "https://ifrcgo.github.io/monty/v0.1.0/schema.json"
+CURRENT_SCHEMA_URI = "https://ifrcgo.github.io/monty/v1.1.0/schema.json"
 CURRENT_SCHEMA_MAPURL = "https://raw.githubusercontent.com/IFRCGo/monty-stac-extension/refs/heads/main/json-schema/schema.json"
 
 json_mock_data = {
@@ -136,3 +136,52 @@ class GlideTest(unittest.TestCase):
 
         self.assertIsNotNone(source_event_item)
         self.assertIsNotNone(source_hazard_item)
+
+    @parameterized.expand(load_scenarios(scenarios))
+    @pytest.mark.vcr()
+    def test_event_item_uses_all_codes(self, transformer: GlideTransformer) -> None:
+        for item in transformer.get_stac_items():
+            # write pretty json in a temporary folder
+            item_path = get_data_file(f"temp/glide/{item.id}.json")
+            with open(item_path, "w") as f:
+                json.dump(item.to_dict(), f, indent=2)
+            item.validate(validator=self.validator)
+            monty_item_ext = MontyExtension.ext(item)
+            if monty_item_ext.is_source_event():
+                # Should contain only the first code (UNDRR-ISC 2025)
+                assert len(monty_item_ext.hazard_codes) == 3
+
+    @parameterized.expand(load_scenarios(scenarios))
+    @pytest.mark.vcr()
+    def test_hazard_item_uses_2025_code_only(self, transformer: GlideTransformer) -> None:
+        for item in transformer.get_stac_items():
+            # write pretty json in a temporary folder
+            item_path = get_data_file(f"temp/glide/{item.id}.json")
+            with open(item_path, "w") as f:
+                json.dump(item.to_dict(), f, indent=2)
+            item.validate(validator=self.validator)
+            monty_item_ext = MontyExtension.ext(item)
+            if monty_item_ext.is_source_hazard():
+                # Should contain only the first code (UNDRR-ISC 2025)
+                assert len(monty_item_ext.hazard_codes) == 1
+
+    @parameterized.expand(load_scenarios(scenarios))
+    def test_ifrc_hazard_codes_2025(self, transformer: GlideTransformer):
+        # Test consolidated codes
+        assert transformer.get_hazard_codes("EQ") == ["GH0101", "nat-geo-ear-gro", "EQ"]
+        assert transformer.get_hazard_codes("TC") == ["MH0309", "nat-met-sto-tro", "TC"]
+
+        # Test reclassified tsunami
+        assert transformer.get_hazard_codes("TS") == ["MH0705", "nat-geo-ear-tsu", "TS"]
+
+        # Test other disaster types
+        assert transformer.get_hazard_codes("FL") == ["MH0600", "nat-hyd-flo-flo", "FL"]
+        assert transformer.get_hazard_codes("FF") == ["MH0603", "nat-hyd-flo-fla", "FF"]
+        assert transformer.get_hazard_codes("VO") == ["GH0205", "nat-geo-vol-vol", "VO"]
+        assert transformer.get_hazard_codes("DR") == ["MH0401", "nat-cli-dro-dro", "DR"]
+        assert transformer.get_hazard_codes("HT") == ["MH0501", "nat-met-ext-hea", "HT"]
+        assert transformer.get_hazard_codes("CW") == ["MH0502", "nat-met-ext-col", "CW"]
+        assert transformer.get_hazard_codes("LS") == ["GH0300", "nat-geo-mmd-lan", "LS"]
+        assert transformer.get_hazard_codes("SS") == ["MH0703", "nat-met-sto-sur", "SS"]
+        assert transformer.get_hazard_codes("FR") == ["TL0032", "tec-ind-fir-fir", "FR"]
+        assert transformer.get_hazard_codes("EP") == ["BI0101", "nat-bio-epi-dis", "OT"]
