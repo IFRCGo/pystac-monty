@@ -9,11 +9,11 @@ interactions:
       User-Agent:
       - Python-urllib/3.12
     method: GET
-    uri: https://ifrcgo.org/monty-stac-extension/v1.0.0/schema.json
+    uri: https://ifrcgo.org/monty-stac-extension/v1.1.0/schema.json
   response:
     body:
       string: "{\n  \"$schema\": \"http://json-schema.org/draft-07/schema#\",\n  \"$id\":
-        \"https://ifrcgo.org/monty-stac-extension/v1.0.0/schema.json#\",\n  \"title\":
+        \"https://ifrcgo.org/monty-stac-extension/v1.1.0/schema.json#\",\n  \"title\":
         \"Monty Extension\",\n  \"description\": \"STAC Monty Extension for STAC Items
         and STAC Collections.\",\n  \"oneOf\": [\n    {\n      \"$comment\": \"This
         is the schema for STAC Items.\",\n      \"allOf\": [\n        {\n          \"$ref\":
@@ -44,7 +44,7 @@ interactions:
         \       }\n      ]\n    }\n  ],\n  \"definitions\": {\n    \"stac_extensions\":
         {\n      \"type\": \"object\",\n      \"required\": [\n        \"stac_extensions\"\n
         \     ],\n      \"properties\": {\n        \"stac_extensions\": {\n          \"type\":
-        \"array\",\n          \"contains\": {\n            \"const\": \"https://ifrcgo.org/monty-stac-extension/v1.0.0/schema.json\"\n
+        \"array\",\n          \"contains\": {\n            \"const\": \"https://ifrcgo.org/monty-stac-extension/v1.1.0/schema.json\"\n
         \         }\n        }\n      }\n    },\n    \"fields\": {\n      \"$comment\":
         \"Monty prefixed fields\",\n      \"type\": \"object\",\n      \"properties\":
         {\n        \"monty:episode_number\": {\n          \"type\": \"integer\"\n
@@ -56,10 +56,11 @@ interactions:
         \"string\",\n            \"pattern\": \"^([A-Z]{2}(?:\\\\d{4}$){0,1})|([a-z]{3}-[a-z]{3}-[a-z]{3}-[a-z]{3})|([A-Z]{2})$\"\n
         \         }\n        },\n        \"monty:corr_id\": {\n          \"type\":
         \"string\"\n        },\n        \"monty:hazard_detail\": {\n          \"type\":
-        \"object\",\n          \"required\": [\n            \"cluster\"\n          ],\n
-        \         \"properties\": {\n            \"cluster\": {\n              \"type\":
-        \"string\"\n            },\n            \"severity_value\": {\n              \"type\":
-        \"number\"\n            },\n            \"severity_unit\": {\n              \"type\":
+        \"object\",\n          \"required\": [\n            \"severity_value\",\n
+        \           \"severity_unit\"\n          ],\n          \"properties\": {\n
+        \           \"severity_value\": {\n              \"type\": \"number\",\n              \"description\":
+        \"The estimated maximum hazard intensity/magnitude/severity value, as a number,
+        without the units.\"\n            },\n            \"severity_unit\": {\n              \"type\":
         \"string\"\n            },\n            \"severity_label\": {\n              \"type\":
         \"string\"\n            },\n            \"estimate_type\": {\n              \"$ref\":
         \"#/definitions/estimate_type\"\n            }\n          },\n          \"additionalProperties\":
@@ -126,9 +127,26 @@ interactions:
         \       }\n      }\n    },\n    \"is_hazard\": {\n      \"properties\": {\n
         \       \"roles\": {\n          \"type\": \"array\",\n          \"minItems\":
         1,\n          \"contains\": {\n            \"const\": \"hazard\"\n          }\n
-        \       },\n        \"monty:hazard_codes\": {\n          \"maxItems\": 1\n
-        \       }\n      }\n    },\n    \"is_impact\": {\n      \"properties\": {\n
-        \       \"roles\": {\n          \"type\": \"array\",\n          \"minItems\":
+        \       },\n        \"monty:hazard_codes\": {\n          \"minItems\": 1,\n
+        \         \"maxItems\": 3,\n          \"uniqueItems\": true,\n          \"$comment\":
+        \"REQUIRED: Exactly 1 UNDRR-ISC 2025 code (format: 2 letters + 4 digits, e.g.,
+        GH0101, MH0600). OPTIONAL: At most 1 GLIDE code (2 uppercase letters, e.g.,
+        FL, EQ) and at most 1 EM-DAT code (nat-xxx-xxx-xxx format). LIMITATION: JSON
+        Schema draft-07 cannot fully enforce 'at most 1 per type' - custom validation
+        may be needed to prevent multiple codes of the same classification type.\",\n
+        \         \"contains\": {\n            \"type\": \"string\",\n            \"pattern\":
+        \"^[A-Z]{2}\\\\d{4}$\",\n            \"$comment\": \"At least one UNDRR-ISC
+        2025 code is required\"\n          },\n          \"items\": {\n            \"type\":
+        \"string\",\n            \"anyOf\": [\n              {\n                \"pattern\":
+        \"^[A-Z]{2}\\\\d{4}$\",\n                \"$comment\": \"UNDRR-ISC 2025 format:
+        2 uppercase letters + 4 digits (e.g., GH0101, MH0600)\"\n              },\n
+        \             {\n                \"pattern\": \"^[A-Z]{2}$\",\n                \"$comment\":
+        \"GLIDE format: 2 uppercase letters (e.g., FL, EQ, TC)\"\n              },\n
+        \             {\n                \"pattern\": \"^[a-z]{3}-[a-z]{3}-[a-z]{3}-[a-z]{3}$\",\n
+        \               \"$comment\": \"EM-DAT format: 4 groups of 3 lowercase letters
+        separated by dashes (e.g., nat-hyd-flo-flo)\"\n              }\n            ]\n
+        \         }\n        }\n      }\n    },\n    \"is_impact\": {\n      \"properties\":
+        {\n        \"roles\": {\n          \"type\": \"array\",\n          \"minItems\":
         1,\n          \"contains\": {\n            \"const\": \"impact\"\n          }\n
         \       }\n      }\n    }\n  }\n}\n"
     headers:
@@ -137,21 +155,21 @@ interactions:
       Access-Control-Allow-Origin:
       - '*'
       Age:
-      - '449'
+      - '0'
       Cache-Control:
       - max-age=600
       Connection:
       - close
       Content-Length:
-      - '8990'
+      - '10393'
       Content-Type:
       - application/json; charset=utf-8
       Date:
-      - Thu, 05 Jun 2025 06:31:18 GMT
+      - Wed, 12 Nov 2025 10:33:49 GMT
       ETag:
-      - '"68362515-231e"'
+      - '"690c54cc-2899"'
       Last-Modified:
-      - Tue, 27 May 2025 20:48:21 GMT
+      - Thu, 06 Nov 2025 07:57:00 GMT
       Server:
       - GitHub.com
       Vary:
@@ -163,15 +181,15 @@ interactions:
       X-Cache-Hits:
       - '1'
       X-Fastly-Request-ID:
-      - e0169bc80c4e9cea95cf248e8c77b49346cc9188
+      - 9c841d1058365e084480accdc11254ace7844780
       X-GitHub-Request-Id:
-      - 4E22:64F80:87F27:A7133:684137F4
+      - 9A3E:2F62DB:5BE57:72BDD:69141429
       X-Served-By:
-      - cache-maa10221-MAA
+      - cache-del21738-DEL
       X-Timer:
-      - S1749105078.469500,VS0,VE1
+      - S1762943630.543044,VS0,VE2
       expires:
-      - Thu, 05 Jun 2025 06:33:49 GMT
+      - Wed, 12 Nov 2025 05:09:22 GMT
       x-proxy-cache:
       - MISS
     status:
