@@ -269,7 +269,7 @@ class HazardDetail(ABC):
     ) -> None:
         self.properties = {}
 
-        if severity_value:
+        if severity_value is not None:
             self.severity_value = severity_value
         if severity_unit:
             self.severity_unit = severity_unit
