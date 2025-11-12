@@ -267,6 +267,7 @@ class GDACSTransformer(MontyDataTransformer[GDACSDataSource]):
         monty = MontyExtension.ext(item)
         monty.episode_number = 1
         monty.hazard_codes = self.get_hazard_codes(data.properties.eventtype)
+        monty.hazard_codes = self.hazard_profiles.get_canonical_hazard_codes(item=item)
         cc = set([data.properties.iso3])
         if hasattr(data.properties, "affectedcountries"):
             cc.update([cc.iso3 for cc in data.properties.affectedcountries])
@@ -342,13 +343,13 @@ class GDACSTransformer(MontyDataTransformer[GDACSDataSource]):
         # Monty extension fields
         monty = MontyExtension.ext(item)
         # hazard_detail
-        monty.hazard_detail = self.get_hazard_detail(item, episode_event)
+        monty.hazard_detail = self.get_hazard_detail(episode_event)
         # keep the first hazard code
-        monty.hazard_codes = monty.hazard_codes[0:1]
+        monty.hazard_codes = [self.hazard_profiles.get_undrr_2025_code(hazard_codes=monty.hazard_codes)]
 
         return item
 
-    def get_hazard_detail(self, item: Item, data: GdacsEventDataValidator) -> HazardDetail:
+    def get_hazard_detail(self, data: GdacsEventDataValidator) -> HazardDetail:
         # Use episode-specific severity data
         severity_value = data.properties.episodealertscore
         severity_label = data.properties.episodealertlevel
