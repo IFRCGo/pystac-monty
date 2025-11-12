@@ -192,6 +192,7 @@ class EMDATTransformer(MontyDataTransformer[EMDATDataSource]):
                     yield from self.make_impact_items(data, event_item)
                 else:
                     self.transform_summary.increment_failed_rows()
+
             except Exception:
                 self.transform_summary.increment_failed_rows()
                 logger.warning("Failed to process emdat", exc_info=True)
@@ -259,8 +260,16 @@ class EMDATTransformer(MontyDataTransformer[EMDATDataSource]):
         MontyExtension.add_to(item)
         monty = MontyExtension.ext(item)
         monty.episode_number = 1  # EM-DAT doesn't have episodes
-        monty.hazard_codes = [row.classif_key]
+        monty.hazard_codes = self.map_emdat_to_hazard_codes(row.classif_key)
         monty.country_codes = [row.iso] if row.iso else []
+
+        # Normalize to canonical trio (UNDRR 2025 + EM-DAT + GLIDE)
+        monty.hazard_codes = self.hazard_profiles.get_canonical_hazard_codes(item)
+
+        # Generate keywords for discoverability
+        hazard_keywords = self.hazard_profiles.get_keywords(monty.hazard_codes)
+        country_keywords = [row.country] if row.country else []
+        item.properties["keywords"] = list(set(hazard_keywords + country_keywords))
 
         monty.compute_and_set_correlation_id()
 
@@ -282,6 +291,7 @@ class EMDATTransformer(MontyDataTransformer[EMDATDataSource]):
 
         # Add hazard detail
         monty = MontyExtension.ext(hazard_item)
+        monty.hazard_codes = [self.hazard_profiles.get_undrr_2025_code(hazard_codes=monty.hazard_codes)]
 
         if row is not None:
             monty.hazard_detail = self._create_hazard_detail(
@@ -376,8 +386,7 @@ class EMDATTransformer(MontyDataTransformer[EMDATDataSource]):
         # First map EM-DAT classification to UNDRR-ISC codes
 
         return HazardDetail(
-            cluster=self.hazard_profiles.get_cluster_code(item),
-            severity_value=row.magnitude,
+            severity_value=row.magnitude or -1,  # Use -1 to avoid schema validation fail for null values
             severity_unit=row.magnitude_scale or "emdat",
             estimate_type=MontyEstimateType.PRIMARY,
         )
@@ -464,3 +473,98 @@ class EMDATTransformer(MontyDataTransformer[EMDATDataSource]):
             components.extend(["of", date_str])
 
         return " ".join(components) if components else "Unnamed Event"
+
+    def map_emdat_to_hazard_codes(self, classification_key: str) -> List[str]:
+        """
+        Map EMDAT disaster type names to standard hazard codes.
+        Returns codes in order: [UNDRR-ISC 2025, EM-DAT, GLIDE]
+
+        The UNDRR-ISC 2025 code is the reference classification for the Monty extension.
+        All three codes are included for maximum interoperability.
+
+        **Important 2025 Updates:**
+        - Earthquake: Consolidated to single code GH0101 (was GH0001-GH0005)
+        - Cyclone: Consolidated to single code MH0306 (was MH0030-MH0032)
+        - Tsunami: Reclassified from Geological to Meteorological (MH0705)
+
+        Args:
+            classification_key: EMDAT classification key (e.g., 'nat-met-sto-sev', 'nat-hyd-flo-fla')
+
+        Returns:
+            List of classification codes [2025, EM-DAT, GLIDE]
+        """
+
+        # EMDAT hazards classification mapping to UNDRR-ISC 2025 codes
+
+        mapping = {
+            "nat-met-sto-sev": ["MH0101", "nat-met-sto-sev", "ST"],
+            "nat-met-sto-lig": ["MH0101", "nat-met-sto-lig", "ST"],
+            "nat-met-sto-sto": ["MH0101", "nat-met-sto-sto", "ST"],
+            "nat-hyd-flo-coa": ["MH0601", "nat-hyd-flo-coa", "FL"],
+            "nat-hyd-flo-fla": ["MH0603", "nat-hyd-flo-fla", "FF"],
+            "nat-hyd-flo-riv": ["MH0604", "nat-hyd-flo-riv", "FL"],
+            "nat-hyd-flo-flo": ["MH0600", "nat-hyd-flo-flo", "FL"],
+            "nat-hyd-flo-ice": ["MH0608", "nat-hyd-flo-ice", "FL"],
+            "nat-cli-glo-glo": ["MH0607", "nat-cli-glo-glo", "FL"],
+            "nat-met-sto-san": ["MH0201", "nat-met-sto-san", "VW"],
+            "nat-met-fog-fog": ["MH0202", "nat-met-fog-fog", "OT"],
+            "nat-hyd-wav-rog": ["MH0701", "nat-hyd-wav-rog", "OT"],
+            "nat-hyd-wav-sei": ["MH0702", "nat-hyd-wav-sei", "OT"],
+            "nat-met-sto-sur": ["MH0703", "nat-met-sto-sur", "SS"],
+            "nat-geo-ear-tsu": ["MH0705", "nat-geo-ear-tsu", "TS"],
+            "nat-met-sto-tro": ["MH0309", "nat-met-sto-tro", "TC"],
+            "nat-met-sto-ext": ["MH0307", "nat-met-sto-ext", "EC"],
+            "nat-met-sto-bli": ["MH0403", "nat-met-sto-bli", "OT"],
+            "nat-cli-dro-dro": ["MH0401", "nat-cli-dro-dro", "DR"],
+            "nat-met-sto-hai": ["MH0404", "nat-met-sto-hai", "ST"],
+            "nat-met-ext-col": ["MH0502", "nat-met-ext-col", "CW"],
+            "nat-met-ext-sev": ["MH0503", "nat-met-ext-sev", "OT"],
+            "nat-met-ext-hea": ["MH0501", "nat-met-ext-hea", "HT"],
+            "nat-geo-mmd-ava": ["MH0801", "nat-geo-mmd-ava", "AV"],
+            "nat-hyd-mmw-ava": ["nat-hyd-mmw-ava"],
+            "nat-hyd-mmw-mud": ["GH0303", "nat-hyd-mmw-mud", "MS"],
+            "nat-met-sto-der": ["MH0302", "nat-met-sto-der", "VW"],
+            "nat-met-sto-tor": ["MH0305", "nat-met-sto-tor", "TO"],
+            "nat-ext-imp-air": ["ET0201", "nat-ext-imp-air", "OT"],
+            "nat-ext-spa-geo": ["ET0101", "nat-ext-spa-geo", "OT"],
+            "nat-ext-imp-col": ["ET0203", "nat-ext-imp-col", "OT"],
+            "nat-ext-spa-rad": ["ET0103", "nat-ext-spa-rad", "OT"],
+            "nat-ext-spa-sho": ["ET0204", "nat-ext-spa-sho", "OT"],
+            "nat-geo-ear-gro": ["GH0101", "nat-geo-ear-gro", "EQ"],
+            "nat-geo-mmd-lan": ["GH0300", "nat-geo-mmd-lan", "LS"],
+            "nat-geo-vol-lav": ["GH0201", "nat-geo-vol-lav", "VO"],
+            "nat-geo-vol-ash": ["GH0202", "nat-geo-vol-ash", "VO"],
+            "nat-geo-vol-pyr": ["GH0203", "nat-geo-vol-pyr", "VO"],
+            "nat-geo-vol-lah": ["GH0204", "nat-geo-vol-lah", "VO"],
+            "nat-geo-vol-vol": ["GH0205", "nat-geo-vol-vol", "VO"],
+            "nat-geo-env-slr": ["EN0303", "nat-geo-env-slr", "OT"],
+            "nat-cli-wil-wil": ["EN0205", "nat-cli-wil-wil", "WF"],
+            "nat-cli-wil-for": ["nat-cli-wil-for"],
+            "nat-cli-wil-lan": ["nat-cli-wil-lan"],
+            "nat-geo-env-des": ["EN0206", "nat-geo-env-des", "OT"],
+            "nat-geo-env-soi": ["GH0403", "nat-geo-env-soi", "OT"],
+            "nat-geo-env-coa": ["nat-geo-env-coa"],
+            "tec-ind-rad-rad": ["TL0001", "tec-ind-rad-rad", "AC"],
+            "tec-mis-col-col": ["TL0005", "tec-mis-col-col", "AC"],
+            "tec-ind-ind-ind": ["TL0010", "tec-ind-ind-ind", "AC"],
+            "tec-ind-exp-exp": ["TL0029", "tec-ind-exp-exp", "AC"],
+            "tec-ind-che-che": ["TL0030", "tec-ind-che-che", "AC"],
+            "tec-ind-fir-fir": ["TL0032", "tec-ind-fir-fir", "FR"],
+            "tec-tra-air-air": ["TL0048", "tec-tra-air-air", "AC"],
+            "tec-tra-wat-wat": ["TL0049", "tec-tra-wat-wat", "AC"],
+            "tec-tra-rai-rai": ["TL0051", "tec-tra-rai-rai", "AC"],
+            "tec-tra-roa-roa": ["TL0052", "tec-tra-roa-roa", "AC"],
+            "nat-geo-env-sed": ["GH0405", "nat-geo-env-sed", "OT"],
+            "mix-mix-mix-mix": ["mix-mix-mix-mix"],
+            "nat-bio-epi-dis": ["BI0101", "nat-bio-epi-dis", "OT"],
+            "tec-mis-exp-exp": ["tec-mis-exp-exp"],
+            "nat-geo-mmd-sub": ["GH0308", "nat-geo-mmd-sub", "OT"],
+            "nat-hyd-mmw-lan": ["nat-hyd-mmw-lan"],
+            "tec-mis-fir-fir": ["tec-mis-fir-fir"],
+            "tec-ind-col-col": ["tec-ind-col-col"],
+        }
+
+        if classification_key not in mapping:
+            logger.warning(f"EMDAT disaster type '{classification_key}' not found in UNDRR-ISC 2025 mapping.")
+
+        return mapping.get(classification_key, [])
