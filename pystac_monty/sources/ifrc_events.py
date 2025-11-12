@@ -187,7 +187,14 @@ class IFRCEventTransformer(MontyDataTransformer[IFRCEventDataSource]):
         monty = MontyExtension.ext(item)
         monty.episode_number = 1  # IFRC DREF doesn't have episodes
         monty.hazard_codes = self.map_ifrc_to_hazard_codes(data.dtype.name)
+        monty.hazard_codes = self.hazard_profiles.get_canonical_hazard_codes(item=item)
+
         monty.country_codes = [country.iso3 for country in data.countries]
+
+        hazard_keywords = self.hazard_profiles.get_keywords(monty.hazard_codes)
+        country_keywords = [country.name for country in data.countries] if data.countries else []
+        item.properties["keywords"] = list(set(hazard_keywords + country_keywords))
+
         monty.compute_and_set_correlation_id(hazard_profiles=self.hazard_profiles)
         # Set collection and roles
         item.set_collection(self.get_event_collection())
@@ -196,36 +203,45 @@ class IFRCEventTransformer(MontyDataTransformer[IFRCEventDataSource]):
 
     def map_ifrc_to_hazard_codes(self, classification_key: str) -> List[str]:
         """
-        Map IFRC DREF & EA classification key to UNDRR-ISC 2020 Hazard codes
+        Map IFRC DREF disaster type names to standard hazard codes.
+        Returns codes in order: [UNDRR-ISC 2025, EM-DAT, GLIDE]
+
+        The UNDRR-ISC 2025 code is the reference classification for the Monty extension.
+        All three codes are included for maximum interoperability.
+
+        **Important 2025 Updates:**
+        - Earthquake: Consolidated to single code GH0101 (was GH0001-GH0005)
+        - Cyclone: Consolidated to single code MH0306 (was MH0030-MH0032)
+        - Tsunami: Reclassified from Geological to Meteorological (MH0705)
 
         Args:
-            classification_key: dtype name (e.g., 'Flood')
+            classification_key: IFRC disaster type name (e.g., 'Flood', 'Earthquake')
 
         Returns:
-            List of UNDRR-ISC hazard codes
+            List of classification codes [2025, EM-DAT, GLIDE]
         """
 
-        # IFRC DREF hazards classification mapping to UNDRR-ISC codes
+        # IFRC DREF hazards classification mapping to UNDRR-ISC 2025 codes
         mapping = {
-            "Earthquake": ["GH0001", "GH0002", "GH0003", "GH0004", "GH0005"],
-            "Cyclone": ["MH0030", "MH0031", "MH0032"],
-            "Volcanic Eruption": ["GH009", "GH0013", "GH0014", "GH0015", "GH0016"],
-            "Tsunami": ["MH0029", "GH0006"],
-            "Flood": ["FL"],  # General flood
-            "Cold Wave": ["MH0040"],
-            "Fire": ["FR", "tec-ind-fir-fir"],
-            "Heat Wave": ["MH0047"],
-            "Drought": ["MH0035"],
-            "Storm Surge": ["MH0027"],
-            "Landslide": ["GH0007"],
-            "Flash Flood": ["MH0006"],
-            "Epidemic": ["nat-bio-epi-dis"],  # General epidemic
+            "Earthquake": ["GH0101", "nat-geo-ear-gro", "EQ"],  # 2025: Consolidated to single code
+            "Cyclone": ["MH0306", "nat-met-sto-tro", "TC"],  # 2025: Consolidated to single code
+            "Volcanic Eruption": ["GH0201", "nat-geo-vol-vol", "VO"],  # 2025: Lava Flows
+            "Tsunami": ["MH0705", "nat-geo-ear-tsu", "TS"],  # 2025: Reclassified to Meteorological
+            "Flood": ["MH0600", "nat-hyd-flo-flo", "FL"],  # Flooding (chapeau)
+            "Cold Wave": ["MH0502", "nat-met-ext-col", "CW"],  # Cold Wave
+            "Fire": ["TL0305", "tec-ind-fir-fir", "FR"],  # Industrial Fire
+            "Heat Wave": ["MH0501", "nat-met-ext-hea", "HT"],  # Heatwave
+            "Drought": ["MH0401", "nat-cli-dro-dro", "DR"],  # Drought
+            "Storm Surge": ["MH0703", "nat-met-sto-sur", "SS"],  # Storm Surge
+            "Landslide": ["GH0300", "nat-geo-mmd-lan", "LS"],  # Gravitational Mass Movement
+            "Flash Flood": ["MH0603", "nat-hyd-flo-fla", "FF"],  # Flash Flooding
+            "Epidemic": ["BI0101", "nat-bio-epi-dis", "EP"],  # Infectious Diseases
         }
 
-        if classification_key in mapping:
-            return mapping[classification_key]
+        if classification_key not in mapping:
+            logger.warning(f"IFRC disaster type '{classification_key}' not found in UNDRR-ISC 2025 mapping.")
 
-        return []
+        return mapping.get(classification_key, [])
 
     def make_impact_items(self, event_item: Item, ifrcevent_data: IFRCsourceValidator) -> List[Item]:
         """Create impact items"""
