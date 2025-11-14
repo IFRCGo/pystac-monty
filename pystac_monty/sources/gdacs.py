@@ -143,7 +143,7 @@ class GDACSTransformer(MontyDataTransformer[GDACSDataSource]):
                         episode_geometry_data=(validated_geometry_data, geometry_data_url),
                     )
                     yield episode_hazard_item
-                    yield from self.make_impact_items(episode_hazard_item, validated_episode_data)
+                    yield from self.make_impact_items(source_event_item, validated_episode_data)
         except Exception:
             self.transform_summary.increment_failed_rows(1)
             logger.warning("Failed to process the GDACS data", exc_info=True)
@@ -182,7 +182,7 @@ class GDACSTransformer(MontyDataTransformer[GDACSDataSource]):
                         episode_geometry_data=(validated_geometry_data, geometry_data_url),
                     )
                     yield episode_hazard_item
-                    yield from self.make_impact_items(episode_hazard_item, validated_episode_data)
+                    yield from self.make_impact_items(source_event_item, validated_episode_data)
         except Exception:
             self.transform_summary.increment_failed_rows(1)
             logger.warning("Failed to process the GDACS data", exc_info=True)
@@ -259,6 +259,7 @@ class GDACSTransformer(MontyDataTransformer[GDACSDataSource]):
                 "description": description,
                 "start_datetime": startdate.isoformat(),
                 "end_datetime": enddate.isoformat(),
+                "severitydata": data.properties.severitydata.model_dump(),
             },
         )
 
@@ -361,7 +362,7 @@ class GDACSTransformer(MontyDataTransformer[GDACSDataSource]):
             estimate_type=MontyEstimateType.PRIMARY,
         )
 
-    def make_impact_items(self, hazard_item: Item, data: GdacsEventDataValidator) -> list[Item]:
+    def make_impact_items(self, event_item: Item, data: GdacsEventDataValidator) -> list[Item]:
         impact_items = []
 
         # Search for Sendai fields
@@ -369,7 +370,7 @@ class GDACSTransformer(MontyDataTransformer[GDACSDataSource]):
             sendai = data.properties.sendai
             if sendai:
                 for entry in sendai:
-                    impact_item = self.make_impact_item_from_sendai_entry(entry, hazard_item, data=data)
+                    impact_item = self.make_impact_item_from_sendai_entry(entry, event_item, data=data)
                     impact_items.append(impact_item)
 
         return impact_items
