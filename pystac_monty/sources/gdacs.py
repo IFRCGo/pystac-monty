@@ -376,11 +376,11 @@ class GDACSTransformer(MontyDataTransformer[GDACSDataSource]):
         return impact_items
 
     def make_impact_item_from_sendai_entry(
-        self, entry: Sendai, hazard_item: Item, data: Optional[GdacsEventDataValidator] = None
+        self, entry: Sendai, event_item: Item, data: Optional[GdacsEventDataValidator] = None
     ) -> Item:
-        item = hazard_item.clone()
+        item = event_item.clone()
         item.id = phrase_to_dashed(
-            item.id.replace(STAC_HAZARD_ID_PREFIX, STAC_IMPACT_ID_PREFIX)
+            item.id.replace(STAC_EVENT_ID_PREFIX, STAC_IMPACT_ID_PREFIX)
             + "-"
             + entry.sendaitype
             + "-"
