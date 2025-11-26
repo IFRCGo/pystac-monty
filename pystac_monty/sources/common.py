@@ -75,6 +75,7 @@ class GenericDataSource(BaseModel):
 class GdacsEpisodes(BaseModel):
     type: str
     data: GenericDataSource
+    hazard_type: str | None
 
 
 class GdacsDataSourceType(BaseModel):
