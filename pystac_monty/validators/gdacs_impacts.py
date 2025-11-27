@@ -24,9 +24,10 @@ class TCImpactItem(BaseModelWithExtra):
     pop: str
     latitude: str
     longitude: str
+    advisory_datetime: str
 
 
-class Channel(BaseModelWithExtra):
+class TCChannel(BaseModelWithExtra):
     """Channel description of Gdacs Tropical Cyclone"""
 
     item: List[TCImpactItem]
@@ -35,6 +36,6 @@ class Channel(BaseModelWithExtra):
 class GdacsImpactDataValidatorTC(BaseModelWithExtra):
     """Validator for Gdacs Tropical Cyclone for Impact data"""
 
-    channel: Channel
+    channel: TCChannel
     georss: str
     version: str

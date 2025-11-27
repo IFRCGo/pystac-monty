@@ -408,14 +408,20 @@ class GDACSTransformer(MontyDataTransformer[GDACSDataSource]):
         )
         item.common_metadata.description = impact_item.name
         item.properties["forecasted"] = impact_item.actual == "false"
+        try:
+            item.properties["advisory_datetime"] = pytz.utc.localize(
+                datetime.datetime.strptime(impact_item.advisory_datetime, "%d %b %Y %H:%M")
+            )
+        except Exception:
+            item.properties["advisory_datetime"] = None
         item.set_collection(self.get_impact_collection())
         item.properties["roles"] = ["source", "impact"]
         monty = MontyExtension.ext(item)
         monty.impact_detail = ImpactDetail(
             category=MontyImpactExposureCategory.ALL_PEOPLE,
-            type=MontyImpactType.TOTAL_AFFECTED,
+            type=MontyImpactType.POTENTIALLY_AFFECTED if item.properties["forecasted"] else MontyImpactType.TOTAL_AFFECTED,
             value=int(impact_item.pop),
-            unit="tc",
+            unit="GDACS TC",
             estimate_type=MontyEstimateType.PRIMARY,
         )
         return item
@@ -435,7 +441,7 @@ class GDACSTransformer(MontyDataTransformer[GDACSDataSource]):
             + "-"
             + entry.region
         )
-        item.common_metadata.description = entry.description  # entry["description"]
+        item.common_metadata.description = entry.description
         # TODO geolocate the with country and region metadata
         # item.geometry = self.geolocate(entry["country"], entry["region"])
         item.set_collection(self.get_impact_collection())
