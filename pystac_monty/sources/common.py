@@ -88,6 +88,7 @@ class USGSDataSourceType(BaseModel):
     source_url: str
     event_data: Union[File, Memory]
     loss_data: Union[File, Memory, None] = None
+    alerts_data: Union[File, Memory, None] = None
 
 
 class DesinventarDataSourceType(BaseModel):
