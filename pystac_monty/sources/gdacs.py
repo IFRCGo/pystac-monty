@@ -134,18 +134,25 @@ class GDACSTransformer(MontyDataTransformer[GDACSDataSource]):
                 for episode_data in self.data_source.episodes:
                     validated_episode_data = GdacsEventDataValidator(**episode_data[0].data.input_data.content)
                     episode_data_url = episode_data[0].data.source_url
-                    if GDACSDataSourceType.GEOMETRY in episode_data:
+                    if GDACSDataSourceType.GEOMETRY.value == episode_data[1].type:
                         validated_geometry_data = GdacsGeometryDataValidator(**episode_data[1].data.input_data.content)
                         geometry_data_url = episode_data[1].data.source_url
                     else:
                         validated_geometry_data = None
                         geometry_data_url = None
+                    if episode_data[2] and GDACSDataSourceType.IMPACT.value == episode_data[2].type:
+                        match episode_data[2].hazard_type:
+                            case "TC":
+                                validated_impact_data = GdacsImpactDataValidatorTC(**episode_data[2].data.input_data.content)
+                    else:
+                        validated_impact_data = None
+
                     episode_hazard_item = self.make_hazard_event_item(
                         episode_event_data=(validated_episode_data, episode_data_url),
                         episode_geometry_data=(validated_geometry_data, geometry_data_url),
                     )
                     yield episode_hazard_item
-                    yield from self.make_impact_items(source_event_item, validated_episode_data)
+                    yield from self.make_impact_items(source_event_item, validated_episode_data, validated_impact_data)
         except Exception:
             self.transform_summary.increment_failed_rows(1)
             logger.warning("Failed to process the GDACS data", exc_info=True)
@@ -409,11 +416,11 @@ class GDACSTransformer(MontyDataTransformer[GDACSDataSource]):
         item.common_metadata.description = impact_item.name
         item.properties["forecasted"] = impact_item.actual == "false"
         try:
-            item.properties["advisory_datetime"] = pytz.utc.localize(
-                datetime.datetime.strptime(impact_item.advisory_datetime, "%d %b %Y %H:%M")
+            item.common_metadata.created = item.common_metadata.start_datetime = item.common_metadata.end_datetime = (
+                pytz.utc.localize(datetime.datetime.strptime(impact_item.advisory_datetime, "%d %b %Y %H:%M"))
             )
         except Exception:
-            item.properties["advisory_datetime"] = None
+            item.common_metadata.created = item.common_metadata.start_datetime = item.common_metadata.end_datetime = None
         item.set_collection(self.get_impact_collection())
         item.properties["roles"] = ["source", "impact"]
         monty = MontyExtension.ext(item)
