@@ -405,6 +405,7 @@ class GDACSTransformer(MontyDataTransformer[GDACSDataSource]):
         return impact_items
 
     def make_impact_item_from_tc(self, impact_item: TCImpactItem, event_item: Item) -> Item:
+        """Create impact item for Tropical Cyclone (TC)"""
         item = event_item.clone()
         item.id = phrase_to_dashed(
             item.id.replace(STAC_EVENT_ID_PREFIX, STAC_IMPACT_ID_PREFIX)
@@ -436,6 +437,7 @@ class GDACSTransformer(MontyDataTransformer[GDACSDataSource]):
     def make_impact_item_from_sendai_entry(
         self, entry: Sendai, event_item: Item, data: Optional[GdacsEventDataValidator] = None
     ) -> Item:
+        """Create impact item for Flood using Sendai framework"""
         item = event_item.clone()
         item.id = phrase_to_dashed(
             item.id.replace(STAC_EVENT_ID_PREFIX, STAC_IMPACT_ID_PREFIX)
@@ -479,6 +481,7 @@ class GDACSTransformer(MontyDataTransformer[GDACSDataSource]):
         return item
 
     def get_impact_detail(self, entry: Sendai) -> ImpactDetail:
+        """Create impact detail object"""
         return ImpactDetail(
             category=self.get_impact_category_from_sendai_indicators(entry.sendaitype, entry.sendainame),
             type=self.get_impact_type_from_sendai_indicators(entry.sendaitype, entry.sendainame),
