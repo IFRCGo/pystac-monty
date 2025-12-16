@@ -75,18 +75,20 @@ class GenericDataSource(BaseModel):
 class GdacsEpisodes(BaseModel):
     type: str
     data: GenericDataSource
+    hazard_type: str | None
 
 
 class GdacsDataSourceType(BaseModel):
     source_url: str
     event_data: Union[File, Memory]
-    episodes: List[Tuple[GdacsEpisodes, GdacsEpisodes]]
+    episodes: List[Tuple[GdacsEpisodes, GdacsEpisodes, GdacsEpisodes | None]]  #  EventData, Geometry, Impact
 
 
 class USGSDataSourceType(BaseModel):
     source_url: str
     event_data: Union[File, Memory]
     loss_data: Union[File, Memory, None] = None
+    alerts_data: Union[File, Memory, None] = None
 
 
 class DesinventarDataSourceType(BaseModel):

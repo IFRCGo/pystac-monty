@@ -2,6 +2,7 @@
 
 import json
 import tempfile
+import typing
 import unittest
 from os import makedirs
 
@@ -33,10 +34,10 @@ def request_and_save_tmp_file(url):
 
 
 def load_scenarios(
-    scenarios: list[dict],
+    scenarios: typing.Iterable[typing.Tuple[typing.Dict, str]],
 ) -> list[GDACSTransformer]:
     transformers = []
-    for scenario in scenarios:
+    for scenario, hazard_type in scenarios:
         if isinstance(scenario.get(GDACSDataSourceType.EVENT), tempfile._TemporaryFileWrapper):
             event_data_file = scenario.get(GDACSDataSourceType.EVENT)
 
@@ -44,11 +45,13 @@ def load_scenarios(
             for episode in scenario.get("episodes"):
                 episode_event_file = episode.get(GDACSDataSourceType.EVENT)
                 episode_geometry_file = episode.get(GDACSDataSourceType.GEOMETRY)
+                episode_impact_file = episode.get(GDACSDataSourceType.IMPACT)
                 event_episode_data = GdacsEpisodes(
                     type=GDACSDataSourceType.EVENT,
                     data=GenericDataSource(
                         source_url="https://www.test.com", input_data=File(path=episode_event_file.name, data_type=DataType.FILE)
                     ),
+                    hazard_type=hazard_type,
                 )
 
                 if episode_geometry_file is not None:
@@ -58,9 +61,21 @@ def load_scenarios(
                             source_url="https://www.test.com",
                             input_data=File(path=episode_geometry_file.name, data_type=DataType.FILE),
                         ),
+                        hazard_type=hazard_type,
                     )
+                if episode_impact_file:
+                    impact_episode_data = GdacsEpisodes(
+                        type=GDACSDataSourceType.IMPACT,
+                        data=GenericDataSource(
+                            source_url="https://www.test.com",
+                            input_data=File(path=episode_impact_file.name, data_type=DataType.FILE),
+                        ),
+                        hazard_type=hazard_type,
+                    )
+                else:
+                    impact_episode_data = None
 
-                episode_data_tuple = (event_episode_data, geometry_episode_data)
+                episode_data_tuple = (event_episode_data, geometry_episode_data, impact_episode_data)
                 episodes_data.append(episode_data_tuple)
             gdacs_data_sources = GDACSDataSource(
                 data=GdacsDataSourceType(
@@ -78,13 +93,17 @@ def load_scenarios(
             for episode in scenario.get("episodes"):
                 episode_event_url = episode.get(GDACSDataSourceType.EVENT)
                 episode_geometry_url = episode.get(GDACSDataSourceType.GEOMETRY)
+                episode_impact_url = episode.get(GDACSDataSourceType.IMPACT)
                 episode_event = requests.get(episode_event_url).json()
                 episode_geometry = requests.get(episode_geometry_url).json()
+                if episode_impact_url:
+                    episode_impact = requests.get(episode_impact_url).json()
                 event_episode_data = GdacsEpisodes(
                     type=GDACSDataSourceType.EVENT,
                     data=GenericDataSource(
                         source_url=episode_event_url, input_data=Memory(content=episode_event, data_type=DataType.MEMORY)
                     ),
+                    hazard_type=hazard_type,
                 )
 
                 if episode_geometry_url is not None:
@@ -94,8 +113,20 @@ def load_scenarios(
                             source_url=episode_geometry_url,
                             input_data=Memory(content=episode_geometry, data_type=DataType.MEMORY),
                         ),
+                        hazard_type=hazard_type,
                     )
-                episode_data_tuple = (event_episode_data, geometry_episode_data)
+                if episode_impact_url:
+                    impact_episode_data = GdacsEpisodes(
+                        type=GDACSDataSourceType.IMPACT,
+                        data=GenericDataSource(
+                            source_url=episode_impact_url,
+                            input_data=Memory(content=episode_impact, data_type=DataType.MEMORY),
+                        ),
+                        hazard_type=hazard_type,
+                    )
+                else:
+                    impact_episode_data = None
+                episode_data_tuple = (event_episode_data, geometry_episode_data, impact_episode_data)
                 episodes_data.append(episode_data_tuple)
 
             gdacs_data_sources = GDACSDataSource(
@@ -186,10 +217,13 @@ spain_flood_2 = {
 
 
 class GDACSTest(unittest.TestCase):
-    scenarios = [spain_flood, drought_latam]
-    scenarios_2 = [
-        spain_flood_2,
-    ]
+    scenarios = zip([spain_flood, drought_latam], ["FL", "DR"])
+    scenarios_2 = zip(
+        [
+            spain_flood_2,
+        ],
+        ["FL"],
+    )
 
     def setUp(self) -> None:
         super().setUp()
@@ -198,7 +232,7 @@ class GDACSTest(unittest.TestCase):
         makedirs(get_data_file("temp/gdacs"), exist_ok=True)
 
     # Test for memory data
-    @parameterized.expand(load_scenarios(scenarios))
+    @parameterized.expand(load_scenarios(scenarios), skip_on_empty=True)
     @pytest.mark.vcr()
     def test_transformer_with_memory_data(self, transformer: GDACSTransformer) -> None:
         source_event_item = None
@@ -232,7 +266,7 @@ class GDACSTest(unittest.TestCase):
             self.assertIsNotNone(source_impact_item)
 
     # Test for file data
-    @parameterized.expand(load_scenarios(scenarios_2))
+    @parameterized.expand(load_scenarios(scenarios_2), skip_on_empty=True)
     @pytest.mark.vcr()
     def test_transformer_with_file_data(self, transformer: GDACSTransformer) -> None:
         source_event_item = None
@@ -267,7 +301,7 @@ class GDACSTest(unittest.TestCase):
         if sendai_data_available:
             self.assertIsNotNone(source_impact_item)
 
-    @parameterized.expand(load_scenarios(scenarios_2))
+    @parameterized.expand(load_scenarios(scenarios_2), skip_on_empty=True)
     @pytest.mark.vcr()
     def test_gdacs_hazard_codes_2025(self, transformer: GDACSTransformer) -> None:
         assert transformer.get_hazard_codes("FL") == ["MH0600", "nat-hyd-flo-flo", "FL"]
@@ -277,7 +311,7 @@ class GDACSTest(unittest.TestCase):
         assert transformer.get_hazard_codes("WF") == ["EN0205", "nat-cli-wil-wil", "WF"]
         assert transformer.get_hazard_codes("VO") == ["GH0205", "nat-geo-vol-vol", "VO"]
 
-    @parameterized.expand(load_scenarios(scenarios_2))
+    @parameterized.expand(load_scenarios(scenarios_2), skip_on_empty=True)
     @pytest.mark.vcr()
     def test_hazard_item_uses_2025_code_only(self, transformer: GDACSTransformer) -> None:
         for item in transformer.get_stac_items():
@@ -291,7 +325,7 @@ class GDACSTest(unittest.TestCase):
                 # Should contain only the first code (UNDRR-ISC 2025)
                 assert len(monty_item_ext.hazard_codes) == 1
 
-    @parameterized.expand(load_scenarios(scenarios_2))
+    @parameterized.expand(load_scenarios(scenarios_2), skip_on_empty=True)
     @pytest.mark.vcr()
     def test_event_item_uses_all_codes(self, transformer: GDACSTransformer) -> None:
         for item in transformer.get_stac_items():

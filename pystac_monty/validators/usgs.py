@@ -90,3 +90,24 @@ class EmpiricalEconomic(BaseModel):
 class EmpiricalValidator(BaseModelWithExtra):
     empirical_fatality: EmpiricalFatality
     empirical_economic: EmpiricalEconomic
+
+
+class AlertBin(BaseModelWithExtra):
+    color: str
+    min: float
+    max: float
+    probability: float
+
+
+class AlertDesc(BaseModelWithExtra):
+    type: str
+    units: str
+    gvalue: float
+    summary: bool
+    level: str
+    bins: List[AlertBin]
+
+
+class AlertValidator(BaseModelWithExtra):
+    fatality: AlertDesc
+    economic: AlertDesc

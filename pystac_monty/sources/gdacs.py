@@ -33,6 +33,7 @@ from pystac_monty.sources.common import (
 from pystac_monty.sources.utils import phrase_to_dashed
 from pystac_monty.validators.gdacs_events import GdacsEventDataValidator, Sendai
 from pystac_monty.validators.gdacs_geometry import GdacsGeometryDataValidator
+from pystac_monty.validators.gdacs_impacts import GdacsImpactDataValidatorTC, TCImpactItem
 
 # Constants
 
@@ -50,6 +51,7 @@ logger = logging.getLogger(__name__)
 class GDACSDataSourceType(Enum):
     EVENT = "geteventdata"
     GEOMETRY = "getgeometry"
+    IMPACT = "getimpact"
 
 
 @dataclass
@@ -58,7 +60,7 @@ class GDACSDataSource(MontyDataSourceV3):
     source_url: str
     event_data: [str, dict]
     event_data_file_path: str
-    episodes: list[Tuple[GdacsEpisodes, GdacsEpisodes]]
+    episodes: list[Tuple[GdacsEpisodes, GdacsEpisodes, GdacsEpisodes | None]]
 
     def __init__(self, data: GdacsDataSourceType):
         super().__init__(data)
@@ -132,18 +134,25 @@ class GDACSTransformer(MontyDataTransformer[GDACSDataSource]):
                 for episode_data in self.data_source.episodes:
                     validated_episode_data = GdacsEventDataValidator(**episode_data[0].data.input_data.content)
                     episode_data_url = episode_data[0].data.source_url
-                    if GDACSDataSourceType.GEOMETRY in episode_data:
+                    if GDACSDataSourceType.GEOMETRY.value == episode_data[1].type:
                         validated_geometry_data = GdacsGeometryDataValidator(**episode_data[1].data.input_data.content)
                         geometry_data_url = episode_data[1].data.source_url
                     else:
                         validated_geometry_data = None
                         geometry_data_url = None
+                    if episode_data[2] and GDACSDataSourceType.IMPACT.value == episode_data[2].type:
+                        match episode_data[2].hazard_type:
+                            case "TC":
+                                validated_impact_data = GdacsImpactDataValidatorTC(**episode_data[2].data.input_data.content)
+                    else:
+                        validated_impact_data = None
+
                     episode_hazard_item = self.make_hazard_event_item(
                         episode_event_data=(validated_episode_data, episode_data_url),
                         episode_geometry_data=(validated_geometry_data, geometry_data_url),
                     )
                     yield episode_hazard_item
-                    yield from self.make_impact_items(source_event_item, validated_episode_data)
+                    yield from self.make_impact_items(source_event_item, validated_episode_data, validated_impact_data)
         except Exception:
             self.transform_summary.increment_failed_rows(1)
             logger.warning("Failed to process the GDACS data", exc_info=True)
@@ -168,7 +177,8 @@ class GDACSTransformer(MontyDataTransformer[GDACSDataSource]):
 
                     validated_episode_data = GdacsEventDataValidator(**episode_file_data)
                     episode_data_url = episode_data[0].data.source_url
-                    if GDACSDataSourceType.GEOMETRY in episode_data:
+
+                    if GDACSDataSourceType.GEOMETRY.value == episode_data[1].type:
                         geometry_data_file = episode_data[1].data.input_data.path
                         with open(geometry_data_file, "r", encoding="utf-8") as f:
                             geometry_data = json.loads(f.read())
@@ -177,12 +187,24 @@ class GDACSTransformer(MontyDataTransformer[GDACSDataSource]):
                     else:
                         validated_geometry_data = None
                         geometry_data_url = None
+
+                    if episode_data[2] and GDACSDataSourceType.IMPACT.value == episode_data[2].type:
+                        impact_data_file = episode_data[2].data.input_data.path
+                        with open(impact_data_file, "r", encoding="utf-8") as f:
+                            impact_data = json.loads(f.read())
+
+                        match episode_data[2].hazard_type:
+                            case "TC":
+                                validated_impact_data = GdacsImpactDataValidatorTC(**impact_data)
+                    else:
+                        validated_impact_data = None
+
                     episode_hazard_item = self.make_hazard_event_item(
                         episode_event_data=(validated_episode_data, episode_data_url),
                         episode_geometry_data=(validated_geometry_data, geometry_data_url),
                     )
                     yield episode_hazard_item
-                    yield from self.make_impact_items(source_event_item, validated_episode_data)
+                    yield from self.make_impact_items(source_event_item, validated_episode_data, validated_impact_data)
         except Exception:
             self.transform_summary.increment_failed_rows(1)
             logger.warning("Failed to process the GDACS data", exc_info=True)
@@ -362,7 +384,9 @@ class GDACSTransformer(MontyDataTransformer[GDACSDataSource]):
             estimate_type=MontyEstimateType.PRIMARY,
         )
 
-    def make_impact_items(self, event_item: Item, data: GdacsEventDataValidator) -> list[Item]:
+    def make_impact_items(
+        self, event_item: Item, data: GdacsEventDataValidator, impact_data: GdacsImpactDataValidatorTC
+    ) -> list[Item]:
         impact_items = []
 
         # Search for Sendai fields
@@ -373,11 +397,47 @@ class GDACSTransformer(MontyDataTransformer[GDACSDataSource]):
                     impact_item = self.make_impact_item_from_sendai_entry(entry, event_item, data=data)
                     impact_items.append(impact_item)
 
+        if impact_data:
+            for impact_item in impact_data.channel.item:
+                impact_item = self.make_impact_item_from_tc(impact_item=impact_item, event_item=event_item)
+                impact_items.append(impact_item)
+
         return impact_items
+
+    def make_impact_item_from_tc(self, impact_item: TCImpactItem, event_item: Item) -> Item:
+        """Create impact item for Tropical Cyclone (TC)"""
+        item = event_item.clone()
+        item.id = phrase_to_dashed(
+            item.id.replace(STAC_EVENT_ID_PREFIX, STAC_IMPACT_ID_PREFIX)
+            + "-"
+            + impact_item.storm_id
+            + "-"
+            + impact_item.advisory_number
+        )
+        item.common_metadata.description = impact_item.name
+        item.properties["forecasted"] = impact_item.actual == "false"
+        try:
+            item.common_metadata.created = item.common_metadata.start_datetime = item.common_metadata.end_datetime = (
+                pytz.utc.localize(datetime.datetime.strptime(impact_item.advisory_datetime, "%d %b %Y %H:%M"))
+            )
+        except Exception:
+            item.common_metadata.created = item.common_metadata.start_datetime = item.common_metadata.end_datetime = None
+        item.set_collection(self.get_impact_collection())
+        item.properties["roles"] = ["source", "impact"]
+        monty = MontyExtension.ext(item)
+        monty.impact_detail = ImpactDetail(
+            category=MontyImpactExposureCategory.ALL_PEOPLE,
+            type=MontyImpactType.POTENTIALLY_AFFECTED if item.properties["forecasted"] else MontyImpactType.TOTAL_AFFECTED,
+            value=int(impact_item.pop),
+            unit="GDACS TC",
+            estimate_type=MontyEstimateType.PRIMARY,
+        )
+        return item
 
     def make_impact_item_from_sendai_entry(
         self, entry: Sendai, event_item: Item, data: Optional[GdacsEventDataValidator] = None
     ) -> Item:
+        """Create impact item for Flood using Sendai framework"""
         item = event_item.clone()
         item.id = phrase_to_dashed(
             item.id.replace(STAC_EVENT_ID_PREFIX, STAC_IMPACT_ID_PREFIX)
@@ -390,7 +450,7 @@ class GDACSTransformer(MontyDataTransformer[GDACSDataSource]):
             + "-"
             + entry.region
         )
-        item.common_metadata.description = entry.description  # entry["description"]
+        item.common_metadata.description = entry.description
         # TODO geolocate the with country and region metadata
         # item.geometry = self.geolocate(entry["country"], entry["region"])
         item.set_collection(self.get_impact_collection())
@@ -421,6 +481,7 @@ class GDACSTransformer(MontyDataTransformer[GDACSDataSource]):
         return item
 
     def get_impact_detail(self, entry: Sendai) -> ImpactDetail:
+        """Create impact detail object"""
         return ImpactDetail(
             category=self.get_impact_category_from_sendai_indicators(entry.sendaitype, entry.sendainame),
             type=self.get_impact_type_from_sendai_indicators(entry.sendaitype, entry.sendainame),
