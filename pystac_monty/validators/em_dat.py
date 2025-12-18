@@ -1,8 +1,9 @@
 import logging
+from datetime import date
 from typing import Any, Optional, Union
 
 import pandas as pd
-from pydantic import BaseModel, ConfigDict, ValidationInfo, field_validator
+from pydantic import BaseModel, ConfigDict, ValidationInfo, field_validator, model_validator
 
 logger = logging.getLogger(__name__)
 logging.basicConfig(level=logging.INFO)
@@ -67,3 +68,37 @@ class EmdatDataValidator(BaseModelWithExtra):
         if pd.isna(value):
             return None
         return value
+
+    @model_validator(mode="after")
+    def validate_date_order(self):
+        """Validate the start_date and end_date in order"""
+        try:
+            if all([self.start_year, self.start_month, self.start_day]):
+                start_date = date(
+                    self.start_year,
+                    self.start_month,
+                    self.start_day,
+                )
+            else:
+                start_date = None
+        except (TypeError, ValueError):
+            start_date = None
+
+        # Build end date if complete
+        try:
+            if all([self.end_year, self.end_month, self.end_day]):
+                end_date = date(
+                    self.end_year,
+                    self.end_month,
+                    self.end_day,
+                )
+            else:
+                end_date = None
+        except (TypeError, ValueError):
+            end_date = None
+
+        # Compare only if both dates exist
+        if start_date and end_date and start_date > end_date:
+            raise ValueError("Start date cannot be later than end date.")
+
+        return self
