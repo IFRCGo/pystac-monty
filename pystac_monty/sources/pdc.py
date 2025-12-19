@@ -180,7 +180,7 @@ class PDCTransformer(MontyDataTransformer):
 
         description = md(pdc_hazard_data.description).strip() or "NA"
 
-        startdate = int(pdc_hazard_data.create_Date)
+        startdate = int(pdc_hazard_data.start_Date)
         enddate = int(pdc_hazard_data.end_Date)
 
         if startdate:

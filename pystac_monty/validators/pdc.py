@@ -1,6 +1,6 @@
 from typing import List, Optional
 
-from pydantic import BaseModel, ConfigDict
+from pydantic import BaseModel, ConfigDict, model_validator
 
 
 class BaseModelWithExtra(BaseModel):
@@ -82,3 +82,10 @@ class HazardEventValidator(BaseModelWithExtra):
     type_ID: str
     uuid: str
     description: str
+
+    @model_validator(mode="after")
+    def validate_date_order(self):
+        """Validate the start_date and end_date in order"""
+        if self.start_Date and self.end_Date and int(self.start_Date) > int(self.end_Date):
+            raise ValueError("Start date cannot be later than end date.")
+        return self
