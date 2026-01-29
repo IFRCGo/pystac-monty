@@ -21,13 +21,14 @@ __version__ = "0.1.0"
 
 T = TypeVar("T", pystac.Collection, pystac.Item, pystac.Asset, item_assets.AssetDefinition)
 
-SCHEMA_URI = "https://ifrcgo.org/monty-stac-extension/v1.1.0/schema.json"
+SCHEMA_URI = "https://ifrcgo.org/monty-stac-extension/v1.1.1/schema.json"
 
 PREFIX: str = "monty:"
 
 # Item properties
 ITEM_COUNTRY_CODES_PROP = PREFIX + "country_codes"
 ITEM_CORR_ID_PROP = PREFIX + "corr_id"
+ITEM_GUID_PROP = PREFIX + "guid"
 ITEM_HAZARD_CODES_PROP = PREFIX + "hazard_codes"
 ITEM_HAZARD_DETAIL_PROP = PREFIX + "hazard_detail"
 ITEM_IMPACT_DETAIL_PROP = PREFIX + "impact_detail"
@@ -479,6 +480,7 @@ class MontyExtension(
     def apply(
         self,
         correlation_id: str,
+        guid: str,
         country_codes: list[str],
         hazard_codes: list[str] | None = None,
     ) -> None:
@@ -494,6 +496,7 @@ class MontyExtension(
                 The hazard codes.
         """
         self.correlation_id = correlation_id
+        self.guid = guid
         self.country_codes = country_codes
         self.hazard_codes = hazard_codes
 
@@ -507,12 +510,32 @@ class MontyExtension(
     def correlation_id(self, v: str) -> None:
         self._set_property(ITEM_CORR_ID_PROP, v)
 
+    @property
+    def guid(self) -> str:
+        """A unique correlation identifier for the event of the data."""
+        result = get_required(self._get_property(ITEM_GUID_PROP, str), self, ITEM_GUID_PROP)
+        return result
+
+    @guid.setter
+    def guid(self, v: str) -> None:
+        self._set_property(ITEM_GUID_PROP, v)
+
     def compute_and_set_correlation_id(self, hazard_profiles: HazardProfiles = MontyHazardProfiles()) -> None:
         # if the object is an ItemMontyExtension, we can generate the correlation id
         if hasattr(self, "item") and isinstance(self.item, pystac.Item):
             self.correlation_id = self.pairing.generate_correlation_id(self.item, hazard_profiles)
         else:
             raise ValueError("Correlation ID can only be computed for Items")
+
+    def compute_and_set_guid(
+        self, source_name: str, event_id: str, hazard_profiles: HazardProfiles = MontyHazardProfiles()
+    ) -> None:
+        if hasattr(self, "item") and isinstance(self.item, pystac.Item):
+            self.guid = self.pairing.generate_guid(
+                source_name=source_name, event_id=event_id, item=self.item, hazard_profiles=hazard_profiles
+            )
+        else:
+            raise ValueError("GUID can only be computed for Items")
 
     @property
     def country_codes(self) -> list[str]:
