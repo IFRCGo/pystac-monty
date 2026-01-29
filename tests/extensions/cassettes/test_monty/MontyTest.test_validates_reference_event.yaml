@@ -29,9 +29,9 @@ interactions:
         raw.githubusercontent.com api.github.com github-cloud.s3.amazonaws.com github-production-repository-file-5c1aeb.s3.amazonaws.com
         github-production-upload-manifest-file-7fdce7.s3.amazonaws.com github-production-user-asset-6210df.s3.amazonaws.com
         *.rel.tunnels.api.visualstudio.com wss://*.rel.tunnels.api.visualstudio.com
-        objects-origin.githubusercontent.com copilot-proxy.githubusercontent.com proxy.individual.githubcopilot.com
-        proxy.business.githubcopilot.com proxy.enterprise.githubcopilot.com *.actions.githubusercontent.com
-        wss://*.actions.githubusercontent.com productionresultssa0.blob.core.windows.net/
+        github.githubassets.com objects-origin.githubusercontent.com copilot-proxy.githubusercontent.com
+        proxy.individual.githubcopilot.com proxy.business.githubcopilot.com proxy.enterprise.githubcopilot.com
+        *.actions.githubusercontent.com wss://*.actions.githubusercontent.com productionresultssa0.blob.core.windows.net/
         productionresultssa1.blob.core.windows.net/ productionresultssa2.blob.core.windows.net/
         productionresultssa3.blob.core.windows.net/ productionresultssa4.blob.core.windows.net/
         productionresultssa5.blob.core.windows.net/ productionresultssa6.blob.core.windows.net/
@@ -43,28 +43,30 @@ interactions:
         productionresultssa17.blob.core.windows.net/ productionresultssa18.blob.core.windows.net/
         productionresultssa19.blob.core.windows.net/ github-production-repository-image-32fea6.s3.amazonaws.com
         github-production-release-asset-2e65be.s3.amazonaws.com insights.github.com
-        wss://alive.github.com api.githubcopilot.com api.individual.githubcopilot.com
-        api.business.githubcopilot.com api.enterprise.githubcopilot.com; font-src
-        github.githubassets.com; form-action ''self'' github.com gist.github.com copilot-workspace.githubnext.com
-        objects-origin.githubusercontent.com; frame-ancestors ''none''; frame-src
-        viewscreen.githubusercontent.com notebooks.githubusercontent.com; img-src
-        ''self'' data: blob: github.githubassets.com media.githubusercontent.com camo.githubusercontent.com
-        identicons.github.com avatars.githubusercontent.com private-avatars.githubusercontent.com
-        github-cloud.s3.amazonaws.com objects.githubusercontent.com release-assets.githubusercontent.com
-        secured-user-images.githubusercontent.com/ user-images.githubusercontent.com/
-        private-user-images.githubusercontent.com opengraph.githubassets.com copilotprodattachments.blob.core.windows.net/github-production-copilot-attachments/
+        wss://alive.github.com wss://alive-staging.github.com api.githubcopilot.com
+        api.individual.githubcopilot.com api.business.githubcopilot.com api.enterprise.githubcopilot.com;
+        font-src github.githubassets.com; form-action ''self'' github.com gist.github.com
+        copilot-workspace.githubnext.com objects-origin.githubusercontent.com; frame-ancestors
+        ''none''; frame-src viewscreen.githubusercontent.com notebooks.githubusercontent.com;
+        img-src ''self'' data: blob: github.githubassets.com media.githubusercontent.com
+        camo.githubusercontent.com identicons.github.com avatars.githubusercontent.com
+        private-avatars.githubusercontent.com github-cloud.s3.amazonaws.com objects.githubusercontent.com
+        release-assets.githubusercontent.com secured-user-images.githubusercontent.com/
+        user-images.githubusercontent.com/ private-user-images.githubusercontent.com
+        opengraph.githubassets.com marketplace-screenshots.githubusercontent.com/
+        copilotprodattachments.blob.core.windows.net/github-production-copilot-attachments/
         github-production-user-asset-6210df.s3.amazonaws.com customer-stories-feed.github.com
         spotlights-feed.github.com objects-origin.githubusercontent.com *.githubusercontent.com;
         manifest-src ''self''; media-src github.com user-images.githubusercontent.com/
         secured-user-images.githubusercontent.com/ private-user-images.githubusercontent.com
-        github-production-user-asset-6210df.s3.amazonaws.com gist.github.com; script-src
-        github.githubassets.com; style-src ''unsafe-inline'' github.githubassets.com;
+        github-production-user-asset-6210df.s3.amazonaws.com gist.github.com github.githubassets.com;
+        script-src github.githubassets.com; style-src ''unsafe-inline'' github.githubassets.com;
         upgrade-insecure-requests; worker-src github.githubassets.com github.com/assets-cdn/worker/
         github.com/assets/ gist.github.com/assets-cdn/worker/'
       Content-Type:
       - text/html; charset=utf-8
       Date:
-      - Thu, 05 Jun 2025 06:31:19 GMT
+      - Thu, 29 Jan 2026 18:56:19 GMT
       Location:
       - https://raw.githubusercontent.com/IFRCGo/monty-stac-extension/refs/heads/main/examples/reference-events/20241027T150000-ESP-HM-FLOOD-001-GCDB.json
       Referrer-Policy:
@@ -81,7 +83,7 @@ interactions:
       X-Frame-Options:
       - deny
       X-GitHub-Request-Id:
-      - EA4C:3BE222:B63555:D6D359:684139B6
+      - 1EB1:E07EF:442913:4E600D:697BAD53
       X-XSS-Protection:
       - '0'
     status:
@@ -103,16 +105,17 @@ interactions:
   response:
     body:
       string: !!binary |
-        H4sIAAAAAAAAA5VU32/aMBB+719h5amTSLDJD1Ae15b1YR1V26dNE3KdA7wGO7INK0P877skJBCK
-        JhahoLv77vvOdxdvrwjxrONiugZjpVZeSjwW0IB6vTYE7w5UGbQY/YFuDCycK2za78uZEXMdaDPv
-        L7VyG7/M8NuM/roi61uxgCUPfllUQIKfFbnbFFDqjYG7lYFaUWala0AHEaOD4QuLKT7+3fOjf//g
-        j79OJrc+pcz/cnP7uU4QOs9BuH3t84wL68MalLN1/PVVv7d1+2EQMSSOwyiOk1E4okmvCoSjIKEs
-        DFkySkbDKNq7L8e3p5qDXoIzG9Tc1r1qzvmopXJenY9la5NJxR0cuvoPvfOKqInvXaVbGF2AcbLi
-        a5Sly+sW51pnRCryXHCpmhoysMLIoundE2SkCyQzo5cpGQzJRDhSDoWwmDidEhqRb3q9d7GgZcTz
-        OLmEZoY+o341xZRS/H1vcLglxk0vRYPKzmCZT6MXxk6w1RamQq8UzmAqdNbpr4eL5NWN6+AX/A83
-        2Uf4wz1uX+T1OnZ8Yicn9vCcgtDGTP93uTHb6LxbUrXbB0WrV0ZAV/ENNr9xuzpps3KwR2lHe4Dm
-        jeY4krwe/8F9Z92KG6mAXO8Rn04h45zbxUfnai2R7vpJ4r2C+U3ayc5ya8FV+1rbuVRvh6q3Dd3C
-        wOzixgX1LdPWYiAvcy3ks1p+1zvPjn9gQAnYXx/neY6um5qt/PCvdn8BK3sskkkFAAA=
+        H4sIAAAAAAAAA5VUW2/aMBR+51dYeeokHGwSLsrj2rI+tKNq+7RpQq5zAl6DjWzDyhD/fScJCZey
+        iSEIOpfv+47POfGmRUjgvJCTFVinjA4SEvCQhSxoNyF496CLoMPod3RjYOb9wiWdjsqsnJrQ2Gln
+        brRf0wJBG0RnxUOk6zg5g7kIfzpUQIIfJblfL6DQG4HwSwuVokoLV5d1Y866gxfeY/iht8+P9O6B
+        ju7H4xvKGKdfrm8+VwBp8hyk39U+TYV0FFagvavir6/mvambRmHMkbgXxb1efxgNWb9dBqJh2Gc8
+        inh/2B8O4njnvjy/OdUUzBy8XaPmpupVfc5Ho7QPKjyWbWyqtPCw7+o/9M4roiY+t6XuwpoFWK9K
+        vlpZ+bxqcW5MSpQmzwuhdF1DCk5atah79wQpOU4kmTXzhHQHZCw9KYZCeI94kxAWk69mtXPxsGHE
+        83g1h3qGlDNaTjFhDL/f6jzcEusnl2aDTs/kcsriF85PcsstTKRZapzBRJr0qL8BLlJQNe4ofyZ+
+        C5t+TB/dB3X/A5wVna1TmuWm+O0DD3cMJ3Nid/f2aPQ3EnECik7s+Fyt0lg7+d/XBNHW5MeHK9+S
+        vaIzSyvhWPEN1r9wT49gWbEiB7CDjULz2ggcbl4t0t596/xSWKWBXO0yPp2mjHLhZh+dy5VCuqsn
+        hTcU4mvYyfYL58CXm1/ZudJv+6o3Nd3MQnZx48LqvmpqsZAXWAd5Vslv2+fZ8Q8saAm7i+g8z8HF
+        VbEVV0hr2/oDxBX40pQFAAA=
     headers:
       Accept-Ranges:
       - bytes
@@ -125,7 +128,7 @@ interactions:
       Content-Encoding:
       - gzip
       Content-Length:
-      - '563'
+      - '587'
       Content-Security-Policy:
       - default-src 'none'; style-src 'unsafe-inline'; sandbox
       Content-Type:
@@ -133,11 +136,11 @@ interactions:
       Cross-Origin-Resource-Policy:
       - cross-origin
       Date:
-      - Thu, 05 Jun 2025 06:31:19 GMT
+      - Thu, 29 Jan 2026 18:56:20 GMT
       ETag:
-      - W/"238e75cf5f25c282fd232d173649a9a7437be7eea0d8ffb211019a1b736ac18e"
+      - W/"527311194b053ed1a4746409275d5ea1d7789d9af8761db9f26fdbbb8aba2fb4"
       Expires:
-      - Thu, 05 Jun 2025 06:36:19 GMT
+      - Thu, 29 Jan 2026 19:01:20 GMT
       Source-Age:
       - '0'
       Strict-Transport-Security:
@@ -153,15 +156,15 @@ interactions:
       X-Content-Type-Options:
       - nosniff
       X-Fastly-Request-ID:
-      - 62503c0f2cc16acaaaebb4fb1c16fa69446674ee
+      - 8a38ede586efa0d3200a9cb80d7b32f4af1db19c
       X-Frame-Options:
       - deny
       X-GitHub-Request-Id:
-      - 3CD9:2DD822:153606:2F7CAE:6841382B
+      - DD41:256440:2D0B3A:3182F5:697B9227
       X-Served-By:
-      - cache-maa10225-MAA
+      - cache-mrs10525-MRS
       X-Timer:
-      - S1749105080.525896,VS0,VE266
+      - S1769712980.499547,VS0,VE142
       X-XSS-Protection:
       - 1; mode=block
     status:
@@ -177,11 +180,11 @@ interactions:
       User-Agent:
       - Python-urllib/3.12
     method: GET
-    uri: https://ifrcgo.org/monty-stac-extension/v1.0.0/schema.json
+    uri: https://ifrcgo.org/monty-stac-extension/v1.1.0/schema.json
   response:
     body:
       string: "{\n  \"$schema\": \"http://json-schema.org/draft-07/schema#\",\n  \"$id\":
-        \"https://ifrcgo.org/monty-stac-extension/v1.0.0/schema.json#\",\n  \"title\":
+        \"https://ifrcgo.org/monty-stac-extension/v1.1.0/schema.json#\",\n  \"title\":
         \"Monty Extension\",\n  \"description\": \"STAC Monty Extension for STAC Items
         and STAC Collections.\",\n  \"oneOf\": [\n    {\n      \"$comment\": \"This
         is the schema for STAC Items.\",\n      \"allOf\": [\n        {\n          \"$ref\":
@@ -212,7 +215,7 @@ interactions:
         \       }\n      ]\n    }\n  ],\n  \"definitions\": {\n    \"stac_extensions\":
         {\n      \"type\": \"object\",\n      \"required\": [\n        \"stac_extensions\"\n
         \     ],\n      \"properties\": {\n        \"stac_extensions\": {\n          \"type\":
-        \"array\",\n          \"contains\": {\n            \"const\": \"https://ifrcgo.org/monty-stac-extension/v1.0.0/schema.json\"\n
+        \"array\",\n          \"contains\": {\n            \"const\": \"https://ifrcgo.org/monty-stac-extension/v1.1.0/schema.json\"\n
         \         }\n        }\n      }\n    },\n    \"fields\": {\n      \"$comment\":
         \"Monty prefixed fields\",\n      \"type\": \"object\",\n      \"properties\":
         {\n        \"monty:episode_number\": {\n          \"type\": \"integer\"\n
@@ -224,10 +227,11 @@ interactions:
         \"string\",\n            \"pattern\": \"^([A-Z]{2}(?:\\\\d{4}$){0,1})|([a-z]{3}-[a-z]{3}-[a-z]{3}-[a-z]{3})|([A-Z]{2})$\"\n
         \         }\n        },\n        \"monty:corr_id\": {\n          \"type\":
         \"string\"\n        },\n        \"monty:hazard_detail\": {\n          \"type\":
-        \"object\",\n          \"required\": [\n            \"cluster\"\n          ],\n
-        \         \"properties\": {\n            \"cluster\": {\n              \"type\":
-        \"string\"\n            },\n            \"severity_value\": {\n              \"type\":
-        \"number\"\n            },\n            \"severity_unit\": {\n              \"type\":
+        \"object\",\n          \"required\": [\n            \"severity_value\",\n
+        \           \"severity_unit\"\n          ],\n          \"properties\": {\n
+        \           \"severity_value\": {\n              \"type\": \"number\",\n              \"description\":
+        \"The estimated maximum hazard intensity/magnitude/severity value, as a number,
+        without the units.\"\n            },\n            \"severity_unit\": {\n              \"type\":
         \"string\"\n            },\n            \"severity_label\": {\n              \"type\":
         \"string\"\n            },\n            \"estimate_type\": {\n              \"$ref\":
         \"#/definitions/estimate_type\"\n            }\n          },\n          \"additionalProperties\":
@@ -294,9 +298,26 @@ interactions:
         \       }\n      }\n    },\n    \"is_hazard\": {\n      \"properties\": {\n
         \       \"roles\": {\n          \"type\": \"array\",\n          \"minItems\":
         1,\n          \"contains\": {\n            \"const\": \"hazard\"\n          }\n
-        \       },\n        \"monty:hazard_codes\": {\n          \"maxItems\": 1\n
-        \       }\n      }\n    },\n    \"is_impact\": {\n      \"properties\": {\n
-        \       \"roles\": {\n          \"type\": \"array\",\n          \"minItems\":
+        \       },\n        \"monty:hazard_codes\": {\n          \"minItems\": 1,\n
+        \         \"maxItems\": 3,\n          \"uniqueItems\": true,\n          \"$comment\":
+        \"REQUIRED: Exactly 1 UNDRR-ISC 2025 code (format: 2 letters + 4 digits, e.g.,
+        GH0101, MH0600). OPTIONAL: At most 1 GLIDE code (2 uppercase letters, e.g.,
+        FL, EQ) and at most 1 EM-DAT code (nat-xxx-xxx-xxx format). LIMITATION: JSON
+        Schema draft-07 cannot fully enforce 'at most 1 per type' - custom validation
+        may be needed to prevent multiple codes of the same classification type.\",\n
+        \         \"contains\": {\n            \"type\": \"string\",\n            \"pattern\":
+        \"^[A-Z]{2}\\\\d{4}$\",\n            \"$comment\": \"At least one UNDRR-ISC
+        2025 code is required\"\n          },\n          \"items\": {\n            \"type\":
+        \"string\",\n            \"anyOf\": [\n              {\n                \"pattern\":
+        \"^[A-Z]{2}\\\\d{4}$\",\n                \"$comment\": \"UNDRR-ISC 2025 format:
+        2 uppercase letters + 4 digits (e.g., GH0101, MH0600)\"\n              },\n
+        \             {\n                \"pattern\": \"^[A-Z]{2}$\",\n                \"$comment\":
+        \"GLIDE format: 2 uppercase letters (e.g., FL, EQ, TC)\"\n              },\n
+        \             {\n                \"pattern\": \"^[a-z]{3}-[a-z]{3}-[a-z]{3}-[a-z]{3}$\",\n
+        \               \"$comment\": \"EM-DAT format: 4 groups of 3 lowercase letters
+        separated by dashes (e.g., nat-hyd-flo-flo)\"\n              }\n            ]\n
+        \         }\n        }\n      }\n    },\n    \"is_impact\": {\n      \"properties\":
+        {\n        \"roles\": {\n          \"type\": \"array\",\n          \"minItems\":
         1,\n          \"contains\": {\n            \"const\": \"impact\"\n          }\n
         \       }\n      }\n    }\n  }\n}\n"
     headers:
@@ -305,21 +326,21 @@ interactions:
       Access-Control-Allow-Origin:
       - '*'
       Age:
-      - '451'
+      - '0'
       Cache-Control:
       - max-age=600
       Connection:
       - close
       Content-Length:
-      - '8990'
+      - '10393'
       Content-Type:
       - application/json; charset=utf-8
       Date:
-      - Thu, 05 Jun 2025 06:31:20 GMT
+      - Thu, 29 Jan 2026 18:56:21 GMT
       ETag:
-      - '"68362515-231e"'
+      - '"697ba766-2899"'
       Last-Modified:
-      - Tue, 27 May 2025 20:48:21 GMT
+      - Thu, 29 Jan 2026 18:31:02 GMT
       Server:
       - GitHub.com
       Vary:
@@ -329,17 +350,17 @@ interactions:
       X-Cache:
       - HIT
       X-Cache-Hits:
-      - '2'
+      - '0'
       X-Fastly-Request-ID:
-      - cd4b0ef5533f52c7964776194b66f13407f15384
+      - b03dbdfdc2215eeb5eef1562c22fb028f9664a7e
       X-GitHub-Request-Id:
-      - 4E22:64F80:87F27:A7133:684137F4
+      - 63CA:2FC21B:501E18:50FA79:697BA95C
       X-Served-By:
-      - cache-maa10238-MAA
+      - cache-mrs10553-MRS
       X-Timer:
-      - S1749105080.010237,VS0,VE1
+      - S1769712981.413069,VS0,VE124
       expires:
-      - Thu, 05 Jun 2025 06:33:49 GMT
+      - Thu, 29 Jan 2026 18:49:24 GMT
       x-proxy-cache:
       - MISS
     status:

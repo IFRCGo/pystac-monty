@@ -9,11 +9,11 @@ interactions:
       User-Agent:
       - Python-urllib/3.12
     method: GET
-    uri: https://ifrcgo.org/monty-stac-extension/v1.1.0/schema.json
+    uri: https://ifrcgo.org/monty-stac-extension/v1.1.1/schema.json
   response:
     body:
       string: "{\n  \"$schema\": \"http://json-schema.org/draft-07/schema#\",\n  \"$id\":
-        \"https://ifrcgo.org/monty-stac-extension/v1.1.0/schema.json#\",\n  \"title\":
+        \"https://ifrcgo.org/monty-stac-extension/v1.1.1/schema.json#\",\n  \"title\":
         \"Monty Extension\",\n  \"description\": \"STAC Monty Extension for STAC Items
         and STAC Collections.\",\n  \"oneOf\": [\n    {\n      \"$comment\": \"This
         is the schema for STAC Items.\",\n      \"allOf\": [\n        {\n          \"$ref\":
@@ -44,7 +44,7 @@ interactions:
         \       }\n      ]\n    }\n  ],\n  \"definitions\": {\n    \"stac_extensions\":
         {\n      \"type\": \"object\",\n      \"required\": [\n        \"stac_extensions\"\n
         \     ],\n      \"properties\": {\n        \"stac_extensions\": {\n          \"type\":
-        \"array\",\n          \"contains\": {\n            \"const\": \"https://ifrcgo.org/monty-stac-extension/v1.1.0/schema.json\"\n
+        \"array\",\n          \"contains\": {\n            \"const\": \"https://ifrcgo.org/monty-stac-extension/v1.1.1/schema.json\"\n
         \         }\n        }\n      }\n    },\n    \"fields\": {\n      \"$comment\":
         \"Monty prefixed fields\",\n      \"type\": \"object\",\n      \"properties\":
         {\n        \"monty:episode_number\": {\n          \"type\": \"integer\"\n
@@ -55,11 +55,12 @@ interactions:
         {\n          \"type\": \"array\",\n          \"items\": {\n            \"type\":
         \"string\",\n            \"pattern\": \"^([A-Z]{2}(?:\\\\d{4}$){0,1})|([a-z]{3}-[a-z]{3}-[a-z]{3}-[a-z]{3})|([A-Z]{2})$\"\n
         \         }\n        },\n        \"monty:corr_id\": {\n          \"type\":
-        \"string\"\n        },\n        \"monty:hazard_detail\": {\n          \"type\":
-        \"object\",\n          \"required\": [\n            \"severity_value\",\n
-        \           \"severity_unit\"\n          ],\n          \"properties\": {\n
-        \           \"severity_value\": {\n              \"type\": \"number\",\n              \"description\":
-        \"The estimated maximum hazard intensity/magnitude/severity value, as a number,
+        \"string\"\n        },\n        \"monty:guid\": {\n          \"type\": \"string\"\n
+        \       },\n        \"monty:hazard_detail\": {\n          \"type\": \"object\",\n
+        \         \"required\": [\n            \"severity_value\",\n            \"severity_unit\"\n
+        \         ],\n          \"properties\": {\n            \"severity_value\":
+        {\n              \"type\": \"number\",\n              \"description\": \"The
+        estimated maximum hazard intensity/magnitude/severity value, as a number,
         without the units.\"\n            },\n            \"severity_unit\": {\n              \"type\":
         \"string\"\n            },\n            \"severity_label\": {\n              \"type\":
         \"string\"\n            },\n            \"estimate_type\": {\n              \"$ref\":
@@ -155,21 +156,21 @@ interactions:
       Access-Control-Allow-Origin:
       - '*'
       Age:
-      - '0'
+      - '166'
       Cache-Control:
       - max-age=600
       Connection:
       - close
       Content-Length:
-      - '10393'
+      - '10455'
       Content-Type:
       - application/json; charset=utf-8
       Date:
-      - Wed, 12 Nov 2025 10:33:49 GMT
+      - Thu, 29 Jan 2026 18:56:16 GMT
       ETag:
-      - '"690c54cc-2899"'
+      - '"697ba766-28d7"'
       Last-Modified:
-      - Thu, 06 Nov 2025 07:57:00 GMT
+      - Thu, 29 Jan 2026 18:31:02 GMT
       Server:
       - GitHub.com
       Vary:
@@ -179,17 +180,17 @@ interactions:
       X-Cache:
       - HIT
       X-Cache-Hits:
-      - '0'
+      - '1'
       X-Fastly-Request-ID:
-      - 2a0f7d61579bc33c2c855829f5f26b2aa189edbf
+      - 47f4b49a027e8cc948963d9d3144ae95f1ce7b69
       X-GitHub-Request-Id:
-      - 9A3E:2F62DB:5BE57:72BDD:69141429
+      - CE0E:8623C:4D347B:4E0C58:697BA82B
       X-Served-By:
-      - cache-del21742-DEL
+      - cache-mrs10560-MRS
       X-Timer:
-      - S1762943629.974474,VS0,VE271
+      - S1769712976.292627,VS0,VE2
       expires:
-      - Wed, 12 Nov 2025 05:09:22 GMT
+      - Thu, 29 Jan 2026 18:44:19 GMT
       x-proxy-cache:
       - MISS
     status:
