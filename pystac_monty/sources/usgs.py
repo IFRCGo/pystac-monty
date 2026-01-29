@@ -485,6 +485,7 @@ class USGSTransformer(MontyDataTransformer[USGSDataSource]):
 
         # Compute correlation ID
         monty.compute_and_set_correlation_id(hazard_profiles=self.hazard_profiles)
+        monty.compute_and_set_guid(source_name="USGS", event_id=item_data.id, hazard_profiles=self.hazard_profiles)
 
         # Set collection and roles
         item.set_collection(self.get_event_collection())

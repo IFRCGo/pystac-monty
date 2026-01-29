@@ -301,6 +301,9 @@ class GDACSTransformer(MontyDataTransformer[GDACSDataSource]):
         item.properties["keywords"] = list(set(hazard_keywords + list(cc)))
 
         monty.compute_and_set_correlation_id(hazard_profiles=self.hazard_profiles)
+        monty.compute_and_set_guid(
+            source_name="GDACS", event_id=str(data.properties.eventid), hazard_profiles=self.hazard_profiles
+        )
 
         # assets
         # icon
