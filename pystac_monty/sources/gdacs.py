@@ -415,7 +415,7 @@ class GDACSTransformer(MontyDataTransformer[GDACSDataSource]):
             + impact_item.advisory_number
         )
         item.common_metadata.description = impact_item.name
-        item.properties["forecasted"] = impact_item.actual == "false"
+        item.properties["forecasted"] = impact_item.actual == "False"
         try:
             item.common_metadata.created = item.common_metadata.start_datetime = item.common_metadata.end_datetime = (
                 pytz.utc.localize(datetime.datetime.strptime(impact_item.advisory_datetime, "%d %b %Y %H:%M"))
