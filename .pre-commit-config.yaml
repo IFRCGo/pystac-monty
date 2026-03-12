@@ -46,9 +46,11 @@ repos:
       - id: ruff
         types_or: [python, pyi, jupyter, toml]
         args: [--fix, --exit-non-zero-on-fix]
+        exclude: ^.*uv\.lock$
       # Formatter
       - id: ruff-format
         types_or: [python, pyi, jupyter, toml]
+        exclude: ^.*uv\.lock$
 
   - repo: https://github.com/astral-sh/uv-pre-commit
     rev: 0.6.9
