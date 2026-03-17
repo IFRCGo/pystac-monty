@@ -12,7 +12,7 @@ import pytz
 from markdownify import markdownify as md
 from pystac import Asset, Item, Link
 from shapely import simplify, to_geojson
-from shapely.geometry import shape
+from shapely.geometry import Point, mapping, shape
 
 from pystac_monty.extension import (
     HazardDetail,
@@ -291,10 +291,16 @@ class GDACSTransformer(MontyDataTransformer[GDACSDataSource]):
         monty.episode_number = data.properties.episodeid
         monty.hazard_codes = self.get_hazard_codes(data.properties.eventtype)
         monty.hazard_codes = self.hazard_profiles.get_canonical_hazard_codes(item=item)
-        cc = set([data.properties.iso3])
+
+        cc = set([data.properties.iso3.strip()])
         if hasattr(data.properties, "affectedcountries"):
-            cc.update([cc.iso3 for cc in data.properties.affectedcountries])
-        monty.country_codes = list(cc)
+            cc.update([c.iso3.strip() for c in data.properties.affectedcountries])
+        cc = list(cc)
+        cc = list(filter(None, cc))
+        if cc:
+            monty.country_codes = cc
+        else:
+            monty.country_codes = ["UNK"]  # Set UNK when no country code is available
 
         hazard_keywords = self.hazard_profiles.get_keywords(monty.hazard_codes)
 
@@ -398,37 +404,58 @@ class GDACSTransformer(MontyDataTransformer[GDACSDataSource]):
                     impact_items.append(impact_item)
 
         if impact_data:
-            for impact_item in impact_data.channel.item:
-                impact_item = self.make_impact_item_from_tc(impact_item=impact_item, event_item=event_item)
-                impact_items.append(impact_item)
+            for impact_data in impact_data.channel.item:
+                impact_item = self.make_impact_item_from_tc(impact_data=impact_data, event_item=event_item)
+                if impact_item:
+                    impact_items.append(impact_item)
 
         return impact_items
 
-    def make_impact_item_from_tc(self, impact_item: TCImpactItem, event_item: Item) -> Item:
+    def generate_geo_info(self, coord_str: str | None) -> Tuple[Point, list] | Tuple[None, None]:
+        """Generate a geo point object"""
+        if not coord_str:
+            return None, None
+        x, y = map(float, coord_str.split(","))
+        pt = Point(x, y)
+        bbox = pt.bounds
+        return pt, list(bbox)
+
+    def make_impact_item_from_tc(self, impact_data: TCImpactItem, event_item: Item) -> Item | None:
         """Create impact item for Tropical Cyclone (TC)"""
         item = event_item.clone()
         item.id = phrase_to_dashed(
             item.id.replace(STAC_EVENT_ID_PREFIX, STAC_IMPACT_ID_PREFIX)
             + "-"
-            + impact_item.storm_id
+            + impact_data.storm_id
             + "-"
-            + impact_item.advisory_number
+            + impact_data.advisory_number
         )
-        item.common_metadata.description = impact_item.name
-        item.properties["forecasted"] = impact_item.actual == "False"
+        if impact_data:
+            geo_point, bbox = self.generate_geo_info(coord_str=impact_data.coordinates)
+        else:
+            geo_point, bbox = None, None
+        if not geo_point:
+            return None
+        item.geometry = mapping(geo_point)
+        item.bbox = bbox
+        item.common_metadata.description = impact_data.name
+        item.properties["forecasted"] = impact_data.actual == "False"
         try:
-            item.common_metadata.created = item.common_metadata.start_datetime = item.common_metadata.end_datetime = (
-                pytz.utc.localize(datetime.datetime.strptime(impact_item.advisory_datetime, "%d %b %Y %H:%M"))
-            )
+            item.datetime = item.common_metadata.created = item.common_metadata.start_datetime = (
+                item.common_metadata.end_datetime
+            ) = pytz.utc.localize(datetime.datetime.strptime(impact_data.advisory_datetime, "%d %b %Y %H:%M"))
         except Exception:
-            item.common_metadata.created = item.common_metadata.start_datetime = item.common_metadata.end_datetime = None
+            item.datetime = item.common_metadata.created = item.common_metadata.start_datetime = (
+                item.common_metadata.end_datetime
+            ) = None
         item.set_collection(self.get_impact_collection())
         item.properties["roles"] = ["source", "impact"]
+
         monty = MontyExtension.ext(item)
         monty.impact_detail = ImpactDetail(
             category=MontyImpactExposureCategory.ALL_PEOPLE,
             type=MontyImpactType.POTENTIALLY_AFFECTED if item.properties["forecasted"] else MontyImpactType.TOTAL_AFFECTED,
-            value=int(impact_item.pop),
+            value=int(impact_data.pop),
             unit="GDACS TC",
             estimate_type=MontyEstimateType.PRIMARY,
         )
