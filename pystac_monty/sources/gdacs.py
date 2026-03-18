@@ -426,6 +426,8 @@ class GDACSTransformer(MontyDataTransformer[GDACSDataSource]):
         item.id = phrase_to_dashed(
             item.id.replace(STAC_EVENT_ID_PREFIX, STAC_IMPACT_ID_PREFIX)
             + "-"
+            + str(event_item.properties["monty:episode_number"])
+            + "-"
             + impact_data.storm_id
             + "-"
             + impact_data.advisory_number
@@ -440,6 +442,7 @@ class GDACSTransformer(MontyDataTransformer[GDACSDataSource]):
         item.bbox = bbox
         item.common_metadata.description = impact_data.name
         item.properties["forecasted"] = impact_data.actual == "False"
+        item.properties["advisory_number"] = impact_data.advisory_number
         try:
             item.datetime = item.common_metadata.created = item.common_metadata.start_datetime = (
                 item.common_metadata.end_datetime
