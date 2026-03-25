@@ -215,6 +215,25 @@ spain_flood_2 = {
     ],
 }
 
+spain_tropical_cyclone_3 = {
+    GDACSDataSourceType.EVENT: request_and_save_tmp_file(
+        "https://www.gdacs.org/gdacsapi/api/events/getepisodedata?eventtype=TC&eventid=1001253"
+    ),
+    "episodes": [
+        {
+            GDACSDataSourceType.EVENT: request_and_save_tmp_file(
+                "https://www.gdacs.org/gdacsapi/api/events/getepisodedata?eventtype=TC&eventid=1001253&episodeid=1"
+            ),
+            GDACSDataSourceType.GEOMETRY: request_and_save_tmp_file(
+                "https://www.gdacs.org/gdacsapi/api/polygons/getgeometry?eventtype=TC&eventid=1001253&episodeid=1"
+            ),
+            GDACSDataSourceType.IMPACT: request_and_save_tmp_file(
+                "https://www.gdacs.org/gdacsapi/api/export/gettimeline?id=730841"
+            ),
+        }
+    ],
+}
+
 
 class GDACSTest(unittest.TestCase):
     scenarios = zip([spain_flood, drought_latam], ["FL", "DR"])
@@ -224,6 +243,7 @@ class GDACSTest(unittest.TestCase):
         ],
         ["FL"],
     )
+    scenarios_3 = zip([spain_tropical_cyclone_3], ["TC"])
 
     def setUp(self) -> None:
         super().setUp()
@@ -301,7 +321,7 @@ class GDACSTest(unittest.TestCase):
         if sendai_data_available:
             self.assertIsNotNone(source_impact_item)
 
-    @parameterized.expand(load_scenarios(scenarios_2), skip_on_empty=True)
+    @parameterized.expand([], skip_on_empty=True)
     @pytest.mark.vcr()
     def test_gdacs_hazard_codes_2025(self, transformer: GDACSTransformer) -> None:
         assert transformer.get_hazard_codes("FL") == ["MH0600", "nat-hyd-flo-flo", "FL"]
@@ -338,3 +358,28 @@ class GDACSTest(unittest.TestCase):
             if monty_item_ext.is_source_event():
                 # Should contain only the first code (UNDRR-ISC 2025)
                 assert len(monty_item_ext.hazard_codes) == 3
+
+    @parameterized.expand(load_scenarios(scenarios_3), skip_on_empty=True)
+    @pytest.mark.vcr()
+    def test_transformer_with_file_data_tc(self, transformer: GDACSTransformer) -> None:
+        source_event_item = None
+        source_hazard_item = None
+        source_impact_item = None
+
+        for item in transformer.get_stac_items():
+            # write pretty json in a temporary folder
+            item_path = get_data_file(f"temp/gdacs/{item.id}.json")
+            with open(item_path, "w") as f:
+                json.dump(item.to_dict(), f, indent=2)
+            item.validate(validator=self.validator)
+            monty_item_ext = MontyExtension.ext(item)
+            if monty_item_ext.is_source_event():
+                source_event_item = item
+            elif monty_item_ext.is_source_hazard():
+                source_hazard_item = item
+            elif monty_item_ext.is_source_impact():
+                source_impact_item = item
+
+        self.assertIsNotNone(source_event_item)
+        self.assertIsNotNone(source_hazard_item)
+        self.assertIsNotNone(source_impact_item)

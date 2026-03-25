@@ -25,6 +25,7 @@ class TCImpactItem(BaseModelWithExtra):
     latitude: str
     longitude: str
     advisory_datetime: str
+    coordinates: str
 
 
 class TCChannel(BaseModelWithExtra):
