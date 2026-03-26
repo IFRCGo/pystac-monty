@@ -198,8 +198,8 @@ class DesinventarDataSource(MontyDataSourceV3):
     country_code: str
     iso3: str
 
-    def __init__(self, data: DesinventarDataSourceType):
-        super().__init__(root=data)
+    def __init__(self, data: DesinventarDataSourceType, eoapi_url: str | None = None):
+        super().__init__(root=data, eoapi_url=eoapi_url)
         self.tmp_zip_file = data.tmp_zip_file.path
         self.country_code = data.country_code
         self.iso3 = data.iso3

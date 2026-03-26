@@ -34,14 +34,14 @@ class IBTrACSDataSource(MontyDataSourceV3):
     source_url: str
     data_source: Union[File, Memory]
 
-    def __init__(self, data: GenericDataSource, version: str = "v04r01"):
+    def __init__(self, data: GenericDataSource, eoapi_url: str | None = None, version: str = "v04r01"):
         """Initialize IBTrACS data source.
 
         Args:
             source_url: URL where the data was retrieved from
             data: Tropical cyclone track data as CSV string
         """
-        super().__init__(data)
+        super().__init__(root=data, eoapi_url=eoapi_url)
         self.version = version
 
         def handle_file_data():

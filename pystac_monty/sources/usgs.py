@@ -65,8 +65,8 @@ class USGSDataSource(MontyDataSourceV3):
     alerts_data_file_path: str
     alerts_data: USGSAlertData
 
-    def __init__(self, data: USGSDataSourceType):
-        super().__init__(data)
+    def __init__(self, data: USGSDataSourceType, eoapi_url: str | None = None):
+        super().__init__(root=data, eoapi_url=eoapi_url)
         self.source_url = data.source_url
 
         def handle_file_data():

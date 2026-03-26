@@ -28,8 +28,8 @@ class GlideDataSource(MontyDataSourceV3):
     data: Union[str, dict]
     data_source: Union[File, Memory]
 
-    def __init__(self, data: GenericDataSource):
-        super().__init__(data)
+    def __init__(self, data: GenericDataSource, eoapi_url: str | None = None):
+        super().__init__(root=data, eoapi_url=eoapi_url)
 
         def handle_file_data():
             if os.path.isfile(self.input_data.path):

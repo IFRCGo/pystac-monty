@@ -64,8 +64,8 @@ class PDCDataSource(MontyDataSourceV3):
     hazard_data: Union[str, dict]
     exposure_detail_data: Union[str, dict]
 
-    def __init__(self, data: PDCDataSourceType):
-        super().__init__(data)
+    def __init__(self, data: PDCDataSourceType, eoapi_url: str | None = None):
+        super().__init__(root=data, eoapi_url=eoapi_url)
         self.source_url = data.source_url
         self.uuid = data.uuid
         self.geojson_path = data.geojson_path
