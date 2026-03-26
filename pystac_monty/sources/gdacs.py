@@ -64,13 +64,12 @@ class HazardType(str, Enum):
 @dataclass
 class GDACSDataSource(MontyDataSourceV3):
     type: GDACSDataSourceType
-    source_url: str
     event_data: [str, dict]
     event_data_file_path: str
     episodes: list[Tuple[GdacsEpisodes, GdacsEpisodes, GdacsEpisodes | None]]
 
-    def __init__(self, data: GdacsDataSourceType):
-        super().__init__(data)
+    def __init__(self, data: GdacsDataSourceType, eoapi_url: str | None = None):
+        super().__init__(root=data, eoapi_url=eoapi_url)
         self.episodes = data.episodes
 
         def handle_file_data():
@@ -137,10 +136,7 @@ class GDACSTransformer(MontyDataTransformer[GDACSDataSource]):
                 for episode_data in self.data_source.episodes:
                     validated_episode_data = GdacsEventDataValidator(**episode_data[0].data.input_data.content)
                     episode_data_url = episode_data[0].data.source_url
-                    source_event_episode_item = self.make_source_event_item(
-                        data=validated_episode_data, source_url=episode_data_url
-                    )
-                    yield source_event_episode_item
+                    episode_event_item = self.make_source_event_item(data=validated_episode_data, source_url=episode_data_url)
 
                     if GDACSDataSourceType.GEOMETRY.value == episode_data[1].type:
                         validated_geometry_data = GdacsGeometryDataValidator(**episode_data[1].data.input_data.content)
@@ -164,10 +160,21 @@ class GDACSTransformer(MontyDataTransformer[GDACSDataSource]):
                         episode_event_data=(validated_episode_data, episode_data_url),
                         episode_geometry_data=(validated_geometry_data, geometry_data_url),
                     )
-                    yield episode_hazard_item
-                    yield from self.make_impact_items(
+
+                    episode_impact_items = self.make_impact_items(
                         episode_event_data=(validated_episode_data, episode_data_url), episode_impact_data=validated_impact_data
                     )
+
+                    all_items = [episode_event_item, episode_hazard_item] + episode_impact_items
+                    self.set_item_hrefs(items=all_items, eoapi_url=self.data_source.eoapi_url)
+                    self.add_related_links(
+                        event_item=episode_event_item, hazard_items=[episode_hazard_item], impact_items=episode_impact_items
+                    )
+
+                    yield episode_event_item
+                    yield episode_hazard_item
+                    yield from episode_impact_items
+
         except Exception:
             self.transform_summary.increment_failed_rows(1)
             logger.warning("Failed to process the GDACS data", exc_info=True)
@@ -188,10 +195,7 @@ class GDACSTransformer(MontyDataTransformer[GDACSDataSource]):
 
                     validated_episode_data = GdacsEventDataValidator(**episode_file_data)
                     episode_data_url = episode_data[0].data.source_url
-                    source_event_episode_item = self.make_source_event_item(
-                        data=validated_episode_data, source_url=episode_data_url
-                    )
-                    yield source_event_episode_item
+                    episode_event_item = self.make_source_event_item(data=validated_episode_data, source_url=episode_data_url)
 
                     if GDACSDataSourceType.GEOMETRY.value == episode_data[1].type:
                         geometry_data_file = episode_data[1].data.input_data.path
@@ -219,10 +223,21 @@ class GDACSTransformer(MontyDataTransformer[GDACSDataSource]):
                         episode_event_data=(validated_episode_data, episode_data_url),
                         episode_geometry_data=(validated_geometry_data, geometry_data_url),
                     )
-                    yield episode_hazard_item
-                    yield from self.make_impact_items(
+
+                    episode_impact_items = self.make_impact_items(
                         episode_event_data=(validated_episode_data, episode_data_url), episode_impact_data=validated_impact_data
                     )
+
+                    all_items = [episode_event_item, episode_hazard_item] + episode_impact_items
+                    self.set_item_hrefs(items=all_items, eoapi_url=self.data_source.eoapi_url)
+                    self.add_related_links(
+                        event_item=episode_event_item, hazard_items=[episode_hazard_item], impact_items=episode_impact_items
+                    )
+
+                    yield episode_event_item
+                    yield episode_hazard_item
+                    yield from episode_impact_items
+
         except Exception:
             self.transform_summary.increment_failed_rows(1)
             logger.warning("Failed to process the GDACS data", exc_info=True)
