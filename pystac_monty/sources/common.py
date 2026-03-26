@@ -8,7 +8,7 @@ from typing import List, Literal, Optional, Tuple, Union
 
 import requests
 from pydantic import BaseModel, ConfigDict, Field
-from pystac import Collection, Item
+from pystac import Collection, Item, Link
 
 from pystac_monty.geocoding import MontyGeoCoder
 
@@ -147,6 +147,7 @@ class MontyDataSourceV2:
 class MontyDataSourceV3:
     root: Union[GenericDataSource, GdacsDataSourceType, USGSDataSourceType, DesinventarDataSourceType, PDCDataSourceType]
     source_url: Optional[str] = field(init=False)
+    eoapi_url: Optional[str]
 
     def __post_init__(self):
         self.source_url = self.root.source_url
@@ -242,6 +243,48 @@ class MontyDataTransformer(typing.Generic[DataSource]):
             collection.set_self_href(self.impacts_collection_url)
             self._impact_collection_cache = collection
         return self._impact_collection_cache
+
+    def add_related_links(
+        self, event_item: Item, hazard_items: List[Item] | None = None, impact_items: List[Item] | None = None
+    ) -> None:
+        """Add links of type `related` among items"""
+
+        def link_items(item1: Item, item2: Item, item1_role_value: str, item2_role_value: str):
+            item1.add_link(
+                Link(rel="related", target=item2, media_type="application/geo+json", extra_fields={"roles": [item2_role_value]})
+            )
+            item2.add_link(
+                Link(rel="related", target=item1, media_type="application/geo+json", extra_fields={"roles": [item1_role_value]})
+            )
+
+        # Link event item and hazard item
+        if hazard_items:
+            for hazard in hazard_items:
+                link_items(item1=event_item, item2=hazard, item1_role_value="event", item2_role_value="hazard")
+
+        # Link event item and impact item
+        if impact_items:
+            for impact in impact_items:
+                link_items(item1=event_item, item2=impact, item1_role_value="event", item2_role_value="impact")
+
+        # Link hazard item and impact item
+        # NOTE: In all sources, hazard_items is of size 1.
+        # In case, if multiple hazards of an event occurs, we need to handle accordingly.
+        if hazard_items and impact_items:
+            for hazard in hazard_items:
+                for impact in impact_items:
+                    link_items(item1=hazard, item2=impact, item1_role_value="hazard", item2_role_value="impact")
+
+    def set_item_hrefs(self, items: List[Item], eoapi_url: str | None) -> None:
+        """Set hrefs to the items"""
+        if not eoapi_url:
+            eoapi_url = "."
+
+        for item in items:
+            collection_id = item.collection_id
+            if not collection_id:
+                collection_id = "test-collection"
+            item.set_self_href(href=f"{eoapi_url}/collections/{collection_id}/items/{item.id}")
 
     # FIXME: This method is deprecated
     @abc.abstractmethod
