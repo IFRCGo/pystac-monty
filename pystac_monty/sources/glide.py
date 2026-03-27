@@ -100,8 +100,13 @@ class GlideTransformer(MontyDataTransformer[GlideDataSource]):
 
                     data = parse_row_data(row)
                     if event_item := self.make_source_event_items(data):
+                        hazard_item = self.make_hazard_event_items(event_item)
+                        all_items = [event_item, hazard_item]
+                        self.set_item_hrefs(items=all_items, eoapi_url=self.data_source.eoapi_url)
+                        self.add_related_links(event_item=event_item, hazard_items=[hazard_item])
+
                         yield event_item
-                        yield self.make_hazard_event_items(event_item)
+                        yield hazard_item
                     else:
                         self.transform_summary.increment_failed_rows()
                 except Exception:
@@ -123,8 +128,13 @@ class GlideTransformer(MontyDataTransformer[GlideDataSource]):
 
                 data = parse_row_data(row)
                 if event_item := self.make_source_event_items(data):
+                    hazard_item = self.make_hazard_event_items(event_item)
+                    all_items = [event_item, hazard_item]
+                    self.set_item_hrefs(items=all_items, eoapi_url=self.data_source.eoapi_url)
+                    self.add_related_links(event_item=event_item, hazard_items=[hazard_item])
+
                     yield event_item
-                    yield self.make_hazard_event_items(event_item)
+                    yield hazard_item
                 else:
                     self.transform_summary.increment_failed_rows()
             except Exception:
