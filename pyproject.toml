@@ -104,8 +104,8 @@ exclude = ["tests*"]
 [tool.setuptools.dynamic]
 version = { attr = "pystac_monty.extension.__version__" }
 
-[tool.uv]
-dev-dependencies = [
+[dependency-groups]
+dev = [
     "codespell<2.3",
     "coverage>=7.6.2",
     "doc8>=1.1.2",
