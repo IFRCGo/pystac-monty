@@ -135,8 +135,14 @@ class IBTrACSTransformer(MontyDataTransformer[IBTrACSDataSource]):
 
                 storm_data = parse_row_data(storm_data)
                 if event_item := self.make_source_event_items(storm_data[0].SID, storm_data):
+                    hazard_items = self.make_hazard_items(event_item, storm_data)
+
+                    all_items = [event_item] + hazard_items
+                    self.set_item_hrefs(items=all_items, eoapi_url=self.data_source.eoapi_url)
+                    self.add_related_links(event_item=event_item, hazard_items=hazard_items)
+
                     yield event_item
-                    yield from self.make_hazard_items(event_item, storm_data)
+                    yield from hazard_items
                 else:
                     self.transform_summary.increment_failed_rows(len(storm_data))
             except Exception:
