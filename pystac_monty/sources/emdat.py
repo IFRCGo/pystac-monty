@@ -166,9 +166,14 @@ class EMDATTransformer(MontyDataTransformer[EMDATDataSource]):
                 try:
                     data = EmdatDataValidator(**row_dict)
                     if event_item := self.make_source_event_item(data):
+                        hazard_item = self.make_hazard_event_item(event_item, data)
+                        impact_items = self.make_impact_items(data, event_item)
+                        all_items = [event_item, hazard_item] + impact_items
+                        self.set_item_hrefs(items=all_items, eoapi_url=self.data_source.eoapi_url)
+                        self.add_related_links(event_item=event_item, hazard_items=[hazard_item], impact_items=impact_items)
                         yield event_item
-                        yield self.make_hazard_event_item(event_item, data)
-                        yield from self.make_impact_items(data, event_item)
+                        yield hazard_item
+                        yield from impact_items
                     else:
                         self.transform_summary.increment_failed_rows()
                 except Exception:
@@ -187,9 +192,14 @@ class EMDATTransformer(MontyDataTransformer[EMDATDataSource]):
             try:
                 data = EmdatDataValidator(**row_dict)
                 if event_item := self.make_source_event_item(data):
+                    hazard_item = self.make_hazard_event_item(event_item, data)
+                    impact_items = self.make_impact_items(data, event_item)
+                    all_items = [event_item, hazard_item] + impact_items
+                    self.set_item_hrefs(items=all_items, eoapi_url=self.data_source.eoapi_url)
+                    self.add_related_links(event_item=event_item, hazard_items=[hazard_item], impact_items=impact_items)
                     yield event_item
-                    yield self.make_hazard_event_item(event_item, data)
-                    yield from self.make_impact_items(data, event_item)
+                    yield hazard_item
+                    yield from impact_items
                 else:
                     self.transform_summary.increment_failed_rows()
 
