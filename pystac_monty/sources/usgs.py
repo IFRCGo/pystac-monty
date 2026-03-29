@@ -411,17 +411,23 @@ class USGSTransformer(MontyDataTransformer[USGSDataSource]):
             validated_item = USGSValidator(**item_data)
 
             if event_item := self.make_source_event_item(item_data=validated_item):
-                yield event_item
                 losspager_validated_items = get_validated_data(losspager_data)
                 alert_validated_items = get_validated_alert_data(alert_data)
                 hazard_item = self.make_hazard_event_item(event_item=event_item, data_item=validated_item)
-                yield hazard_item
-                yield from self.make_impact_items(
+                impact_items = self.make_impact_items(
                     event_item=event_item,
                     hazard_item=hazard_item,
                     losspager_items=losspager_validated_items,
                     alert_items=alert_validated_items,
                 )
+
+                all_items = [event_item, hazard_item] + impact_items
+                self.set_item_hrefs(items=all_items, eoapi_url=self.data_source.eoapi_url)
+                self.add_related_links(event_item=event_item, hazard_items=[hazard_item], impact_items=impact_items)
+
+                yield event_item
+                yield hazard_item
+                yield from impact_items
             else:
                 self.transform_summary.increment_failed_rows(1)
         except Exception:
