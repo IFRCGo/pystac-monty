@@ -93,8 +93,14 @@ class IFRCEventTransformer(MontyDataTransformer[IFRCEventDataSource]):
                 try:
                     ifrcdata = IFRCsourceValidator(**data)
                     if event_item := self.make_source_event_item(ifrcdata):
+                        impact_items = self.make_impact_items(event_item, ifrcdata)
+
+                        all_items = [event_item] + impact_items
+                        self.set_item_hrefs(items=all_items, eoapi_url=self.data_source.eoapi_url)
+                        self.add_related_links(event_item=event_item, impact_items=impact_items)
+
                         yield event_item
-                        yield from self.make_impact_items(event_item, ifrcdata)
+                        yield from impact_items
                     else:
                         self.transform_summary.increment_failed_rows()
                 except Exception:
@@ -129,8 +135,14 @@ class IFRCEventTransformer(MontyDataTransformer[IFRCEventDataSource]):
             try:
                 ifrcdata = IFRCsourceValidator(**data)
                 if event_item := self.make_source_event_item(ifrcdata):
+                    impact_items = self.make_impact_items(event_item, ifrcdata)
+
+                    all_items = [event_item] + impact_items
+                    self.set_item_hrefs(items=all_items, eoapi_url=self.data_source.eoapi_url)
+                    self.add_related_links(event_item=event_item, impact_items=impact_items)
+
                     yield event_item
-                    yield from self.make_impact_items(event_item, ifrcdata)
+                    yield from impact_items
                 else:
                     self.transform_summary.increment_failed_rows()
             except Exception:
