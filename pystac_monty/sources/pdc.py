@@ -156,9 +156,16 @@ class PDCTransformer(MontyDataTransformer):
                 exposure_detail = ExposureDetailValidator(**pdc_exposure_data)
 
                 if event_item := self.make_source_event_item(pdc_hazard_data, exposure_detail):
+                    hazard_item = self.make_hazard_item(event_item, pdc_hazard_data)
+                    impact_items = self.make_impact_items(event_item, exposure_detail)
+
+                    all_items = [event_item, hazard_item] + impact_items
+                    self.set_item_hrefs(items=all_items, eoapi_url=self.data_source.eoapi_url)
+                    self.add_related_links(event_item, hazard_items=[hazard_item], impact_items=impact_items)
+
                     yield event_item
-                    yield self.make_hazard_item(event_item, pdc_hazard_data)
-                    yield from self.make_impact_items(event_item, exposure_detail)
+                    yield hazard_item
+                    yield from impact_items
                 else:
                     self.transform_summary.increment_failed_rows()
             except Exception:
