@@ -153,8 +153,8 @@ class IDUTransformer(MontyDataTransformer[IDUDataSource]):
 
         item.set_collection(self.get_event_collection())
         item.properties["roles"] = ["source", "event"]
-
-        item.add_asset("report", Asset(href=data_item.source_url, media_type="application/pdf", title="Report"))
+        if data_item.source_url:
+            item.add_asset("report", Asset(href=data_item.source_url, media_type="application/pdf", title="Report"))
         item.add_link(Link("via", self.data_source.get_source_url(), "application/json", "IDU Event Data"))
 
         hazard_tuple = (data_item.category, data_item.subcategory, data_item.type, data_item.subtype)
