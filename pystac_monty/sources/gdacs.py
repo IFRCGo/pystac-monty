@@ -133,14 +133,15 @@ class GDACSTransformer(MontyDataTransformer[GDACSDataSource]):
         self.transform_summary.increment_rows(1)
 
         try:
-            validated_event_data = GdacsEventDataValidator(**self.data_source.get_data())
-            source_event_item = self.make_source_event_item(data=validated_event_data, source_url=self.data_source.source_url)
-            yield source_event_item
-
             if self.data_source.episodes:
                 for episode_data in self.data_source.episodes:
                     validated_episode_data = GdacsEventDataValidator(**episode_data[0].data.input_data.content)
                     episode_data_url = episode_data[0].data.source_url
+                    source_event_episode_item = self.make_source_event_item(
+                        data=validated_episode_data, source_url=episode_data_url
+                    )
+                    yield source_event_episode_item
+
                     if GDACSDataSourceType.GEOMETRY.value == episode_data[1].type:
                         validated_geometry_data = GdacsGeometryDataValidator(**episode_data[1].data.input_data.content)
                         geometry_data_url = episode_data[1].data.source_url
@@ -179,10 +180,6 @@ class GDACSTransformer(MontyDataTransformer[GDACSDataSource]):
         self.transform_summary.increment_rows(1)
 
         try:
-            validated_event_data = GdacsEventDataValidator(**self.data_source.get_data())
-            source_event_item = self.make_source_event_item(data=validated_event_data, source_url=self.data_source.source_url)
-            yield source_event_item
-
             if self.data_source.episodes:
                 for episode_data in self.data_source.episodes:
                     episode_data_file = episode_data[0].data.input_data.path
@@ -191,6 +188,10 @@ class GDACSTransformer(MontyDataTransformer[GDACSDataSource]):
 
                     validated_episode_data = GdacsEventDataValidator(**episode_file_data)
                     episode_data_url = episode_data[0].data.source_url
+                    source_event_episode_item = self.make_source_event_item(
+                        data=validated_episode_data, source_url=episode_data_url
+                    )
+                    yield source_event_episode_item
 
                     if GDACSDataSourceType.GEOMETRY.value == episode_data[1].type:
                         geometry_data_file = episode_data[1].data.input_data.path
@@ -269,7 +270,7 @@ class GDACSTransformer(MontyDataTransformer[GDACSDataSource]):
     def make_source_event_item(self, data: GdacsEventDataValidator, source_url: str) -> Item:
         """Create an event item"""
         # Build the identifier for the item
-        id = STAC_EVENT_ID_PREFIX + str(data.properties.eventid)
+        id = STAC_EVENT_ID_PREFIX + str(data.properties.eventid) + "-" + str(data.properties.episodeid)
 
         # Select the description
         if data.properties.htmldescription:
@@ -364,7 +365,7 @@ class GDACSTransformer(MontyDataTransformer[GDACSDataSource]):
         episode_event = episode_event_data[0]
         episode_geometry = episode_geometry_data[0]
 
-        item.id = item.id.replace(STAC_EVENT_ID_PREFIX, STAC_HAZARD_ID_PREFIX) + "-" + str(episode_event.properties.episodeid)
+        item.id = item.id.replace(STAC_EVENT_ID_PREFIX, STAC_HAZARD_ID_PREFIX)
         item.set_collection(self.get_hazard_collection())
         item.properties["roles"] = ["source", "hazard"]
         item.properties["source"] = episode_event.properties.source
@@ -451,8 +452,6 @@ class GDACSTransformer(MontyDataTransformer[GDACSDataSource]):
         item.id = phrase_to_dashed(
             item.id.replace(STAC_EVENT_ID_PREFIX, STAC_IMPACT_ID_PREFIX)
             + "-"
-            + str(episode_event_data[0].properties.episodeid)
-            + "-"
             + impact_data.storm_id
             + "-"
             + impact_data.advisory_number
@@ -496,8 +495,6 @@ class GDACSTransformer(MontyDataTransformer[GDACSDataSource]):
         item = self.make_source_event_item(*episode_event_data)
         item.id = phrase_to_dashed(
             item.id.replace(STAC_EVENT_ID_PREFIX, STAC_IMPACT_ID_PREFIX)
-            + "-"
-            + str(episode_event_data[0].properties.episodeid)
             + "-"
             + sendai_data.sendaitype
             + "-"
