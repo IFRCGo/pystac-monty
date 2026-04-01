@@ -620,8 +620,14 @@ class DesinventarTransformer(MontyDataTransformer[DesinventarDataSource]):
                         self.data_source.source_url,
                     ):
                         if event_item := self._create_event_item_from_row(row_data):
+                            impact_items = self._create_impact_items_from_row(row_data, event_item)
+
+                            all_items = [event_item] + impact_items
+                            self.set_item_hrefs(items=all_items, eoapi_url=self.data_source.eoapi_url)
+                            self.add_related_links(event_item=event_item, impact_items=impact_items)
+
                             yield event_item
-                            yield from self._create_impact_items_from_row(row_data, event_item)
+                            yield from impact_items
                         else:
                             self.transform_summary.increment_failed_rows()
                 except Exception:
