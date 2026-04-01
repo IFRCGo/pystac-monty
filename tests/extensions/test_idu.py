@@ -106,6 +106,41 @@ class IDUTest(unittest.TestCase):
 
     @parameterized.expand(load_scenarios(scenarios))
     @pytest.mark.vcr()
+    def test_transformer_item_links(self, transformer: IDUTransformer) -> None:
+        source_event_item = None
+        source_impact_item = None
+
+        for item in transformer.get_stac_items():
+            item_path = get_data_file(f"temp/idu/{item.id}.json")
+            with open(item_path, "w", encoding="utf-8") as f:
+                json.dump(item.to_dict(), f, indent=2)
+            item.validate(validator=self.validator)
+            monty_item_ext = MontyExtension.ext(item)
+            if monty_item_ext.is_source_event():
+                source_event_item = item
+            elif monty_item_ext.is_source_impact():
+                source_impact_item = item
+
+        self.assertIsNotNone(source_event_item)
+        self.assertIsNotNone(source_impact_item)
+
+        # Verify Related links exists
+        event_item_related_items = source_event_item.get_links(rel="related")
+        impact_item_related_items = source_impact_item.get_links(rel="related")
+        event_item_self_link = source_event_item.self_href
+        impact_item_self_link = source_impact_item.self_href
+
+        self.assertTrue(len(event_item_related_items) > 0)
+        self.assertTrue(len(impact_item_related_items) > 0)
+
+        assert all(link.href is not None and link.href != event_item_self_link for link in event_item_related_items)
+        assert all(link.href is not None and link.href != impact_item_self_link for link in impact_item_related_items)
+
+        assert event_item_self_link in [item.href for item in impact_item_related_items]
+        assert impact_item_self_link in [item.href for item in event_item_related_items]
+
+    @parameterized.expand(load_scenarios(scenarios))
+    @pytest.mark.vcr()
     def test_event_item_uses_all_codes(self, transformer: IDUTransformer) -> None:
         for item in transformer.get_stac_items():
             # write pretty json in a temporary folder

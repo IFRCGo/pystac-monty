@@ -124,6 +124,76 @@ class USGSTest(unittest.TestCase):
         self.assertIn("eq:depth", source_event_item.properties)
         self.assertIn("eq:magnitude_type", source_event_item.properties)
 
+    @parameterized.expand(load_scenarios(scenarios))
+    @pytest.mark.vcr()
+    def test_transformer_item_links(self, transformer: USGSTransformer) -> None:
+        """Test USGS transformation to STAC items
+
+        Args:
+            transformer: USGSTransformer instance to test
+
+        Tests:
+            - Items are created
+            - Items validate against schema
+            - Source event, hazard and impact items are present
+            - Items can be serialized to JSON
+        """
+
+        # Track items we find
+        source_event_item = None
+        source_hazard_item = None
+        impact_items = []
+
+        for item in transformer.get_stac_items():
+            # Write pretty JSON in temporary folder for manual inspection
+            item_path = get_data_file(f"temp/usgs/{item.id}.json")
+            with open(item_path, "w", encoding="utf-8") as f:
+                json.dump(item.to_dict(), f, indent=2, ensure_ascii=False)
+            # Validate item against schema
+            item.validate(validator=self.validator)
+
+            # Check item type
+            monty_item_ext = MontyExtension.ext(item)
+            if monty_item_ext.is_source_event():
+                source_event_item = item
+            elif monty_item_ext.is_source_hazard():
+                source_hazard_item = item
+            elif monty_item_ext.is_source_impact():
+                impact_items.append(item)
+
+        # Verify required items were created
+        self.assertIsNotNone(source_event_item)
+        self.assertIsNotNone(source_hazard_item)
+
+        # Since we provided losses data, we should have 3 impact items
+        self.assertEqual(len(impact_items), 3)
+
+        # Validate specific fields from earthquake extension
+        self.assertIn("eq:magnitude", source_event_item.properties)
+        self.assertIn("eq:depth", source_event_item.properties)
+        self.assertIn("eq:magnitude_type", source_event_item.properties)
+
+        # Verify Related links exists
+        event_item_related_items = source_event_item.get_links(rel="related")
+        hazard_item_related_items = source_hazard_item.get_links(rel="related")
+        impact_item_related_items = impact_items[-1].get_links(rel="related")
+        event_item_self_link = source_event_item.self_href
+        hazard_item_self_link = source_hazard_item.self_href
+        impact_item_self_link = impact_items[-1].self_href
+
+        self.assertTrue(len(event_item_related_items) > 0)
+        self.assertTrue(len(hazard_item_related_items) > 0)
+        self.assertTrue(len(impact_item_related_items) > 0)
+
+        assert all(link.href is not None and link.href != event_item_self_link for link in event_item_related_items)
+        assert all(link.href is not None and link.href != hazard_item_self_link for link in hazard_item_related_items)
+        assert all(link.href is not None and link.href != impact_item_self_link for link in impact_item_related_items)
+
+        assert event_item_self_link in [item.href for item in hazard_item_related_items]
+        assert hazard_item_self_link in [item.href for item in event_item_related_items]
+        assert event_item_self_link in [item.href for item in impact_item_related_items]
+        assert impact_item_self_link in [item.href for item in event_item_related_items]
+
     def test_no_losses_data(self) -> None:
         """Test transformer behavior when no losses data is provided
 

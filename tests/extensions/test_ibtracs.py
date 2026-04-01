@@ -439,6 +439,18 @@ class IBTrACSTest(unittest.TestCase):
             self.assertIsNotNone(event_link)
             self.assertIn("source", event_link.extra_fields.get("roles", []))
 
+        # Verify Related links exists
+        if event_items and hazard_items:
+            event_item_related_items = event_items[0].get_links(rel="related")
+            hazard_item_related_items = hazard_items[0].get_links(rel="related")
+            event_item_self_link = event_items[0].self_href
+            hazard_item_self_link = hazard_items[0].self_href
+
+            assert len(event_item_related_items) > 0
+            assert len(hazard_item_related_items) > 0
+            assert all(link.href is not None and link.href != event_item_self_link for link in event_item_related_items)
+            assert all(link.href is not None and link.href != hazard_item_self_link for link in hazard_item_related_items)
+
     def test_helper_methods(self) -> None:
         """Test helper methods in the IBTrACSTransformer class"""
         data_source = IBTrACSDataSource(
