@@ -196,6 +196,48 @@ class GFDTest(unittest.TestCase):
         self.assertIsNotNone(source_hazard_item)
         self.assertIsNotNone(source_impact_item)
 
+    @parameterized.expand(load_scenarios_from_file(data))
+    @pytest.mark.vcr()
+    def test_transformer_item_links(self, transformer: GFDTransformer) -> None:
+        items = transformer.make_items()
+        self.assertTrue(len(items) > 0)
+        source_event_item = None
+        source_hazard_item = None
+        source_impact_item = None
+
+        for item in items:
+            item_path = get_data_file(f"temp/gfd/{item.id}.json")
+            with open(item_path, "w", encoding="utf-8") as f:
+                json.dump(item.to_dict(), f, indent=2)
+            item.validate(validator=self.validator)
+            monty_item_ext = MontyExtension.ext(item)
+            if monty_item_ext.is_source_event():
+                source_event_item = item
+            elif monty_item_ext.is_source_hazard():
+                source_hazard_item = item
+            elif monty_item_ext.is_source_impact():
+                source_impact_item = item
+
+        self.assertIsNotNone(source_event_item)
+        self.assertIsNotNone(source_hazard_item)
+        self.assertIsNotNone(source_impact_item)
+
+        # Verify Related links exists
+        event_item_related_items = source_event_item.get_links(rel="related")
+        hazard_item_related_items = source_hazard_item.get_links(rel="related")
+        impact_item_related_items = source_impact_item.get_links(rel="related")
+        event_item_self_link = source_event_item.self_href
+        hazard_item_self_link = source_hazard_item.self_href
+        impact_item_self_link = source_impact_item.self_href
+
+        self.assertTrue(len(event_item_related_items) > 0)
+        self.assertTrue(len(hazard_item_related_items) > 0)
+        self.assertTrue(len(impact_item_related_items) > 0)
+
+        assert all(link.href is not None and link.href != event_item_self_link for link in event_item_related_items)
+        assert all(link.href is not None and link.href != hazard_item_self_link for link in hazard_item_related_items)
+        assert all(link.href is not None and link.href != impact_item_self_link for link in impact_item_related_items)
+
     @parameterized.expand(load_scenarios(scenarios))
     @pytest.mark.vcr()
     def test_event_item_uses_all_codes(self, transformer: GFDTransformer) -> None:

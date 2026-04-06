@@ -64,8 +64,8 @@ class PDCDataSource(MontyDataSourceV3):
     hazard_data: Union[str, dict]
     exposure_detail_data: Union[str, dict]
 
-    def __init__(self, data: PDCDataSourceType):
-        super().__init__(data)
+    def __init__(self, data: PDCDataSourceType, eoapi_url: str | None = None):
+        super().__init__(root=data, eoapi_url=eoapi_url)
         self.source_url = data.source_url
         self.uuid = data.uuid
         self.geojson_path = data.geojson_path
@@ -156,9 +156,16 @@ class PDCTransformer(MontyDataTransformer):
                 exposure_detail = ExposureDetailValidator(**pdc_exposure_data)
 
                 if event_item := self.make_source_event_item(pdc_hazard_data, exposure_detail):
+                    hazard_item = self.make_hazard_item(event_item, pdc_hazard_data)
+                    impact_items = self.make_impact_items(event_item, exposure_detail)
+
+                    all_items = [event_item, hazard_item] + impact_items
+                    self.set_item_hrefs(items=all_items, eoapi_url=self.data_source.eoapi_url)
+                    self.add_related_links(event_item, hazard_items=[hazard_item], impact_items=impact_items)
+
                     yield event_item
-                    yield self.make_hazard_item(event_item, pdc_hazard_data)
-                    yield from self.make_impact_items(event_item, exposure_detail)
+                    yield hazard_item
+                    yield from impact_items
                 else:
                     self.transform_summary.increment_failed_rows()
             except Exception:

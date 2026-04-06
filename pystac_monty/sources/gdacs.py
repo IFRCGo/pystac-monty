@@ -6,7 +6,7 @@ import os
 import typing
 from dataclasses import dataclass
 from enum import Enum
-from typing import Dict, List, Optional, Tuple, Union
+from typing import Dict, List, Tuple, Union
 
 import pytz
 from markdownify import markdownify as md
@@ -54,16 +54,22 @@ class GDACSDataSourceType(Enum):
     IMPACT = "getimpact"
 
 
+class HazardType(str, Enum):
+    """Hazard Types in Gdacs"""
+
+    # TODO: Fill in with more hazard types
+    TC = "TC"
+
+
 @dataclass
 class GDACSDataSource(MontyDataSourceV3):
     type: GDACSDataSourceType
-    source_url: str
     event_data: [str, dict]
     event_data_file_path: str
     episodes: list[Tuple[GdacsEpisodes, GdacsEpisodes, GdacsEpisodes | None]]
 
-    def __init__(self, data: GdacsDataSourceType):
-        super().__init__(data)
+    def __init__(self, data: GdacsDataSourceType, eoapi_url: str | None = None):
+        super().__init__(root=data, eoapi_url=eoapi_url)
         self.episodes = data.episodes
 
         def handle_file_data():
@@ -126,33 +132,49 @@ class GDACSTransformer(MontyDataTransformer[GDACSDataSource]):
         self.transform_summary.increment_rows(1)
 
         try:
-            validated_event_data = GdacsEventDataValidator(**self.data_source.get_data())
-            source_event_item = self.make_source_event_item(data=validated_event_data, source_url=self.data_source.source_url)
-            yield source_event_item
-
             if self.data_source.episodes:
                 for episode_data in self.data_source.episodes:
                     validated_episode_data = GdacsEventDataValidator(**episode_data[0].data.input_data.content)
                     episode_data_url = episode_data[0].data.source_url
+                    episode_event_item = self.make_source_event_item(data=validated_episode_data, source_url=episode_data_url)
+
                     if GDACSDataSourceType.GEOMETRY.value == episode_data[1].type:
                         validated_geometry_data = GdacsGeometryDataValidator(**episode_data[1].data.input_data.content)
                         geometry_data_url = episode_data[1].data.source_url
                     else:
                         validated_geometry_data = None
                         geometry_data_url = None
-                    if episode_data[2] and GDACSDataSourceType.IMPACT.value == episode_data[2].type:
+                    validated_impact_data = None
+                    if (
+                        episode_data[2]
+                        and episode_data[2].hazard_type
+                        and GDACSDataSourceType.IMPACT.value == episode_data[2].type
+                    ):
                         match episode_data[2].hazard_type:
-                            case "TC":
+                            case HazardType.TC:
                                 validated_impact_data = GdacsImpactDataValidatorTC(**episode_data[2].data.input_data.content)
-                    else:
-                        validated_impact_data = None
+                            case _:
+                                raise ValueError(f"Unsupported hazard type: {episode_data[2].hazard_type}")
 
                     episode_hazard_item = self.make_hazard_event_item(
                         episode_event_data=(validated_episode_data, episode_data_url),
                         episode_geometry_data=(validated_geometry_data, geometry_data_url),
                     )
+
+                    episode_impact_items = self.make_impact_items(
+                        episode_event_data=(validated_episode_data, episode_data_url), episode_impact_data=validated_impact_data
+                    )
+
+                    all_items = [episode_event_item, episode_hazard_item] + episode_impact_items
+                    self.set_item_hrefs(items=all_items, eoapi_url=self.data_source.eoapi_url)
+                    self.add_related_links(
+                        event_item=episode_event_item, hazard_items=[episode_hazard_item], impact_items=episode_impact_items
+                    )
+
+                    yield episode_event_item
                     yield episode_hazard_item
-                    yield from self.make_impact_items(source_event_item, validated_episode_data, validated_impact_data)
+                    yield from episode_impact_items
+
         except Exception:
             self.transform_summary.increment_failed_rows(1)
             logger.warning("Failed to process the GDACS data", exc_info=True)
@@ -165,10 +187,6 @@ class GDACSTransformer(MontyDataTransformer[GDACSDataSource]):
         self.transform_summary.increment_rows(1)
 
         try:
-            validated_event_data = GdacsEventDataValidator(**self.data_source.get_data())
-            source_event_item = self.make_source_event_item(data=validated_event_data, source_url=self.data_source.source_url)
-            yield source_event_item
-
             if self.data_source.episodes:
                 for episode_data in self.data_source.episodes:
                     episode_data_file = episode_data[0].data.input_data.path
@@ -177,6 +195,7 @@ class GDACSTransformer(MontyDataTransformer[GDACSDataSource]):
 
                     validated_episode_data = GdacsEventDataValidator(**episode_file_data)
                     episode_data_url = episode_data[0].data.source_url
+                    episode_event_item = self.make_source_event_item(data=validated_episode_data, source_url=episode_data_url)
 
                     if GDACSDataSourceType.GEOMETRY.value == episode_data[1].type:
                         geometry_data_file = episode_data[1].data.input_data.path
@@ -188,23 +207,37 @@ class GDACSTransformer(MontyDataTransformer[GDACSDataSource]):
                         validated_geometry_data = None
                         geometry_data_url = None
 
+                    validated_impact_data = None
                     if episode_data[2] and GDACSDataSourceType.IMPACT.value == episode_data[2].type:
                         impact_data_file = episode_data[2].data.input_data.path
                         with open(impact_data_file, "r", encoding="utf-8") as f:
                             impact_data = json.loads(f.read())
 
                         match episode_data[2].hazard_type:
-                            case "TC":
+                            case HazardType.TC:
                                 validated_impact_data = GdacsImpactDataValidatorTC(**impact_data)
-                    else:
-                        validated_impact_data = None
+                            case _:
+                                raise ValueError(f"Unsupported hazard type: {episode_data[2].hazard_type}")
 
                     episode_hazard_item = self.make_hazard_event_item(
                         episode_event_data=(validated_episode_data, episode_data_url),
                         episode_geometry_data=(validated_geometry_data, geometry_data_url),
                     )
+
+                    episode_impact_items = self.make_impact_items(
+                        episode_event_data=(validated_episode_data, episode_data_url), episode_impact_data=validated_impact_data
+                    )
+
+                    all_items = [episode_event_item, episode_hazard_item] + episode_impact_items
+                    self.set_item_hrefs(items=all_items, eoapi_url=self.data_source.eoapi_url)
+                    self.add_related_links(
+                        event_item=episode_event_item, hazard_items=[episode_hazard_item], impact_items=episode_impact_items
+                    )
+
+                    yield episode_event_item
                     yield episode_hazard_item
-                    yield from self.make_impact_items(source_event_item, validated_episode_data, validated_impact_data)
+                    yield from episode_impact_items
+
         except Exception:
             self.transform_summary.increment_failed_rows(1)
             logger.warning("Failed to process the GDACS data", exc_info=True)
@@ -250,8 +283,9 @@ class GDACSTransformer(MontyDataTransformer[GDACSDataSource]):
         return hazard_mapping.get(hazard, [])
 
     def make_source_event_item(self, data: GdacsEventDataValidator, source_url: str) -> Item:
+        """Create an event item"""
         # Build the identifier for the item
-        id = STAC_EVENT_ID_PREFIX + str(data.properties.eventid)
+        id = STAC_EVENT_ID_PREFIX + str(data.properties.eventid) + "-" + str(data.properties.episodeid)
 
         # Select the description
         if data.properties.htmldescription:
@@ -340,12 +374,13 @@ class GDACSTransformer(MontyDataTransformer[GDACSDataSource]):
         episode_event_data: Tuple[GdacsEventDataValidator, str],
         episode_geometry_data: Tuple[GdacsGeometryDataValidator | None, str | None],
     ) -> Item:
+        """Create a hazard item"""
         item = self.make_source_event_item(*episode_event_data)
 
         episode_event = episode_event_data[0]
         episode_geometry = episode_geometry_data[0]
 
-        item.id = item.id.replace(STAC_EVENT_ID_PREFIX, STAC_HAZARD_ID_PREFIX) + "-" + str(episode_event.properties.episodeid)
+        item.id = item.id.replace(STAC_EVENT_ID_PREFIX, STAC_HAZARD_ID_PREFIX)
         item.set_collection(self.get_hazard_collection())
         item.properties["roles"] = ["source", "hazard"]
         item.properties["source"] = episode_event.properties.source
@@ -391,21 +426,25 @@ class GDACSTransformer(MontyDataTransformer[GDACSDataSource]):
         )
 
     def make_impact_items(
-        self, event_item: Item, data: GdacsEventDataValidator, impact_data: GdacsImpactDataValidatorTC
+        self, episode_event_data: Tuple[GdacsEventDataValidator, str], episode_impact_data: GdacsImpactDataValidatorTC | None
     ) -> list[Item]:
         impact_items = []
 
+        episode_event = episode_event_data[0]
+
         # Search for Sendai fields
-        if hasattr(data.properties, "sendai"):
-            sendai = data.properties.sendai
+        if hasattr(episode_event.properties, "sendai"):
+            sendai = episode_event.properties.sendai
             if sendai:
-                for entry in sendai:
-                    impact_item = self.make_impact_item_from_sendai_entry(entry, event_item, data=data)
+                for sendai_data in sendai:
+                    impact_item = self.make_impact_item_from_sendai_entry(
+                        episode_event_data=episode_event_data, sendai_data=sendai_data
+                    )
                     impact_items.append(impact_item)
 
-        if impact_data:
-            for impact_data in impact_data.channel.item:
-                impact_item = self.make_impact_item_from_tc(impact_data=impact_data, event_item=event_item)
+        if episode_impact_data:
+            for impact_data in episode_impact_data.channel.item:
+                impact_item = self.make_impact_item_from_tc(impact_data=impact_data, episode_event_data=episode_event_data)
                 if impact_item:
                     impact_items.append(impact_item)
 
@@ -420,13 +459,13 @@ class GDACSTransformer(MontyDataTransformer[GDACSDataSource]):
         bbox = pt.bounds
         return pt, list(bbox)
 
-    def make_impact_item_from_tc(self, impact_data: TCImpactItem, event_item: Item) -> Item | None:
+    def make_impact_item_from_tc(
+        self, impact_data: TCImpactItem, episode_event_data: Tuple[GdacsEventDataValidator, str]
+    ) -> Item | None:
         """Create impact item for Tropical Cyclone (TC)"""
-        item = event_item.clone()
+        item = self.make_source_event_item(*episode_event_data)
         item.id = phrase_to_dashed(
             item.id.replace(STAC_EVENT_ID_PREFIX, STAC_IMPACT_ID_PREFIX)
-            + "-"
-            + str(event_item.properties["monty:episode_number"])
             + "-"
             + impact_data.storm_id
             + "-"
@@ -465,48 +504,48 @@ class GDACSTransformer(MontyDataTransformer[GDACSDataSource]):
         return item
 
     def make_impact_item_from_sendai_entry(
-        self, entry: Sendai, event_item: Item, data: Optional[GdacsEventDataValidator] = None
+        self, episode_event_data: Tuple[GdacsEventDataValidator, str], sendai_data: Sendai
     ) -> Item:
         """Create impact item for Flood using Sendai framework"""
-        item = event_item.clone()
+        item = self.make_source_event_item(*episode_event_data)
         item.id = phrase_to_dashed(
             item.id.replace(STAC_EVENT_ID_PREFIX, STAC_IMPACT_ID_PREFIX)
             + "-"
-            + entry.sendaitype
+            + sendai_data.sendaitype
             + "-"
-            + entry.sendainame
+            + sendai_data.sendainame
             + "-"
-            + entry.country
+            + sendai_data.country
             + "-"
-            + entry.region
+            + sendai_data.region
         )
-        item.common_metadata.description = entry.description
+        item.common_metadata.description = sendai_data.description
         # TODO geolocate the with country and region metadata
         # item.geometry = self.geolocate(entry["country"], entry["region"])
         item.set_collection(self.get_impact_collection())
         item.properties["roles"] = ["source", "impact"]
-        if isinstance(entry.dateinsert, str):
-            item.common_metadata.created = pytz.utc.localize(datetime.datetime.fromisoformat(entry.dateinsert))
+        if isinstance(sendai_data.dateinsert, str):
+            item.common_metadata.created = pytz.utc.localize(datetime.datetime.fromisoformat(sendai_data.dateinsert))
         else:
-            item.common_metadata.created = pytz.utc.localize(entry.dateinsert)
-        if isinstance(entry.onset_date, str):
-            item.common_metadata.start_datetime = pytz.utc.localize(datetime.datetime.fromisoformat(entry.onset_date))
+            item.common_metadata.created = pytz.utc.localize(sendai_data.dateinsert)
+        if isinstance(sendai_data.onset_date, str):
+            item.common_metadata.start_datetime = pytz.utc.localize(datetime.datetime.fromisoformat(sendai_data.onset_date))
         else:
-            item.common_metadata.start_datetime = pytz.utc.localize(entry.onset_date)
-        if isinstance(entry.expires_date, str):
-            item.common_metadata.end_datetime = pytz.utc.localize(datetime.datetime.fromisoformat(entry.expires_date))
+            item.common_metadata.start_datetime = pytz.utc.localize(sendai_data.onset_date)
+        if isinstance(sendai_data.expires_date, str):
+            item.common_metadata.end_datetime = pytz.utc.localize(datetime.datetime.fromisoformat(sendai_data.expires_date))
         else:
-            item.common_metadata.end_datetime = pytz.utc.localize(entry.expires_date)
+            item.common_metadata.end_datetime = pytz.utc.localize(sendai_data.expires_date)
 
         # Monty extension fields
         monty = MontyExtension.ext(item)
         # impact_detail
-        monty.impact_detail = self.get_impact_detail(entry)
+        monty.impact_detail = self.get_impact_detail(sendai_data)
         country_code = next(
-            (cc.iso3 for cc in data.properties.affectedcountries if cc.countryname == entry.country),
+            (cc.iso3 for cc in episode_event_data[0].properties.affectedcountries if cc.countryname == sendai_data.country),
             None,
         )
-        monty.country_codes = [country_code if country_code else data.properties.iso3]
+        monty.country_codes = [country_code if country_code else episode_event_data[0].properties.iso3]
 
         return item
 

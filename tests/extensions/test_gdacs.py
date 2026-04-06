@@ -321,6 +321,58 @@ class GDACSTest(unittest.TestCase):
         if sendai_data_available:
             self.assertIsNotNone(source_impact_item)
 
+    @parameterized.expand(load_scenarios(scenarios_2), skip_on_empty=True)
+    @pytest.mark.vcr()
+    def test_transformer_item_links(self, transformer: GDACSTransformer) -> None:
+        source_event_item = None
+        source_hazard_item = None
+        source_impact_item = None
+        sendai_data_available = False
+        for episode in transformer.data_source.episodes:
+            episode_data_file = episode[0].data.input_data.path
+            with open(episode_data_file, "r", encoding="utf-8") as f:
+                episode_data = json.loads(f.read())
+
+            if "sendai" in episode_data["properties"] and len(episode_data["properties"]["sendai"]) > 0:
+                sendai_data_available = True
+                break
+
+        for item in transformer.get_stac_items():
+            # write pretty json in a temporary folder
+            item_path = get_data_file(f"temp/gdacs/{item.id}.json")
+            with open(item_path, "w") as f:
+                json.dump(item.to_dict(), f, indent=2)
+            item.validate(validator=self.validator)
+            monty_item_ext = MontyExtension.ext(item)
+            if monty_item_ext.is_source_event():
+                source_event_item = item
+            elif monty_item_ext.is_source_hazard():
+                source_hazard_item = item
+            elif monty_item_ext.is_source_impact():
+                source_impact_item = item
+
+        self.assertIsNotNone(source_event_item)
+        self.assertIsNotNone(source_hazard_item)
+        if sendai_data_available:
+            self.assertIsNotNone(source_impact_item)
+
+        # Verify Related links exists
+        event_item_related_items = source_event_item.get_links(rel="related")
+        hazard_item_related_items = source_hazard_item.get_links(rel="related")
+        event_item_self_link = source_event_item.self_href
+        hazard_item_self_link = source_hazard_item.self_href
+
+        self.assertTrue(len(event_item_related_items) > 0)
+        self.assertTrue(len(hazard_item_related_items) > 0)
+        assert all(link.href is not None and link.href != event_item_self_link for link in event_item_related_items)
+        assert all(link.href is not None and link.href != hazard_item_self_link for link in hazard_item_related_items)
+
+        if sendai_data_available:
+            impact_item_related_items = source_impact_item.get_links(rel="related")
+            self.assertTrue(len(impact_item_related_items) > 0)
+            impact_item_self_link = source_impact_item.self_href
+            assert all(link.href is not None and link.href != impact_item_self_link for link in impact_item_related_items)
+
     @parameterized.expand([], skip_on_empty=True)
     @pytest.mark.vcr()
     def test_gdacs_hazard_codes_2025(self, transformer: GDACSTransformer) -> None:

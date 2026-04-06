@@ -198,8 +198,8 @@ class DesinventarDataSource(MontyDataSourceV3):
     country_code: str
     iso3: str
 
-    def __init__(self, data: DesinventarDataSourceType):
-        super().__init__(root=data)
+    def __init__(self, data: DesinventarDataSourceType, eoapi_url: str | None = None):
+        super().__init__(root=data, eoapi_url=eoapi_url)
         self.tmp_zip_file = data.tmp_zip_file.path
         self.country_code = data.country_code
         self.iso3 = data.iso3
@@ -620,8 +620,14 @@ class DesinventarTransformer(MontyDataTransformer[DesinventarDataSource]):
                         self.data_source.source_url,
                     ):
                         if event_item := self._create_event_item_from_row(row_data):
+                            impact_items = self._create_impact_items_from_row(row_data, event_item)
+
+                            all_items = [event_item] + impact_items
+                            self.set_item_hrefs(items=all_items, eoapi_url=self.data_source.eoapi_url)
+                            self.add_related_links(event_item=event_item, impact_items=impact_items)
+
                             yield event_item
-                            yield from self._create_impact_items_from_row(row_data, event_item)
+                            yield from impact_items
                         else:
                             self.transform_summary.increment_failed_rows()
                 except Exception:

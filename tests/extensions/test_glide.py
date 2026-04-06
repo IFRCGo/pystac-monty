@@ -137,6 +137,44 @@ class GlideTest(unittest.TestCase):
         self.assertIsNotNone(source_event_item)
         self.assertIsNotNone(source_hazard_item)
 
+    @parameterized.expand(load_scenarios(DATA_FILE))
+    @pytest.mark.vcr()
+    def test_transformer_item_links(self, transformer: GlideTransformer) -> None:
+        items = transformer.make_items()
+        self.assertTrue(len(items) > 0)
+        source_event_item = None
+        source_hazard_item = None
+
+        for item in items:
+            # write pretty json in a temporary folder for manual inspection
+            item_path = get_data_file(f"temp/glide/{item.id}.json")
+            with open(item_path, "w") as f:
+                json.dump(item.to_dict(), f, indent=2)
+            item.validate(validator=self.validator)
+            monty_item_ext = MontyExtension.ext(item)
+            if monty_item_ext.is_source_event():
+                source_event_item = item
+            elif monty_item_ext.is_source_hazard():
+                source_hazard_item = item
+
+        self.assertIsNotNone(source_event_item)
+        self.assertIsNotNone(source_hazard_item)
+
+        # Verify Related links exists
+        event_item_related_items = source_event_item.get_links(rel="related")
+        hazard_item_related_items = source_hazard_item.get_links(rel="related")
+        event_item_self_link = source_event_item.self_href
+        hazard_item_self_link = source_hazard_item.self_href
+
+        self.assertTrue(len(event_item_related_items) > 0)
+        self.assertTrue(len(hazard_item_related_items) > 0)
+
+        assert all(link.href is not None and link.href != event_item_self_link for link in event_item_related_items)
+        assert all(link.href is not None and link.href != hazard_item_self_link for link in hazard_item_related_items)
+
+        assert event_item_self_link in [item.href for item in hazard_item_related_items]
+        assert hazard_item_self_link in [item.href for item in event_item_related_items]
+
     @parameterized.expand(load_scenarios(scenarios))
     @pytest.mark.vcr()
     def test_event_item_uses_all_codes(self, transformer: GlideTransformer) -> None:

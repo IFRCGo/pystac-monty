@@ -41,8 +41,8 @@ class GIDDDataSource(MontyDataSourceV3):
     parsed_content: List[dict]
     ordered_temp_file: Optional[str] = None
 
-    def __init__(self, data: GenericDataSource):
-        super().__init__(root=data)
+    def __init__(self, data: GenericDataSource, eoapi_url: str | None = None):
+        super().__init__(root=data, eoapi_url=eoapi_url)
 
         def handle_file_data():
             if os.path.isfile(self.input_data.path):
@@ -99,8 +99,13 @@ class GIDDTransformer(MontyDataTransformer[GIDDDataSource]):
                 validated_data = get_validated_data(gidd_data)
 
                 if event_item := self.make_source_event_item(data_items=validated_data):
+                    impact_items = self.make_impact_items(event_item, validated_data)
+                    all_items = [event_item] + impact_items
+                    self.set_item_hrefs(items=all_items, eoapi_url=self.data_source.eoapi_url)
+                    self.add_related_links(event_item=event_item, impact_items=impact_items)
+
                     yield event_item
-                    yield from self.make_impact_items(event_item, validated_data)
+                    yield from impact_items
                 else:
                     self.transform_summary.increment_failed_rows(len(gidd_data))
             except Exception:

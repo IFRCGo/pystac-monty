@@ -34,14 +34,14 @@ class IBTrACSDataSource(MontyDataSourceV3):
     source_url: str
     data_source: Union[File, Memory]
 
-    def __init__(self, data: GenericDataSource, version: str = "v04r01"):
+    def __init__(self, data: GenericDataSource, eoapi_url: str | None = None, version: str = "v04r01"):
         """Initialize IBTrACS data source.
 
         Args:
             source_url: URL where the data was retrieved from
             data: Tropical cyclone track data as CSV string
         """
-        super().__init__(data)
+        super().__init__(root=data, eoapi_url=eoapi_url)
         self.version = version
 
         def handle_file_data():
@@ -135,8 +135,14 @@ class IBTrACSTransformer(MontyDataTransformer[IBTrACSDataSource]):
 
                 storm_data = parse_row_data(storm_data)
                 if event_item := self.make_source_event_items(storm_data[0].SID, storm_data):
+                    hazard_items = self.make_hazard_items(event_item, storm_data)
+
+                    all_items = [event_item] + hazard_items
+                    self.set_item_hrefs(items=all_items, eoapi_url=self.data_source.eoapi_url)
+                    self.add_related_links(event_item=event_item, hazard_items=hazard_items)
+
                     yield event_item
-                    yield from self.make_hazard_items(event_item, storm_data)
+                    yield from hazard_items
                 else:
                     self.transform_summary.increment_failed_rows(len(storm_data))
             except Exception:
