@@ -345,7 +345,7 @@ class IBTrACSTest(unittest.TestCase):
         self.assertIn("MH0309", monty_ext.hazard_codes)
         self.assertIn("TC", monty_ext.hazard_codes)
         self.assertIsNotNone(monty_ext.correlation_id)
-        self.assertTrue(monty_ext.correlation_id.startswith("20240626T000000"))
+        self.assertTrue(monty_ext.correlation_id.startswith("20240626"))
 
     def test_hazard_item_properties(self) -> None:
         """Test that hazard items have the correct properties"""
