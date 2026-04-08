@@ -440,7 +440,8 @@ class GDACSTransformer(MontyDataTransformer[GDACSDataSource]):
                     impact_item = self.make_impact_item_from_sendai_entry(
                         episode_event_data=episode_event_data, sendai_data=sendai_data
                     )
-                    impact_items.append(impact_item)
+                    if impact_item:
+                        impact_items.append(impact_item)
 
         if episode_impact_data:
             for impact_data in episode_impact_data.channel.item:
@@ -505,7 +506,7 @@ class GDACSTransformer(MontyDataTransformer[GDACSDataSource]):
 
     def make_impact_item_from_sendai_entry(
         self, episode_event_data: Tuple[GdacsEventDataValidator, str], sendai_data: Sendai
-    ) -> Item:
+    ) -> Item | None:
         """Create impact item for Flood using Sendai framework"""
         item = self.make_source_event_item(*episode_event_data)
         item.id = phrase_to_dashed(
@@ -540,7 +541,10 @@ class GDACSTransformer(MontyDataTransformer[GDACSDataSource]):
         # Monty extension fields
         monty = MontyExtension.ext(item)
         # impact_detail
-        monty.impact_detail = self.get_impact_detail(sendai_data)
+        impact_detail = self.get_impact_detail(sendai_data)
+        if not impact_detail:
+            return None
+        monty.impact_detail = impact_detail
         country_code = next(
             (cc.iso3 for cc in episode_event_data[0].properties.affectedcountries if cc.countryname == sendai_data.country),
             None,
@@ -549,15 +553,19 @@ class GDACSTransformer(MontyDataTransformer[GDACSDataSource]):
 
         return item
 
-    def get_impact_detail(self, entry: Sendai) -> ImpactDetail:
+    def get_impact_detail(self, entry: Sendai) -> ImpactDetail | None:
         """Create impact detail object"""
-        return ImpactDetail(
-            category=self.get_impact_category_from_sendai_indicators(entry.sendaitype, entry.sendainame),
-            type=self.get_impact_type_from_sendai_indicators(entry.sendaitype, entry.sendainame),
-            value=int(entry.sendaivalue),
-            unit="sendai",
-            estimate_type=MontyEstimateType.PRIMARY,
-        )
+        try:
+            return ImpactDetail(
+                category=self.get_impact_category_from_sendai_indicators(entry.sendaitype, entry.sendainame),
+                type=self.get_impact_type_from_sendai_indicators(entry.sendaitype, entry.sendainame),
+                value=int(entry.sendaivalue),
+                unit="sendai",
+                estimate_type=MontyEstimateType.PRIMARY,
+            )
+        except ValueError as e:
+            logger.warning(f"Cannot create impact data: {str(e)}")
+        return None
 
     @staticmethod
     def get_impact_category_from_sendai_indicators(sendaitype: str, sendainame: str) -> MontyImpactExposureCategory:
