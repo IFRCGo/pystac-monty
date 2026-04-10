@@ -35,7 +35,6 @@ class Pairing:
             & (geoblocks_df["lon_min"] <= geometry_lat_lon[1])
             & (geoblocks_df["lon_max"] > geometry_lat_lon[1])
         ]
-        block_id = int(geoblocks_filtered_df["block_id"].iloc[0]) if len(geoblocks_filtered_df) else -1
-
+        block_id = int(geoblocks_filtered_df["block_id"].iloc[0]) if len(geoblocks_filtered_df) else "UNK_BLOCK"
         event_id = f"{eventdatestr}-{country_codes[0]}-{block_id}-{hazard_cluster_code}-{episode_number}-GCDB"  # noqa: E501
         return event_id
