@@ -297,22 +297,13 @@ class IBTrACSTransformer(MontyDataTransformer[IBTrACSDataSource]):
 
         # Determine affected countries
         countries = self._get_countries_from_track(track_geometry)
-        monty_ext.country_codes = countries
+        monty_ext.country_codes = countries or ["XYZ"]  # Default for international waters
 
         hazard_keywords = self.hazard_profiles.get_keywords(monty_ext.hazard_codes)
         item.properties["keywords"] = list(set(hazard_keywords + countries))
 
-        # Set correlation ID
-        # Format: [datetime]-[country]-[hazard type]-[sequence]-[source]
-        # Example: 20240626T000000-XYZ-NAT-MET-STO-TRO-001-GCDB
-        start_date_str = start_time.strftime("%Y%m%dT%H%M%S")
-
-        country_code: str | None = None
-        if countries and countries[0]:
-            country_code = countries[0]
-        country_code = country_code or "XYZ"  # Default for international waters
-
-        monty_ext.correlation_id = f"{start_date_str}-{country_code}-NAT-MET-STO-TRO-001-GCDB"
+        monty_ext.episode_number = 1
+        monty_ext.compute_and_set_correlation_id(hazard_profiles=self.hazard_profiles)
 
         # Add keywords
         keywords = ["tropical cyclone"]
@@ -519,7 +510,7 @@ class IBTrACSTransformer(MontyDataTransformer[IBTrACSDataSource]):
             monty_ext.country_codes = countries
 
             # Set correlation ID (same as event)
-            monty_ext.correlation_id = MontyExtension.ext(event_item).correlation_id
+            item.properties["monty:corr_id"] = event_item.properties.get("monty:corr_id")
 
             # Add hazard detail
             hazard_detail = HazardDetail(
