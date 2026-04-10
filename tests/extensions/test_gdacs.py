@@ -321,6 +321,12 @@ class GDACSTest(unittest.TestCase):
         if sendai_data_available:
             self.assertIsNotNone(source_impact_item)
 
+        # Verify the length of the Correlation ID
+        assert len(source_event_item.properties.get("monty:corr_id").split("-")) == 6
+        assert len(source_hazard_item.properties.get("monty:corr_id").split("-")) == 6
+        if sendai_data_available:
+            assert len(source_impact_item.properties.get("monty:corr_id").split("-")) == 6
+
     @parameterized.expand(load_scenarios(scenarios_2), skip_on_empty=True)
     @pytest.mark.vcr()
     def test_transformer_item_links(self, transformer: GDACSTransformer) -> None:

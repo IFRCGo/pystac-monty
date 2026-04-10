@@ -217,6 +217,12 @@ class IBTrACSTest(unittest.TestCase):
             self.assertIn("2024178N09335", storm_ids)
             self.assertIn("2024200N12345", storm_ids)
 
+        # Verify the length of the Correlation ID
+        for source_event_item in source_event_items:
+            assert len(source_event_item.properties.get("monty:corr_id").split("-")) == 6
+        for source_hazard_item in source_hazard_items:
+            assert len(source_hazard_item.properties.get("monty:corr_id").split("-")) == 6
+
     def test_data_source_parsing(self) -> None:
         """Test IBTrACSDataSource parsing functionality
 

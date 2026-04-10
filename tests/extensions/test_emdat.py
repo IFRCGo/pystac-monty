@@ -375,6 +375,10 @@ class EMDATTest(unittest.TestCase):
         self.assertIsNotNone(source_event_item)
         self.assertIsNotNone(source_hazard_item)
 
+        # Verify the length of the Correlation ID
+        assert len(source_event_item.properties.get("monty:corr_id").split("-")) == 6
+        assert len(source_hazard_item.properties.get("monty:corr_id").split("-")) == 6
+
     @parameterized.expand(load_scenarios(DATA_FILE))
     @pytest.mark.vcr()
     def test_transformer_item_links(self, transformer: EMDATTransformer) -> None:

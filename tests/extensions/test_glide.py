@@ -160,6 +160,10 @@ class GlideTest(unittest.TestCase):
         self.assertIsNotNone(source_event_item)
         self.assertIsNotNone(source_hazard_item)
 
+        # Verify the length of the Correlation ID
+        assert len(source_event_item.properties.get("monty:corr_id").split("-")) == 6
+        assert len(source_hazard_item.properties.get("monty:corr_id").split("-")) == 6
+
         # Verify Related links exists
         event_item_related_items = source_event_item.get_links(rel="related")
         hazard_item_related_items = source_hazard_item.get_links(rel="related")

@@ -196,6 +196,11 @@ class GFDTest(unittest.TestCase):
         self.assertIsNotNone(source_hazard_item)
         self.assertIsNotNone(source_impact_item)
 
+        # Verify the length of the Correlation ID
+        assert len(source_event_item.properties.get("monty:corr_id").split("-")) == 6
+        assert len(source_hazard_item.properties.get("monty:corr_id").split("-")) == 6
+        assert len(source_impact_item.properties.get("monty:corr_id").split("-")) == 6
+
     @parameterized.expand(load_scenarios_from_file(data))
     @pytest.mark.vcr()
     def test_transformer_item_links(self, transformer: GFDTransformer) -> None:

@@ -162,6 +162,10 @@ class IfrcEventsTest(TestCase):
         self.assertIsNotNone(source_event_item)
         self.assertIsNotNone(source_impact_item)
 
+        # Verify the length of the Correlation ID
+        assert len(source_event_item.properties.get("monty:corr_id").split("-")) == 6
+        assert len(source_impact_item.properties.get("monty:corr_id").split("-")) == 6
+
     @parameterized.expand(load_scenarios(scenarios_2))
     @pytest.mark.vcr()
     def test_transformer_item_links(self, transformer: IFRCEventTransformer) -> None:
