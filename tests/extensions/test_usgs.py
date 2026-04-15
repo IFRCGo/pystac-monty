@@ -9,11 +9,13 @@ from parameterized import parameterized
 
 from pystac_monty.extension import MontyExtension
 from pystac_monty.geocoding import WorldAdministrativeBoundariesGeocoder
+from pystac_monty.hazard_profiles import MontyHazardProfiles
 from pystac_monty.sources.common import File, USGSDataSourceType
 from pystac_monty.sources.gdacs import DataType
 from pystac_monty.sources.usgs import USGSDataSource, USGSTransformer
 from tests.conftest import get_data_file
 from tests.extensions.test_monty import CustomValidator
+from tests.utils.test_utils import validate_correlation_id
 
 CURRENT_SCHEMA_URI = "https://ifrcgo.github.io/monty/v0.1.0/schema.json"
 CURRENT_SCHEMA_MAPURL = "https://raw.githubusercontent.com/IFRCGo/monty-stac-extension/refs/heads/main/json-schema/schema.json"
@@ -124,11 +126,15 @@ class USGSTest(unittest.TestCase):
         self.assertIn("eq:depth", source_event_item.properties)
         self.assertIn("eq:magnitude_type", source_event_item.properties)
 
-        # Verify the length of the Correlation ID
-        assert len(source_event_item.properties.get("monty:corr_id").split("-")) == 6
-        assert len(source_hazard_item.properties.get("monty:corr_id").split("-")) == 6
+        # Verify Correlation ID
+        hazard_profiles = MontyHazardProfiles()
+        event_item_hazard_code = hazard_profiles.get_canonical_hazard_codes(source_event_item)[0].upper()
+        validate_correlation_id(source_event_item.properties.get("monty:corr_id"), event_item_hazard_code)
+        hazard_item_hazard_code = hazard_profiles.get_canonical_hazard_codes(source_hazard_item)[0].upper()
+        validate_correlation_id(source_hazard_item.properties.get("monty:corr_id"), hazard_item_hazard_code)
         for source_impact_item in impact_items:
-            assert len(source_impact_item.properties.get("monty:corr_id").split("-")) == 6
+            impact_item_hazard_code = hazard_profiles.get_canonical_hazard_codes(source_impact_item)[0].upper()
+            validate_correlation_id(source_impact_item.properties.get("monty:corr_id"), impact_item_hazard_code)
 
     @parameterized.expand(load_scenarios(scenarios))
     @pytest.mark.vcr()

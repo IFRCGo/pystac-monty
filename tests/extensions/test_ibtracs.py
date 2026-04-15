@@ -12,10 +12,12 @@ from shapely.geometry import LineString
 
 from pystac_monty.extension import MontyExtension
 from pystac_monty.geocoding import WorldAdministrativeBoundariesGeocoder
+from pystac_monty.hazard_profiles import MontyHazardProfiles
 from pystac_monty.sources.common import DataType, File, GenericDataSource, Memory
 from pystac_monty.sources.ibtracs import IBTrACSDataSource, IBTrACSTransformer
 from tests.conftest import get_data_file
 from tests.extensions.test_monty import CustomValidator
+from tests.utils.test_utils import validate_correlation_id
 
 CURRENT_SCHEMA_URI = "https://ifrcgo.org/monty-stac-extension/v1.0.0/schema.json"
 CURRENT_SCHEMA_MAPURL = "https://raw.githubusercontent.com/IFRCGo/monty-stac-extension/refs/heads/main/json-schema/schema.json"
@@ -217,11 +219,14 @@ class IBTrACSTest(unittest.TestCase):
             self.assertIn("2024178N09335", storm_ids)
             self.assertIn("2024200N12345", storm_ids)
 
-        # Verify the length of the Correlation ID
+        # Verify Correlation ID
+        hazard_profiles = MontyHazardProfiles()
         for source_event_item in source_event_items:
-            assert len(source_event_item.properties.get("monty:corr_id").split("-")) == 6
+            event_item_hazard_code = hazard_profiles.get_canonical_hazard_codes(source_event_item)[0].upper()
+            validate_correlation_id(source_event_item.properties.get("monty:corr_id"), event_item_hazard_code)
         for source_hazard_item in source_hazard_items:
-            assert len(source_hazard_item.properties.get("monty:corr_id").split("-")) == 6
+            hazard_item_hazard_code = hazard_profiles.get_canonical_hazard_codes(source_hazard_item)[0].upper()
+            validate_correlation_id(source_hazard_item.properties.get("monty:corr_id"), hazard_item_hazard_code)
 
     def test_data_source_parsing(self) -> None:
         """Test IBTrACSDataSource parsing functionality

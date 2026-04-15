@@ -10,6 +10,7 @@ from parameterized import parameterized
 
 from pystac_monty.extension import MontyExtension
 from pystac_monty.geocoding import MockGeocoder
+from pystac_monty.hazard_profiles import MontyHazardProfiles
 from pystac_monty.sources.common import DataType, DesinventarDataSourceType, File
 from pystac_monty.sources.desinventar import (
     DesinventarDataSource,
@@ -17,6 +18,7 @@ from pystac_monty.sources.desinventar import (
 )
 from tests.conftest import get_data_file
 from tests.extensions.test_monty import CustomValidator
+from tests.utils.test_utils import validate_correlation_id
 
 geocoder = MockGeocoder()
 
@@ -106,11 +108,14 @@ class DesinventarTest(TestCase):
         # source_impact_items contains items
         self.assertTrue(len(source_impact_items) > 0)
 
-        # Verify the length of the Correlation ID
+        # Verify Correlation ID
+        hazard_profiles = MontyHazardProfiles()
         for source_event_item in source_event_items:
-            assert len(source_event_item.properties.get("monty:corr_id").split("-")) == 6
+            event_item_hazard_code = hazard_profiles.get_canonical_hazard_codes(source_event_item)[0].upper()
+            validate_correlation_id(source_event_item.properties.get("monty:corr_id"), event_item_hazard_code)
         for source_impact_item in source_impact_items:
-            assert len(source_impact_item.properties.get("monty:corr_id").split("-")) == 6
+            impact_item_hazard_code = hazard_profiles.get_canonical_hazard_codes(source_impact_item)[0].upper()
+            validate_correlation_id(source_impact_item.properties.get("monty:corr_id"), impact_item_hazard_code)
 
     @parameterized.expand(load_scenarios(scenarios))  # type: ignore[misc]
     @pytest.mark.vcr()
