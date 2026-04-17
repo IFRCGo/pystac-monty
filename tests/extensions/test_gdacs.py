@@ -12,6 +12,7 @@ from parameterized import parameterized
 
 from pystac_monty.extension import MontyExtension
 from pystac_monty.geocoding import MockGeocoder
+from pystac_monty.hazard_profiles import MontyHazardProfiles
 from pystac_monty.sources.common import DataType, File, GdacsDataSourceType, GdacsEpisodes, GenericDataSource, Memory
 from pystac_monty.sources.gdacs import (
     GDACSDataSource,
@@ -20,6 +21,7 @@ from pystac_monty.sources.gdacs import (
 )
 from tests.conftest import get_data_file
 from tests.extensions.test_monty import CustomValidator
+from tests.utils.test_utils import validate_correlation_id
 
 CURRENT_SCHEMA_URI = "https://ifrcgo.org/monty-stac-extension/v1.0.0/schema.json"
 CURRENT_SCHEMA_MAPURL = "https://raw.githubusercontent.com/IFRCGo/monty-stac-extension/refs/heads/main/json-schema/schema.json"
@@ -320,6 +322,16 @@ class GDACSTest(unittest.TestCase):
         self.assertIsNotNone(source_hazard_item)
         if sendai_data_available:
             self.assertIsNotNone(source_impact_item)
+
+        # Verify Correlation ID
+        hazard_profiles = MontyHazardProfiles()
+        event_item_hazard_code = hazard_profiles.get_canonical_hazard_codes(source_event_item)[0].upper()
+        validate_correlation_id(source_event_item.properties.get("monty:corr_id"), event_item_hazard_code)
+        hazard_item_hazard_code = hazard_profiles.get_canonical_hazard_codes(source_hazard_item)[0].upper()
+        validate_correlation_id(source_hazard_item.properties.get("monty:corr_id"), hazard_item_hazard_code)
+        if sendai_data_available:
+            impact_item_hazard_code = hazard_profiles.get_canonical_hazard_codes(source_impact_item)[0].upper()
+            validate_correlation_id(source_impact_item.properties.get("monty:corr_id"), impact_item_hazard_code)
 
     @parameterized.expand(load_scenarios(scenarios_2), skip_on_empty=True)
     @pytest.mark.vcr()
