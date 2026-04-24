@@ -289,7 +289,8 @@ class HazardDetail(ABC):
 
     @severity_value.setter
     def severity_value(self, v: float) -> None:
-        self.properties[HAZDET_SEV_VALUE_PROP] = v
+        # Coerce to float: callers (e.g. IBTrACS) may pass int; int JSON-encodes as an integer, not 8.0.
+        self.properties[HAZDET_SEV_VALUE_PROP] = float(v)
 
     @property
     def severity_unit(self) -> str:
@@ -325,6 +326,8 @@ class HazardDetail(ABC):
     def from_dict(d: dict[str, Any]) -> HazardDetail:
         # Extract standard properties
         severity_value = d.get(HAZDET_SEV_VALUE_PROP)
+        if severity_value is not None:
+            severity_value = float(severity_value)
         severity_unit = d.get(HAZDET_SEV_UNIT_PROP)
         severity_label = d.get(HAZDET_SEV_LABEL_PROP)
         estimate_type = d.get(HAZDET_ESTIMATE_TYPE_PROP)
@@ -649,6 +652,10 @@ class ItemMontyExtension(MontyExtension[pystac.Item]):
     def is_source_impact(self) -> bool:
         """Indicates if the item is a source impact."""
         return MontyRoles.SOURCE in self.item.properties["roles"] and MontyRoles.IMPACT in self.item.properties["roles"]
+
+    def is_source_response(self) -> bool:
+        """Indicates if the item is a source response (e.g. Charter acquisitions / datasets / VAPs)."""
+        return MontyRoles.SOURCE in self.item.properties["roles"] and MontyRoles.RESPONSE in self.item.properties["roles"]
 
     def __repr__(self) -> str:
         return f"<ItemMontyExtension Item id={self.item.id}>"

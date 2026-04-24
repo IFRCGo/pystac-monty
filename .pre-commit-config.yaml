@@ -28,7 +28,8 @@ repos:
       - id: detect-private-key
       - id: name-tests-test
         args: [--pytest-test-first]
-        exclude: ^tests/utils/stac_io_mock.py
+        # Helpers under tests/utils/ are not pytest modules; keep their real names.
+        exclude: ^tests/utils/(stac_io_mock|golden_export_compare)\.py$
       - id: debug-statements
       - id: check-executables-have-shebangs
       - id: check-shebang-scripts-are-executable
