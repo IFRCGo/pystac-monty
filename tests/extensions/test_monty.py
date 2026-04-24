@@ -1,5 +1,6 @@
 """Tests for pystac.tests.extensions.monty"""
 
+import gzip
 import json
 import unittest
 from datetime import datetime
@@ -14,6 +15,16 @@ from pystac_monty.extension import MontyExtension
 
 CURRENT_SCHEMA_URI = "https://ifrcgo.github.io/monty/v0.1.0/schema.json"
 CURRENT_SCHEMA_MAPURL = "https://raw.githubusercontent.com/IFRCGo/monty-stac-extension/refs/heads/main/json-schema/schema.json"
+
+
+def _json_from_url(url: str) -> Any:
+    """GET JSON; gzip-decode when body is still compressed (e.g. VCR replay)."""
+    r = requests.get(url, timeout=30)
+    r.raise_for_status()
+    data = r.content
+    if len(data) >= 2 and data[:2] == b"\x1f\x8b":
+        data = gzip.decompress(data)
+    return json.loads(data.decode("utf-8"))
 
 
 @pytest.fixture
@@ -47,7 +58,7 @@ class CustomValidator(JsonSchemaSTACValidator):
     def _get_schema(self, schema_uri: str) -> dict[str, Any]:
         if schema_uri == CURRENT_SCHEMA_URI:
             if self._schema_cache is None:
-                self.__class__._schema_cache = json.loads(requests.get(CURRENT_SCHEMA_MAPURL).text)
+                self.__class__._schema_cache = _json_from_url(CURRENT_SCHEMA_MAPURL)
             return self._schema_cache
         return super()._get_schema(schema_uri)
 
@@ -68,10 +79,8 @@ class MontyTest(unittest.TestCase):
     @pytest.mark.vcr()
     def test_validates_reference_event(self) -> None:
         event_item = Item.from_dict(
-            json.loads(
-                requests.get(
-                    "https://github.com/IFRCGo/monty-stac-extension/raw/refs/heads/main/examples/reference-events/20241027T150000-ESP-HM-FLOOD-001-GCDB.json"  ## noqa E501
-                ).text
+            _json_from_url(
+                "https://github.com/IFRCGo/monty-stac-extension/raw/refs/heads/main/examples/reference-events/20241027T150000-ESP-HM-FLOOD-001-GCDB.json"  ## noqa E501
             )
         )
         event_item.validate(validator=self.validator)
