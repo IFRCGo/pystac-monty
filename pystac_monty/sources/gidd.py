@@ -1,3 +1,5 @@
+from __future__ import annotations
+
 import itertools
 import json
 import logging
@@ -5,6 +7,7 @@ import os
 import typing
 from dataclasses import dataclass
 from datetime import datetime
+from tempfile import _TemporaryFileWrapper
 from typing import Dict, Generator, Iterator, List, Optional
 
 import ijson
@@ -21,9 +24,12 @@ from pystac_monty.extension import (
 from pystac_monty.hazard_profiles import MontyHazardProfiles
 from pystac_monty.sources.common import (
     DataType,
+    File,
     GenericDataSource,
+    Memory,
     MontyDataSourceV3,
     MontyDataTransformer,
+    file_path_for_os,
 )
 from pystac_monty.sources.utils import IDMCUtils, order_data_file
 from pystac_monty.validators.gidd import GiddValidator
@@ -39,17 +45,22 @@ class GIDDDataSource(MontyDataSourceV3):
     """GIDD data source version 2"""
 
     parsed_content: List[dict]
-    ordered_temp_file: Optional[str] = None
+    ordered_temp_file: Optional[_TemporaryFileWrapper[bytes]] = None
 
     def __init__(self, data: GenericDataSource, eoapi_url: str | None = None):
         super().__init__(root=data, eoapi_url=eoapi_url)
 
         def handle_file_data():
-            if os.path.isfile(self.input_data.path):
+            if not isinstance(self.input_data, File):
+                return
+            fp = file_path_for_os(self.input_data.path)
+            if os.path.isfile(fp):
                 jq_filter = '.features |= sort_by(.properties."Event ID")'
-                self.ordered_temp_file = order_data_file(filepath=self.input_data.path, jq_filter=jq_filter)
+                self.ordered_temp_file = order_data_file(filepath=fp, jq_filter=jq_filter)
 
         def handle_memory_data():
+            if not isinstance(self.input_data, Memory):
+                return
             self.parsed_content = json.loads(self.input_data.content)
 
         input_data_type = self.input_data.data_type
@@ -203,14 +214,14 @@ class GIDDTransformer(MontyDataTransformer[GIDDDataSource]):
         item.add_asset(
             "source",
             Asset(
-                href=self.data_source.get_source_url(),
+                href=self.data_source.get_source_url() or "",
                 media_type="application/geo+json",
                 title="GIDD GeoJson Source",
                 roles=["source"],
             ),
         )
 
-        item.add_link(Link("via", self.data_source.get_source_url(), "application/json", "GIDD Event Data"))
+        item.add_link(Link("via", self.data_source.get_source_url() or "", "application/json", "GIDD Event Data"))
 
         return item
 
@@ -290,6 +301,8 @@ class GIDDTransformer(MontyDataTransformer[GIDDDataSource]):
         input_data_type = self.data_source.get_input_data_type()
         match input_data_type:
             case DataType.FILE:
+                if tmp_file is None:
+                    return
                 with open(tmp_file.name, "rb") as f:
                     items = ijson.items(f, "features.item")
                     current_id = None

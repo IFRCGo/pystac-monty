@@ -4,7 +4,7 @@ import os
 import typing
 from dataclasses import dataclass
 from datetime import datetime
-from typing import List, Optional, Union
+from typing import List, Optional, Union, cast
 
 import ijson
 import pandas as pd
@@ -21,7 +21,15 @@ from pystac_monty.extension import (
     MontyImpactType,
 )
 from pystac_monty.hazard_profiles import MontyHazardProfiles
-from pystac_monty.sources.common import DataType, File, GenericDataSource, Memory, MontyDataSourceV3, MontyDataTransformer
+from pystac_monty.sources.common import (
+    DataType,
+    File,
+    GenericDataSource,
+    Memory,
+    MontyDataSourceV3,
+    MontyDataTransformer,
+    file_path_for_os,
+)
 from pystac_monty.validators.em_dat import EmdatDataValidator
 
 logger = logging.getLogger(__name__)
@@ -43,10 +51,16 @@ class EMDATDataSource(MontyDataSourceV3):
         super().__init__(root=data, eoapi_url=eoapi_url)
 
         def handle_file_data():
-            if os.path.isfile(self.input_data.path):
-                self.file_path = self.input_data.path
+            fin = self.input_data
+            if not isinstance(fin, File):
+                return
+            p = file_path_for_os(fin.path)
+            if os.path.isfile(p):
+                self.file_path = p
 
         def handle_memory_data():
+            if not isinstance(self.input_data, Memory):
+                return
             if isinstance(self.input_data.content, str):
                 # If data is a string, assume it's Excel content
                 self.df = pd.read_excel(self.input_data.content)
@@ -156,6 +170,8 @@ class EMDATTransformer(MontyDataTransformer[EMDATDataSource]):
 
     def get_stac_items_from_file(self) -> typing.Generator[Item, None, None]:
         data_path = self.data_source.get_data()
+        if not isinstance(data_path, str):
+            raise TypeError("File-based EM-DAT input must resolve to a file path")
 
         with open(data_path, "rb") as f:
             data = ijson.items(f, "data.public_emdat.data.item")
@@ -182,18 +198,20 @@ class EMDATTransformer(MontyDataTransformer[EMDATDataSource]):
             self.transform_summary.mark_as_complete()
 
     def get_stac_items_from_memory(self) -> typing.Generator[Item, None, None]:
-        data = self.data_source.get_data()
-        data = data.where(pd.notna(data), None)
+        frame = self.data_source.get_data()
+        if not isinstance(frame, pd.DataFrame):
+            return
+        frame = frame.where(pd.notna(frame), None)
 
         self.transform_summary.mark_as_started()
-        for _, row in data.iterrows():
+        for _, row in frame.iterrows():
             self.transform_summary.increment_rows()
             row_dict = row.to_dict()
             try:
-                data = EmdatDataValidator(**row_dict)
-                if event_item := self.make_source_event_item(data):
-                    hazard_item = self.make_hazard_event_item(event_item, data)
-                    impact_items = self.make_impact_items(data, event_item)
+                row_data = EmdatDataValidator(**row_dict)
+                if event_item := self.make_source_event_item(row_data):
+                    hazard_item = self.make_hazard_event_item(event_item, row_data)
+                    impact_items = self.make_impact_items(row_data, event_item)
                     all_items = [event_item, hazard_item] + impact_items
                     self.set_item_hrefs(items=all_items, eoapi_url=self.data_source.eoapi_url)
                     self.add_related_links(event_item=event_item, hazard_items=[hazard_item], impact_items=impact_items)
@@ -301,7 +319,7 @@ class EMDATTransformer(MontyDataTransformer[EMDATDataSource]):
 
         # Add hazard detail
         monty = MontyExtension.ext(hazard_item)
-        monty.hazard_codes = [self.hazard_profiles.get_undrr_2025_code(hazard_codes=monty.hazard_codes)]
+        monty.hazard_codes = cast(list[str], [self.hazard_profiles.get_undrr_2025_code(hazard_codes=monty.hazard_codes or [])])
 
         if row is not None:
             monty.hazard_detail = self._create_hazard_detail(
@@ -313,8 +331,11 @@ class EMDATTransformer(MontyDataTransformer[EMDATDataSource]):
 
     def make_impact_items(self, row: EmdatDataValidator, event_item: Item) -> List[Item]:
         """Create impact items from a single row"""
-        impact_items = []
-        impact_fields = {
+        impact_items: List[Item] = []
+        impact_fields: dict[
+            typing.Literal["total_deaths", "no_injured", "no_affected", "no_homeless", "total_affected", "total_dam"],
+            tuple[MontyImpactExposureCategory, MontyImpactType],
+        ] = {
             "total_deaths": (MontyImpactExposureCategory.ALL_PEOPLE, MontyImpactType.DEATH),
             "no_injured": (MontyImpactExposureCategory.ALL_PEOPLE, MontyImpactType.INJURED),
             "no_affected": (MontyImpactExposureCategory.ALL_PEOPLE, MontyImpactType.TOTAL_AFFECTED),
@@ -335,8 +356,7 @@ class EMDATTransformer(MontyDataTransformer[EMDATDataSource]):
     def _create_impact_item(
         self,
         row: EmdatDataValidator,
-        # FIXME: Make this type script
-        field: typing.Literal["total_deaths", "no_injured", "no_affected", "total_affected", "total_dam"],
+        field: typing.Literal["total_deaths", "no_injured", "no_affected", "no_homeless", "total_affected", "total_dam"],
         category: MontyImpactExposureCategory,
         impact_type: MontyImpactType,
         event_item: Item,

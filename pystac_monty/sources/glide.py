@@ -4,7 +4,7 @@ import os
 import typing
 from dataclasses import dataclass
 from datetime import datetime
-from typing import Any, List, Union
+from typing import Any, List, Union, cast
 
 import ijson
 from pystac import Asset, Item, Link
@@ -12,7 +12,15 @@ from shapely.geometry import Point, mapping
 
 from pystac_monty.extension import HazardDetail, MontyEstimateType, MontyExtension
 from pystac_monty.hazard_profiles import MontyHazardProfiles
-from pystac_monty.sources.common import DataType, File, GenericDataSource, Memory, MontyDataSourceV3, MontyDataTransformer
+from pystac_monty.sources.common import (
+    DataType,
+    File,
+    GenericDataSource,
+    Memory,
+    MontyDataSourceV3,
+    MontyDataTransformer,
+    file_path_for_os,
+)
 from pystac_monty.validators.glide import GlideSetValidator
 
 logger = logging.getLogger(__name__)
@@ -32,12 +40,17 @@ class GlideDataSource(MontyDataSourceV3):
         super().__init__(root=data, eoapi_url=eoapi_url)
 
         def handle_file_data():
-            if os.path.isfile(self.input_data.path):
-                self.file_path = self.input_data.path
+            if not isinstance(self.input_data, File):
+                return
+            fp = file_path_for_os(self.input_data.path)
+            if os.path.isfile(fp):
+                self.file_path = fp
             else:
                 raise ValueError("File path does not exist")
 
         def handle_memory_data():
+            if not isinstance(self.input_data, Memory):
+                return
             if isinstance(self.input_data.content, dict):
                 self.data = self.input_data.content
             else:
@@ -85,6 +98,8 @@ class GlideTransformer(MontyDataTransformer[GlideDataSource]):
 
     def get_stac_items_from_file(self) -> typing.Generator[Item, None, None]:
         data_path = self.data_source.get_data()
+        if not isinstance(data_path, str):
+            return
 
         with open(data_path, "rb") as f:
             self.transform_summary.mark_as_started()
@@ -115,7 +130,10 @@ class GlideTransformer(MontyDataTransformer[GlideDataSource]):
             self.transform_summary.mark_as_complete()
 
     def get_stac_items_from_memory(self) -> typing.Generator[Item, None, None]:
-        glideset: list[dict] = self.data_source.get_data()["glideset"]
+        raw = self.data_source.get_data()
+        if not isinstance(raw, dict):
+            raise TypeError("Glide in-memory data must be a JSON object")
+        glideset = cast(list[dict], raw["glideset"])
 
         self.transform_summary.mark_as_started()
         for row in glideset:
@@ -247,7 +265,7 @@ class GlideTransformer(MontyDataTransformer[GlideDataSource]):
         item.properties["roles"] = ["source", "hazard"]
 
         monty = MontyExtension.ext(item)
-        monty.hazard_codes = [self.hazard_profiles.get_undrr_2025_code(hazard_codes=monty.hazard_codes)]
+        monty.hazard_codes = cast(list[str], [self.hazard_profiles.get_undrr_2025_code(hazard_codes=monty.hazard_codes or [])])
 
         monty.hazard_detail = self.get_hazard_detail(item)
 
@@ -257,7 +275,7 @@ class GlideTransformer(MontyDataTransformer[GlideDataSource]):
         """Get hazard detail"""
         # FIXME: This is not type safe
         magnitude_raw = item.properties.get("magnitude")
-        magnitude = float(magnitude_raw) if magnitude_raw.isnumeric() else -1  # -1 to bypass validation
+        magnitude = float(magnitude_raw) if (magnitude_raw is not None and str(magnitude_raw).isnumeric()) else -1
 
         return HazardDetail(
             # NOTE If the alphanumeric value is present in the magnitude, it is converted to 0 for now.
@@ -277,7 +295,10 @@ class GlideTransformer(MontyDataTransformer[GlideDataSource]):
 
     def check_and_get_glide_events(self) -> list[Any]:
         """Validate the source fields"""
-        glideset: list[Any] = self.data_source.get_data()["glideset"]
+        raw = self.data_source.get_data()
+        if not isinstance(raw, dict):
+            return []
+        glideset: list[Any] = cast(list[Any], raw.get("glideset", []))
         if not glideset:
             print(f"No Glide data found in {self.data_source.get_source_url()}")
             return []

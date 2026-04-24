@@ -1,3 +1,5 @@
+from __future__ import annotations
+
 import datetime
 import itertools
 import json
@@ -6,6 +8,7 @@ import os
 import re
 import typing
 from dataclasses import dataclass
+from tempfile import _TemporaryFileWrapper
 from typing import Dict, Iterator, List, Optional
 
 import ijson
@@ -22,7 +25,15 @@ from pystac_monty.extension import (
     MontyImpactType,
 )
 from pystac_monty.hazard_profiles import MontyHazardProfiles
-from pystac_monty.sources.common import DataType, GenericDataSource, MontyDataSourceV3, MontyDataTransformer
+from pystac_monty.sources.common import (
+    DataType,
+    File,
+    GenericDataSource,
+    Memory,
+    MontyDataSourceV3,
+    MontyDataTransformer,
+    file_path_for_os,
+)
 from pystac_monty.sources.utils import IDMCUtils, order_data_file
 from pystac_monty.validators.idu import IDUSourceValidator
 
@@ -39,17 +50,22 @@ class IDUDataSource(MontyDataSourceV3):
     """IDU Data Source Version 2"""
 
     parsed_content: List[dict]
-    ordered_temp_file: Optional[str] = None
+    ordered_temp_file: Optional[_TemporaryFileWrapper[bytes]] = None
 
     def __init__(self, data: GenericDataSource, eoapi_url: str | None = None):
         super().__init__(root=data, eoapi_url=eoapi_url)
 
         def handle_file_data():
-            if os.path.isfile(self.input_data.path):
+            if not isinstance(self.input_data, File):
+                return
+            fp = file_path_for_os(self.input_data.path)
+            if os.path.isfile(fp):
                 jq_filter = "sort_by(.event_id)"
-                self.ordered_temp_file = order_data_file(filepath=self.input_data.path, jq_filter=jq_filter)
+                self.ordered_temp_file = order_data_file(filepath=fp, jq_filter=jq_filter)
 
         def handle_memory_data():
+            if not isinstance(self.input_data, Memory):
+                return
             self.parsed_content = json.loads(self.input_data.content)
 
         input_data_type = self.input_data.data_type
@@ -160,7 +176,7 @@ class IDUTransformer(MontyDataTransformer[IDUDataSource]):
         item.properties["roles"] = ["source", "event"]
         if data_item.source_url:
             item.add_asset("report", Asset(href=data_item.source_url, media_type="application/pdf", title="Report"))
-        item.add_link(Link("via", self.data_source.get_source_url(), "application/json", "IDU Event Data"))
+        item.add_link(Link("via", self.data_source.get_source_url() or "", "application/json", "IDU Event Data"))
 
         hazard_tuple = (data_item.category, data_item.subcategory, data_item.type, data_item.subtype)
 
@@ -240,6 +256,8 @@ class IDUTransformer(MontyDataTransformer[IDUDataSource]):
         input_data_type = self.data_source.get_input_data_type()
         match input_data_type:
             case DataType.FILE:
+                if tmp_file is None:
+                    return
                 with open(tmp_file.name, "rb") as f:
                     items = ijson.items(f, "item")  # assumes top-level is a JSON array
                     current_id = None

@@ -14,7 +14,14 @@ from pystac.item import Item
 
 from pystac_monty.extension import ImpactDetail, MontyEstimateType, MontyExtension, MontyImpactExposureCategory, MontyImpactType
 from pystac_monty.hazard_profiles import MontyHazardProfiles
-from pystac_monty.sources.common import DesinventarDataSourceType, MontyDataSourceV3, MontyDataTransformer
+from pystac_monty.sources.common import (
+    DataType,
+    DesinventarDataSourceType,
+    File,
+    MontyDataSourceV3,
+    MontyDataTransformer,
+    file_path_for_os,
+)
 from pystac_monty.validators.desinventar import (
     STAC_EVENT_ID_PREFIX,
     STAC_HAZARD_ID_PREFIX,
@@ -194,7 +201,7 @@ hazard_mapping = {
 
 # FIXME: cleanup named temporary file
 class DesinventarDataSource(MontyDataSourceV3):
-    tmp_zip_file: tempfile._TemporaryFileWrapper
+    tmp_zip_file: str | tempfile._TemporaryFileWrapper
     country_code: str
     iso3: str
 
@@ -205,39 +212,55 @@ class DesinventarDataSource(MontyDataSourceV3):
         self.iso3 = data.iso3
 
     @classmethod
-    def from_zip_file(cls, zip_file: ZipFile, country_code: str, iso3: str):
+    def from_zip_file(cls, zip_file: ZipFile, country_code: str, iso3: str, eoapi_url: str | None = None):
         fp = zip_file.fp
         if fp is None:
             raise Exception("Failed to process the zip file")
 
         content = fp.read()
-        tmp_zip_file = tempfile.NamedTemporaryFile(suffix=".zip", delete=False)
-        tmp_zip_file.write(content)
+        tmp_zip = tempfile.NamedTemporaryFile(suffix=".zip", delete=False)
+        tmp_zip.write(content)
 
-        return cls(tmp_zip_file, country_code, iso3)
+        root = DesinventarDataSourceType(
+            tmp_zip_file=File(data_type=DataType.FILE, path=tmp_zip),
+            country_code=country_code,
+            iso3=iso3,
+        )
+        return cls(root, eoapi_url=eoapi_url)
 
     @classmethod
-    def from_path(cls, zip_file_path: str, country_code: str, iso3: str):
+    def from_path(cls, zip_file_path: str, country_code: str, iso3: str, eoapi_url: str | None = None):
         with open(zip_file_path, "rb") as source_file:
             content = source_file.read()
-            tmp_zip_file = tempfile.NamedTemporaryFile(suffix=".zip", delete=False)
-            tmp_zip_file.write(content)
+            tmp_zip = tempfile.NamedTemporaryFile(suffix=".zip", delete=False)
+            tmp_zip.write(content)
 
-            return cls(tmp_zip_file, country_code, iso3)
+            root = DesinventarDataSourceType(
+                tmp_zip_file=File(data_type=DataType.FILE, path=tmp_zip),
+                country_code=country_code,
+                iso3=iso3,
+            )
+            return cls(root, eoapi_url=eoapi_url)
 
     @classmethod
-    def from_url(cls, zip_file_url: str, country_code: str, iso3: str, timeout: int = 600):
+    def from_url(cls, zip_file_url: str, country_code: str, iso3: str, timeout: int = 600, eoapi_url: str | None = None):
         response = requests.get(zip_file_url, timeout=timeout)
-        tmp_zip_file = tempfile.NamedTemporaryFile(suffix=".zip", delete=False)
-        tmp_zip_file.write(response.content)
+        tmp_zip = tempfile.NamedTemporaryFile(suffix=".zip", delete=False)
+        tmp_zip.write(response.content)
 
-        return cls(tmp_zip_file, country_code, iso3)
+        root = DesinventarDataSourceType(
+            tmp_zip_file=File(data_type=DataType.FILE, path=tmp_zip),
+            country_code=country_code,
+            iso3=iso3,
+            source_url=zip_file_url,
+        )
+        return cls(root, eoapi_url=eoapi_url)
 
     @contextmanager
     def with_xml_file(self) -> typing.Generator[typing.IO[bytes], None, None]:
         xml_file = None
         try:
-            with ZipFile(self.tmp_zip_file.name, "r") as zf_ref:
+            with ZipFile(file_path_for_os(self.tmp_zip_file), "r") as zf_ref:
                 xml_file = zf_ref.open(f"DI_export_{self.country_code}.xml")
                 yield xml_file
         except Exception:
@@ -258,7 +281,7 @@ class DesinventarTransformer(MontyDataTransformer[DesinventarDataSource]):
     geo_data_cache: Dict[str, Tuple[Dict[str, Any], List[float]]] = {}
     errored_events: Dict[str, int] = {}
 
-    def parse_with_sax(self, xml_file: typing.Generator[typing.IO[bytes], None, None]):
+    def parse_with_sax(self, xml_file: typing.IO[bytes]) -> DesinventarXMLHandler:
         """XML parsing handler"""
         handler = DesinventarXMLHandler()
         xml.sax.parse(xml_file, handler)
@@ -575,7 +598,7 @@ class DesinventarTransformer(MontyDataTransformer[DesinventarDataSource]):
                 shp_file_name = Path(str(file_path)).name
                 shapefile_data = typing.cast(
                     gpd.GeoDataFrame,
-                    gpd.read_file(f"zip://{self.data_source.tmp_zip_file.name}!{shp_file_name}"),
+                    gpd.read_file(f"zip://{file_path_for_os(self.data_source.tmp_zip_file)}!{shp_file_name}"),
                 )
             else:
                 shapefile_data = None
@@ -587,7 +610,7 @@ class DesinventarTransformer(MontyDataTransformer[DesinventarDataSource]):
         return geo_data
 
     @staticmethod
-    def _generate_hazard_name_mapping(hazard: dict):
+    def _generate_hazard_name_mapping(hazard: list[dict[str, Any]]) -> Dict[str, str]:
         hazard_name_mapping: Dict[str, str] = {}
 
         for hazard_detail in hazard:

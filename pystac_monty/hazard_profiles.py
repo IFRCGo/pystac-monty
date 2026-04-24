@@ -1,6 +1,6 @@
 import importlib.resources
 from abc import ABC, abstractmethod
-from typing import List, Optional
+from typing import List, Optional, cast
 
 import pandas as pd
 from pystac import Item
@@ -299,7 +299,7 @@ class MontyHazardProfiles(HazardProfiles):
                     pass
 
             # then try the UNDRR 2020 key column for backward compatibility
-            if not cluster_code:
+            if not cluster_code:  # type: ignore[truthy-bool]
                 try:
                     cluster_code = profiles.loc[
                         profiles[self.UNDRR_2020_KEY_COLUMN] == c, self.IMPACT_CLUSTER_CODE_COLUMN
@@ -308,13 +308,13 @@ class MontyHazardProfiles(HazardProfiles):
                     pass
 
             # then try the emdat key column
-            if not cluster_code:
+            if not cluster_code:  # type: ignore[truthy-bool]
                 try:
                     cluster_code = profiles.loc[profiles[self.EMDAT_KEY_COLUMN] == c, self.IMPACT_CLUSTER_CODE_COLUMN].values[-1]
                 except IndexError:
                     pass
             # finally try the glide key column
-            if not cluster_code:
+            if not cluster_code:  # type: ignore[truthy-bool]
                 try:
                     rows = profiles[profiles[self.GLIDE_CODE_COLUMN] == c]
                     # Several rows may match the glide code, so we must associate the rest of the hazard codes
@@ -327,7 +327,7 @@ class MontyHazardProfiles(HazardProfiles):
                                     cluster_code = row[self.IMPACT_CLUSTER_CODE_COLUMN]
                                     break
                         # get the first having the undrr 2020 key in the hazard codes
-                        if not cluster_code:
+                        if not cluster_code:  # type: ignore[truthy-bool]
                             for i, row in rows.iterrows():
                                 if row[self.UNDRR_2020_KEY_COLUMN] in monty.hazard_codes:
                                     cluster_code = row[self.IMPACT_CLUSTER_CODE_COLUMN]
@@ -337,10 +337,10 @@ class MontyHazardProfiles(HazardProfiles):
                                     break
 
                         # Get the first having no undrr key in the hazard codes
-                        rows_no_undrr = rows[rows[self.UNDRR_2020_KEY_COLUMN].isna()]
-                        if not cluster_code and len(rows_no_undrr) > 0:
+                        rows_no_undrr = cast(pd.DataFrame, rows[pd.isna(rows[self.UNDRR_2020_KEY_COLUMN])])
+                        if not cluster_code and len(rows_no_undrr) > 0:  # type: ignore[truthy-bool]
                             cluster_code = rows_no_undrr.iloc[0][self.IMPACT_CLUSTER_CODE_COLUMN]
-                        if not cluster_code or isinstance(cluster_code, float):
+                        if not cluster_code or isinstance(cluster_code, float):  # type: ignore[truthy-bool]
                             cluster_code = monty.hazard_codes[-1]
 
                     else:
@@ -351,7 +351,7 @@ class MontyHazardProfiles(HazardProfiles):
                             cluster_code = cluster_codes[-1] if cluster_codes else None
                 except IndexError:
                     pass
-            if cluster_code:
+            if cluster_code:  # type: ignore[truthy-bool]
                 cluster_codes.append(cluster_code)
         if not cluster_codes or len(cluster_codes) == 0:
             raise ValueError("No cluster code found for hazard codes {}".format(monty.hazard_codes))
@@ -369,3 +369,4 @@ class MontyHazardProfiles(HazardProfiles):
         for code in cluster_codes:
             if code in max_codes:
                 return str(code)
+        return str(max_codes[0])

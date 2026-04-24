@@ -6,7 +6,7 @@ import os
 import typing
 from dataclasses import dataclass
 from enum import Enum
-from typing import Dict, List, Tuple, Union
+from typing import Any, List, Tuple, Union, cast
 
 import pytz
 from markdownify import markdownify as md
@@ -25,10 +25,13 @@ from pystac_monty.extension import (
 from pystac_monty.hazard_profiles import MontyHazardProfiles
 from pystac_monty.sources.common import (
     DataType,
+    File,
     GdacsDataSourceType,
     GdacsEpisodes,
+    Memory,
     MontyDataSourceV3,
     MontyDataTransformer,
+    file_path_for_os,
 )
 from pystac_monty.sources.utils import phrase_to_dashed
 from pystac_monty.validators.gdacs_events import GdacsEventDataValidator, Sendai
@@ -64,7 +67,7 @@ class HazardType(str, Enum):
 @dataclass
 class GDACSDataSource(MontyDataSourceV3):
     type: GDACSDataSourceType
-    event_data: [str, dict]
+    event_data: str | dict[str, Any]
     event_data_file_path: str
     episodes: list[Tuple[GdacsEpisodes, GdacsEpisodes, GdacsEpisodes | None]]
 
@@ -73,14 +76,21 @@ class GDACSDataSource(MontyDataSourceV3):
         self.episodes = data.episodes
 
         def handle_file_data():
-            if os.path.isfile(data.event_data.path):
-                self.event_data_file_path = data.event_data.path
+            ed = data.event_data
+            if not isinstance(ed, File):
+                return
+            p = file_path_for_os(ed.path)
+            if os.path.isfile(p):
+                self.event_data_file_path = p
             else:
                 raise ValueError("File path does not exist")
 
         def handle_memory_data():
-            if isinstance(data.event_data.content, dict):
-                self.event_data = data.event_data.content
+            em = data.event_data
+            if not isinstance(em, Memory):
+                return
+            if isinstance(em.content, dict):
+                self.event_data = em.content
             else:
                 raise ValueError("Data must be in JSON")
 
@@ -93,18 +103,19 @@ class GDACSDataSource(MontyDataSourceV3):
             case _:
                 typing.assert_never(input_data_type)
 
-    def get_episode_data(self) -> List[Dict[str, Tuple[str, dict]]]:
+    def get_episode_data(self) -> list[tuple[GdacsEpisodes, GdacsEpisodes, GdacsEpisodes | None]]:
         """Get all episodes"""
         return self.episodes
 
     def get_data(self) -> Union[dict, str]:
-        if self.root.event_data.data_type == DataType.FILE:
+        root = typing.cast(GdacsDataSourceType, self.root)
+        if root.event_data.data_type == DataType.FILE:
             with open(self.event_data_file_path, "r", encoding="utf-8") as f:
                 self.event_data = json.loads(f.read())
         return self.event_data
 
     def get_input_data_type(self) -> DataType:
-        return self.root.event_data.data_type
+        return typing.cast(GdacsDataSourceType, self.root).event_data.data_type
 
 
 class GDACSTransformer(MontyDataTransformer[GDACSDataSource]):
@@ -134,12 +145,18 @@ class GDACSTransformer(MontyDataTransformer[GDACSDataSource]):
         try:
             if self.data_source.episodes:
                 for episode_data in self.data_source.episodes:
-                    validated_episode_data = GdacsEventDataValidator(**episode_data[0].data.input_data.content)
+                    ed0 = episode_data[0].data.input_data
+                    if not isinstance(ed0, Memory) or not isinstance(ed0.content, dict):
+                        raise TypeError("GDACS memory episode data must be Memory with a dict content")
+                    validated_episode_data = GdacsEventDataValidator(**ed0.content)
                     episode_data_url = episode_data[0].data.source_url
                     episode_event_item = self.make_source_event_item(data=validated_episode_data, source_url=episode_data_url)
 
                     if GDACSDataSourceType.GEOMETRY.value == episode_data[1].type:
-                        validated_geometry_data = GdacsGeometryDataValidator(**episode_data[1].data.input_data.content)
+                        ed1 = episode_data[1].data.input_data
+                        if not isinstance(ed1, Memory) or not isinstance(ed1.content, dict):
+                            raise TypeError("GDACS geometry episode data must be Memory with a dict content")
+                        validated_geometry_data = GdacsGeometryDataValidator(**ed1.content)
                         geometry_data_url = episode_data[1].data.source_url
                     else:
                         validated_geometry_data = None
@@ -152,7 +169,10 @@ class GDACSTransformer(MontyDataTransformer[GDACSDataSource]):
                     ):
                         match episode_data[2].hazard_type:
                             case HazardType.TC:
-                                validated_impact_data = GdacsImpactDataValidatorTC(**episode_data[2].data.input_data.content)
+                                ed2 = episode_data[2].data.input_data
+                                if not isinstance(ed2, Memory) or not isinstance(ed2.content, dict):
+                                    raise TypeError("GDACS impact episode data must be Memory with a dict content")
+                                validated_impact_data = GdacsImpactDataValidatorTC(**ed2.content)
                             case _:
                                 raise ValueError(f"Unsupported hazard type: {episode_data[2].hazard_type}")
 
@@ -189,7 +209,10 @@ class GDACSTransformer(MontyDataTransformer[GDACSDataSource]):
         try:
             if self.data_source.episodes:
                 for episode_data in self.data_source.episodes:
-                    episode_data_file = episode_data[0].data.input_data.path
+                    ep_path = episode_data[0].data.input_data
+                    if not isinstance(ep_path, File):
+                        raise ValueError("Event episode input must be a File in file-backed mode")
+                    episode_data_file = file_path_for_os(ep_path.path)
                     with open(episode_data_file, "r", encoding="utf-8") as f:
                         episode_file_data = json.loads(f.read())
 
@@ -198,7 +221,10 @@ class GDACSTransformer(MontyDataTransformer[GDACSDataSource]):
                     episode_event_item = self.make_source_event_item(data=validated_episode_data, source_url=episode_data_url)
 
                     if GDACSDataSourceType.GEOMETRY.value == episode_data[1].type:
-                        geometry_data_file = episode_data[1].data.input_data.path
+                        gpath = episode_data[1].data.input_data
+                        if not isinstance(gpath, File):
+                            raise ValueError("Geometry episode input must be a File in file-backed mode")
+                        geometry_data_file = file_path_for_os(gpath.path)
                         with open(geometry_data_file, "r", encoding="utf-8") as f:
                             geometry_data = json.loads(f.read())
                         validated_geometry_data = GdacsGeometryDataValidator(**geometry_data)
@@ -209,7 +235,10 @@ class GDACSTransformer(MontyDataTransformer[GDACSDataSource]):
 
                     validated_impact_data = None
                     if episode_data[2] and GDACSDataSourceType.IMPACT.value == episode_data[2].type:
-                        impact_data_file = episode_data[2].data.input_data.path
+                        ipath = episode_data[2].data.input_data
+                        if not isinstance(ipath, File):
+                            raise ValueError("Impact episode input must be a File in file-backed mode")
+                        impact_data_file = file_path_for_os(ipath.path)
                         with open(impact_data_file, "r", encoding="utf-8") as f:
                             impact_data = json.loads(f.read())
 
@@ -409,7 +438,7 @@ class GDACSTransformer(MontyDataTransformer[GDACSDataSource]):
         # hazard_detail
         monty.hazard_detail = self.get_hazard_detail(episode_event)
         # keep the first hazard code
-        monty.hazard_codes = [self.hazard_profiles.get_undrr_2025_code(hazard_codes=monty.hazard_codes)]
+        monty.hazard_codes = cast(list[str], [self.hazard_profiles.get_undrr_2025_code(hazard_codes=monty.hazard_codes or [])])
 
         return item
 
