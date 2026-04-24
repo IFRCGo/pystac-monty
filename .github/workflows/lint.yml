@@ -21,6 +21,6 @@ jobs:
       - uses: astral-sh/setup-uv@v5
         with:
           enable-cache: true
-      - name: Sync
-        run: uv sync --all-extras
-      - uses: pre-commit/action@main
+
+      - name: pre-commit run --all-files
+        uses: pre-commit/action@main
