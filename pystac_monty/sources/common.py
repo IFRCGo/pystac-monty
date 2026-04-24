@@ -1,5 +1,6 @@
 import abc
 import json
+import re
 import tempfile
 import typing
 from dataclasses import dataclass, field
@@ -11,6 +12,18 @@ from pydantic import BaseModel, ConfigDict, Field
 from pystac import Collection, Item, Link
 
 from pystac_monty.geocoding import MontyGeoCoder
+
+# Characters some STAC API deployments reject in item identifiers (GDACS / Montandon ETL learnings).
+_STAC_API_ITEM_ID_FORBIDDEN = re.compile(r"[:/?#\[\]@!$&\'()*+,;=]")
+
+
+def sanitize_stac_item_id(raw: str) -> str:
+    """Return *raw* with forbidden characters replaced by hyphens; collapse repeats and trim edges."""
+    if not raw:
+        return "x"
+    s = _STAC_API_ITEM_ID_FORBIDDEN.sub("-", raw)
+    s = re.sub(r"-+", "-", s).strip("-")
+    return s or "x"
 
 
 class TransformSummaryInProgressException(Exception): ...
