@@ -11,7 +11,7 @@ exclude: |
 
 repos:
   - repo: https://github.com/pre-commit/pre-commit-hooks
-    rev: v5.0.0
+    rev: v6.0.0
     hooks:
       - id: trailing-whitespace
       - id: end-of-file-fixer
@@ -40,36 +40,25 @@ repos:
 
   # Run the Ruff linter.
   - repo: https://github.com/astral-sh/ruff-pre-commit
-    rev: v0.9.8
+    rev: v0.15.11
     hooks:
       # Linter
       - id: ruff
-        types_or: [python, pyi, jupyter, pyproject]
+        types_or: [python, pyi, jupyter, toml]
+        files: (^|/).*\.(py|pyi|ipynb)$|(^|/)pyproject\.toml$
         args: [--fix, --exit-non-zero-on-fix]
       # Formatter
       - id: ruff-format
-        types_or: [python, pyi, jupyter, pyproject]
+        types_or: [python, pyi, jupyter, toml]
+        files: (^|/).*\.(py|pyi|ipynb)$|(^|/)pyproject\.toml$
 
   - repo: https://github.com/astral-sh/uv-pre-commit
-    rev: 0.6.9
+    rev: 0.11.7
     hooks:
       - id: uv-lock
-        args: ["--locked", "--offline"]
+        args: ["--locked"]
 
   - repo: https://github.com/RobertCraigie/pyright-python
-    rev: v1.1.396
+    rev: v1.1.409
     hooks:
       - id: pyright
-        verbose: true  # FIXME: Remove me after fixing all issues
-        entry: bash -c 'pyright "$@" || true' --  # FIXME: Remove me after fixing all issues
-        additional_dependencies:
-          [
-            beartype,
-            einops,
-            jax,
-            jaxtyping,
-            optax,
-            pytest,
-            typing_extensions,
-            wadler_lindig,
-          ]
