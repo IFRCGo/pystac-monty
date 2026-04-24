@@ -508,11 +508,7 @@ class MontyExtension(
         self._set_property(ITEM_CORR_ID_PROP, v)
 
     def compute_and_set_correlation_id(self, hazard_profiles: HazardProfiles = MontyHazardProfiles()) -> None:
-        # if the object is an ItemMontyExtension, we can generate the correlation id
-        if hasattr(self, "item") and isinstance(self.item, pystac.Item):
-            self.correlation_id = self.pairing.generate_correlation_id(self.item, hazard_profiles)
-        else:
-            raise ValueError("Correlation ID can only be computed for Items")
+        raise ValueError("Correlation ID can only be computed for Items")
 
     @property
     def country_codes(self) -> list[str]:
@@ -525,7 +521,7 @@ class MontyExtension(
         return result
 
     @country_codes.setter
-    def country_codes(self, v: str) -> None:
+    def country_codes(self, v: list[str]) -> None:
         self._set_property(ITEM_COUNTRY_CODES_PROP, v)
 
     @property
@@ -638,6 +634,9 @@ class ItemMontyExtension(MontyExtension[pystac.Item]):
         self.item = item
         self.properties = item.properties
 
+    def compute_and_set_correlation_id(self, hazard_profiles: HazardProfiles = MontyHazardProfiles()) -> None:
+        self.correlation_id = self.pairing.generate_correlation_id(self.item, hazard_profiles)
+
     def is_source_event(self) -> bool:
         """Indicates if the item is a source event."""
         return MontyRoles.SOURCE in self.item.properties["roles"] and MontyRoles.EVENT in self.item.properties["roles"]
@@ -665,13 +664,13 @@ class ItemAssetsMontyExtension(MontyExtension[item_assets.AssetDefinition]):
 
 class MontyExtensionHooks(ExtensionHooks):
     schema_uri: str = SCHEMA_URI
-    prev_extension_ids = {
+    prev_extension_ids: set[str] = {
         "monty",
         # "https://stac-extensions.github.io/monty/v1.0.0/schema.json",
         # "https://stac-extensions.github.io/monty/v2.0.0/schema.json",
         # "https://stac-extensions.github.io/monty/v2.1.0/schema.json",
     }
-    stac_object_types = {
+    stac_object_types: set[pystac.STACObjectType] = {
         pystac.STACObjectType.COLLECTION,
         pystac.STACObjectType.ITEM,
     }

@@ -4,9 +4,9 @@ import json
 import logging
 import os
 import typing
-from dataclasses import dataclass
 from datetime import datetime
 from enum import Enum
+from typing import Any, cast
 
 import pytz
 from pydantic import BaseModel
@@ -22,7 +22,13 @@ from pystac_monty.extension import (
     MontyImpactType,
 )
 from pystac_monty.hazard_profiles import MontyHazardProfiles
-from pystac_monty.sources.common import GenericDataSource, MontyDataTransformer, USGSDataSourceType
+from pystac_monty.sources.common import (
+    File,
+    GenericDataSource,
+    MontyDataTransformer,
+    USGSDataSourceType,
+    file_path_for_os,
+)
 from pystac_monty.sources.gdacs import DataType, MontyDataSourceV3
 from pystac_monty.validators.usgs import AlertBin, AlertValidator, EmpiricalValidator, USGSValidator
 
@@ -53,33 +59,55 @@ class USGSAlertData(BaseModel):
     data: GenericDataSource
 
 
-@dataclass
 class USGSDataSource(MontyDataSourceV3):
+    """USGS on-disk or in-memory inputs; `event_data` / `loss_data` / `alerts_data` hold parsed JSON when loaded."""
+
     type: USGSSourceType
     source_url: str
-    event_data = typing.Union[str, dict]
+    event_data: typing.Any
     event_data_file_path: str
     event: USGSEvent
     loss_data_file_path: str
-    loss_data: USGSLossData
+    loss_data: typing.Any
     alerts_data_file_path: str
-    alerts_data: USGSAlertData
+    alerts_data: typing.Any
 
     def __init__(self, data: USGSDataSourceType, eoapi_url: str | None = None):
         super().__init__(root=data, eoapi_url=eoapi_url)
+        self.type = USGSSourceType.EVENT
         self.source_url = data.source_url
+        self.event_data: typing.Any = {}
+        self.event_data_file_path = ""
+        self.event = USGSEvent(
+            type=USGSSourceType.EVENT.value,
+            data=GenericDataSource(
+                source_url=data.source_url,
+                input_data=data.event_data,
+            ),
+        )
+        self.loss_data_file_path = ""
+        self.loss_data = None
+        self.alerts_data_file_path = ""
+        self.alerts_data = None
 
         def handle_file_data():
-            if os.path.isfile(data.event_data.path):
-                self.event_data_file_path = data.event_data.path
+            if not isinstance(data.event_data, File):
+                raise ValueError("USGS file mode requires event_data as File")
+            ed_path = file_path_for_os(data.event_data.path)
+            if os.path.isfile(ed_path):
+                self.event_data_file_path = ed_path
             else:
                 raise ValueError("File path does not exist")
 
-            if data.loss_data and os.path.isfile(data.loss_data.path):
-                self.loss_data_file_path = data.loss_data.path
+            if data.loss_data and isinstance(data.loss_data, File):
+                lp = file_path_for_os(data.loss_data.path)
+                if os.path.isfile(lp):
+                    self.loss_data_file_path = lp
 
-            if data.alerts_data and os.path.isfile(data.alerts_data.path):
-                self.alerts_data_file_path = data.alerts_data.path
+            if data.alerts_data and isinstance(data.alerts_data, File):
+                ap = file_path_for_os(data.alerts_data.path)
+                if os.path.isfile(ap):
+                    self.alerts_data_file_path = ap
 
         def handle_memory_data(): ...
 
@@ -92,32 +120,35 @@ class USGSDataSource(MontyDataSourceV3):
             case _:
                 typing.assert_never(input_data_type)
 
-    def get_event_data(self) -> typing.Union[dict, str]:
-        if self.root.event_data.data_type == DataType.FILE:
+    def get_event_data(self) -> typing.Any:
+        root = typing.cast(USGSDataSourceType, self.root)
+        if root.event_data.data_type == DataType.FILE:
             with open(self.event_data_file_path, "r", encoding="utf-8") as f:
                 self.event_data = json.loads(f.read())
         return self.event_data
 
-    def get_loss_data(self) -> typing.Union[dict, str, None]:
-        if self.root.loss_data is None:
+    def get_loss_data(self) -> typing.Any:
+        root = typing.cast(USGSDataSourceType, self.root)
+        if root.loss_data is None:
             return []
-        if self.root.loss_data and self.root.loss_data.data_type == DataType.FILE:
+        if root.loss_data and root.loss_data.data_type == DataType.FILE:
             with open(self.loss_data_file_path, "r", encoding="utf-8") as f:
                 self.loss_data = json.loads(f.read())
                 return self.loss_data
         return self.loss_data
 
-    def get_alerts_data(self) -> typing.Union[dict, str, None]:
-        if not self.root.alerts_data:
+    def get_alerts_data(self) -> typing.Any:
+        root = typing.cast(USGSDataSourceType, self.root)
+        if not root.alerts_data:
             return []
-        if self.root.alerts_data and self.root.alerts_data.data_type == DataType.FILE:
+        if root.alerts_data and root.alerts_data.data_type == DataType.FILE:
             with open(self.alerts_data_file_path, "r", encoding="utf-8") as f:
                 self.alerts_data = json.loads(f.read())
                 return self.alerts_data
         return self.alerts_data
 
     def get_input_data_type(self) -> DataType:
-        return self.root.event_data.data_type
+        return typing.cast(USGSDataSourceType, self.root).event_data.data_type
 
     def get_source_url(self) -> str:
         return self.source_url
@@ -411,8 +442,8 @@ class USGSTransformer(MontyDataTransformer[USGSDataSource]):
             validated_item = USGSValidator(**item_data)
 
             if event_item := self.make_source_event_item(item_data=validated_item):
-                losspager_validated_items = get_validated_data(losspager_data)
-                alert_validated_items = get_validated_alert_data(alert_data)
+                losspager_validated_items = get_validated_data(cast(Any, losspager_data))
+                alert_validated_items = get_validated_alert_data(cast(Any, alert_data))
                 hazard_item = self.make_hazard_event_item(event_item=event_item, data_item=validated_item)
                 impact_items = self.make_impact_items(
                     event_item=event_item,
@@ -444,8 +475,8 @@ class USGSTransformer(MontyDataTransformer[USGSDataSource]):
         """Create source event item from USGS data."""
 
         # Create geometry from coordinates
-        longitude = item_data.geometry.coordinates[0]
-        latitude = item_data.geometry.coordinates[1]
+        longitude = float(item_data.geometry.coordinates[0] or 0.0)
+        latitude = float(item_data.geometry.coordinates[1] or 0.0)
         point = Point(longitude, latitude)
 
         event_datetime = datetime.fromtimestamp(item_data.properties.time / 1_000, pytz.UTC)
@@ -563,7 +594,7 @@ class USGSTransformer(MontyDataTransformer[USGSDataSource]):
             estimate_type=MontyEstimateType.PRIMARY,
         )
 
-        monty.hazard_codes = [self.hazard_profiles.get_undrr_2025_code(hazard_codes=monty.hazard_codes)]
+        monty.hazard_codes = cast(list[str], [self.hazard_profiles.get_undrr_2025_code(hazard_codes=monty.hazard_codes or [])])
 
         # Add shakemap assets
         # download/pin-thumbnail.png
@@ -730,11 +761,11 @@ class USGSTransformer(MontyDataTransformer[USGSDataSource]):
             estimate_type=MontyEstimateType.MODELLED,
         )
         geom = self.geocoder.get_geometry_from_iso3(monty.country_codes[0], simplified=True)
-        if geom:
-            # intersect with the hazard geometry
-            geom = shape(geom["geometry"]).intersection(shape(hazard_item.geometry))
-        impact_item.geometry = mapping(geom)
-        impact_item.bbox = geom.bounds
+        hazard_geom = hazard_item.geometry
+        if geom and hazard_geom is not None:
+            geom = shape(geom["geometry"]).intersection(shape(hazard_geom))
+            impact_item.geometry = mapping(geom)
+            impact_item.bbox = list(geom.bounds)
 
         # Add PAGER assets
         pager_assets: dict[str, typing.Any] = {

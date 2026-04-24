@@ -4,7 +4,7 @@ import os
 import typing
 from datetime import datetime
 from enum import Enum
-from typing import Any, Generator, List, Optional, Union
+from typing import Any, Generator, List, Optional, cast
 
 import pytz
 from markdownify import markdownify as md
@@ -22,7 +22,15 @@ from pystac_monty.extension import (
 )
 from pystac_monty.geocoding import MontyGeoCoder
 from pystac_monty.hazard_profiles import MontyHazardProfiles
-from pystac_monty.sources.common import DataType, GenericDataSource, MontyDataSourceV3, MontyDataTransformer, PDCDataSourceType
+from pystac_monty.sources.common import (
+    DataType,
+    File,
+    GenericDataSource,
+    MontyDataSourceV3,
+    MontyDataTransformer,
+    PDCDataSourceType,
+    file_path_for_os,
+)
 from pystac_monty.validators.pdc import AdminData, ExposureDetailValidator, HazardEventValidator
 
 logger = logging.getLogger(__name__)
@@ -61,8 +69,8 @@ class PDCDataSource(MontyDataSourceV3):
     hazard_file_path: str
     exposure_detail_file_path: str
     geojson_path: str
-    hazard_data: Union[str, dict]
-    exposure_detail_data: Union[str, dict]
+    hazard_data: Any
+    exposure_detail_data: Any
 
     def __init__(self, data: PDCDataSourceType, eoapi_url: str | None = None):
         super().__init__(root=data, eoapi_url=eoapi_url)
@@ -71,13 +79,19 @@ class PDCDataSource(MontyDataSourceV3):
         self.geojson_path = data.geojson_path
 
         def handle_file_data():
-            if os.path.isfile(data.hazard_data.path):
-                self.hazard_file_path = data.hazard_data.path
+            hazard = data.hazard_data
+            exposure = data.exposure_detail_data
+            if not isinstance(hazard, File) or not isinstance(exposure, File):
+                raise ValueError("PDC file mode requires File inputs")
+            hp = file_path_for_os(hazard.path)
+            ep = file_path_for_os(exposure.path)
+            if os.path.isfile(hp):
+                self.hazard_file_path = hp
             else:
                 raise ValueError("File path does not exist")
 
-            if os.path.isfile(data.exposure_detail_data.path):
-                self.exposure_detail_file_path = data.exposure_detail_data.path
+            if os.path.isfile(ep):
+                self.exposure_detail_file_path = ep
             else:
                 raise ValueError("File path does not exist")
 
@@ -92,20 +106,22 @@ class PDCDataSource(MontyDataSourceV3):
             case _:
                 typing.assert_never(input_data_type)
 
-    def get_hazard_data(self) -> typing.Union[dict, str]:
-        if self.root.hazard_data.data_type == DataType.FILE:
+    def get_hazard_data(self) -> Any:
+        root = typing.cast(PDCDataSourceType, self.root)
+        if root.hazard_data.data_type == DataType.FILE:
             with open(self.hazard_file_path, "r", encoding="utf-8") as f:
                 self.hazard_data = json.loads(f.read())
         return self.hazard_data
 
-    def get_exposure_detail_data(self) -> typing.Union[dict, str]:
-        if self.root.exposure_detail_data.data_type == DataType.FILE:
+    def get_exposure_detail_data(self) -> Any:
+        root = typing.cast(PDCDataSourceType, self.root)
+        if root.exposure_detail_data.data_type == DataType.FILE:
             with open(self.exposure_detail_file_path, "r", encoding="utf-8") as f:
                 self.exposure_detail_data = json.loads(f.read())
         return self.exposure_detail_data
 
     def get_input_data_type(self) -> DataType:
-        return self.root.hazard_data.data_type
+        return typing.cast(PDCDataSourceType, self.root).hazard_data.data_type
 
     def get_source_url(self) -> str:
         return self.source_url
@@ -132,7 +148,7 @@ class PDCTransformer(MontyDataTransformer):
         self.episode_number = 1
         self.hazard_data = self._get_hazard_data()
 
-    def _get_hazard_data(self):
+    def _get_hazard_data(self) -> dict[str, Any]:
         """Get a single hazard data"""
         for item in self.hazards_data:
             if item["uuid"] == self.uuid:
@@ -199,12 +215,12 @@ class PDCTransformer(MontyDataTransformer):
             id=f"{STAC_EVENT_ID_PREFIX}{self.hazard_data['uuid']}-{self.hazard_data['hazard_ID']}-{int(float(pdc_exposure_data.timestamp))}",
             geometry=geometry,
             bbox=bbox,
-            datetime=startdate,
+            datetime=cast(Any, startdate),
             properties={
                 "title": pdc_hazard_data.hazard_Name,
                 "description": description,
-                "start_datetime": startdate.isoformat(),
-                "end_datetime": enddate.isoformat(),
+                "start_datetime": startdate.isoformat(),  # type: ignore[union-attr]
+                "end_datetime": enddate.isoformat(),  # type: ignore[union-attr]
                 "category_id": pdc_hazard_data.category_ID,
             },
         )
@@ -313,7 +329,7 @@ class PDCTransformer(MontyDataTransformer):
         hazard_item.set_collection(self.get_hazard_collection())
 
         monty = MontyExtension.ext(hazard_item)
-        monty.hazard_codes = [self.hazard_profiles.get_undrr_2025_code(hazard_codes=monty.hazard_codes)]
+        monty.hazard_codes = cast(list[str], [self.hazard_profiles.get_undrr_2025_code(hazard_codes=monty.hazard_codes or [])])
         # Hazard Detail
         monty.hazard_detail = HazardDetail(
             severity_value=0.1,  # 0.1 is passed inorder to pass validation it means None in this case
@@ -324,7 +340,7 @@ class PDCTransformer(MontyDataTransformer):
 
         return hazard_item
 
-    def get_nested_data(self, data: List[AdminData], keys) -> Optional[Any]:
+    def get_nested_data(self, data: AdminData | List[AdminData], keys: tuple) -> Optional[Any]:
         for key in keys:
             if isinstance(data, list):
                 data = [item.__getattribute__(key) for item in data]
@@ -374,7 +390,7 @@ class PDCTransformer(MontyDataTransformer):
                 # Impact Detail
                 category, impact_type = field_values
                 value = self.get_nested_data(admin_item, field_key)
-                monty.impact_detail = self.get_impact_detail(category, impact_type, value)
+                monty.impact_detail = self.get_impact_detail(category, impact_type, float(value) if value is not None else 0.0)
                 impact_items.append(impact_item)
         return impact_items
 

@@ -3,7 +3,7 @@ import logging
 import os
 import typing
 from datetime import datetime
-from typing import List, Union
+from typing import Any, List, Union, cast
 
 import pytz
 from pystac import Item
@@ -24,6 +24,7 @@ from pystac_monty.sources.common import (
     Memory,
     MontyDataSourceV3,
     MontyDataTransformer,
+    file_path_for_os,
 )
 from pystac_monty.validators.gfd import GFDSourceValidator
 
@@ -41,19 +42,24 @@ class GFDDataSource(MontyDataSourceV3):
 
     file_path: str
     source_url: str
-    data: Union[str, dict]
+    data: Union[str, dict, list]
     data_source: Union[File, Memory]
 
     def __init__(self, data: GenericDataSource, eoapi_url: str | None = None):
         super().__init__(root=data, eoapi_url=eoapi_url)
 
         def handle_file_data():
-            if os.path.isfile(self.input_data.path):
-                self.file_path = self.input_data.path
+            if not isinstance(self.input_data, File):
+                return
+            file_path = file_path_for_os(self.input_data.path)
+            if os.path.isfile(file_path):
+                self.file_path = file_path
             else:
                 raise ValueError("File path does not exist")
 
         def handle_memory_data():
+            if not isinstance(self.input_data, Memory):
+                return
             if isinstance(self.input_data.content, list):
                 self.data = self.input_data.content
             else:
@@ -68,7 +74,7 @@ class GFDDataSource(MontyDataSourceV3):
             case _:
                 typing.assert_never(input_data_type)
 
-    def get_data(self) -> Union[dict, str]:
+    def get_data(self) -> Union[dict, str, list]:
         """Get the data"""
         if self.input_data.data_type == DataType.FILE:
             with open(self.file_path, "r", encoding="utf-8") as f:
@@ -97,7 +103,7 @@ class GFDTransformer(MontyDataTransformer[GFDDataSource]):
         for row in data:
             self.transform_summary.increment_rows()
             try:
-                data = GFDSourceValidator(**row)
+                data = GFDSourceValidator.model_validate(cast(dict[str, Any], row))
                 if event_item := self.make_source_event_item(data):
                     hazard_item = self.make_hazard_event_item(event_item, data)
                     impact_items = self.make_impact_items(event_item, data)
@@ -178,7 +184,7 @@ class GFDTransformer(MontyDataTransformer[GFDDataSource]):
         hazard_item.set_collection(self.get_hazard_collection())
 
         monty = MontyExtension.ext(hazard_item)
-        monty.hazard_codes = [self.hazard_profiles.get_undrr_2025_code(hazard_codes=monty.hazard_codes)]
+        monty.hazard_codes = cast(list[str], [self.hazard_profiles.get_undrr_2025_code(hazard_codes=monty.hazard_codes or [])])
         # Hazard Detail
         monty.hazard_detail = HazardDetail(
             severity_value=row.properties.dfo_severity,
@@ -216,4 +222,5 @@ class GFDTransformer(MontyDataTransformer[GFDDataSource]):
 
     def check_and_get_gfd_data(self):
         """Get the GFD data"""
-        return [item["properties"] for item in self.data_source.get_data()]
+        raw = self.data_source.get_data()
+        return [cast(dict[str, Any], item)["properties"] for item in cast(list[Any], raw)]

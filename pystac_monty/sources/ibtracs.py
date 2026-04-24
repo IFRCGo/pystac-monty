@@ -7,7 +7,7 @@ import logging
 import tempfile
 import typing
 from dataclasses import dataclass
-from typing import Dict, List, Union
+from typing import Dict, List, Union, cast
 
 import pandas as pd
 import pytz
@@ -16,7 +16,15 @@ from shapely.geometry import LineString, Point, mapping
 
 from pystac_monty.extension import HazardDetail, MontyEstimateType, MontyExtension
 from pystac_monty.hazard_profiles import MontyHazardProfiles
-from pystac_monty.sources.common import DataType, File, GenericDataSource, Memory, MontyDataSourceV3, MontyDataTransformer
+from pystac_monty.sources.common import (
+    DataType,
+    File,
+    GenericDataSource,
+    Memory,
+    MontyDataSourceV3,
+    MontyDataTransformer,
+    file_path_for_os,
+)
 from pystac_monty.validators.ibtracs import IBTracsdataValidator
 
 logger = logging.getLogger(__name__)
@@ -45,7 +53,9 @@ class IBTrACSDataSource(MontyDataSourceV3):
         self.version = version
 
         def handle_file_data():
-            df = pd.read_csv(self.input_data.path)
+            if not isinstance(self.input_data, File):
+                return
+            df = pd.read_csv(file_path_for_os(self.input_data.path))
             df = df.sort_values(by=["SID", "ISO_TIME"])
             with tempfile.NamedTemporaryFile(delete=False, mode="w", newline="", encoding="utf-8") as tmp_file:
                 df.to_csv(tmp_file, index=False)
@@ -64,6 +74,8 @@ class IBTrACSDataSource(MontyDataSourceV3):
 
     def _parse_csv(self) -> List[Dict[str, str]]:
         """Parse the CSV data into a list of dictionaries."""
+        if not isinstance(self.input_data, Memory):
+            return []
         csv_data = []
         csv_reader = csv.DictReader(io.StringIO(self.input_data.content))
         for row in csv_reader:
@@ -323,7 +335,7 @@ class IBTrACSTransformer(MontyDataTransformer[IBTrACSDataSource]):
         item.properties["keywords"] = keywords
 
         # Add links and assets
-        source_url = self.data_source.get_source_url()
+        source_url = self.data_source.get_source_url() or ""
         item.add_link(Link("via", source_url, "text/csv"))
 
         # Add data asset
@@ -496,7 +508,10 @@ class IBTrACSTransformer(MontyDataTransformer[IBTrACSDataSource]):
             # Set hazard codes
             monty_ext.hazard_codes = MontyExtension.ext(event_item).hazard_codes
             if monty_ext.hazard_codes and len(monty_ext.hazard_codes) >= 1:
-                monty_ext.hazard_codes = [self.hazard_profiles.get_undrr_2025_code(hazard_codes=monty_ext.hazard_codes)]
+                monty_ext.hazard_codes = cast(
+                    list[str],
+                    [self.hazard_profiles.get_undrr_2025_code(hazard_codes=monty_ext.hazard_codes or [])],
+                )
 
             # Determine affected countries for the track up to this point
             if i == 0:
@@ -541,7 +556,7 @@ class IBTrACSTransformer(MontyDataTransformer[IBTrACSDataSource]):
             item.properties["keywords"] = keywords
 
             # Add links and assets
-            source_url = self.data_source.get_source_url()
+            source_url = self.data_source.get_source_url() or ""
             item.add_link(Link("via", source_url, "text/csv"))
 
             # Add data asset
@@ -636,8 +651,8 @@ class IBTrACSTransformer(MontyDataTransformer[IBTrACSDataSource]):
                         countries.append(country_code)
             # For Point, check the single point
             elif isinstance(track_geometry, Point):
-                lon, lat = track_geometry.x, track_geometry.y
-                country_code = self.geocoder.get_iso3_from_geometry(track_geometry)
+                lon, lat = track_geometry.x, track_geometry.y  # noqa: F841
+                country_code = self.geocoder.get_iso3_from_geometry(mapping(track_geometry))
                 if country_code:
                     countries.append(country_code)
         except Exception as e:

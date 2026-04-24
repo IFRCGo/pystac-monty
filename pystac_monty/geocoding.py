@@ -2,7 +2,7 @@ import json
 import typing
 import zipfile
 from abc import ABC, abstractmethod
-from typing import Any, Dict, List, Optional, Set, Union
+from typing import Any, Dict, List, Optional, Set, Union, cast
 
 import fiona  # type: ignore
 import requests
@@ -153,7 +153,7 @@ class WorldAdministrativeBoundariesGeocoder(MontyGeoCoder):
         # Check cache first
         cached_value = self._cache.get(cache_key)
         if cached_value is not None:
-            return cached_value if cached_value else None  # Handle None values in cache
+            return cast(str | None, cached_value if cached_value else None)  # Handle None values in cache
 
         # Reopen file if handle is closed
         if self._file_handle is None or self._file_handle.closed:
@@ -164,7 +164,7 @@ class WorldAdministrativeBoundariesGeocoder(MontyGeoCoder):
 
         try:
             # Convert input geometry to a shapely object
-            point = shape(geometry)
+            point = cast(Any, shape(geometry))
 
             # Use the spatial filter if available in the file handle
             # This leverages FlatGeobuf's spatial indexing capabilities
@@ -176,7 +176,7 @@ class WorldAdministrativeBoundariesGeocoder(MontyGeoCoder):
                 features_to_check = filtered_features
             else:
                 # Reset cursor to beginning of file if spatial filtering is not available
-                self._file_handle.reset()
+                cast(Any, self._file_handle).reset()
                 features_to_check = self._file_handle
 
             # Check each feature to see if it contains the point
@@ -196,7 +196,7 @@ class WorldAdministrativeBoundariesGeocoder(MontyGeoCoder):
         return None
 
     def get_iso3_from_point(self, point: Point) -> Optional[str]:
-        self.get_iso3_from_geometry(point.__geo_interface__)
+        return self.get_iso3_from_geometry(point.__geo_interface__)
 
     def get_geometry_from_admin_units(self, admin_units: str, simplified: bool = False) -> Optional[Dict[str, Any]]:
         raise NotImplementedError("Method not implemented")
@@ -330,7 +330,7 @@ class GAULGeocoder(MontyGeoCoder):
             return None
 
         # Reset cursor to beginning of file
-        self._file_handle.reset()
+        cast(Any, self._file_handle).reset()
         for feature in self._file_handle:
             if feature["properties"]["ADM2_CODE"] == adm2_code:
                 adm1_code = int(feature["properties"]["ADM1_CODE"])
@@ -357,7 +357,7 @@ class GAULGeocoder(MontyGeoCoder):
 
         features = []
         # Reset cursor to beginning of file
-        self._file_handle.reset()
+        cast(Any, self._file_handle).reset()
         for feature in self._file_handle:
             if feature["properties"]["ADM1_CODE"] == adm1_code:
                 features.append(shape(feature["geometry"]))
@@ -391,7 +391,7 @@ class GAULGeocoder(MontyGeoCoder):
 
         features = []
         # Reset cursor to beginning of file
-        self._file_handle.reset()
+        cast(Any, self._file_handle).reset()
         for feature in self._file_handle:
             if feature["properties"]["ADM0_CODE"] == adm0_code:
                 features.append(shape(feature["geometry"]))
@@ -424,7 +424,7 @@ class GAULGeocoder(MontyGeoCoder):
             return None
 
         # Reset cursor to beginning of file
-        self._file_handle.reset()
+        cast(Any, self._file_handle).reset()
         # Check first few records until we find a match
         for feature in self._file_handle:
             if feature["properties"].get("ADM0_NAME", "").lower() == name.lower():
@@ -485,8 +485,8 @@ class GAULGeocoder(MontyGeoCoder):
 
             # Combine geometries and simplify
             combined = unary_union(geoms)
-            simplified = combined.simplify(self._simplify_tolerance, preserve_topology=True)
-            result = {"geometry": mapping(simplified), "bbox": list(simplified.bounds)}
+            simplified_geom = combined.simplify(self._simplify_tolerance, preserve_topology=True)
+            result = {"geometry": mapping(simplified_geom), "bbox": list(simplified_geom.bounds)}
 
             # Cache the result
             self._cache[cache_key] = result

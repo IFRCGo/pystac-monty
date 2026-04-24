@@ -76,18 +76,7 @@ exclude = [
     "tests/**",
     "notebooks/**",
 ]
-reportMissingImports = true
-reportMissingTypeStubs = false
 typeCheckingMode = "basic"
-reportAttributeAccessIssue = "warning"
-reportArgumentType = "warning"
-reportCallIssue = "warning"
-reportReturnType = "warning"
-reportAssignmentType = "warning"
-reportGeneralTypeIssues = "warning"
-reportOptionalMemberAccess = "warning"
-reportOptionalSubscript = "warning"
-reportInvalidTypeForm = "warning"
 venvPath = "."
 venv = ".venv"
 

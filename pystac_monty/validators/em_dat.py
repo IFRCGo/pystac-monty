@@ -1,6 +1,6 @@
 import logging
 from datetime import date
-from typing import Any, Optional, Union
+from typing import Any, Optional, Union, cast
 
 import pandas as pd
 from pydantic import BaseModel, ConfigDict, ValidationInfo, field_validator, model_validator
@@ -75,9 +75,9 @@ class EmdatDataValidator(BaseModelWithExtra):
         try:
             if all([self.start_year, self.start_month, self.start_day]):
                 start_date = date(
-                    self.start_year,
-                    self.start_month,
-                    self.start_day,
+                    cast(int, self.start_year),
+                    cast(int, self.start_month),
+                    cast(int, self.start_day),
                 )
             else:
                 start_date = None
@@ -88,9 +88,9 @@ class EmdatDataValidator(BaseModelWithExtra):
         try:
             if all([self.end_year, self.end_month, self.end_day]):
                 end_date = date(
-                    self.end_year,
-                    self.end_month,
-                    self.end_day,
+                    cast(int, self.end_year),
+                    cast(int, self.end_month),
+                    cast(int, self.end_day),
                 )
             else:
                 end_date = None
