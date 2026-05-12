@@ -15,6 +15,7 @@ class BaseModelWithExtra(BaseModel):
 class TCImpactItem(BaseModelWithExtra):
     """Item description of Gdacs Tropical Cyclone"""
 
+    id: str
     title: str
     point: str
     name: str

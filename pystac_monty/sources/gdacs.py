@@ -436,18 +436,20 @@ class GDACSTransformer(MontyDataTransformer[GDACSDataSource]):
         if hasattr(episode_event.properties, "sendai"):
             sendai = episode_event.properties.sendai
             if sendai:
-                for sendai_data in sendai:
+                for idx, sendai_data in enumerate(sendai):
                     impact_item = self.make_impact_item_from_sendai_entry(
-                        episode_event_data=episode_event_data, sendai_data=sendai_data
+                        idx=idx, episode_event_data=episode_event_data, sendai_data=sendai_data
                     )
                     if impact_item:
                         impact_items.append(impact_item)
 
         if episode_impact_data:
             for impact_data in episode_impact_data.channel.item:
-                impact_item = self.make_impact_item_from_tc(impact_data=impact_data, episode_event_data=episode_event_data)
-                if impact_item:
-                    impact_items.append(impact_item)
+                # Create impact item when impact population > 0
+                if int(impact_data.pop):
+                    impact_item = self.make_impact_item_from_tc(impact_data=impact_data, episode_event_data=episode_event_data)
+                    if impact_item:
+                        impact_items.append(impact_item)
 
         return impact_items
 
@@ -468,7 +470,7 @@ class GDACSTransformer(MontyDataTransformer[GDACSDataSource]):
         item.id = phrase_to_dashed(
             item.id.replace(STAC_EVENT_ID_PREFIX, STAC_IMPACT_ID_PREFIX)
             + "-"
-            + impact_data.storm_id
+            + impact_data.id
             + "-"
             + impact_data.advisory_number
         )
@@ -505,7 +507,7 @@ class GDACSTransformer(MontyDataTransformer[GDACSDataSource]):
         return item
 
     def make_impact_item_from_sendai_entry(
-        self, episode_event_data: Tuple[GdacsEventDataValidator, str], sendai_data: Sendai
+        self, idx: int, episode_event_data: Tuple[GdacsEventDataValidator, str], sendai_data: Sendai
     ) -> Item | None:
         """Create impact item for Flood using Sendai framework"""
         item = self.make_source_event_item(*episode_event_data)
@@ -519,6 +521,8 @@ class GDACSTransformer(MontyDataTransformer[GDACSDataSource]):
             + sendai_data.country
             + "-"
             + sendai_data.region
+            + "-"
+            + str(idx)
         )
         item.common_metadata.description = sendai_data.description
         # TODO geolocate the with country and region metadata
