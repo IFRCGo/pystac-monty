@@ -2,6 +2,8 @@ import logging
 import re
 from datetime import datetime
 
+import requests
+
 logger = logging.getLogger(__name__)
 
 ISO3_PATTERN = re.compile(r"^[A-Z]{3}$")
@@ -38,3 +40,9 @@ def validate_correlation_id(correlation_id: str, hazard_code: str):
     # ---- Episode number ----
     if not episode.isdigit() or int(episode) < 1:
         raise ValueError(f"Invalid episode number: {episode}")
+
+
+def request_for_schema(url: str):
+    """Validate if the schema exists"""
+    resp = requests.get(url=url)
+    assert resp.status_code == 200

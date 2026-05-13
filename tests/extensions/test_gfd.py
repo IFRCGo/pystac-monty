@@ -14,7 +14,10 @@ from pystac_monty.sources.gfd import GFDDataSource, GFDTransformer
 from pystac_monty.sources.utils import save_json_data_into_tmp_file
 from tests.conftest import get_data_file
 from tests.extensions.test_monty import CustomValidator
-from tests.utils.test_utils import validate_correlation_id
+from tests.utils.test_utils import request_for_schema, validate_correlation_id
+
+CURRENT_SCHEMA_URI = "https://ifrcgo.org/monty-stac-extension/v1.2.0/schema.json"
+CURRENT_SCHEMA_MAPURL = "https://raw.githubusercontent.com/IFRCGo/monty-stac-extension/refs/heads/main/json-schema/schema.json"
 
 
 def load_scenarios_from_file(data: List[dict]):
@@ -149,6 +152,8 @@ class GFDTest(unittest.TestCase):
     @parameterized.expand(load_scenarios(data))
     @pytest.mark.vcr()
     def test_transformer(self, transformer: GFDTransformer) -> None:
+        request_for_schema(url=CURRENT_SCHEMA_URI)  # Validate if the schema exists
+
         items = transformer.make_items()
         self.assertTrue(len(items) > 0)
         source_event_item = None
@@ -175,6 +180,8 @@ class GFDTest(unittest.TestCase):
     @parameterized.expand(load_scenarios_from_file(data))
     @pytest.mark.vcr()
     def test_transformer_from_file(self, transformer: GFDTransformer) -> None:
+        request_for_schema(url=CURRENT_SCHEMA_URI)  # Validate if the schema exists
+
         items = transformer.make_items()
         self.assertTrue(len(items) > 0)
         source_event_item = None
@@ -210,6 +217,8 @@ class GFDTest(unittest.TestCase):
     @parameterized.expand(load_scenarios_from_file(data))
     @pytest.mark.vcr()
     def test_transformer_item_links(self, transformer: GFDTransformer) -> None:
+        request_for_schema(url=CURRENT_SCHEMA_URI)  # Validate if the schema exists
+
         items = transformer.make_items()
         self.assertTrue(len(items) > 0)
         source_event_item = None
@@ -252,6 +261,8 @@ class GFDTest(unittest.TestCase):
     @parameterized.expand(load_scenarios(scenarios))
     @pytest.mark.vcr()
     def test_event_item_uses_all_codes(self, transformer: GFDTransformer) -> None:
+        request_for_schema(url=CURRENT_SCHEMA_URI)  # Validate if the schema exists
+
         for item in transformer.get_stac_items():
             # write pretty json in a temporary folder
             item_path = get_data_file(f"temp/gfd/{item.id}.json")
@@ -266,6 +277,8 @@ class GFDTest(unittest.TestCase):
     @parameterized.expand(load_scenarios(scenarios))
     @pytest.mark.vcr()
     def test_hazard_item_uses_2025_code_only(self, transformer: GFDTransformer) -> None:
+        request_for_schema(url=CURRENT_SCHEMA_URI)  # Validate if the schema exists
+
         for item in transformer.get_stac_items():
             # write pretty json in a temporary folder
             item_path = get_data_file(f"temp/gfd/{item.id}.json")
