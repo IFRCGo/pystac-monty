@@ -220,6 +220,7 @@ class PDCTransformer(MontyDataTransformer):
 
         MontyExtension.add_to(item)
         monty = MontyExtension.ext(item)
+        monty.src_event_id = str(pdc_hazard_data.hazard_ID)
         monty.episode_number = self.episode_number
         monty.country_codes = list(set(all_iso3))
 

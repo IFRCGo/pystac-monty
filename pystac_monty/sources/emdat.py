@@ -269,6 +269,7 @@ class EMDATTransformer(MontyDataTransformer[EMDATDataSource]):
         # Add Monty extension
         MontyExtension.add_to(item)
         monty = MontyExtension.ext(item)
+        monty.src_event_id = str(row.disno)
         monty.episode_number = 1  # EM-DAT doesn't have episodes
         monty.hazard_codes = self.map_emdat_to_hazard_codes(row.classif_key)
         monty.country_codes = [row.iso] if row.iso else []
