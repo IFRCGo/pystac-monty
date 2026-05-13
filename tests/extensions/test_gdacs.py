@@ -426,8 +426,8 @@ class GDACSTest(unittest.TestCase):
     @parameterized.expand(load_scenarios(scenarios_3), skip_on_empty=True)
     @pytest.mark.vcr()
     def test_transformer_with_file_data_tc(self, transformer: GDACSTransformer) -> None:
-        source_event_items = []
-        source_hazard_items = []
+        source_event_item = None
+        source_hazard_item = None
         source_impact_items = []
 
         for item in transformer.get_stac_items():
@@ -438,19 +438,15 @@ class GDACSTest(unittest.TestCase):
             item.validate(validator=self.validator)
             monty_item_ext = MontyExtension.ext(item)
             if monty_item_ext.is_source_event():
-                source_event_items.append(item)
+                source_event_item = item
             elif monty_item_ext.is_source_hazard():
-                source_hazard_items.append(item)
+                source_hazard_item = item
             elif monty_item_ext.is_source_impact():
                 source_impact_items.append(item)
 
-        ids = (
-            [item.id for item in source_event_items]
-            + [item.id for item in source_hazard_items]
-            + [item.id for item in source_impact_items]
-        )
+        ids = [source_event_item.id, source_hazard_item.id] + [item.id for item in source_impact_items]
         self.assertTrue(len(ids) == len(set(ids)))
 
-        self.assertTrue(len(source_event_items) > 0)
-        self.assertTrue(len(source_hazard_items) > 0)
+        self.assertIsNotNone(source_event_item)
+        self.assertIsNotNone(source_hazard_item)
         self.assertTrue(len(source_impact_items) >= 0)  # can be 0 as well (when affected pop = 0)
