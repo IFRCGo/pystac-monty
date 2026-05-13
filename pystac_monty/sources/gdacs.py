@@ -445,11 +445,9 @@ class GDACSTransformer(MontyDataTransformer[GDACSDataSource]):
 
         if episode_impact_data:
             for impact_data in episode_impact_data.channel.item:
-                # Create impact item when impact population > 0
-                if int(impact_data.pop):
-                    impact_item = self.make_impact_item_from_tc(impact_data=impact_data, episode_event_data=episode_event_data)
-                    if impact_item:
-                        impact_items.append(impact_item)
+                impact_item = self.make_impact_item_from_tc(impact_data=impact_data, episode_event_data=episode_event_data)
+                if impact_item:
+                    impact_items.append(impact_item)
 
         return impact_items
 
