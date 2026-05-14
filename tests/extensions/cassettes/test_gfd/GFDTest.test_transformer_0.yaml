@@ -2,18 +2,20 @@ interactions:
 - request:
     body: null
     headers:
+      Accept:
+      - '*/*'
+      Accept-Encoding:
+      - gzip, deflate
       Connection:
-      - close
-      Host:
-      - ifrcgo.org
+      - keep-alive
       User-Agent:
-      - Python-urllib/3.12
+      - python-requests/2.33.1
     method: GET
-    uri: https://ifrcgo.org/monty-stac-extension/v1.1.0/schema.json
+    uri: https://ifrcgo.org/monty-stac-extension/v1.2.0/schema.json
   response:
     body:
       string: "{\n  \"$schema\": \"http://json-schema.org/draft-07/schema#\",\n  \"$id\":
-        \"https://ifrcgo.org/monty-stac-extension/v1.1.0/schema.json#\",\n  \"title\":
+        \"https://ifrcgo.org/monty-stac-extension/v1.2.0/schema.json#\",\n  \"title\":
         \"Monty Extension\",\n  \"description\": \"STAC Monty Extension for STAC Items
         and STAC Collections.\",\n  \"oneOf\": [\n    {\n      \"$comment\": \"This
         is the schema for STAC Items.\",\n      \"allOf\": [\n        {\n          \"$ref\":
@@ -44,12 +46,15 @@ interactions:
         \       }\n      ]\n    }\n  ],\n  \"definitions\": {\n    \"stac_extensions\":
         {\n      \"type\": \"object\",\n      \"required\": [\n        \"stac_extensions\"\n
         \     ],\n      \"properties\": {\n        \"stac_extensions\": {\n          \"type\":
-        \"array\",\n          \"contains\": {\n            \"const\": \"https://ifrcgo.org/monty-stac-extension/v1.1.0/schema.json\"\n
+        \"array\",\n          \"contains\": {\n            \"const\": \"https://ifrcgo.org/monty-stac-extension/v1.2.0/schema.json\"\n
         \         }\n        }\n      }\n    },\n    \"fields\": {\n      \"$comment\":
         \"Monty prefixed fields\",\n      \"type\": \"object\",\n      \"properties\":
-        {\n        \"monty:episode_number\": {\n          \"type\": \"integer\"\n
-        \       },\n        \"monty:country_codes\": {\n          \"type\": \"array\",\n
-        \         \"items\": {\n            \"type\": \"string\",\n            \"pattern\":
+        {\n        \"monty:src_event_id\": {\n          \"type\": \"string\",\n          \"minLength\":
+        1,\n          \"description\": \"The identifier of the event in the source
+        system. Used to group items (episodes, hazards, impacts) belonging to the
+        same source event.\"\n        },\n        \"monty:episode_number\": {\n          \"type\":
+        \"integer\"\n        },\n        \"monty:country_codes\": {\n          \"type\":
+        \"array\",\n          \"items\": {\n            \"type\": \"string\",\n            \"pattern\":
         \"^([A-Z]{3})|AB9$\",\n            \"$comment\": \"AB9 is a special code for
         the Abyei area used by IDMC\"\n          }\n        },\n        \"monty:hazard_codes\":
         {\n          \"type\": \"array\",\n          \"items\": {\n            \"type\":
@@ -155,21 +160,23 @@ interactions:
       Access-Control-Allow-Origin:
       - '*'
       Age:
-      - '0'
+      - '23'
       Cache-Control:
       - max-age=600
       Connection:
-      - close
+      - keep-alive
+      Content-Encoding:
+      - gzip
       Content-Length:
-      - '10393'
+      - '2252'
       Content-Type:
       - application/json; charset=utf-8
       Date:
-      - Tue, 11 Nov 2025 05:17:39 GMT
+      - Thu, 14 May 2026 04:39:49 GMT
       ETag:
-      - '"690c54cc-2899"'
+      - W/"6a04105b-299c"
       Last-Modified:
-      - Thu, 06 Nov 2025 07:57:00 GMT
+      - Wed, 13 May 2026 05:47:07 GMT
       Server:
       - GitHub.com
       Vary:
@@ -179,17 +186,17 @@ interactions:
       X-Cache:
       - HIT
       X-Cache-Hits:
-      - '0'
+      - '2'
       X-Fastly-Request-ID:
-      - a9677c8df481c43a175df3bd32d1ec355febda59
+      - 2fd1c2c42f331b113c08c4be0cee5a9125eba899
       X-GitHub-Request-Id:
-      - 8FE8:3C902F:4F53A1:584B0A:6912B97C
+      - 46F8:F81A8:5EC08:7617C:6A05485B
       X-Served-By:
-      - cache-del21731-DEL
+      - cache-del-vibw2260024-DEL
       X-Timer:
-      - S1762838259.708221,VS0,VE402
+      - S1778733589.360901,VS0,VE0
       expires:
-      - Tue, 11 Nov 2025 04:30:12 GMT
+      - Thu, 14 May 2026 04:08:19 GMT
       x-proxy-cache:
       - MISS
     status:
