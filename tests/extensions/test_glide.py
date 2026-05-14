@@ -18,9 +18,9 @@ from pystac_monty.sources.glide import GlideDataSource, GlideTransformer
 from pystac_monty.sources.utils import save_json_data_into_tmp_file
 from tests.conftest import get_data_file
 from tests.extensions.test_monty import CustomValidator
-from tests.utils.test_utils import validate_correlation_id
+from tests.utils.test_utils import request_for_schema, validate_correlation_id
 
-CURRENT_SCHEMA_URI = "https://ifrcgo.github.io/monty/v1.1.0/schema.json"
+CURRENT_SCHEMA_URI = "https://ifrcgo.org/monty-stac-extension/v1.2.0/schema.json"
 CURRENT_SCHEMA_MAPURL = "https://raw.githubusercontent.com/IFRCGo/monty-stac-extension/refs/heads/main/json-schema/schema.json"
 
 json_mock_data = {
@@ -98,6 +98,7 @@ class GlideTest(unittest.TestCase):
     @parameterized.expand(load_scenarios(scenarios))
     @pytest.mark.vcr()
     def test_transformer(self, transformer: GlideTransformer) -> None:
+        request_for_schema(url=CURRENT_SCHEMA_MAPURL)
         items = transformer.make_items()
         self.assertTrue(len(items) > 0)
         source_event_item = None
@@ -120,6 +121,7 @@ class GlideTest(unittest.TestCase):
     @parameterized.expand(load_scenarios(DATA_FILE))
     @pytest.mark.vcr()
     def test_transformer_with_file_data(self, transformer: GlideTransformer) -> None:
+        request_for_schema(url=CURRENT_SCHEMA_MAPURL)
         items = transformer.make_items()
         self.assertTrue(len(items) > 0)
         source_event_item = None
@@ -149,6 +151,7 @@ class GlideTest(unittest.TestCase):
     @parameterized.expand(load_scenarios(DATA_FILE))
     @pytest.mark.vcr()
     def test_transformer_item_links(self, transformer: GlideTransformer) -> None:
+        request_for_schema(url=CURRENT_SCHEMA_MAPURL)
         items = transformer.make_items()
         self.assertTrue(len(items) > 0)
         source_event_item = None
@@ -187,6 +190,7 @@ class GlideTest(unittest.TestCase):
     @parameterized.expand(load_scenarios(scenarios))
     @pytest.mark.vcr()
     def test_event_item_uses_all_codes(self, transformer: GlideTransformer) -> None:
+        request_for_schema(url=CURRENT_SCHEMA_MAPURL)
         for item in transformer.get_stac_items():
             # write pretty json in a temporary folder
             item_path = get_data_file(f"temp/glide/{item.id}.json")
@@ -201,6 +205,7 @@ class GlideTest(unittest.TestCase):
     @parameterized.expand(load_scenarios(scenarios))
     @pytest.mark.vcr()
     def test_hazard_item_uses_2025_code_only(self, transformer: GlideTransformer) -> None:
+        request_for_schema(url=CURRENT_SCHEMA_MAPURL)
         for item in transformer.get_stac_items():
             # write pretty json in a temporary folder
             item_path = get_data_file(f"temp/glide/{item.id}.json")
@@ -214,6 +219,7 @@ class GlideTest(unittest.TestCase):
 
     @parameterized.expand(load_scenarios(scenarios))
     def test_ifrc_hazard_codes_2025(self, transformer: GlideTransformer):
+        request_for_schema(url=CURRENT_SCHEMA_MAPURL)
         # Test consolidated codes
         assert transformer.get_hazard_codes("EQ") == ["GH0101", "nat-geo-ear-gro", "EQ"]
         assert transformer.get_hazard_codes("TC") == ["MH0309", "nat-met-sto-tro", "TC"]

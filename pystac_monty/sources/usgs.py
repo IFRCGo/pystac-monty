@@ -476,6 +476,7 @@ class USGSTransformer(MontyDataTransformer[USGSDataSource]):
         # Add Monty extension
         MontyExtension.add_to(item)
         monty = MontyExtension.ext(item)
+        monty.src_event_id = str(item_data.id)
         monty.episode_number = 1
         monty.hazard_codes = ["GH0311", "nat-geo-ear-gro", "EQ"]  # Earthquake surface rupture code
         monty.hazard_codes = self.hazard_profiles.get_canonical_hazard_codes(item=item)

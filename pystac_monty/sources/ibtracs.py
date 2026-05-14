@@ -301,7 +301,7 @@ class IBTrACSTransformer(MontyDataTransformer[IBTrACSDataSource]):
 
         hazard_keywords = self.hazard_profiles.get_keywords(monty_ext.hazard_codes)
         item.properties["keywords"] = list(set(hazard_keywords + countries))
-
+        monty_ext.src_event_id = storm_id
         monty_ext.episode_number = 1
         monty_ext.compute_and_set_correlation_id(hazard_profiles=self.hazard_profiles)
 
@@ -492,6 +492,9 @@ class IBTrACSTransformer(MontyDataTransformer[IBTrACSDataSource]):
             # Add Monty extension
             MontyExtension.add_to(item)
             monty_ext = MontyExtension.ext(item)
+
+            monty_ext.src_event_id = event_item.properties["monty:src_event_id"]
+            monty_ext.episode_number = 1
 
             # Set hazard codes
             monty_ext.hazard_codes = MontyExtension.ext(event_item).hazard_codes

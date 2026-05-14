@@ -178,6 +178,7 @@ class GIDDTransformer(MontyDataTransformer[GIDDDataSource]):
 
         MontyExtension.add_to(item)
         monty = MontyExtension.ext(item)
+        monty.src_event_id = str(data_item.properties.Event_ID)
         monty.episode_number = episode_number
         monty.country_codes = [data_item.properties.ISO3]
 

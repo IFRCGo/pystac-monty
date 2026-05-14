@@ -21,7 +21,7 @@ __version__ = "0.1.0"
 
 T = TypeVar("T", pystac.Collection, pystac.Item, pystac.Asset, item_assets.AssetDefinition)
 
-SCHEMA_URI = "https://ifrcgo.org/monty-stac-extension/v1.1.0/schema.json"
+SCHEMA_URI = "https://ifrcgo.org/monty-stac-extension/v1.2.0/schema.json"
 
 PREFIX: str = "monty:"
 
@@ -32,6 +32,7 @@ ITEM_HAZARD_CODES_PROP = PREFIX + "hazard_codes"
 ITEM_HAZARD_DETAIL_PROP = PREFIX + "hazard_detail"
 ITEM_IMPACT_DETAIL_PROP = PREFIX + "impact_detail"
 ITEM_EPISODE_NUMBER_PROP = PREFIX + "episode_number"
+ITEM_SOURCE_EVENT_ID_PROP = PREFIX + "src_event_id"
 
 # Hazard Detail properties
 HAZDET_CLUSTER_PROP = "cluster"
@@ -558,6 +559,15 @@ class MontyExtension(
     @impact_detail.setter
     def impact_detail(self, v: ImpactDetail | None) -> None:
         self._set_property(ITEM_IMPACT_DETAIL_PROP, map_opt(lambda x: x.to_dict(), v))
+
+    @property
+    def src_event_id(self) -> str:
+        """Source event ID"""
+        return self.properties.get(ITEM_SOURCE_EVENT_ID_PROP)
+
+    @src_event_id.setter
+    def src_event_id(self, v: str):
+        self.properties[ITEM_SOURCE_EVENT_ID_PROP] = v
 
     @property
     def episode_number(self) -> int:

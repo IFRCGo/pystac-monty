@@ -2,18 +2,20 @@ interactions:
 - request:
     body: null
     headers:
+      Accept:
+      - '*/*'
+      Accept-Encoding:
+      - gzip, deflate
       Connection:
-      - close
-      Host:
-      - ifrcgo.org
+      - keep-alive
       User-Agent:
-      - Python-urllib/3.12
+      - python-requests/2.33.1
     method: GET
-    uri: https://ifrcgo.org/monty-stac-extension/v1.1.0/schema.json
+    uri: https://ifrcgo.org/monty-stac-extension/v1.2.0/schema.json
   response:
     body:
       string: "{\n  \"$schema\": \"http://json-schema.org/draft-07/schema#\",\n  \"$id\":
-        \"https://ifrcgo.org/monty-stac-extension/v1.1.0/schema.json#\",\n  \"title\":
+        \"https://ifrcgo.org/monty-stac-extension/v1.2.0/schema.json#\",\n  \"title\":
         \"Monty Extension\",\n  \"description\": \"STAC Monty Extension for STAC Items
         and STAC Collections.\",\n  \"oneOf\": [\n    {\n      \"$comment\": \"This
         is the schema for STAC Items.\",\n      \"allOf\": [\n        {\n          \"$ref\":
@@ -44,12 +46,15 @@ interactions:
         \       }\n      ]\n    }\n  ],\n  \"definitions\": {\n    \"stac_extensions\":
         {\n      \"type\": \"object\",\n      \"required\": [\n        \"stac_extensions\"\n
         \     ],\n      \"properties\": {\n        \"stac_extensions\": {\n          \"type\":
-        \"array\",\n          \"contains\": {\n            \"const\": \"https://ifrcgo.org/monty-stac-extension/v1.1.0/schema.json\"\n
+        \"array\",\n          \"contains\": {\n            \"const\": \"https://ifrcgo.org/monty-stac-extension/v1.2.0/schema.json\"\n
         \         }\n        }\n      }\n    },\n    \"fields\": {\n      \"$comment\":
         \"Monty prefixed fields\",\n      \"type\": \"object\",\n      \"properties\":
-        {\n        \"monty:episode_number\": {\n          \"type\": \"integer\"\n
-        \       },\n        \"monty:country_codes\": {\n          \"type\": \"array\",\n
-        \         \"items\": {\n            \"type\": \"string\",\n            \"pattern\":
+        {\n        \"monty:src_event_id\": {\n          \"type\": \"string\",\n          \"minLength\":
+        1,\n          \"description\": \"The identifier of the event in the source
+        system. Used to group items (episodes, hazards, impacts) belonging to the
+        same source event.\"\n        },\n        \"monty:episode_number\": {\n          \"type\":
+        \"integer\"\n        },\n        \"monty:country_codes\": {\n          \"type\":
+        \"array\",\n          \"items\": {\n            \"type\": \"string\",\n            \"pattern\":
         \"^([A-Z]{3})|AB9$\",\n            \"$comment\": \"AB9 is a special code for
         the Abyei area used by IDMC\"\n          }\n        },\n        \"monty:hazard_codes\":
         {\n          \"type\": \"array\",\n          \"items\": {\n            \"type\":
@@ -155,21 +160,23 @@ interactions:
       Access-Control-Allow-Origin:
       - '*'
       Age:
-      - '0'
+      - '275'
       Cache-Control:
       - max-age=600
       Connection:
-      - close
+      - keep-alive
+      Content-Encoding:
+      - gzip
       Content-Length:
-      - '10393'
+      - '2252'
       Content-Type:
       - application/json; charset=utf-8
       Date:
-      - Wed, 12 Nov 2025 11:04:36 GMT
+      - Thu, 14 May 2026 06:37:09 GMT
       ETag:
-      - '"690c54cc-2899"'
+      - W/"6a04105b-299c"
       Last-Modified:
-      - Thu, 06 Nov 2025 07:57:00 GMT
+      - Wed, 13 May 2026 05:47:07 GMT
       Server:
       - GitHub.com
       Vary:
@@ -181,17 +188,226 @@ interactions:
       X-Cache-Hits:
       - '0'
       X-Fastly-Request-ID:
-      - 6d32226a6008c5ac296452b80ce2b282ff519dc9
+      - cd84752f51eb20c50aa7177e9e692e2771cd85f7
       X-GitHub-Request-Id:
-      - 9A3E:2F62DB:5BE57:72BDD:69141429
+      - 46F8:F81A8:5EC08:7617C:6A05485B
       X-Served-By:
-      - cache-del21734-DEL
+      - cache-del-vibw2260030-DEL
       X-Timer:
-      - S1762945476.850553,VS0,VE262
+      - S1778740630.714896,VS0,VE1
       expires:
-      - Wed, 12 Nov 2025 05:09:22 GMT
+      - Thu, 14 May 2026 04:08:19 GMT
       x-proxy-cache:
       - MISS
+    status:
+      code: 200
+      message: OK
+- request:
+    body: null
+    headers:
+      Accept:
+      - '*/*'
+      Accept-Encoding:
+      - gzip, deflate
+      Connection:
+      - keep-alive
+      User-Agent:
+      - python-requests/2.33.1
+    method: GET
+    uri: https://raw.githubusercontent.com/IFRCGo/monty-stac-extension/refs/heads/main/json-schema/schema.json
+  response:
+    body:
+      string: "{\n  \"$schema\": \"http://json-schema.org/draft-07/schema#\",\n  \"$id\":
+        \"https://ifrcgo.org/monty-stac-extension/v1.2.0/schema.json#\",\n  \"title\":
+        \"Monty Extension\",\n  \"description\": \"STAC Monty Extension for STAC Items
+        and STAC Collections.\",\n  \"oneOf\": [\n    {\n      \"$comment\": \"This
+        is the schema for STAC Items.\",\n      \"allOf\": [\n        {\n          \"$ref\":
+        \"#/definitions/stac_extensions\"\n        },\n        {\n          \"type\":
+        \"object\",\n          \"required\": [\n            \"type\",\n            \"properties\"\n
+        \         ],\n          \"properties\": {\n            \"type\": {\n              \"const\":
+        \"Feature\"\n            },\n            \"properties\": {\n              \"allOf\":
+        [\n                {\n                  \"$comment\": \"Require fields here
+        for Item Properties.\",\n                  \"required\": [\n                    \"monty:country_codes\",\n
+        \                   \"monty:hazard_codes\",\n                    \"monty:corr_id\",\n
+        \                   \"roles\"\n                  ]\n                },\n                {\n
+        \                 \"$ref\": \"#/definitions/fields\"\n                },\n
+        \               {\n                  \"$ref\": \"#/definitions/roles\"\n                }\n
+        \             ]\n            }\n          }\n        }\n      ]\n    },\n
+        \   {\n      \"$comment\": \"This is the schema for STAC Collections.\",\n
+        \     \"allOf\": [\n        {\n          \"$ref\": \"#/definitions/stac_extensions\"\n
+        \       },\n        {\n          \"type\": \"object\",\n          \"required\":
+        [\n            \"type\",\n            \"providers\",\n            \"license\"\n
+        \         ],\n          \"properties\": {\n            \"type\": {\n              \"const\":
+        \"Collection\"\n            }\n          }\n        },\n        {\n          \"$ref\":
+        \"#/definitions/roles\"\n        }\n      ],\n      \"anyOf\": [\n        {\n
+        \         \"$comment\": \"This is the schema for the fields in Summaries.
+        By default, only checks the existence of the properties, but not the schema
+        of the summaries.\",\n          \"required\": [\n            \"summaries\"\n
+        \         ],\n          \"properties\": {\n            \"summaries\": {\n
+        \             \"required\": [\n                \"monty:country_codes\",\n
+        \               \"monty:hazard_codes\"\n              ]\n            }\n          }\n
+        \       }\n      ]\n    }\n  ],\n  \"definitions\": {\n    \"stac_extensions\":
+        {\n      \"type\": \"object\",\n      \"required\": [\n        \"stac_extensions\"\n
+        \     ],\n      \"properties\": {\n        \"stac_extensions\": {\n          \"type\":
+        \"array\",\n          \"contains\": {\n            \"const\": \"https://ifrcgo.org/monty-stac-extension/v1.2.0/schema.json\"\n
+        \         }\n        }\n      }\n    },\n    \"fields\": {\n      \"$comment\":
+        \"Monty prefixed fields\",\n      \"type\": \"object\",\n      \"properties\":
+        {\n        \"monty:src_event_id\": {\n          \"type\": \"string\",\n          \"minLength\":
+        1,\n          \"description\": \"The identifier of the event in the source
+        system. Used to group items (episodes, hazards, impacts) belonging to the
+        same source event.\"\n        },\n        \"monty:episode_number\": {\n          \"type\":
+        \"integer\"\n        },\n        \"monty:country_codes\": {\n          \"type\":
+        \"array\",\n          \"items\": {\n            \"type\": \"string\",\n            \"pattern\":
+        \"^([A-Z]{3})|AB9$\",\n            \"$comment\": \"AB9 is a special code for
+        the Abyei area used by IDMC\"\n          }\n        },\n        \"monty:hazard_codes\":
+        {\n          \"type\": \"array\",\n          \"items\": {\n            \"type\":
+        \"string\",\n            \"pattern\": \"^([A-Z]{2}(?:\\\\d{4}$){0,1})|([a-z]{3}-[a-z]{3}-[a-z]{3}-[a-z]{3})|([A-Z]{2})$\"\n
+        \         }\n        },\n        \"monty:corr_id\": {\n          \"type\":
+        \"string\"\n        },\n        \"monty:hazard_detail\": {\n          \"type\":
+        \"object\",\n          \"required\": [\n            \"severity_value\",\n
+        \           \"severity_unit\"\n          ],\n          \"properties\": {\n
+        \           \"severity_value\": {\n              \"type\": \"number\",\n              \"description\":
+        \"The estimated maximum hazard intensity/magnitude/severity value, as a number,
+        without the units.\"\n            },\n            \"severity_unit\": {\n              \"type\":
+        \"string\"\n            },\n            \"severity_label\": {\n              \"type\":
+        \"string\"\n            },\n            \"estimate_type\": {\n              \"$ref\":
+        \"#/definitions/estimate_type\"\n            }\n          },\n          \"additionalProperties\":
+        true\n        },\n        \"monty:impact_detail\": {\n          \"type\":
+        \"object\",\n          \"properties\": {\n            \"category\": {\n              \"type\":
+        \"string\",\n              \"enum\": [\n                \"people\",\n                \"crops\",\n
+        \               \"women\",\n                \"men\",\n                \"children_0_4\",\n
+        \               \"children_5_9\",\n                \"children_10_14\",\n                \"children_15_19\",\n
+        \               \"adult_20_24\",\n                \"adult_25_29\",\n                \"adult_30_34\",\n
+        \               \"adult_35_39\",\n                \"adult_40_44\",\n                \"adult_45_49\",\n
+        \               \"adult_50_54\",\n                \"adult_55_59\",\n                \"adult_60_64\",\n
+        \               \"elderly\",\n                \"wheelchair_users\",\n                \"roads\",\n
+        \               \"railways\",\n                \"vulnerable_employment\",\n
+        \               \"buildings\",\n                \"reconstruction_costs\",\n
+        \               \"hospitals\",\n                \"schools\",\n                \"education_centers\",\n
+        \               \"local_currency\",\n                \"global_currency\",\n
+        \               \"local_currency_adj\",\n                \"global_currency_adj\",\n
+        \               \"usd_uncertain\",\n                \"cattle\",\n                \"aid_general\",\n
+        \               \"ifrc_contribution\",\n                \"ifrc_requested\",\n
+        \               \"alertscore\",\n                \"total_affected\",\n                \"households\"\n
+        \             ]\n            },\n            \"type\": {\n              \"type\":
+        \"string\",\n              \"enum\": [\n                \"unspecified\",\n
+        \               \"unaffected\",\n                \"damaged\",\n                \"destroyed\",\n
+        \               \"potentially_damaged\",\n                \"affected_total\",\n
+        \               \"affected_direct\",\n                \"affected_indirect\",\n
+        \               \"death\",\n                \"missing\",\n                \"injured\",\n
+        \               \"evacuated\",\n                \"relocated\",\n                \"assisted\",\n
+        \               \"shelter_emergency\",\n                \"shelter_temporary\",\n
+        \               \"shelter_longterm\",\n                \"in_need\",\n                \"targeted\",\n
+        \               \"disrupted\",\n                \"cost\",\n                \"homeless\",\n
+        \               \"displaced_internal\",\n                \"displaced_external\",\n
+        \               \"displaced_total\",\n                \"alertscore\",\n                \"potentially_affected\",\n
+        \               \"highest_risk\"\n              ]\n            },\n            \"value\":
+        {\n              \"type\": \"number\"\n            },\n            \"unit\":
+        {\n              \"type\": \"string\"\n            },\n            \"estimate_type\":
+        {\n              \"$ref\": \"#/definitions/estimate_type\"\n            },\n
+        \           \"description\": {\n              \"type\": \"string\"\n            }\n
+        \         },\n          \"additionalProperties\": false\n        }\n      },\n
+        \     \"patternProperties\": {\n        \"^(?!monty:)\": {\n          \"$comment\":
+        \"Prevent additional monty prefixed field\"\n        }\n      },\n      \"additionalProperties\":
+        false\n    },\n    \"estimate_type\": {\n      \"type\": \"string\",\n      \"enum\":
+        [\n        \"primary\",\n        \"secondary\",\n        \"modelled\"\n      ]\n
+        \   },\n    \"roles\": {\n      \"$comment\": \"Roles field\",\n      \"oneOf\":
+        [\n        {\n          \"$comment\": \"Reference Event\",\n          \"allOf\":
+        [\n            {\n              \"$ref\": \"#/definitions/is_event\"\n            },\n
+        \           {\n              \"$ref\": \"#/definitions/is_reference\"\n            }\n
+        \         ]\n        },\n        {\n          \"$comment\": \"Source Event\",\n
+        \         \"allOf\": [\n            {\n              \"$ref\": \"#/definitions/is_event\"\n
+        \           },\n            {\n              \"$ref\": \"#/definitions/is_source\"\n
+        \           }\n          ]\n        },\n        {\n          \"$comment\":
+        \"Hazard\",\n          \"allOf\": [\n            {\n              \"$ref\":
+        \"#/definitions/is_hazard\"\n            }\n          ]\n        },\n        {\n
+        \         \"$comment\": \"Impact\",\n          \"allOf\": [\n            {\n
+        \             \"$ref\": \"#/definitions/is_impact\"\n            }\n          ]\n
+        \       }\n      ]\n    },\n    \"is_event\": {\n      \"properties\": {\n
+        \       \"roles\": {\n          \"type\": \"array\",\n          \"minItems\":
+        2,\n          \"contains\": {\n            \"const\": \"event\"\n          }\n
+        \       }\n      }\n    },\n    \"is_reference\": {\n      \"properties\":
+        {\n        \"roles\": {\n          \"type\": \"array\",\n          \"minItems\":
+        2,\n          \"contains\": {\n            \"const\": \"reference\"\n          }\n
+        \       }\n      }\n    },\n    \"is_source\": {\n      \"properties\": {\n
+        \       \"roles\": {\n          \"type\": \"array\",\n          \"minItems\":
+        2,\n          \"contains\": {\n            \"const\": \"source\"\n          }\n
+        \       }\n      }\n    },\n    \"is_hazard\": {\n      \"properties\": {\n
+        \       \"roles\": {\n          \"type\": \"array\",\n          \"minItems\":
+        1,\n          \"contains\": {\n            \"const\": \"hazard\"\n          }\n
+        \       },\n        \"monty:hazard_codes\": {\n          \"minItems\": 1,\n
+        \         \"maxItems\": 3,\n          \"uniqueItems\": true,\n          \"$comment\":
+        \"REQUIRED: Exactly 1 UNDRR-ISC 2025 code (format: 2 letters + 4 digits, e.g.,
+        GH0101, MH0600). OPTIONAL: At most 1 GLIDE code (2 uppercase letters, e.g.,
+        FL, EQ) and at most 1 EM-DAT code (nat-xxx-xxx-xxx format). LIMITATION: JSON
+        Schema draft-07 cannot fully enforce 'at most 1 per type' - custom validation
+        may be needed to prevent multiple codes of the same classification type.\",\n
+        \         \"contains\": {\n            \"type\": \"string\",\n            \"pattern\":
+        \"^[A-Z]{2}\\\\d{4}$\",\n            \"$comment\": \"At least one UNDRR-ISC
+        2025 code is required\"\n          },\n          \"items\": {\n            \"type\":
+        \"string\",\n            \"anyOf\": [\n              {\n                \"pattern\":
+        \"^[A-Z]{2}\\\\d{4}$\",\n                \"$comment\": \"UNDRR-ISC 2025 format:
+        2 uppercase letters + 4 digits (e.g., GH0101, MH0600)\"\n              },\n
+        \             {\n                \"pattern\": \"^[A-Z]{2}$\",\n                \"$comment\":
+        \"GLIDE format: 2 uppercase letters (e.g., FL, EQ, TC)\"\n              },\n
+        \             {\n                \"pattern\": \"^[a-z]{3}-[a-z]{3}-[a-z]{3}-[a-z]{3}$\",\n
+        \               \"$comment\": \"EM-DAT format: 4 groups of 3 lowercase letters
+        separated by dashes (e.g., nat-hyd-flo-flo)\"\n              }\n            ]\n
+        \         }\n        }\n      }\n    },\n    \"is_impact\": {\n      \"properties\":
+        {\n        \"roles\": {\n          \"type\": \"array\",\n          \"minItems\":
+        1,\n          \"contains\": {\n            \"const\": \"impact\"\n          }\n
+        \       }\n      }\n    }\n  }\n}\n"
+    headers:
+      Accept-Ranges:
+      - bytes
+      Access-Control-Allow-Origin:
+      - '*'
+      Cache-Control:
+      - max-age=300
+      Connection:
+      - keep-alive
+      Content-Encoding:
+      - gzip
+      Content-Length:
+      - '2231'
+      Content-Security-Policy:
+      - default-src 'none'; style-src 'unsafe-inline'; sandbox
+      Content-Type:
+      - text/plain; charset=utf-8
+      Cross-Origin-Resource-Policy:
+      - cross-origin
+      Date:
+      - Thu, 14 May 2026 06:37:09 GMT
+      ETag:
+      - W/"5cd39a5b984097872e3150506e9ba411874ba1719c25b4214f33b37a474a985f"
+      Expires:
+      - Thu, 14 May 2026 06:42:09 GMT
+      Source-Age:
+      - '275'
+      Strict-Transport-Security:
+      - max-age=31536000
+      Vary:
+      - Authorization,Accept-Encoding
+      Via:
+      - 1.1 varnish
+      X-Cache:
+      - HIT
+      X-Cache-Hits:
+      - '0'
+      X-Content-Type-Options:
+      - nosniff
+      X-Fastly-Request-ID:
+      - bce2787abfc2ff01c3c8359f298ce606542de5d6
+      X-Frame-Options:
+      - deny
+      X-GitHub-Request-Id:
+      - 1D64:2C4519:5BD188:728402:6A056C7F
+      X-Served-By:
+      - cache-del-vibw2260023-DEL
+      X-Timer:
+      - S1778740630.824900,VS0,VE1
+      X-XSS-Protection:
+      - 1; mode=block
     status:
       code: 200
       message: OK

@@ -18,7 +18,10 @@ from pystac_monty.sources.ifrc_events import IFRCEventDataSource, IFRCEventTrans
 from pystac_monty.sources.utils import save_json_data_into_tmp_file
 from tests.conftest import get_data_file
 from tests.extensions.test_monty import CustomValidator
-from tests.utils.test_utils import validate_correlation_id
+from tests.utils.test_utils import request_for_schema, validate_correlation_id
+
+CURRENT_SCHEMA_URI = "https://ifrcgo.org/monty-stac-extension/v1.2.0/schema.json"
+CURRENT_SCHEMA_MAPURL = "https://raw.githubusercontent.com/IFRCGo/monty-stac-extension/refs/heads/main/json-schema/schema.json"
 
 
 def request_and_save_ifrc_tmp_file(url):
@@ -98,6 +101,8 @@ class IfrcEventsTest(TestCase):
             - Source event and hazard items are present
             - Items can be serialized to JSON
         """
+        request_for_schema(url=CURRENT_SCHEMA_URI)  # Validate if the schema exists
+
         items = transformer.make_items()
         self.assertTrue(len(items) > 0)
 
@@ -138,6 +143,8 @@ class IfrcEventsTest(TestCase):
             - Source event and hazard items are present
             - Items can be serialized to JSON
         """
+        request_for_schema(url=CURRENT_SCHEMA_URI)  # Validate if the schema exists
+
         items = transformer.make_items()
         self.assertTrue(len(items) > 0)
 
@@ -185,6 +192,8 @@ class IfrcEventsTest(TestCase):
             - Source event and hazard items are present
             - Items can be serialized to JSON
         """
+        request_for_schema(url=CURRENT_SCHEMA_URI)  # Validate if the schema exists
+
         items = transformer.make_items()
         self.assertTrue(len(items) > 0)
 
@@ -228,6 +237,8 @@ class IfrcEventsTest(TestCase):
 
     @parameterized.expand(load_scenarios(scenarios))
     def test_no_old_2020_codes(self, transformer: IFRCEventTransformer):
+        request_for_schema(url=CURRENT_SCHEMA_URI)  # Validate if the schema exists
+
         # Verify earthquake doesn't return old codes
         eq_codes = transformer.map_ifrc_to_hazard_codes("Earthquake")
         assert "GH0001" not in eq_codes
@@ -246,6 +257,8 @@ class IfrcEventsTest(TestCase):
 
     @parameterized.expand(load_scenarios(scenarios))
     def test_ifrc_hazard_codes_2025(self, transformer: IFRCEventTransformer):
+        request_for_schema(url=CURRENT_SCHEMA_URI)  # Validate if the schema exists
+
         # Test consolidated codes
         assert transformer.map_ifrc_to_hazard_codes("Earthquake") == ["GH0101", "nat-geo-ear-gro", "EQ"]
         assert transformer.map_ifrc_to_hazard_codes("Cyclone") == ["MH0306", "nat-met-sto-tro", "TC"]

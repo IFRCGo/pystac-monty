@@ -215,6 +215,7 @@ class GlideTransformer(MontyDataTransformer[GlideDataSource]):
         # Since there is no episode_number in glide data,
         # we set it to 1 as it is required to create the correlation id
         # in the method monty.compute_and_set_correlation_id(..)
+        monty.src_event_id = str(data.number)
         monty.episode_number = 1
         monty.hazard_codes = self.get_hazard_codes(data.event)
         monty.hazard_codes = self.hazard_profiles.get_canonical_hazard_codes(item)

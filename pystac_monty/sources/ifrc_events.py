@@ -197,6 +197,7 @@ class IFRCEventTransformer(MontyDataTransformer[IFRCEventDataSource]):
         # Add Monty extension
         MontyExtension.add_to(item)
         monty = MontyExtension.ext(item)
+        monty.src_event_id = str(data.id)
         monty.episode_number = 1  # IFRC DREF doesn't have episodes
         monty.hazard_codes = self.map_ifrc_to_hazard_codes(data.dtype.name)
         monty.hazard_codes = self.hazard_profiles.get_canonical_hazard_codes(item=item)

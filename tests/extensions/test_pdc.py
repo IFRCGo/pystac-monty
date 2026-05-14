@@ -13,10 +13,10 @@ from pystac_monty.sources.common import DataType, File, PDCDataSourceType
 from pystac_monty.sources.pdc import PDCDataSource, PDCTransformer
 from tests.conftest import get_data_file
 from tests.extensions.test_monty import CustomValidator
-from tests.utils.test_utils import validate_correlation_id
+from tests.utils.test_utils import request_for_schema, validate_correlation_id
 
-CURRENT_SCHEMA_URI = "https://ifrcgo.github.io/monty/v0.1.0/schema.json"
-# CURRENT_SCHEMA_MAPURL = "https://raw.githubusercontent.com/IFRCGo/monty-stac-extension/refs/heads/main/json-schema/schema.json"  # noqa
+CURRENT_SCHEMA_URI = "https://ifrcgo.org/monty-stac-extension/v1.2.0/schema.json"
+CURRENT_SCHEMA_MAPURL = "https://raw.githubusercontent.com/IFRCGo/monty-stac-extension/refs/heads/main/json-schema/schema.json"  # noqa
 
 
 def load_scenarios(scenarios: List[dict]) -> List[PDCTransformer]:
@@ -64,6 +64,8 @@ class PDCTest(unittest.TestCase):
     @parameterized.expand(load_scenarios(scenarios))
     @pytest.mark.vcr()
     def test_transformer(self, transformer: PDCTransformer) -> None:
+        request_for_schema(url=CURRENT_SCHEMA_URI)  # Validate if the schema exists
+
         items = transformer.make_items()
         self.assertTrue(len(items) > 0)
         source_event_item = None
@@ -99,6 +101,8 @@ class PDCTest(unittest.TestCase):
     @parameterized.expand(load_scenarios(scenarios))
     @pytest.mark.vcr()
     def test_transformer_item_links(self, transformer: PDCTransformer) -> None:
+        request_for_schema(url=CURRENT_SCHEMA_URI)  # Validate if the schema exists
+
         items = transformer.make_items()
         self.assertTrue(len(items) > 0)
         source_event_item = None

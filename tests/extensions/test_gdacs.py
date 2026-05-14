@@ -21,9 +21,9 @@ from pystac_monty.sources.gdacs import (
 )
 from tests.conftest import get_data_file
 from tests.extensions.test_monty import CustomValidator
-from tests.utils.test_utils import validate_correlation_id
+from tests.utils.test_utils import request_for_schema, validate_correlation_id
 
-CURRENT_SCHEMA_URI = "https://ifrcgo.org/monty-stac-extension/v1.0.0/schema.json"
+CURRENT_SCHEMA_URI = "https://ifrcgo.org/monty-stac-extension/v1.2.0/schema.json"
 CURRENT_SCHEMA_MAPURL = "https://raw.githubusercontent.com/IFRCGo/monty-stac-extension/refs/heads/main/json-schema/schema.json"
 
 
@@ -257,6 +257,8 @@ class GDACSTest(unittest.TestCase):
     @parameterized.expand(load_scenarios(scenarios), skip_on_empty=True)
     @pytest.mark.vcr()
     def test_transformer_with_memory_data(self, transformer: GDACSTransformer) -> None:
+        request_for_schema(url=CURRENT_SCHEMA_URI)  # Validate if the schema exists
+
         source_event_item = None
         source_hazard_item = None
         source_impact_item = None
@@ -291,6 +293,8 @@ class GDACSTest(unittest.TestCase):
     @parameterized.expand(load_scenarios(scenarios_2), skip_on_empty=True)
     @pytest.mark.vcr()
     def test_transformer_with_file_data(self, transformer: GDACSTransformer) -> None:
+        request_for_schema(url=CURRENT_SCHEMA_URI)  # Validate if the schema exists
+
         source_event_item = None
         source_hazard_item = None
         source_impact_item = None
@@ -336,6 +340,8 @@ class GDACSTest(unittest.TestCase):
     @parameterized.expand(load_scenarios(scenarios_2), skip_on_empty=True)
     @pytest.mark.vcr()
     def test_transformer_item_links(self, transformer: GDACSTransformer) -> None:
+        request_for_schema(url=CURRENT_SCHEMA_URI)  # Validate if the schema exists
+
         source_event_item = None
         source_hazard_item = None
         source_impact_item = None
@@ -388,6 +394,8 @@ class GDACSTest(unittest.TestCase):
     @parameterized.expand([], skip_on_empty=True)
     @pytest.mark.vcr()
     def test_gdacs_hazard_codes_2025(self, transformer: GDACSTransformer) -> None:
+        request_for_schema(url=CURRENT_SCHEMA_URI)  # Validate if the schema exists
+
         assert transformer.get_hazard_codes("FL") == ["MH0600", "nat-hyd-flo-flo", "FL"]
         assert transformer.get_hazard_codes("EQ") == ["GH0101", "nat-geo-ear-gro", "EQ"]
         assert transformer.get_hazard_codes("TC") == ["MH0309", "nat-met-sto-tro", "TC"]
@@ -398,6 +406,8 @@ class GDACSTest(unittest.TestCase):
     @parameterized.expand(load_scenarios(scenarios_2), skip_on_empty=True)
     @pytest.mark.vcr()
     def test_hazard_item_uses_2025_code_only(self, transformer: GDACSTransformer) -> None:
+        request_for_schema(url=CURRENT_SCHEMA_URI)  # Validate if the schema exists
+
         for item in transformer.get_stac_items():
             # write pretty json in a temporary folder
             item_path = get_data_file(f"temp/gdacs/{item.id}.json")
@@ -412,6 +422,8 @@ class GDACSTest(unittest.TestCase):
     @parameterized.expand(load_scenarios(scenarios_2), skip_on_empty=True)
     @pytest.mark.vcr()
     def test_event_item_uses_all_codes(self, transformer: GDACSTransformer) -> None:
+        request_for_schema(url=CURRENT_SCHEMA_URI)  # Validate if the schema exists
+
         for item in transformer.get_stac_items():
             # write pretty json in a temporary folder
             item_path = get_data_file(f"temp/gdacs/{item.id}.json")
@@ -426,6 +438,8 @@ class GDACSTest(unittest.TestCase):
     @parameterized.expand(load_scenarios(scenarios_3), skip_on_empty=True)
     @pytest.mark.vcr()
     def test_transformer_with_file_data_tc(self, transformer: GDACSTransformer) -> None:
+        request_for_schema(url=CURRENT_SCHEMA_URI)  # Validate if the schema exists
+
         source_event_item = None
         source_hazard_item = None
         source_impact_items = []

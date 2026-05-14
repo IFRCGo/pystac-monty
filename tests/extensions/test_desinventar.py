@@ -18,7 +18,10 @@ from pystac_monty.sources.desinventar import (
 )
 from tests.conftest import get_data_file
 from tests.extensions.test_monty import CustomValidator
-from tests.utils.test_utils import validate_correlation_id
+from tests.utils.test_utils import request_for_schema, validate_correlation_id
+
+CURRENT_SCHEMA_URI = "https://ifrcgo.org/monty-stac-extension/v1.2.0/schema.json"
+CURRENT_SCHEMA_MAPURL = "https://raw.githubusercontent.com/IFRCGo/monty-stac-extension/refs/heads/main/json-schema/schema.json"
 
 geocoder = MockGeocoder()
 
@@ -79,6 +82,8 @@ class DesinventarTest(TestCase):
     @parameterized.expand(load_scenarios(scenarios))  # type: ignore[misc]
     @pytest.mark.vcr()
     def test_transformer(self, country_code: str, transformer: DesinventarTransformer) -> None:
+        request_for_schema(url=CURRENT_SCHEMA_URI)  # Validate if the schema exists
+
         items = list(transformer.get_stac_items())
 
         self.assertTrue(len(items) > 0)
@@ -120,6 +125,8 @@ class DesinventarTest(TestCase):
     @parameterized.expand(load_scenarios(scenarios))  # type: ignore[misc]
     @pytest.mark.vcr()
     def test_transformer_item_links(self, country_code: str, transformer: DesinventarTransformer) -> None:
+        request_for_schema(url=CURRENT_SCHEMA_URI)  # Validate if the schema exists
+
         items = list(transformer.get_stac_items())
 
         self.assertTrue(len(items) > 0)
@@ -167,6 +174,8 @@ class DesinventarTest(TestCase):
     @parameterized.expand(load_scenarios(scenarios))
     @pytest.mark.vcr()
     def test_event_item_uses_all_codes(self, country_code: str, transformer: DesinventarTransformer) -> None:
+        request_for_schema(url=CURRENT_SCHEMA_URI)  # Validate if the schema exists
+
         for item in transformer.get_stac_items():
             # write pretty json in a temporary folder
             item_path = get_data_file(f"temp/desinventar/{item.id}.json")
@@ -181,6 +190,8 @@ class DesinventarTest(TestCase):
     @parameterized.expand(load_scenarios(scenarios))
     @pytest.mark.vcr()
     def test_hazard_item_uses_2025_code_only(self, country_code: str, transformer: DesinventarTransformer) -> None:
+        request_for_schema(url=CURRENT_SCHEMA_URI)  # Validate if the schema exists
+
         for item in transformer.get_stac_items():
             # write pretty json in a temporary folder
             item_path = get_data_file(f"temp/desinventar/{item.id}.json")

@@ -166,6 +166,7 @@ class IDUTransformer(MontyDataTransformer[IDUDataSource]):
 
         MontyExtension.add_to(item)
         monty = MontyExtension.ext(item)
+        monty.src_event_id = str(data_item.event_id)
         monty.episode_number = episode_number
         monty.country_codes = [data_item.iso3]
         monty.hazard_codes = IDMCUtils.hazard_codes_mapping(hazard=hazard_tuple)

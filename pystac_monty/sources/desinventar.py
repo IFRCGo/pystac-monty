@@ -300,6 +300,7 @@ class DesinventarTransformer(MontyDataTransformer[DesinventarDataSource]):
         MontyExtension.add_to(item)
         monty = MontyExtension.ext(item)
 
+        monty.src_event_id = f"{row.iso3}-{row.serial}"
         monty.episode_number = 1  # Desinventar doesn't have episodes
         monty.hazard_codes = hazard_codes
 

@@ -322,6 +322,7 @@ class GDACSTransformer(MontyDataTransformer[GDACSDataSource]):
         # Monty extension fields
         MontyExtension.add_to(item)
         monty = MontyExtension.ext(item)
+        monty.src_event_id = str(data.properties.eventid)
         monty.episode_number = data.properties.episodeid
         monty.hazard_codes = self.get_hazard_codes(data.properties.eventtype)
         monty.hazard_codes = self.hazard_profiles.get_canonical_hazard_codes(item=item)

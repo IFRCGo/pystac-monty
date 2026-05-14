@@ -15,9 +15,9 @@ from pystac_monty.sources.gdacs import DataType
 from pystac_monty.sources.usgs import USGSDataSource, USGSTransformer
 from tests.conftest import get_data_file
 from tests.extensions.test_monty import CustomValidator
-from tests.utils.test_utils import validate_correlation_id
+from tests.utils.test_utils import request_for_schema, validate_correlation_id
 
-CURRENT_SCHEMA_URI = "https://ifrcgo.github.io/monty/v0.1.0/schema.json"
+CURRENT_SCHEMA_URI = "https://ifrcgo.org/monty-stac-extension/v1.2.0/schema.json"
 CURRENT_SCHEMA_MAPURL = "https://raw.githubusercontent.com/IFRCGo/monty-stac-extension/refs/heads/main/json-schema/schema.json"
 
 geocoder = WorldAdministrativeBoundariesGeocoder(get_data_file("world-administrative-boundaries.fgb"), 0.1)
@@ -91,6 +91,7 @@ class USGSTest(unittest.TestCase):
             - Source event, hazard and impact items are present
             - Items can be serialized to JSON
         """
+        request_for_schema(url=CURRENT_SCHEMA_URI)  # Validate if the schema exists
 
         # Track items we find
         source_event_item = None
@@ -150,6 +151,7 @@ class USGSTest(unittest.TestCase):
             - Source event, hazard and impact items are present
             - Items can be serialized to JSON
         """
+        request_for_schema(url=CURRENT_SCHEMA_URI)  # Validate if the schema exists
 
         # Track items we find
         source_event_item = None
@@ -293,6 +295,8 @@ class USGSTest(unittest.TestCase):
     @parameterized.expand(load_scenarios(scenarios))
     @pytest.mark.vcr()
     def test_event_item_uses_all_codes(self, transformer: USGSTransformer) -> None:
+        request_for_schema(url=CURRENT_SCHEMA_URI)  # Validate if the schema exists
+
         for item in transformer.get_stac_items():
             # write pretty json in a temporary folder
             item_path = get_data_file(f"temp/usgs/{item.id}.json")
@@ -307,6 +311,8 @@ class USGSTest(unittest.TestCase):
     @parameterized.expand(load_scenarios(scenarios))
     @pytest.mark.vcr()
     def test_hazard_item_uses_2025_code_only(self, transformer: USGSTransformer) -> None:
+        request_for_schema(url=CURRENT_SCHEMA_URI)  # Validate if the schema exists
+
         for item in transformer.get_stac_items():
             # write pretty json in a temporary folder
             item_path = get_data_file(f"temp/usgs/{item.id}.json")

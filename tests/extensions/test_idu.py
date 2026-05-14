@@ -15,9 +15,9 @@ from pystac_monty.sources.idu import IDUDataSource, IDUTransformer
 from pystac_monty.sources.utils import IDMCUtils, save_json_data_into_tmp_file
 from tests.conftest import get_data_file
 from tests.extensions.test_monty import CustomValidator
-from tests.utils.test_utils import validate_correlation_id
+from tests.utils.test_utils import request_for_schema, validate_correlation_id
 
-CURRENT_SCHEMA_URI = "https://ifrcgo.github.io/monty/v0.1.0/schema.json"
+CURRENT_SCHEMA_URI = "https://ifrcgo.org/monty-stac-extension/v1.2.0/schema.json"
 CURRENT_SCHEMA_MAPURL = "https://raw.githubusercontent.com/IFRCGo/monty-stac-extension/refs/heads/main/json-schema/schema.json"
 
 
@@ -69,6 +69,8 @@ class IDUTest(unittest.TestCase):
     @parameterized.expand(load_scenarios_from_file(scenarios))
     @pytest.mark.vcr()
     def test_transformer_from_file(self, transformer: IDUTransformer) -> None:
+        request_for_schema(url=CURRENT_SCHEMA_URI)  # Validate if the schema exists
+
         source_event_item = None
         source_impact_item = None
 
@@ -89,6 +91,8 @@ class IDUTest(unittest.TestCase):
     @parameterized.expand(load_scenarios(scenarios))
     @pytest.mark.vcr()
     def test_transformer(self, transformer: IDUTransformer) -> None:
+        request_for_schema(url=CURRENT_SCHEMA_URI)  # Validate if the schema exists
+
         source_event_item = None
         source_impact_item = None
 
@@ -116,6 +120,8 @@ class IDUTest(unittest.TestCase):
     @parameterized.expand(load_scenarios(scenarios))
     @pytest.mark.vcr()
     def test_transformer_item_links(self, transformer: IDUTransformer) -> None:
+        request_for_schema(url=CURRENT_SCHEMA_URI)  # Validate if the schema exists
+
         source_event_item = None
         source_impact_item = None
 
@@ -151,6 +157,8 @@ class IDUTest(unittest.TestCase):
     @parameterized.expand(load_scenarios(scenarios))
     @pytest.mark.vcr()
     def test_event_item_uses_all_codes(self, transformer: IDUTransformer) -> None:
+        request_for_schema(url=CURRENT_SCHEMA_URI)  # Validate if the schema exists
+
         for item in transformer.get_stac_items():
             # write pretty json in a temporary folder
             item_path = get_data_file(f"temp/idu/{item.id}.json")

@@ -157,6 +157,7 @@ class GFDTransformer(MontyDataTransformer[GFDDataSource]):
 
         MontyExtension.add_to(item)
         monty = MontyExtension.ext(item)
+        monty.src_event_id = str(properties.id)
         monty.episode_number = episode_number
         monty.country_codes = properties.cc.split(",")
         monty.hazard_codes = ["MH0600", "nat-hyd-flo-flo", "FL"]  # GFD is a Flood related source
