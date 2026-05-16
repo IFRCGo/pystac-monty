@@ -13,6 +13,11 @@ from pystac import Collection, Item, Link
 from pystac_monty.geocoding import MontyGeoCoder
 
 
+def file_path_for_os(p: str | tempfile._TemporaryFileWrapper) -> str:
+    """Resolve :attr:`File.path` (str or temp wrapper) to a string for ``os.path`` / ``open``."""
+    return p if isinstance(p, str) else p.name
+
+
 class TransformSummaryInProgressException(Exception): ...
 
 
@@ -140,7 +145,7 @@ class MontyDataSourceV2:
         return self.source_url
 
     def get_data(self) -> typing.Any:
-        return self.data
+        return self.data_source
 
 
 @dataclass

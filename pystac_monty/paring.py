@@ -1,3 +1,6 @@
+from typing import cast
+
+import pandas as pd
 from pystac import Item
 
 from pystac_monty.hazard_profiles import HazardProfiles
@@ -55,7 +58,7 @@ class Pairing:
         ]
         # NOTE: When we can't determine the block id, we assign 0.
         # In parquet file, the block id starts from 1 and so on.
-        block_id = int(geoblocks_filtered_df["block_id"].iloc[0]) if len(geoblocks_filtered_df) else 0
+        block_id = int(cast(pd.DataFrame, geoblocks_filtered_df)["block_id"].iloc[0]) if len(geoblocks_filtered_df) else 0
         return self._construct_correlation_id_str(
             date=eventdatestr,
             country_code=country_codes[0],

@@ -16,8 +16,8 @@ def phrase_to_dashed(phrase: str) -> str:
 
 def save_json_data_into_tmp_file(data: dict) -> tempfile._TemporaryFileWrapper:
     tmpfile = tempfile.NamedTemporaryFile(suffix=".json", delete=False)
-    data = json.dumps(data).encode("utf-8")
-    tmpfile.write(data)
+    payload = json.dumps(data).encode("utf-8")
+    tmpfile.write(payload)
     tmpfile.close()
     return tmpfile
 

@@ -9,7 +9,15 @@ from pystac import Item
 
 from pystac_monty.extension import ImpactDetail, MontyEstimateType, MontyExtension, MontyImpactExposureCategory, MontyImpactType
 from pystac_monty.hazard_profiles import MontyHazardProfiles
-from pystac_monty.sources.common import DataType, File, GenericDataSource, Memory, MontyDataSourceV3, MontyDataTransformer
+from pystac_monty.sources.common import (
+    DataType,
+    File,
+    GenericDataSource,
+    Memory,
+    MontyDataSourceV3,
+    MontyDataTransformer,
+    file_path_for_os,
+)
 from pystac_monty.validators.ifrc import IFRCsourceValidator
 
 logger = logging.getLogger(__name__)
@@ -21,19 +29,24 @@ STAC_IMPACT_ID_PREFIX = "ifrcevent-impact-"
 @dataclass
 class IFRCEventDataSource(MontyDataSourceV3):
     file_path: str = field(init=False)
-    data: Union[str, dict] = field(init=False)
+    data: Union[str, dict, list] = field(init=False)
     input_data: Union[File, Memory] = field(init=False)
 
     def __init__(self, data: GenericDataSource, eoapi_url: str | None = None):
         super().__init__(root=data, eoapi_url=eoapi_url)
 
         def handle_file_data():
-            if os.path.isfile(self.input_data.path):
-                self.file_path = self.input_data.path
+            if not isinstance(self.input_data, File):
+                return
+            fp = file_path_for_os(self.input_data.path)
+            if os.path.isfile(fp):
+                self.file_path = fp
             else:
                 raise ValueError("File path does not exist")
 
         def handle_memory_data():
+            if not isinstance(self.input_data, Memory):
+                return
             if isinstance(self.input_data.content, list):
                 self.data = self.input_data.content
             else:
@@ -48,7 +61,7 @@ class IFRCEventDataSource(MontyDataSourceV3):
             case _:
                 typing.assert_never(input_data_type)
 
-    def get_data(self) -> Union[dict, str]:
+    def get_data(self) -> Union[dict, str, list]:
         if self.input_data.data_type == DataType.FILE:
             return self.file_path
         return self.data
@@ -67,6 +80,8 @@ class IFRCEventTransformer(MontyDataTransformer[IFRCEventDataSource]):
 
     def get_stac_items_from_file(self) -> typing.Generator[Item, None, None]:
         data_path = self.data_source.get_data()
+        if not isinstance(data_path, str):
+            return
         with open(data_path, "r", encoding="utf-8") as f:
             filtered_ifrcevent_data = []
             for item in json.load(f):
@@ -110,6 +125,8 @@ class IFRCEventTransformer(MontyDataTransformer[IFRCEventDataSource]):
 
     def get_stac_items_from_memory(self) -> typing.Generator[Item, None, None]:
         data = self.data_source.get_data()
+        if not isinstance(data, list):
+            return
         filtered_ifrcevent_data = []
         for item in data:
             appeals: list[typing.Dict] | None = item.get("appeals")
