@@ -33,7 +33,7 @@ from pystac_monty.sources.common import (
 from pystac_monty.sources.utils import phrase_to_dashed
 from pystac_monty.validators.gdacs_events import GdacsEventDataValidator, Sendai
 from pystac_monty.validators.gdacs_geometry import GdacsGeometryDataValidator
-from pystac_monty.validators.gdacs_impacts import GdacsImpactDataValidatorTC, TCImpactItem
+from pystac_monty.validators.gdacs_impacts import GdacsImpactDataValidatorTC, GdacsImpactDataValidatorWF, TCImpactItem
 
 # Constants
 
@@ -59,6 +59,7 @@ class HazardType(str, Enum):
 
     # TODO: Fill in with more hazard types
     TC = "TC"
+    WF = "WF"
 
 
 @dataclass
@@ -153,6 +154,8 @@ class GDACSTransformer(MontyDataTransformer[GDACSDataSource]):
                         match episode_data[2].hazard_type:
                             case HazardType.TC:
                                 validated_impact_data = GdacsImpactDataValidatorTC(**episode_data[2].data.input_data.content)
+                            case HazardType.WF:
+                                validated_impact_data = GdacsImpactDataValidatorWF(**episode_data[2].data.input_data.content)
                             case _:
                                 raise ValueError(f"Unsupported hazard type: {episode_data[2].hazard_type}")
 
@@ -162,7 +165,9 @@ class GDACSTransformer(MontyDataTransformer[GDACSDataSource]):
                     )
 
                     episode_impact_items = self.make_impact_items(
-                        episode_event_data=(validated_episode_data, episode_data_url), episode_impact_data=validated_impact_data
+                        episode_event_data=(validated_episode_data, episode_data_url),
+                        episode_impact_data=validated_impact_data,
+                        hazard_type=episode_data[2].hazard_type,
                     )
 
                     all_items = [episode_event_item, episode_hazard_item] + episode_impact_items
@@ -216,6 +221,8 @@ class GDACSTransformer(MontyDataTransformer[GDACSDataSource]):
                         match episode_data[2].hazard_type:
                             case HazardType.TC:
                                 validated_impact_data = GdacsImpactDataValidatorTC(**impact_data)
+                            case HazardType.WF:
+                                validated_impact_data = GdacsImpactDataValidatorWF(**impact_data)
                             case _:
                                 raise ValueError(f"Unsupported hazard type: {episode_data[2].hazard_type}")
 
@@ -225,7 +232,9 @@ class GDACSTransformer(MontyDataTransformer[GDACSDataSource]):
                     )
 
                     episode_impact_items = self.make_impact_items(
-                        episode_event_data=(validated_episode_data, episode_data_url), episode_impact_data=validated_impact_data
+                        episode_event_data=(validated_episode_data, episode_data_url),
+                        episode_impact_data=validated_impact_data,
+                        hazard_type=episode_data[2].hazard_type,
                     )
 
                     all_items = [episode_event_item, episode_hazard_item] + episode_impact_items
@@ -427,7 +436,10 @@ class GDACSTransformer(MontyDataTransformer[GDACSDataSource]):
         )
 
     def make_impact_items(
-        self, episode_event_data: Tuple[GdacsEventDataValidator, str], episode_impact_data: GdacsImpactDataValidatorTC | None
+        self,
+        episode_event_data: Tuple[GdacsEventDataValidator, str],
+        episode_impact_data: GdacsImpactDataValidatorTC | GdacsImpactDataValidatorWF | None,
+        hazard_type: HazardType,
     ) -> list[Item]:
         impact_items = []
 
@@ -443,14 +455,57 @@ class GDACSTransformer(MontyDataTransformer[GDACSDataSource]):
                     )
                     if impact_item:
                         impact_items.append(impact_item)
-
-        if episode_impact_data:
-            for impact_data in episode_impact_data.channel.item:
-                impact_item = self.make_impact_item_from_tc(impact_data=impact_data, episode_event_data=episode_event_data)
-                if impact_item:
-                    impact_items.append(impact_item)
-
+        match hazard_type:
+            case HazardType.TC:
+                if episode_impact_data:
+                    for impact_data in episode_impact_data.channel.item:
+                        impact_item = self.make_impact_item_from_tc(
+                            impact_data=impact_data, episode_event_data=episode_event_data
+                        )
+                        if impact_item:
+                            impact_items.append(impact_item)
+            case HazardType.WF:
+                if episode_impact_data:
+                    pop_affected = next(
+                        (
+                            s.value
+                            for datum_group in episode_impact_data.datums
+                            for datum in datum_group.datum
+                            if datum.datasource == "POP"
+                            for s in datum.scalars.scalar
+                            if s.name == "POPAFFECTED"
+                        ),
+                        None,
+                    )
+                    if pop_affected:
+                        impact_item = self.make_impact_item_from_wf(
+                            impact_value=pop_affected,
+                            episode_id=episode_impact_data.episodeid,
+                            episode_event_data=episode_event_data,
+                        )
+                        if impact_item:
+                            impact_items.append(impact_item)
         return impact_items
+
+    def make_impact_item_from_wf(
+        self, impact_value: str, episode_id: str, episode_event_data: Tuple[GdacsEventDataValidator, str]
+    ) -> Item | None:
+        """Create impact item for WildFire"""
+        item = self.make_source_event_item(*episode_event_data)
+        ## TODO add more to make the item id unique
+        item.id = phrase_to_dashed(item.id.replace(STAC_EVENT_ID_PREFIX, STAC_IMPACT_ID_PREFIX) + episode_id)
+        item.set_collection(self.get_impact_collection())
+        item.properties["roles"] = ["source", "impact"]
+
+        monty = MontyExtension.ext(item)
+        monty.impact_detail = ImpactDetail(
+            category=MontyImpactExposureCategory.ALL_PEOPLE,
+            type=MontyImpactType.POTENTIALLY_AFFECTED,
+            value=int(impact_value),
+            unit="GDACS WF",
+            estimate_type=MontyEstimateType.PRIMARY,
+        )
+        return item
 
     def generate_geo_info(self, coord_str: str | None) -> Tuple[Point, list] | Tuple[None, None]:
         """Generate a geo point object"""
