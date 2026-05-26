@@ -19,6 +19,7 @@ from pystac_monty.sources.gdacs import (
     GDACSDataSourceType,
     GDACSTransformer,
 )
+from pystac_monty.sources.utils import save_json_data_into_tmp_file
 from tests.conftest import get_data_file
 from tests.extensions.test_monty import CustomValidator
 from tests.utils.test_utils import request_for_schema, validate_correlation_id
@@ -27,12 +28,10 @@ CURRENT_SCHEMA_URI = "https://ifrcgo.org/monty-stac-extension/v1.2.0/schema.json
 CURRENT_SCHEMA_MAPURL = "https://raw.githubusercontent.com/IFRCGo/monty-stac-extension/refs/heads/main/json-schema/schema.json"
 
 
-def request_and_save_tmp_file(url):
-    response = requests.get(url)
-    tmpfile = tempfile.NamedTemporaryFile(suffix=".json", delete=False)
-    tmpfile.write(response.content)
-    tmpfile.flush()  # Ensure content is written to disk
-    return tmpfile
+def request_and_save_tmp_file(url: str):
+    response = requests.get(url, timeout=120)
+    assert response.status_code == 200
+    return save_json_data_into_tmp_file(response.json())
 
 
 def load_scenarios(
@@ -236,6 +235,25 @@ spain_tropical_cyclone_3 = {
     ],
 }
 
+venezuela_wildfire_1 = {
+    GDACSDataSourceType.EVENT: request_and_save_tmp_file(
+        "https://www.gdacs.org/gdacsapi/api/events/getepisodedata?eventtype=WF&eventid=1028649"
+    ),
+    "episodes": [
+        {
+            GDACSDataSourceType.EVENT: request_and_save_tmp_file(
+                "https://www.gdacs.org/gdacsapi/api/events/getepisodedata?eventtype=WF&eventid=1028649&episodeid=1"
+            ),
+            GDACSDataSourceType.GEOMETRY: request_and_save_tmp_file(
+                "https://www.gdacs.org/gdacsapi/api/polygons/getgeometry?eventtype=WF&eventid=1028649&episodeid=1"
+            ),
+            GDACSDataSourceType.IMPACT: request_and_save_tmp_file(
+                "https://www.gdacs.org/gdacsapi/api/export/getimpact?id=753395"
+            ),
+        }
+    ],
+}
+
 
 class GDACSTest(unittest.TestCase):
     scenarios = zip([spain_flood, drought_latam], ["FL", "DR"])
@@ -246,6 +264,7 @@ class GDACSTest(unittest.TestCase):
         ["FL"],
     )
     scenarios_3 = zip([spain_tropical_cyclone_3], ["TC"])
+    scenarios_4 = zip([venezuela_wildfire_1], ["WF"])
 
     def setUp(self) -> None:
         super().setUp()
@@ -464,3 +483,33 @@ class GDACSTest(unittest.TestCase):
         self.assertIsNotNone(source_event_item)
         self.assertIsNotNone(source_hazard_item)
         self.assertTrue(len(source_impact_items) >= 0)  # can be 0 as well (when affected pop = 0)
+
+    @parameterized.expand(load_scenarios(scenarios_4), skip_on_empty=True)
+    @pytest.mark.vcr()
+    def test_transformer_with_file_data_wf(self, transformer: GDACSTransformer) -> None:
+        request_for_schema(url=CURRENT_SCHEMA_URI)  # Validate if the schema exists
+
+        source_event_item = None
+        source_hazard_item = None
+        source_impact_items = []
+
+        for item in transformer.get_stac_items():
+            # write pretty json in a temporary folder
+            item_path = get_data_file(f"temp/gdacs/{item.id}.json")
+            with open(item_path, "w") as f:
+                json.dump(item.to_dict(), f, indent=2)
+            item.validate(validator=self.validator)
+            monty_item_ext = MontyExtension.ext(item)
+            if monty_item_ext.is_source_event():
+                source_event_item = item
+            elif monty_item_ext.is_source_hazard():
+                source_hazard_item = item
+            elif monty_item_ext.is_source_impact():
+                source_impact_items.append(item)
+
+        ids = [source_event_item.id, source_hazard_item.id] + [item.id for item in source_impact_items]
+        self.assertTrue(len(ids) == len(set(ids)))
+
+        self.assertIsNotNone(source_event_item)
+        self.assertIsNotNone(source_hazard_item)
+        self.assertTrue(len(source_impact_items) >= 0)
