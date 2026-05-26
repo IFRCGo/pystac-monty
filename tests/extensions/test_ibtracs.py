@@ -450,7 +450,9 @@ class IBTrACSTest(unittest.TestCase):
             # Check that related link points to event
             event_link = next((link for link in related_links if "event" in link.extra_fields.get("roles", [])), None)
             self.assertIsNotNone(event_link)
-            self.assertIn("source", event_link.extra_fields.get("roles", []))
+            self.assertIn(
+                "event", event_link.extra_fields.get("roles", [])
+            )  # Hazard item has related item of corresponding event
 
         # Verify Related links exists
         if event_items and hazard_items:
