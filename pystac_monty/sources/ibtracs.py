@@ -575,7 +575,7 @@ class IBTrACSTransformer(MontyDataTransformer[IBTrACSDataSource]):
                     rel="related",
                     target=f"../ibtracs-events/{storm_id}.json",
                     media_type="application/json",
-                    extra_fields={"roles": ["event", "source"]},
+                    extra_fields={"roles": ["event"]},
                 )
             )
 
