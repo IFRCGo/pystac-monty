@@ -1,0 +1,141 @@
+interactions:
+- request:
+    body: null
+    headers:
+      User-Agent:
+      - pystac/1.14.3
+    method: GET
+    uri: https://terradue.github.io/stac-extensions-disaster/v1.1.0/schema.json
+  response:
+    body:
+      string: "{\n  \"$schema\": \"http://json-schema.org/draft-07/schema#\",\n  \"$id\":
+        \"https://terradue.github.io/stac-extensions-disaster/v1.1.0/schema.json#\",\n
+        \ \"title\": \"Disaster Charter Extension\",\n  \"description\": \"STAC Disaster
+        Charter Extension for STAC Items and STAC Collections.\",\n  \"oneOf\": [\n
+        \   {\n      \"$comment\": \"This is the schema for STAC Items. Remove this
+        object if this extension only applies to Collections.\",\n      \"allOf\":
+        [\n        {\n          \"$ref\": \"#/definitions/stac_extensions\"\n        },\n
+        \       {\n          \"type\": \"object\",\n          \"required\": [\n            \"type\",\n
+        \           \"properties\"\n          ],\n          \"properties\": {\n            \"type\":
+        {\n              \"const\": \"Feature\"\n            },\n            \"properties\":
+        {\n              \"allOf\": [\n                {\n                  \"$comment\":
+        \"Require fields here for Item Properties.\",\n                  \"required\":
+        [\n                    \"disaster:class\"\n                  ]\n                },\n
+        \               {\n                  \"$ref\": \"#/definitions/fields\"\n
+        \               }\n              ]\n            }\n          }\n        }\n
+        \     ]\n    },\n    {\n      \"$comment\": \"This is the schema for STAC
+        Collections.\",\n      \"type\": \"object\",\n      \"allOf\": [\n        {\n
+        \         \"required\": [\n            \"type\"\n          ],\n          \"properties\":
+        {\n            \"type\": {\n              \"const\": \"Collection\"\n            }\n
+        \         }\n        },\n        {\n          \"$ref\": \"#/definitions/stac_extensions\"\n
+        \       }\n      ],\n      \"anyOf\": [\n        {\n          \"$comment\":
+        \"This is the schema for the top-level fields in a Collection. Remove this
+        if this extension does not define top-level fields for Collections.\",\n          \"allOf\":
+        [\n            {\n              \"$comment\": \"Require fields here for Collections
+        (top-level).\",\n              \"required\": [\n                \"disaster:class\"\n
+        \             ]\n            },\n            {\n              \"$ref\": \"#/definitions/fields\"\n
+        \           }\n          ]\n        },\n        {\n          \"$comment\":
+        \"This is the schema for the fields in Summaries. By default, only checks
+        the existence of the properties, but not the schema of the summaries.\",\n
+        \         \"required\": [\n            \"summaries\"\n          ],\n          \"properties\":
+        {\n            \"summaries\": {\n              \"$ref\": \"#/definitions/require_any_field\"\n
+        \           }\n          }\n        }\n      ]\n    }\n  ],\n  \"definitions\":
+        {\n    \"stac_extensions\": {\n      \"type\": \"object\",\n      \"required\":
+        [\n        \"stac_extensions\"\n      ],\n      \"properties\": {\n        \"stac_extensions\":
+        {\n          \"type\": \"array\",\n          \"contains\": {\n            \"const\":
+        \"https://terradue.github.io/stac-extensions-disaster/v1.1.0/schema.json\"\n
+        \         }\n        }\n      }\n    },\n    \"require_any_field\": {\n      \"$comment\":
+        \"Please list all fields here so that we can force the existence of one of
+        them in other parts of the schemas.\",\n      \"anyOf\": [\n        {\n          \"required\":
+        [\n            \"disaster:class\"\n          ]\n        },\n        {\n          \"required\":
+        [\n            \"disaster:call_ids\"\n          ]\n        },\n        {\n
+        \         \"required\": [\n            \"disaster:activation_id\"\n          ]\n
+        \       },\n        {\n          \"required\": [\n            \"disaster:types\"\n
+        \         ]\n        },\n        {\n          \"required\": [\n            \"disaster:country\"\n
+        \         ]\n        },\n        {\n          \"required\": [\n            \"disaster:regions\"\n
+        \         ]\n        },\n        {\n          \"required\": [\n            \"disaster:activation_status\"\n
+        \         ]\n        },\n        {\n          \"required\": [\n            \"disaster:disaster:resolution_class\"\n
+        \         ]\n        }\n      ]\n    },\n    \"fields\": {\n      \"$comment\":
+        \"Add your new fields here. Don't require them here, do that above in the
+        corresponding schema.\",\n      \"type\": \"object\",\n      \"properties\":
+        {\n        \"disaster:class\": {\n          \"type\": \"string\",\n          \"enum\":
+        [\n            \"activation\",\n            \"area\",\n            \"acquisition\",\n
+        \           \"vap\"\n          ]\n        },\n        \"disaster:activation_id\":
+        {\n          \"type\": \"integer\",\n          \"minimum\": 1\n        },\n
+        \       \"disaster:call_ids\": {\n          \"type\": \"array\",\n          \"items\":
+        {\n            \"type\": \"integer\",\n            \"minimum\": 1\n          }\n
+        \       },\n        \"disaster:types\": {\n          \"type\": \"array\",\n
+        \         \"items\": {\n            \"anyOf\": [\n              {\n                \"type\":
+        \"string\",\n                \"enum\": [\n                  \"flood\",\n                  \"fire\",\n
+        \                 \"earthquake\",\n                  \"volcano\",\n                  \"storm_hurricane_rural\",\n
+        \                 \"storm_hurricane_urban\",\n                  \"flood_large\",\n
+        \                 \"flood_flash\",\n                  \"cyclone\",\n                  \"tsunami\",\n
+        \                 \"snow_hazard\",\n                  \"landslide\",\n                  \"ice\",\n
+        \                 \"oil_spill\",\n                  \"other\"\n                ],\n
+        \               \"deprecated\": true\n              },\n              {\n
+        \               \"type\": \"string\",\n                \"enum\": [\n                  \"fire\",\n
+        \                 \"earthquake\",\n                  \"volcano\",\n                  \"storm_hurricane\",\n
+        \                 \"flood\",\n                  \"cyclone\",\n                  \"tsunami\",\n
+        \                 \"snow_hazard\",\n                  \"landslide\",\n                  \"ice\",\n
+        \                 \"oil_spill\",\n                  \"explosive_event\",\n
+        \                 \"other\"\n                ]\n              }\n            ]\n
+        \         }\n        },\n        \"disaster:country\": {\n          \"$comment\":
+        \"ISO 3166-1 alpha-3 country code\",\n          \"type\": \"string\",\n          \"pattern\":
+        \"^[A-Z]{3}$\"\n        },\n        \"disaster:regions\": {\n          \"type\":
+        \"array\",\n          \"items\": {\n            \"type\": \"string\"\n          }\n
+        \       },\n        \"disaster:activation_status\": {\n          \"type\":
+        \"string\",\n          \"enum\": [\n            \"open\",\n            \"closed\",\n
+        \           \"archived\"\n          ]\n        },\n        \"disaster:resolution_class\":
+        {\n          \"type\": \"string\",\n          \"enum\": [\n            \"VLR\",\n
+        \           \"LR\",\n            \"MR\",\n            \"HR\",\n            \"VHR\"\n
+        \         ]\n        }\n      },\n      \"patternProperties\": {\n        \"^(?!disaster:)\":
+        {\n          \"$comment\": \"Above, change `disaster` to the prefix of this
+        extension\"\n        }\n      },\n      \"additionalProperties\": false\n
+        \   }\n  }\n}"
+    headers:
+      Accept-Ranges:
+      - bytes
+      Access-Control-Allow-Origin:
+      - '*'
+      Age:
+      - '209'
+      Cache-Control:
+      - max-age=600
+      Connection:
+      - keep-alive
+      Content-Length:
+      - '6430'
+      Content-Type:
+      - application/json; charset=utf-8
+      Date:
+      - Fri, 19 Jun 2026 08:47:40 GMT
+      ETag:
+      - '"66603e00-191e"'
+      Last-Modified:
+      - Wed, 05 Jun 2024 10:29:20 GMT
+      Server:
+      - GitHub.com
+      Vary:
+      - Accept-Encoding
+      Via:
+      - 1.1 varnish
+      X-Cache:
+      - HIT
+      X-Cache-Hits:
+      - '0'
+      X-Fastly-Request-ID:
+      - 0d0bafd58463c74f7223bdfa1b9161eca2743dcb
+      X-GitHub-Request-Id:
+      - B43C:2F1221:2D2A277:2DA7CB8:6A35015A
+      X-Served-By:
+      - cache-fra-eddf8230168-FRA
+      X-Timer:
+      - S1781858860.167320,VS0,VE1
+      expires:
+      - Fri, 19 Jun 2026 08:54:11 GMT
+      x-proxy-cache:
+      - MISS
+    status:
+      code: 200
+      message: OK
+version: 1
