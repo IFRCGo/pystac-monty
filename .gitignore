@@ -163,3 +163,5 @@ cython_debug/
 tests/data-files/temp/
 tests/gaul_gpkg_and_license.zip
 tests/data-files/gaul2014_2015.gpkg
+
+AGENTS.md
