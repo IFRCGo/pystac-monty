@@ -738,7 +738,7 @@ class MontyExtension(
         return result
 
     @country_codes.setter
-    def country_codes(self, v: str) -> None:
+    def country_codes(self, v: list[str]) -> None:
         self._set_property(ITEM_COUNTRY_CODES_PROP, v)
 
     @property
