@@ -46,7 +46,7 @@ To export upstream source files to on-disk Monty STAC, first initialise the subm
 git submodule update --init --recursive
 ```
 
-Then run the CLI. `SOURCE` is one of `glide`, `gfd`, `gdacs`; `--input` accepts a source-specific file (see the `convert_*` docstrings in `pystac_monty/sources/batch_export.py`):
+Then run the CLI. `SOURCE` is one of `glide`, `gfd`, `gdacs`, `charter`; `--input` accepts a source-specific file or directory (see the `convert_*` docstrings in `pystac_monty/sources/batch_export.py`):
 
 ```sh
 pystac-monty SOURCE --input path/to/input --output path/to/output/

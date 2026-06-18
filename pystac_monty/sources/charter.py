@@ -18,7 +18,14 @@ from typing import Any, Iterator, List, Optional, cast
 
 import pytz
 from pystac import Collection, Item, Link
+from pystac.provider import Provider, ProviderRole
 
+from pystac_monty.exporter import (
+    MONTY_STAC_EXAMPLES_BASE_URL,
+    BatchExportConfig,
+    export_collected_items,
+    log_batch_role_counts,
+)
 from pystac_monty.extension import SCHEMA_URI, HazardDetail, MontyEstimateType, MontyExtension
 from pystac_monty.geocoding import MontyGeoCoder
 from pystac_monty.hazard_profiles import MontyHazardProfiles
@@ -621,3 +628,41 @@ def iter_charter_stac_items(source_dir: Path) -> Iterator[Item]:
             )
         )
         yield from CharterTransformer(source, None).get_stac_items()
+
+
+_CHARTER_PROVIDER = Provider(
+    name="International Charter Space and Major Disasters",
+    roles=[ProviderRole.PRODUCER],
+    url="https://disasterscharter.org/",
+    description=(
+        "The Charter is an international collaboration through which satellite data "
+        "is made available for disaster management purposes."
+    ),
+)
+
+_CHARTER_BATCH = BatchExportConfig(
+    source_slug="charter",
+    provider=_CHARTER_PROVIDER,
+    titles={
+        "event": (
+            "Charter Source Events",
+            "International Charter Space and Major Disasters activation events providing satellite imagery for disaster response",
+        ),
+        "hazard": (
+            "Charter Source Hazards",
+            "Areas of Interest (AOI) from Charter activations representing hazard extents for satellite imagery acquisition",
+        ),
+        "response": (
+            "International Charter Source Response",
+            "Value-Added Products (VAPs) from Charter activations mapped to Monty Response items (v1.3.0 monty:response_detail).",
+        ),
+    },
+    omit_keywords_from_summaries=True,
+    public_href_base=MONTY_STAC_EXAMPLES_BASE_URL,
+)
+
+
+def convert_charter_activations(source_dir: Path, output_dir: Path) -> None:
+    """Export Charter model fixtures (``act-*-activation.json`` plus area/VAP sidecars) to static STAC."""
+    counts = export_collected_items(_CHARTER_BATCH, list(iter_charter_stac_items(source_dir)), output_dir)
+    log_batch_role_counts(*counts)

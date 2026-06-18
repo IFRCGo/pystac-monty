@@ -153,12 +153,20 @@ def convert_gdacs(input_path: Path, output_dir: Path) -> None:
     )
 
 
+def convert_charter(input_path: Path, output_dir: Path) -> None:
+    """Export Charter activations. *input_path*: directory of ``act-*-activation.json`` model fixtures."""
+    from pystac_monty.sources.charter import convert_charter_activations
+
+    convert_charter_activations(input_path, output_dir)
+
+
 BatchExportFn = Callable[[Path, Path], None]
 
 BATCH_EXPORTS: dict[str, BatchExportFn] = {
     "glide": convert_glide,
     "gfd": convert_gfd,
     "gdacs": convert_gdacs,
+    "charter": convert_charter,
 }
 
 

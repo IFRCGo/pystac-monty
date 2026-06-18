@@ -16,6 +16,7 @@ from pystac_monty.exporter import (
     BatchExportConfig,
     MontySubcatalog,
     build_empty_static_source_collection,
+    build_monty_static_collection,
     export_collected_items,
     export_monty_subcatalog,
     extent_for_monty_static_collection,
@@ -81,6 +82,22 @@ def test_summaries_for_monty_static_collection_sorts_arrays() -> None:
     assert summaries.get_list("monty:country_codes") == ["DEU", "ESP"]
 
 
+def test_build_monty_static_collection_can_omit_keywords_from_summaries() -> None:
+    item = _source_item("event-1", "event")
+    item.properties["keywords"] = ["zeta", "alpha"]
+    collection = build_monty_static_collection(
+        [item],
+        collection_id="demo-events",
+        title="Demo events",
+        description="Demo",
+        role="event",
+        provider=_PROVIDER,
+        omit_keywords_from_summaries=True,
+    )
+    assert collection.extra_fields["keywords"] == ["alpha", "zeta"]
+    assert collection.summaries.get_list("keywords") is None
+
+
 def test_build_empty_static_source_collection_omits_monty_extension() -> None:
     collection = build_empty_static_source_collection(
         collection_id="demo-response",
@@ -119,6 +136,8 @@ def test_export_monty_subcatalog_writes_collection_and_items(tmp_path: Path) -> 
         item_doc = json.loads(item_path.read_text(encoding="utf-8"))
         assert item_doc["id"] == item.id
         assert item_doc["collection"] == "demo-events"
+        self_link = next(link for link in item_doc["links"] if link["rel"] == "self")
+        assert self_link["href"] == f"./{item.id}.json"
         assert not any(link["rel"] in {"parent", "root", "collection"} for link in item_doc.get("links", []))
 
 

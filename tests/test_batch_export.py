@@ -21,7 +21,7 @@ def test_convert_glide_writes_role_subcatalogs(tmp_path: Path) -> None:
 def test_cli_lists_registered_sources() -> None:
     from pystac_monty.sources.batch_export import BATCH_EXPORTS
 
-    assert {"glide", "gfd", "gdacs"}.issubset(BATCH_EXPORTS)
+    assert {"glide", "gfd", "gdacs", "charter"}.issubset(BATCH_EXPORTS)
 
 
 def test_run_batch_glide(tmp_path: Path) -> None:
