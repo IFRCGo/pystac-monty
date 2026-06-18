@@ -1,0 +1,28 @@
+{
+  "glideset": [
+    {
+      "comments": "Glide test comments",
+      "year": 2024,
+      "docid": 23388,
+      "latitude": 38.6013316868745,
+      "homeless": 0,
+      "source": "GDACS",
+      "idsource": "",
+      "killed": 0,
+      "affected": 0,
+      "duration": 8,
+      "number": "2024-000199",
+      "injured": 0,
+      "month": 10,
+      "geocode": "ESP",
+      "location": "Spain",
+      "magnitude": "0",
+      "time": "",
+      "id": "",
+      "event": "FL",
+      "day": 27,
+      "status": "A",
+      "longitude": -3.41102534556838
+    }
+  ]
+}

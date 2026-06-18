@@ -46,6 +46,9 @@ Issues = "https://github.com/IFRCGo/monty-stac-extension/issues"
 Changelog = "https://github.com/IFRCGo/monty-stac-extension/blob/main/CHANGELOG.md"
 Discussions = "https://github.com/radiantearth/stac-spec/discussions/categories/stac-software"
 
+[project.scripts]
+pystac-monty = "pystac_monty.cli:main"
+
 [tool.coverage.run]
 branch = true
 source = ["pystac_monty"]

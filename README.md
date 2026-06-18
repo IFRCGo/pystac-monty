@@ -38,7 +38,25 @@ jq --version
 
 ## Usage
 
-## Extending a STAC Item
+### Batch export (CLI)
+
+To export upstream source files to on-disk Monty STAC, first initialise the submodule:
+
+```sh
+git submodule update --init --recursive
+```
+
+Then run the CLI. `SOURCE` is one of `glide`, `gfd`, `gdacs`; `--input` accepts a source-specific file (see the `convert_*` docstrings in `pystac_monty/sources/batch_export.py`):
+
+```sh
+pystac-monty SOURCE --input path/to/input --output path/to/output/
+```
+
+The output directory will contain role subcatalogs (`{slug}-events/`, `{slug}-hazards/`, etc.), each with a collection JSON and flat item files. Raw source payloads live in `monty-stac-extension/docs/model/sources/` — the `examples/` folders are published STAC output, not inputs.
+
+To add more sources or use the exporter programmatically, see `pystac_monty/exporter.py`.
+
+### Extending a STAC Item
 
 The library provides classes and functions to work with Montandon STAC objects. Here is an example of how to create a Montandon Item:
 
