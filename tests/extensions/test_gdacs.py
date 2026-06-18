@@ -5,6 +5,7 @@ import tempfile
 import typing
 import unittest
 from os import makedirs
+from pathlib import Path
 
 import pytest
 import requests
@@ -26,12 +27,13 @@ from tests.utils.test_utils import request_for_schema, validate_correlation_id
 
 CURRENT_SCHEMA_URI = "https://ifrcgo.org/monty-stac-extension/v1.3.0/schema.json"
 CURRENT_SCHEMA_MAPURL = "https://raw.githubusercontent.com/IFRCGo/monty-stac-extension/refs/heads/main/json-schema/schema.json"
+GDACS_FIXTURES = Path(__file__).resolve().parent.parent / "data-files" / "gdacs"
 
 
-def request_and_save_tmp_file(url: str):
-    response = requests.get(url, timeout=120)
-    assert response.status_code == 200
-    return save_json_data_into_tmp_file(response.json())
+def fixture_tmp_file(name: str) -> tempfile._TemporaryFileWrapper:
+    """Load committed GDACS JSON; no network at import/collection time."""
+    data = json.loads((GDACS_FIXTURES / name).read_text(encoding="utf-8"))
+    return save_json_data_into_tmp_file(data)
 
 
 def load_scenarios(
@@ -193,63 +195,37 @@ drought_latam = {
 }
 
 spain_flood_2 = {
-    GDACSDataSourceType.EVENT: request_and_save_tmp_file(
-        "https://github.com/IFRCGo/monty-stac-extension/raw/refs/heads/main/docs/model/sources/GDACS/1102983-1-geteventdata-source.json"
-    ),  ## noqa E501
+    GDACSDataSourceType.EVENT: fixture_tmp_file("1102983-1-geteventdata-source.json"),
     "episodes": [
         {
-            GDACSDataSourceType.EVENT: request_and_save_tmp_file(
-                "https://www.gdacs.org/gdacsapi/api/events/getepisodedata?eventtype=FL&eventid=1102983&episodeid=1"
-            ),
-            GDACSDataSourceType.GEOMETRY: request_and_save_tmp_file(
-                "https://www.gdacs.org/gdacsapi/api/polygons/getgeometry?eventtype=FL&eventid=1102983&episodeid=1"
-            ),
+            GDACSDataSourceType.EVENT: fixture_tmp_file("fl-1102983-ep1-event.json"),
+            GDACSDataSourceType.GEOMETRY: fixture_tmp_file("fl-1102983-ep1-geometry.json"),
         },
         {
-            GDACSDataSourceType.EVENT: request_and_save_tmp_file(
-                "https://www.gdacs.org/gdacsapi/api/events/getepisodedata?eventtype=FL&eventid=1102983&episodeid=2"
-            ),
-            GDACSDataSourceType.GEOMETRY: request_and_save_tmp_file(
-                "https://www.gdacs.org/gdacsapi/api/polygons/getgeometry?eventtype=FL&eventid=1102983&episodeid=2"
-            ),
+            GDACSDataSourceType.EVENT: fixture_tmp_file("fl-1102983-ep2-event.json"),
+            GDACSDataSourceType.GEOMETRY: fixture_tmp_file("fl-1102983-ep2-geometry.json"),
         },
     ],
 }
 
 spain_tropical_cyclone_3 = {
-    GDACSDataSourceType.EVENT: request_and_save_tmp_file(
-        "https://www.gdacs.org/gdacsapi/api/events/getepisodedata?eventtype=TC&eventid=1001253"
-    ),
+    GDACSDataSourceType.EVENT: fixture_tmp_file("tc-1001253-event.json"),
     "episodes": [
         {
-            GDACSDataSourceType.EVENT: request_and_save_tmp_file(
-                "https://www.gdacs.org/gdacsapi/api/events/getepisodedata?eventtype=TC&eventid=1001253&episodeid=1"
-            ),
-            GDACSDataSourceType.GEOMETRY: request_and_save_tmp_file(
-                "https://www.gdacs.org/gdacsapi/api/polygons/getgeometry?eventtype=TC&eventid=1001253&episodeid=1"
-            ),
-            GDACSDataSourceType.IMPACT: request_and_save_tmp_file(
-                "https://www.gdacs.org/gdacsapi/api/export/gettimeline?id=730841"
-            ),
+            GDACSDataSourceType.EVENT: fixture_tmp_file("tc-1001253-ep1-event.json"),
+            GDACSDataSourceType.GEOMETRY: fixture_tmp_file("tc-1001253-ep1-geometry.json"),
+            GDACSDataSourceType.IMPACT: fixture_tmp_file("tc-1001253-ep1-impact.json"),
         }
     ],
 }
 
 venezuela_wildfire_1 = {
-    GDACSDataSourceType.EVENT: request_and_save_tmp_file(
-        "https://www.gdacs.org/gdacsapi/api/events/getepisodedata?eventtype=WF&eventid=1028649"
-    ),
+    GDACSDataSourceType.EVENT: fixture_tmp_file("wf-1028649-event.json"),
     "episodes": [
         {
-            GDACSDataSourceType.EVENT: request_and_save_tmp_file(
-                "https://www.gdacs.org/gdacsapi/api/events/getepisodedata?eventtype=WF&eventid=1028649&episodeid=1"
-            ),
-            GDACSDataSourceType.GEOMETRY: request_and_save_tmp_file(
-                "https://www.gdacs.org/gdacsapi/api/polygons/getgeometry?eventtype=WF&eventid=1028649&episodeid=1"
-            ),
-            GDACSDataSourceType.IMPACT: request_and_save_tmp_file(
-                "https://www.gdacs.org/gdacsapi/api/export/getimpact?id=753395"
-            ),
+            GDACSDataSourceType.EVENT: fixture_tmp_file("wf-1028649-ep1-event.json"),
+            GDACSDataSourceType.GEOMETRY: fixture_tmp_file("wf-1028649-ep1-geometry.json"),
+            GDACSDataSourceType.IMPACT: fixture_tmp_file("wf-1028649-ep1-impact.json"),
         }
     ],
 }
