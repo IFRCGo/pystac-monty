@@ -11,11 +11,11 @@ interactions:
       User-Agent:
       - python-requests/2.33.1
     method: GET
-    uri: https://ifrcgo.org/monty-stac-extension/v1.2.0/schema.json
+    uri: https://ifrcgo.org/monty-stac-extension/v1.3.0/schema.json
   response:
     body:
       string: "{\n  \"$schema\": \"http://json-schema.org/draft-07/schema#\",\n  \"$id\":
-        \"https://ifrcgo.org/monty-stac-extension/v1.2.0/schema.json#\",\n  \"title\":
+        \"https://ifrcgo.org/monty-stac-extension/v1.3.0/schema.json#\",\n  \"title\":
         \"Monty Extension\",\n  \"description\": \"STAC Monty Extension for STAC Items
         and STAC Collections.\",\n  \"oneOf\": [\n    {\n      \"$comment\": \"This
         is the schema for STAC Items.\",\n      \"allOf\": [\n        {\n          \"$ref\":
@@ -46,7 +46,7 @@ interactions:
         \       }\n      ]\n    }\n  ],\n  \"definitions\": {\n    \"stac_extensions\":
         {\n      \"type\": \"object\",\n      \"required\": [\n        \"stac_extensions\"\n
         \     ],\n      \"properties\": {\n        \"stac_extensions\": {\n          \"type\":
-        \"array\",\n          \"contains\": {\n            \"const\": \"https://ifrcgo.org/monty-stac-extension/v1.2.0/schema.json\"\n
+        \"array\",\n          \"contains\": {\n            \"const\": \"https://ifrcgo.org/monty-stac-extension/v1.3.0/schema.json\"\n
         \         }\n        }\n      }\n    },\n    \"fields\": {\n      \"$comment\":
         \"Monty prefixed fields\",\n      \"type\": \"object\",\n      \"properties\":
         {\n        \"monty:src_event_id\": {\n          \"type\": \"string\",\n          \"minLength\":

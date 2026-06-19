@@ -4,6 +4,7 @@ import gzip
 import json
 import unittest
 from datetime import datetime
+from pathlib import Path
 from typing import Any
 
 import pytest
@@ -11,10 +12,16 @@ import requests
 from pystac import Asset, Item
 from pystac.validation import JsonSchemaSTACValidator
 
-from pystac_monty.extension import MontyExtension
+from pystac_monty.extension import SCHEMA_URI, MontyExtension
 
-CURRENT_SCHEMA_URI = "https://ifrcgo.org/monty-stac-extension/v1.2.0/schema.json"
+CURRENT_SCHEMA_URI = SCHEMA_URI
 CURRENT_SCHEMA_MAPURL = "https://raw.githubusercontent.com/IFRCGo/monty-stac-extension/refs/heads/main/json-schema/schema.json"
+SUBMODULE_SCHEMA_PATH = Path(__file__).resolve().parents[2] / "monty-stac-extension" / "json-schema" / "schema.json"
+
+
+def _load_submodule_schema() -> dict[str, Any]:
+    with SUBMODULE_SCHEMA_PATH.open(encoding="utf-8") as f:
+        return json.load(f)
 
 
 def _json_from_url(url: str) -> Any:
@@ -58,7 +65,7 @@ class CustomValidator(JsonSchemaSTACValidator):
     def _get_schema(self, schema_uri: str) -> dict[str, Any]:
         if schema_uri == CURRENT_SCHEMA_URI:
             if self._schema_cache is None:
-                self.__class__._schema_cache = _json_from_url(CURRENT_SCHEMA_MAPURL)
+                self.__class__._schema_cache = _load_submodule_schema()
             return self._schema_cache
         return super()._get_schema(schema_uri)
 

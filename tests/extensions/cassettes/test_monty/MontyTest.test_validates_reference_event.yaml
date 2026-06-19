@@ -103,7 +103,7 @@ interactions:
     uri: https://raw.githubusercontent.com/IFRCGo/monty-stac-extension/refs/heads/main/examples/reference-events/20241027T150000-ESP-HM-FLOOD-001-GCDB.json
   response:
     body:
-      string: "{\n  \"stac_version\": \"1.0.0\",\n  \"stac_extensions\": [\n    \"https://ifrcgo.org/monty-stac-extension/v1.2.0/schema.json\"\n
+      string: "{\n  \"stac_version\": \"1.0.0\",\n  \"stac_extensions\": [\n    \"https://ifrcgo.org/monty-stac-extension/v1.3.0/schema.json\"\n
         \ ],\n  \"type\": \"Feature\",\n  \"id\": \"20241027T150000-ESP-HM-FLOOD-001-GCDB\",\n
         \ \"collection\": \"gdacs-events\",\n  \"bbox\": [\n    -3.4110253455683806,\n
         \   38.60133168687446,\n    -3.4110253455683806,\n    38.60133168687446\n

@@ -21,7 +21,7 @@ __version__ = "0.1.0"
 
 T = TypeVar("T", pystac.Collection, pystac.Item, pystac.Asset, item_assets.AssetDefinition)
 
-SCHEMA_URI = "https://ifrcgo.org/monty-stac-extension/v1.2.0/schema.json"
+SCHEMA_URI = "https://ifrcgo.org/monty-stac-extension/v1.3.0/schema.json"
 
 PREFIX: str = "monty:"
 
