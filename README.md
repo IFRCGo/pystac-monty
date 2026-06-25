@@ -52,7 +52,7 @@ Then run the CLI. `SOURCE` is one of `glide`, `gfd`, `gdacs`; `--input` accepts 
 pystac-monty SOURCE --input path/to/input --output path/to/output/
 ```
 
-The output directory will contain role subcatalogs (`{slug}-events/`, `{slug}-hazards/`, etc.), each with a collection JSON and flat item files. Raw source payloads live in `monty-stac-extension/docs/model/sources/` — the `examples/` folders are published STAC output, not inputs.
+The output directory will contain role collections (`{slug}-events/`, `{slug}-hazards/`, etc.), each with a collection JSON and flat item files. Raw source payloads live in `monty-stac-extension/docs/model/sources/` — the `examples/` folders are published STAC output, not inputs.
 
 To add more sources or use the exporter programmatically, see `pystac_monty/exporter.py`.
 

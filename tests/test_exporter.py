@@ -14,10 +14,10 @@ from pystac.provider import Provider, ProviderRole
 from pystac_monty.exporter import (
     MONTY_STAC_EXAMPLES_BASE_URL,
     BatchExportConfig,
-    MontySubcatalog,
+    MontyCollectionSpec,
     build_empty_static_source_collection,
     export_collected_items,
-    export_monty_subcatalog,
+    export_monty_collection,
     extent_for_monty_static_collection,
     log_batch_role_counts,
     partition_monty_source_items,
@@ -93,10 +93,10 @@ def test_build_empty_static_source_collection_omits_monty_extension() -> None:
     assert collection.extra_fields["roles"] == ["response", "source"]
 
 
-def test_export_monty_subcatalog_writes_collection_and_items(tmp_path: Path) -> None:
+def test_export_monty_collection_writes_collection_and_items(tmp_path: Path) -> None:
     items = [_source_item("event-1", "event"), _source_item("event-2", "event")]
-    export_monty_subcatalog(
-        MontySubcatalog(
+    export_monty_collection(
+        MontyCollectionSpec(
             out_dir=tmp_path / "demo-events",
             collection_id="demo-events",
             title="Demo events",
@@ -137,12 +137,12 @@ def test_export_collected_items_partitions_by_role(tmp_path: Path) -> None:
     assert not (tmp_path / "demo-response").exists()
 
 
-def test_export_collected_items_emits_empty_response_subcatalog(tmp_path: Path) -> None:
+def test_export_collected_items_emits_empty_response_collection(tmp_path: Path) -> None:
     items = [_source_item("event-1", "event")]
     config = BatchExportConfig(
         source_slug="demo",
         provider=_PROVIDER,
-        emit_empty_response_subcatalog=True,
+        emit_empty_response_collection=True,
     )
     counts = export_collected_items(config, items, tmp_path)
     assert counts == (1, 0, 0, 0)
@@ -196,8 +196,8 @@ def test_export_published_example_layout(tmp_path: Path) -> None:
     item = _source_item("event-1", "event")
     item.add_link(pystac.Link(rel="related", target="../demo-hazards/hazard-1.json"))
     collection_id = "demo-events"
-    export_monty_subcatalog(
-        MontySubcatalog(
+    export_monty_collection(
+        MontyCollectionSpec(
             out_dir=tmp_path / collection_id,
             collection_id=collection_id,
             title="Demo events",
@@ -229,8 +229,8 @@ def test_export_published_example_layout(tmp_path: Path) -> None:
 def test_export_without_preserve_transformer_links(tmp_path: Path) -> None:
     item = _source_item("event-1", "event")
     item.add_link(pystac.Link(rel="related", target="./event-2.json"))
-    export_monty_subcatalog(
-        MontySubcatalog(
+    export_monty_collection(
+        MontyCollectionSpec(
             out_dir=tmp_path / "demo-events",
             collection_id="demo-events",
             title="Demo events",

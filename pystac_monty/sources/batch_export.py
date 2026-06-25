@@ -1,4 +1,12 @@
-"""Run existing Monty transformers and write static STAC via :mod:`pystac_monty.exporter`."""
+"""Run existing Monty transformers and write static STAC via :mod:`pystac_monty.exporter`.
+
+This is a thin developer harness for exercising a transformer over a local input file
+and writing the resulting static STAC. Source extraction/ingestion is owned by
+``montandon-etl``; keep this module simple and avoid re-implementing that logic here.
+Most sources expect a single native payload file; GDACS expects a pre-built
+:class:`~pystac_monty.sources.common.GdacsDataSourceType` bundle JSON (see
+:func:`load_gdacs_data_source_from_bundle`).
+"""
 
 from __future__ import annotations
 
@@ -21,16 +29,64 @@ from pystac_monty.sources.common import (
     MontyDataTransformer,
 )
 
-_GDACS_EVENT = "geteventdata"
-_GDACS_GEOMETRY = "getgeometry"
-_GDACS_IMPACT = "getimpact"
-
 
 def file_generic_data_source(input_path: Path, source_url: str | None = None) -> GenericDataSource:
     path = input_path.resolve()
     return GenericDataSource(
         source_url=source_url or path.as_uri(),
         input_data=File(path=str(path), data_type=DataType.FILE),
+    )
+
+
+def _resolve_file_path(path: str, base_dir: Path) -> str:
+    file_path = Path(path)
+    if file_path.is_absolute():
+        return str(file_path)
+    return str((base_dir / file_path).resolve())
+
+
+def _gdacs_file_input(path: str, base_dir: Path) -> File:
+    return File(path=_resolve_file_path(path, base_dir), data_type=DataType.FILE)
+
+
+def _gdacs_episode_from_dict(data: dict[str, Any], base_dir: Path) -> GdacsEpisodes:
+    input_data = data["data"]["input_data"]
+    return GdacsEpisodes(
+        type=data["type"],
+        hazard_type=data.get("hazard_type"),
+        data=GenericDataSource(
+            source_url=data["data"]["source_url"],
+            input_data=_gdacs_file_input(input_data["path"], base_dir),
+        ),
+    )
+
+
+def load_gdacs_data_source_from_bundle(bundle_path: Path) -> Any:
+    """Load a :class:`~pystac_monty.sources.gdacs.GDACSDataSource` from a bundle JSON file.
+
+    *bundle_path* must contain a serialized :class:`~pystac_monty.sources.common.GdacsDataSourceType`
+    document. Relative ``path`` values are resolved against the bundle directory.
+    Bundle assembly belongs in ``montandon-etl``; this loader only wires files into the transformer.
+    """
+    from pystac_monty.sources.gdacs import GDACSDataSource
+
+    base_dir = bundle_path.parent
+    raw = json.loads(bundle_path.read_text(encoding="utf-8"))
+    episodes: list[tuple[GdacsEpisodes, GdacsEpisodes, GdacsEpisodes | None]] = []
+    for episode_event, episode_geometry, episode_impact in raw["episodes"]:
+        episodes.append(
+            (
+                _gdacs_episode_from_dict(episode_event, base_dir),
+                _gdacs_episode_from_dict(episode_geometry, base_dir),
+                _gdacs_episode_from_dict(episode_impact, base_dir) if episode_impact is not None else None,
+            )
+        )
+    return GDACSDataSource(
+        data=GdacsDataSourceType(
+            source_url=raw["source_url"],
+            event_data=_gdacs_file_input(raw["event_data"]["path"], base_dir),
+            episodes=episodes,
+        )
     )
 
 
@@ -56,12 +112,12 @@ def export_transformer_items(
     source_slug: str,
     provider: Provider,
     output_dir: Path,
-    emit_empty_response_subcatalog: bool = False,
+    emit_empty_response_collection: bool = False,
 ) -> tuple[int, int, int, int]:
     config = BatchExportConfig(
         source_slug=source_slug,
         provider=provider,
-        emit_empty_response_subcatalog=emit_empty_response_subcatalog,
+        emit_empty_response_collection=emit_empty_response_collection,
     )
     counts = export_collected_items(config, items, output_dir)
     log_batch_role_counts(*counts)
@@ -104,47 +160,15 @@ def convert_gfd(input_path: Path, output_dir: Path) -> None:
     )
 
 
-def _gdacs_episode(path: Path, episode_type: str, hazard_type: str | None) -> GdacsEpisodes:
-    return GdacsEpisodes(
-        type=episode_type,
-        data=file_generic_data_source(path),
-        hazard_type=hazard_type,
-    )
-
-
-def _gdacs_data_source_from_manifest(manifest_path: Path) -> Any:
-    from pystac_monty.sources.gdacs import GDACSDataSource
-
-    base = manifest_path.parent
-    manifest = json.loads(manifest_path.read_text(encoding="utf-8"))
-    hazard_type = manifest.get("hazard_type")
-    source_url = manifest.get("source_url", manifest_path.as_uri())
-    event_path = base / manifest["event_data"]
-    episodes: list[tuple[GdacsEpisodes, GdacsEpisodes, GdacsEpisodes | None]] = []
-    for episode in manifest.get("episodes", []):
-        event = _gdacs_episode(base / episode["event"], _GDACS_EVENT, hazard_type)
-        geometry = _gdacs_episode(base / episode["geometry"], _GDACS_GEOMETRY, hazard_type)
-        impact_path = episode.get("impact")
-        impact = _gdacs_episode(base / impact_path, _GDACS_IMPACT, hazard_type) if impact_path else None
-        episodes.append((event, geometry, impact))
-    return GDACSDataSource(
-        data=GdacsDataSourceType(
-            source_url=source_url,
-            event_data=File(path=str(event_path.resolve()), data_type=DataType.FILE),
-            episodes=episodes,
-        )
-    )
-
-
 def iter_gdacs_stac_items(input_path: Path) -> list[Item]:
     from pystac_monty.sources.gdacs import GDACSTransformer
 
-    data_source = _gdacs_data_source_from_manifest(input_path)
+    data_source = load_gdacs_data_source_from_bundle(input_path)
     return collect_transformer_items(GDACSTransformer(data_source, default_batch_geocoder()))
 
 
 def convert_gdacs(input_path: Path, output_dir: Path) -> None:
-    """Export GDACS data. *input_path*: manifest JSON with relative ``event_data`` and ``episodes`` paths."""
+    """Export GDACS data. *input_path*: ``GdacsDataSourceType`` bundle JSON with relative file paths."""
     export_transformer_items(
         items=iter_gdacs_stac_items(input_path),
         source_slug="gdacs",

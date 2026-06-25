@@ -238,7 +238,9 @@ def save_static_monty_collection(
 
 
 @dataclass(frozen=True)
-class MontySubcatalog:
+class MontyCollectionSpec:
+    """Inputs for writing one Monty source :class:`pystac.Collection` and its items."""
+
     out_dir: Path
     collection_id: str
     title: str
@@ -251,7 +253,7 @@ class MontySubcatalog:
     public_href_base: str | None = None
 
 
-def export_monty_subcatalog(spec: MontySubcatalog) -> None:
+def export_monty_collection(spec: MontyCollectionSpec) -> None:
     if spec.items:
         collection = build_monty_static_collection(
             spec.items,
@@ -284,16 +286,16 @@ def _role_titles(source_slug: str, overrides: dict[MontyRole, tuple[str, str]] |
     return {**defaults, **(overrides or {})}
 
 
-def _subcatalog_spec(
+def _collection_spec(
     config: BatchExportConfig,
     output_root: Path,
     role: MontyRole,
     items: list[Item],
     collection_id: str,
     titles: dict[MontyRole, tuple[str, str]],
-) -> MontySubcatalog:
+) -> MontyCollectionSpec:
     title, description = titles[role]
-    return MontySubcatalog(
+    return MontyCollectionSpec(
         out_dir=output_root / collection_id,
         collection_id=collection_id,
         title=title,
@@ -327,10 +329,10 @@ def export_collected_items(
             continue
         if role == "response":
             wrote_response = True
-        export_monty_subcatalog(_subcatalog_spec(config, output_root, role, list(role_items), collection_id, titles))
-    if config.emit_empty_response_subcatalog and not wrote_response:
+        export_monty_collection(_collection_spec(config, output_root, role, list(role_items), collection_id, titles))
+    if config.emit_empty_response_collection and not wrote_response:
         collection_id = f"{config.source_slug}-response"
-        export_monty_subcatalog(_subcatalog_spec(config, output_root, "response", [], collection_id, titles))
+        export_monty_collection(_collection_spec(config, output_root, "response", [], collection_id, titles))
     return len(events), len(hazards), len(impacts), len(responses)
 
 
@@ -342,7 +344,7 @@ class BatchExportConfig:
     provider: Provider
     titles: dict[MontyRole, tuple[str, str]] | None = None
     preserve_transformer_item_links: bool = True
-    emit_empty_response_subcatalog: bool = False
+    emit_empty_response_collection: bool = False
     omit_keywords_from_summaries: bool = False
     public_href_base: str | None = None
 
