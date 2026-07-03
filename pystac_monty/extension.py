@@ -33,6 +33,7 @@ ITEM_HAZARD_DETAIL_PROP = PREFIX + "hazard_detail"
 ITEM_IMPACT_DETAIL_PROP = PREFIX + "impact_detail"
 ITEM_EPISODE_NUMBER_PROP = PREFIX + "episode_number"
 ITEM_SOURCE_EVENT_ID_PROP = PREFIX + "src_event_id"
+ITEM_RESPONSE_DETAIL_PROP = PREFIX + "response_detail"
 
 # Hazard Detail properties
 HAZDET_CLUSTER_PROP = "cluster"
@@ -47,6 +48,16 @@ IMPDET_TYPE_PROP = "type"
 IMPDET_VALUE_PROP = "value"
 IMPDET_UNIT_PROP = "unit"
 IMPDET_ESTIMATE_TYPE_PROP = "estimate_type"
+
+# Response Detail properties
+RESPDET_TYPE_PROP = "type"
+RESPDET_SOURCE_ID_PROP = "source_id"
+RESPDET_STATUS_PROP = "status"
+RESPDET_MONITORING_NUMBER_PROP = "monitoring_number"
+RESPDET_PRODUCER_PROP = "producer"
+RESPDET_METHODOLOGY_PROP = "methodology"
+RESPDET_SENDAI_TARGETS_PROP = "sendai_targets"
+RESPDET_SECTORS_PROP = "sectors"
 
 # Link attributes
 LINK_ATTRS_OCCURRENCE_TYPE_PROP = "occ_type"
@@ -79,6 +90,60 @@ class MontyEstimateType(StringEnum):
 
     PRIMARY = "primary"
     SECONDARY = "secondary"
+    MODELLED = "modelled"
+
+
+class MontyResponseType(StringEnum):
+    """Allowed values for ``type`` field of :class:`ResponseDetail` object.
+
+    Format is ``{domain}-{type}`` with ``domain`` in ``eo``, ``hum``, ``fin``. See the
+    `response taxonomy <https://github.com/IFRCGo/monty-stac-extension/blob/main/docs/model/response-taxonomy.md>`_
+    for the full vocabulary.
+    """
+
+    EO_REFERENCE = "eo-ref"
+    EO_FIRST_ESTIMATE = "eo-fep"
+    EO_DELINEATION = "eo-del"
+    EO_GRADING = "eo-gra"
+    EO_POPULATION_EXPOSURE = "eo-pop"
+    EO_MONITORING = "eo-mon"
+    EO_SITUATIONAL_REPORT = "eo-sr"
+    EO_VALUE_ADDED_PRODUCT = "eo-vap"
+    HUM_SHELTER = "hum-shelter"
+    HUM_HEALTH = "hum-health"
+    HUM_WASH = "hum-wash"
+    HUM_FOOD = "hum-food"
+    HUM_NUTRITION = "hum-nutrition"
+    HUM_PROTECTION = "hum-protection"
+    HUM_EDUCATION = "hum-education"
+    HUM_CCCM = "hum-cccm"
+    HUM_EARLY_RECOVERY = "hum-early-recovery"
+    HUM_LOGISTICS = "hum-logistics"
+    HUM_TELECOM = "hum-telecom"
+    HUM_DRR = "hum-drr"
+    FIN_DREF = "fin-dref"
+    FIN_EMERGENCY_APPEAL = "fin-ea"
+    FIN_ANTICIPATORY_ACTION = "fin-aa"
+    FIN_PDNA = "fin-pdna"
+
+
+class MontyResponseStatus(StringEnum):
+    """Allowed values for ``status`` field of :class:`ResponseDetail` object."""
+
+    PLANNED = "planned"
+    IN_PRODUCTION = "in-production"
+    PUBLISHED = "published"
+    FINISHED = "finished"
+    NO_IMPACT = "no-impact"
+    WITHDRAWN = "withdrawn"
+
+
+class MontyMethodology(StringEnum):
+    """Allowed values for ``methodology`` field of :class:`ResponseDetail` object."""
+
+    HUMAN_INTERPRETED = "human_interpreted"
+    SEMI_AUTOMATED = "semi_automated"
+    AUTOMATED = "automated"
     MODELLED = "modelled"
 
 
@@ -351,6 +416,152 @@ class HazardDetail(ABC):
         return hazard_detail
 
 
+class ResponseDetail(ABC):
+    """Object that contains the details of a response.
+    Preferably used only in a Response item. See the :stac-ext:`Monty Response Detail Object
+    <monty#montyresponse_detail>` docs for details.
+    """
+
+    properties: dict[str, Any]
+
+    def __init__(
+        self,
+        type: str,
+        source_id: str | None = None,
+        status: MontyResponseStatus | None = None,
+        monitoring_number: int | None = None,
+        producer: str | None = None,
+        methodology: MontyMethodology | None = None,
+        sendai_targets: list[str] | None = None,
+        sectors: list[str] | None = None,
+    ) -> None:
+        self.properties = {}
+        self.type = type
+        if source_id:
+            self.source_id = source_id
+        if status:
+            self.status = status
+        if monitoring_number is not None:
+            self.monitoring_number = monitoring_number
+        if producer:
+            self.producer = producer
+        if methodology:
+            self.methodology = methodology
+        if sendai_targets:
+            self.sendai_targets = sendai_targets
+        if sectors:
+            self.sectors = sectors
+
+    @property
+    def type(self) -> str:
+        """The response type code, e.g. ``eo-del`` or ``hum-shelter``."""
+        return get_required(
+            self.properties.get(RESPDET_TYPE_PROP),
+            ITEM_RESPONSE_DETAIL_PROP,
+            RESPDET_TYPE_PROP,
+        )
+
+    @type.setter
+    def type(self, v: str) -> None:
+        self.properties[RESPDET_TYPE_PROP] = v
+
+    @property
+    def source_id(self) -> str:
+        """The native identifier of the response in its source system."""
+        return get_opt(self.properties.get(RESPDET_SOURCE_ID_PROP))
+
+    @source_id.setter
+    def source_id(self, v: str) -> None:
+        self.properties[RESPDET_SOURCE_ID_PROP] = v
+
+    @property
+    def status(self) -> MontyResponseStatus:
+        """The lifecycle status of the response product."""
+        return get_opt(self.properties.get(RESPDET_STATUS_PROP))
+
+    @status.setter
+    def status(self, v: MontyResponseStatus) -> None:
+        self.properties[RESPDET_STATUS_PROP] = v
+
+    @property
+    def monitoring_number(self) -> int:
+        """The iteration number for monitoring updates. Its presence marks the item
+        as a monitoring update."""
+        return get_opt(self.properties.get(RESPDET_MONITORING_NUMBER_PROP))
+
+    @monitoring_number.setter
+    def monitoring_number(self, v: int) -> None:
+        self.properties[RESPDET_MONITORING_NUMBER_PROP] = v
+
+    @property
+    def producer(self) -> str:
+        """The organisation that produced the response."""
+        return get_opt(self.properties.get(RESPDET_PRODUCER_PROP))
+
+    @producer.setter
+    def producer(self, v: str) -> None:
+        self.properties[RESPDET_PRODUCER_PROP] = v
+
+    @property
+    def methodology(self) -> MontyMethodology:
+        """The type of analysis used to produce the response."""
+        return get_opt(self.properties.get(RESPDET_METHODOLOGY_PROP))
+
+    @methodology.setter
+    def methodology(self, v: MontyMethodology) -> None:
+        self.properties[RESPDET_METHODOLOGY_PROP] = v
+
+    @property
+    def sendai_targets(self) -> list[str]:
+        """The Sendai Framework targets this response contributes to."""
+        return get_opt(self.properties.get(RESPDET_SENDAI_TARGETS_PROP))
+
+    @sendai_targets.setter
+    def sendai_targets(self, v: list[str]) -> None:
+        self.properties[RESPDET_SENDAI_TARGETS_PROP] = v
+
+    @property
+    def sectors(self) -> list[str]:
+        """The IASC clusters / IFRC EPoA sectors covered, for humanitarian items."""
+        return get_opt(self.properties.get(RESPDET_SECTORS_PROP))
+
+    @sectors.setter
+    def sectors(self, v: list[str]) -> None:
+        self.properties[RESPDET_SECTORS_PROP] = v
+
+    def is_monitoring_update(self) -> bool:
+        """Indicates if this response is a monitoring update of a prior iteration."""
+        return self.properties.get(RESPDET_MONITORING_NUMBER_PROP) is not None
+
+    def sendai_targets_set(self) -> set[str]:
+        """The Sendai Framework targets this response contributes to, as a set."""
+        return set(self.properties.get(RESPDET_SENDAI_TARGETS_PROP) or [])
+
+    def to_dict(self) -> dict[str, Any]:
+        return self.properties
+
+    @staticmethod
+    def from_dict(d: dict[str, Any]) -> ResponseDetail:
+        type_str: str = get_required(d.get(RESPDET_TYPE_PROP), ITEM_RESPONSE_DETAIL_PROP, RESPDET_TYPE_PROP)
+
+        status_str = d.get(RESPDET_STATUS_PROP)
+        status = MontyResponseStatus(status_str) if status_str else None
+
+        methodology_str = d.get(RESPDET_METHODOLOGY_PROP)
+        methodology = MontyMethodology(methodology_str) if methodology_str else None
+
+        return ResponseDetail(
+            type=type_str,
+            source_id=d.get(RESPDET_SOURCE_ID_PROP),
+            status=status,
+            monitoring_number=d.get(RESPDET_MONITORING_NUMBER_PROP),
+            producer=d.get(RESPDET_PRODUCER_PROP),
+            methodology=methodology,
+            sendai_targets=d.get(RESPDET_SENDAI_TARGETS_PROP),
+            sectors=d.get(RESPDET_SECTORS_PROP),
+        )
+
+
 class ImpactDetail(ABC):
     """Object that contains the details of the impact.
     Preferably used only in a Impact item. See the :stac-ext:`Monty Impact Detail Object
@@ -559,6 +770,16 @@ class MontyExtension(
     @impact_detail.setter
     def impact_detail(self, v: ImpactDetail | None) -> None:
         self._set_property(ITEM_IMPACT_DETAIL_PROP, map_opt(lambda x: x.to_dict(), v))
+
+    @property
+    def response_detail(self) -> ResponseDetail | None:
+        """The details of the response."""
+        result = map_opt(ResponseDetail.from_dict, self._get_property(ITEM_RESPONSE_DETAIL_PROP, dict))
+        return result
+
+    @response_detail.setter
+    def response_detail(self, v: ResponseDetail | None) -> None:
+        self._set_property(ITEM_RESPONSE_DETAIL_PROP, map_opt(lambda x: x.to_dict(), v))
 
     @property
     def src_event_id(self) -> str:
