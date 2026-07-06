@@ -101,6 +101,7 @@ class MontyResponseType(StringEnum):
     for the full vocabulary.
     """
 
+    EO_DATA = "eo-dat"
     EO_REFERENCE = "eo-ref"
     EO_FIRST_ESTIMATE = "eo-fep"
     EO_DELINEATION = "eo-del"

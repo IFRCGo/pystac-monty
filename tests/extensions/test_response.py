@@ -6,6 +6,7 @@ from datetime import datetime, timezone
 from pathlib import Path
 from typing import Any
 
+import pystac
 import pytest
 from pydantic import ValidationError
 from pystac.validation import JsonSchemaSTACValidator
@@ -15,6 +16,7 @@ from pystac_monty.extension import (
     MontyExtension,
     MontyMethodology,
     MontyResponseStatus,
+    MontyResponseType,
     ResponseDetail,
 )
 from pystac_monty.response import (
@@ -27,7 +29,12 @@ from pystac_monty.validators.response import ResponseDetailValidator
 from tests.utils.test_cases import ARBITRARY_BBOX, ARBITRARY_GEOM
 
 CURRENT_SCHEMA_URI = SCHEMA_URI
-SUBMODULE_SCHEMA_PATH = Path(__file__).resolve().parents[2] / "monty-stac-extension" / "json-schema" / "schema.json"
+SUBMODULE_ROOT = Path(__file__).resolve().parents[2] / "monty-stac-extension"
+SUBMODULE_SCHEMA_PATH = SUBMODULE_ROOT / "json-schema" / "schema.json"
+# A real v1.3.0 Response item shipped in the vendored submodule. (#157 references
+# `examples/unosat-responses/…`, which was never published upstream; the Charter
+# response examples are the actual on-disk v1.3.0 Response fixtures.)
+RESPONSE_FIXTURE_PATH = SUBMODULE_ROOT / "examples" / "charter-response" / "charter-response-1000-1144-1.json"
 
 
 def _load_submodule_schema() -> dict[str, Any]:
@@ -299,6 +306,50 @@ class ResponseSchemaValidationTest(unittest.TestCase):
         self.assertNotIn("status", item.properties["monty:response_detail"])
         # Only the schema's own extensions are enforced here; `disaster:` fields are
         # additionalProperties on the item and are not validated by this schema.
+        item.validate(validator=self.validator)
+
+
+class EoDatResponseTypeTest(unittest.TestCase):
+    """`eo-dat` (Charter calibrated acquisition delivered as the response) is a
+    first-class EO response code in response-taxonomy §2.1 and is required by the
+    Charter transformer."""
+
+    def test_eo_dat_in_enum(self) -> None:
+        self.assertEqual(MontyResponseType.EO_DATA.value, "eo-dat")
+        self.assertIn("eo-dat", {e.value for e in MontyResponseType})
+
+    def test_eo_dat_passes_validator(self) -> None:
+        validated = ResponseDetailValidator(type="eo-dat", producer="Airbus", sendai_targets=["D", "G"])
+        self.assertEqual(validated.type, "eo-dat")
+
+    def test_eo_dat_builds_and_validates(self) -> None:
+        item = make_response_item(id="charter-response-1166-phr1a", type="eo-dat", methodology=None, sendai_targets=["D", "G"])
+        self.assertEqual(item.properties["monty:response_detail"]["type"], "eo-dat")
+        item.validate(validator=CustomValidator())
+
+
+class ResponseFixtureRoundTripTest(unittest.TestCase):
+    """Round-trip a real on-disk v1.3.0 Response STAC item through the accessor and
+    re-validate it against the schema (the round-trip AC in #157)."""
+
+    def setUp(self) -> None:
+        self.validator = CustomValidator()
+
+    def test_roundtrip_real_response_item(self) -> None:
+        with RESPONSE_FIXTURE_PATH.open(encoding="utf-8") as f:
+            source = json.load(f)
+
+        item = pystac.Item.from_dict(source)
+        detail = MontyExtension.ext(item).response_detail
+        assert detail is not None
+        self.assertEqual(detail.type, "eo-gra")
+        self.assertEqual(detail.source_id, "1144-1")
+        self.assertEqual(detail.producer, "Airbus")
+        self.assertEqual(detail.methodology, MontyMethodology.HUMAN_INTERPRETED)
+        self.assertEqual(detail.sendai_targets_set(), {"C", "D"})
+
+        # response_detail survives a serialise round-trip unchanged, and the item stays schema-valid.
+        self.assertEqual(item.to_dict()["properties"]["monty:response_detail"], source["properties"]["monty:response_detail"])
         item.validate(validator=self.validator)
 
 

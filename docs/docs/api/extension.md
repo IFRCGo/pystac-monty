@@ -153,6 +153,7 @@ Response type codes, `{domain}-{type}` with `domain` in `eo`, `hum`, `fin`:
 
 ```python
 class MontyResponseType(StringEnum):
+    EO_DATA = "eo-dat"
     EO_REFERENCE = "eo-ref"
     EO_FIRST_ESTIMATE = "eo-fep"
     EO_DELINEATION = "eo-del"
