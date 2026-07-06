@@ -16,6 +16,7 @@ nav:
   - Getting Started:
     - Installation: getting-started/installation.md
     - Quick Start: getting-started/quickstart.md
+    - Response Items: getting-started/response-items.md
   - API Reference:
     - Extension: api/extension.md
     - Sources:

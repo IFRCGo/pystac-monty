@@ -15,6 +15,7 @@ class MontyExtension(Generic[T], PropertiesExtension, ExtensionManagementMixin[U
 - `hazard_codes` (list[str] | None): List of hazard codes
 - `hazard_detail` (HazardDetail | None): Details about the hazard
 - `impact_detail` (ImpactDetail | None): Details about the impact
+- `response_detail` (ResponseDetail | None): Details about the response
 - `episode_number` (int): Episode number for the event
 
 ### Methods
@@ -81,6 +82,48 @@ class ImpactDetail
 - `unit` (str): The unit of measurement
 - `estimate_type` (MontyEstimateType): The type of estimate
 
+## ResponseDetail
+
+Class representing the details of a response product (`monty:response_detail`).
+
+```python
+class ResponseDetail
+```
+
+### Properties
+
+- `type` (str): Response type code, e.g. `eo-del`, `hum-shelter`, `fin-dref` (see `MontyResponseType`)
+- `source_id` (str | None): Native identifier in the source system (CEMS activation code, Charter call id, ...)
+- `status` (MontyResponseStatus | None): Lifecycle status of the response product
+- `monitoring_number` (int | None): Iteration number for monitoring updates; its presence marks the item as a monitoring update
+- `producer` (str | None): Organisation that produced the response
+- `methodology` (MontyMethodology | None): Type of analysis used to produce the response
+- `sendai_targets` (list[str] | None): Unique subset of the Sendai Framework targets `A`-`G`
+- `sectors` (list[str] | None): IASC clusters / IFRC EPoA sectors covered, for humanitarian (`hum-*`) items
+
+### Methods
+
+- `is_monitoring_update() -> bool`: Whether `monitoring_number` is set
+- `sendai_targets_set() -> set[str]`: `sendai_targets` as a set
+
+## Response builder (`pystac_monty.response`)
+
+Helpers for constructing and querying Response items, mirroring the `HazardDetail`/`ImpactDetail` accessor
+pattern without a source-specific ETL transformer:
+
+- `build_response_item(...)`: builds a Response `pystac.Item`, validating `response_detail` (via
+  `pystac_monty.validators.response.ResponseDetailValidator`) and wiring `roles: ["response"]`,
+  `monty:corr_id`, `monty:country_codes`, `monty:hazard_codes`. Accepts `prev_response_item` (adds a
+  `rel: prev` link for monitoring updates) and `related_response_items` (adds bidirectional
+  `rel: related` links with `roles: ["response"]`, e.g. for CEMS<->Charter co-activation).
+- `link_related_response(item, related_item)`: adds the bidirectional `rel: related` (`roles: ["response"]`) link directly.
+- `link_monitoring_update(item, prev_item)`: adds the `rel: prev` link directly.
+- `filter_response_items(items, *, type=None, producer=None, methodology=None, status=None)`: filters an
+  iterable of items by their `response_detail` fields.
+
+See [Response Items](../getting-started/response-items.md) for usage examples, including layering
+`disaster:` and `processing:` extensions alongside `monty:response_detail`.
+
 ## Enums
 
 ### MontyRoles
@@ -101,6 +144,47 @@ class MontyRoles(StringEnum):
 class MontyEstimateType(StringEnum):
     PRIMARY = "primary"
     SECONDARY = "secondary"
+    MODELLED = "modelled"
+```
+
+### MontyResponseType
+
+Response type codes, `{domain}-{type}` with `domain` in `eo`, `hum`, `fin`:
+
+```python
+class MontyResponseType(StringEnum):
+    EO_DATA = "eo-dat"
+    EO_REFERENCE = "eo-ref"
+    EO_FIRST_ESTIMATE = "eo-fep"
+    EO_DELINEATION = "eo-del"
+    EO_GRADING = "eo-gra"
+    EO_POPULATION_EXPOSURE = "eo-pop"
+    EO_MONITORING = "eo-mon"
+    EO_SITUATIONAL_REPORT = "eo-sr"
+    EO_VALUE_ADDED_PRODUCT = "eo-vap"
+    HUM_SHELTER = "hum-shelter"
+    # ... and other hum-*/fin-* codes, see the response taxonomy doc
+```
+
+### MontyResponseStatus
+
+```python
+class MontyResponseStatus(StringEnum):
+    PLANNED = "planned"
+    IN_PRODUCTION = "in-production"
+    PUBLISHED = "published"
+    FINISHED = "finished"
+    NO_IMPACT = "no-impact"
+    WITHDRAWN = "withdrawn"
+```
+
+### MontyMethodology
+
+```python
+class MontyMethodology(StringEnum):
+    HUMAN_INTERPRETED = "human_interpreted"
+    SEMI_AUTOMATED = "semi_automated"
+    AUTOMATED = "automated"
     MODELLED = "modelled"
 ```
 
