@@ -660,6 +660,10 @@ class ItemMontyExtension(MontyExtension[pystac.Item]):
         """Indicates if the item is a source impact."""
         return MontyRoles.SOURCE in self.item.properties["roles"] and MontyRoles.IMPACT in self.item.properties["roles"]
 
+    def is_source_response(self) -> bool:
+        """Indicates if the item is a source response."""
+        return MontyRoles.SOURCE in self.item.properties["roles"] and MontyRoles.RESPONSE in self.item.properties["roles"]
+
     def __repr__(self) -> str:
         return f"<ItemMontyExtension Item id={self.item.id}>"
 
