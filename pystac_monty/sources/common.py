@@ -1,5 +1,6 @@
 import abc
 import json
+import re
 import tempfile
 import typing
 from dataclasses import dataclass, field
@@ -70,6 +71,12 @@ class SourceSchemaValidator(BaseModel):
 class GenericDataSource(BaseModel):
     source_url: str
     input_data: Union[File, Memory]
+
+
+def sanitize_stac_item_id(value: str) -> str:
+    """Return a filesystem-safe STAC item id, preserving underscores."""
+    sanitized = re.sub(r"[^A-Za-z0-9_-]+", "-", value).strip("-")
+    return sanitized or "x"
 
 
 class GdacsEpisodes(BaseModel):

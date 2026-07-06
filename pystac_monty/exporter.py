@@ -136,8 +136,11 @@ def build_monty_static_collection(
     provider: Provider,
     omit_keywords_from_summaries: bool = False,
 ) -> pystac.Collection:
-    keywords = sorted({kw for item in items for kw in (item.properties.get("keywords") or [])})
     summaries = summaries_for_monty_static_collection(items, role, include_keywords=not omit_keywords_from_summaries)
+    if omit_keywords_from_summaries:
+        keywords = sorted({kw for item in items for kw in (item.properties.get("keywords") or [])})
+    else:
+        keywords = sorted(summaries.get_list("keywords") or [])
     return pystac.Collection(
         id=collection_id,
         title=title,
