@@ -79,7 +79,7 @@ The transformed event item will look like this:
     "roles": ["event", "source"],
     "monty:hazard_codes": ["MH0600", "FL", "nat-hyd-flo-flo"],
     "monty:country_codes": ["PAK"],
-    "monty:correlation_id": "...",
+    "monty:corr_id": "...",
     "keywords": ["flood", "PAK"]
   },
   "geometry": {
@@ -118,7 +118,7 @@ Hazard items include `derived_from` links to their parent event item:
     "roles": ["hazard", "source"],
     "monty:hazard_codes": ["MH0600", "FL", "nat-hyd-flo-flo"],
     "monty:country_codes": ["PAK"],
-    "monty:correlation_id": "...",
+    "monty:corr_id": "...",
     "monty:hazard_detail": {
       "estimate_type": "primary",
       "severity_value": 10.0,
@@ -169,7 +169,7 @@ transformer also emits one response item per VAP, carrying `monty:response_detai
     "roles": ["response", "source"],
     "monty:hazard_codes": ["GH0101", "EQ", "nat-geo-ear-gro"],
     "monty:country_codes": ["AFG"],
-    "monty:correlation_id": "...",
+    "monty:corr_id": "...",
     "monty:response_detail": {
       "type": "eo-gra",
       "source_id": "1144-1",
@@ -188,8 +188,7 @@ transformer also emits one response item per VAP, carrying `monty:response_detai
 ```
 
 The `type`, `producer`, and `disaster:resolution_class` fields are inferred heuristically from
-the VAP title/description and copyright text (interim mapping — see open questions in the source
-docstring).
+the VAP title/description and copyright text (interim mapping).
 
 ## Item Relationships
 
@@ -201,7 +200,7 @@ The transformer creates relationships between items using STAC links:
   - `related` link back to the event item (bidirectional relationship)
 - **Event → Response** / **Response → Event/Hazard**: Response items have `related` links back to
   the event and each hazard item, plus a `derived_from` link to the activation web page.
-- **Correlation ID**: All items from the same activation share the same `monty:correlation_id`
+- **Correlation ID**: All items from the same activation share the same `monty:corr_id`
 
 ### Hazard Code Canonicalization
 

@@ -1,6 +1,8 @@
 """Tests for Charter STAC source transformer"""
 
 import datetime
+import json
+import tempfile
 import unittest
 from copy import deepcopy
 from pathlib import Path
@@ -8,7 +10,12 @@ from pathlib import Path
 import pytest
 
 from pystac_monty.extension import MontyExtension
-from pystac_monty.sources.charter import CharterDataSource, CharterTransformer, iter_charter_stac_items
+from pystac_monty.sources.charter import (
+    CharterDataSource,
+    CharterTransformer,
+    convert_charter_activations,
+    iter_charter_stac_items,
+)
 from pystac_monty.sources.common import DataType, File, GenericDataSource, Memory, sanitize_stac_item_id
 from pystac_monty.sources.utils import save_json_data_into_tmp_file
 from tests.extensions.test_monty import CustomValidator
@@ -117,6 +124,10 @@ def _partition(items):
     return event, hazards
 
 
+def _charter_model_dir() -> Path:
+    return Path(__file__).resolve().parents[2] / "monty-stac-extension" / "docs" / "model" / "sources" / "Charter"
+
+
 class CharterTest(unittest.TestCase):
     def setUp(self) -> None:
         super().setUp()
@@ -214,12 +225,76 @@ class CharterTest(unittest.TestCase):
         hazards = [item for item in items if MontyExtension.ext(item).is_source_hazard()]
         self.assertEqual(len(hazards), 4)
 
-    def test_validator_integration(self) -> None:
-        from pystac_monty.validators.charter import CharterActivation
+    def test_iter_charter_stac_items_includes_api_sidecars(self) -> None:
+        charter_dir = _charter_model_dir()
+        if not list(charter_dir.glob("act-*-activation.json")):
+            self.skipTest("monty-stac-extension submodule not initialized")
 
-        validated = CharterActivation(**JSON_MOCK_DATA)
-        self.assertEqual(validated.properties.disaster_activation_id, 1019)
-        self.assertEqual(len(validated.areas), 1)
+        items = list(iter_charter_stac_items(charter_dir))
+        response_ids = {item.id for item in items if MontyExtension.ext(item).is_source_response()}
+
+        self.assertIn("charter-response-1000-1144-1", response_ids)
+        self.assertIn("charter-response-1019-1166-19", response_ids)
+        self.assertIn("charter-response-1166-phr1a-0907-00777", response_ids)
+        self.assertNotIn("charter-response-1144-phr1a-0907-00777", response_ids)
+
+        event_1019 = next(item for item in items if item.id == "charter-event-1019")
+        event_response_hrefs = {link.get_href() for link in event_1019.links if link.extra_fields.get("roles") == ["response"]}
+        self.assertIn("../charter-response/charter-response-1019-1166-19.json", event_response_hrefs)
+
+    def test_convert_charter_activations_uses_static_exporter(self) -> None:
+        charter_dir = _charter_model_dir()
+        if not list(charter_dir.glob("act-*-activation.json")):
+            self.skipTest("monty-stac-extension submodule not initialized")
+
+        with tempfile.TemporaryDirectory() as tmp:
+            output_dir = Path(tmp)
+            convert_charter_activations(charter_dir, output_dir)
+
+            item_doc = json.loads((output_dir / "charter-events" / "charter-event-1000.json").read_text(encoding="utf-8"))
+            collection_doc = json.loads((output_dir / "charter-response" / "charter-response.json").read_text(encoding="utf-8"))
+
+        self.assertEqual(next(link for link in item_doc["links"] if link["rel"] == "self")["href"], "./charter-event-1000.json")
+        self.assertEqual(len(collection_doc["extent"]["spatial"]["bbox"]), 1)
+
+    def test_calibrated_dataset_response_detail(self) -> None:
+        charter_dir = _charter_model_dir()
+        if not list(charter_dir.glob("act-*-activation.json")):
+            self.skipTest("monty-stac-extension submodule not initialized")
+
+        item = next(item for item in iter_charter_stac_items(charter_dir) if item.id == "charter-response-1166-phr1a-0907-00777")
+
+        detail = item.properties["monty:response_detail"]
+        self.assertEqual(detail["type"], "eo-dat")
+        self.assertEqual(detail["source_id"], "DS_PHR1A_202603021304008_FR1_PX_W044S22_0907_00777-calibrated")
+        self.assertEqual(detail["producer"], "Airbus")
+        self.assertEqual(detail["sendai_targets"], ["D", "G"])
+
+    def test_calibrated_dataset_uses_matching_call_id_and_omits_null_producer(self) -> None:
+        data = deepcopy(JSON_MOCK_DATA)
+        data["properties"]["disaster:call_ids"] = [111, 222]
+        data["calibrated_datasets"] = [
+            {
+                "type": "Feature",
+                "id": "DS_PHR1A_202603021304008_FR1_PX_W044S22_0907_00777-calibrated",
+                "geometry": {"type": "Point", "coordinates": [-43.2, -21.5]},
+                "bbox": [-43.2, -21.5, -43.2, -21.5],
+                "properties": {
+                    "datetime": "2024-01-02T00:00:00Z",
+                    "title": "Calibrated acquisition",
+                    "disaster:call_ids": [222],
+                    "disaster:type": ["flood"],
+                    "providers": [],
+                },
+                "assets": {},
+            }
+        ]
+
+        response = _responses(_memory_transformer(data).get_stac_items())[0]
+        detail = response.properties["monty:response_detail"]
+
+        self.assertEqual(response.id, "charter-response-222-phr1a-0907-00777")
+        self.assertNotIn("producer", detail)
 
     def test_no_vaps_yields_no_response_items(self) -> None:
         responses = _responses(_memory_transformer().get_stac_items())
@@ -262,7 +337,7 @@ class CharterTest(unittest.TestCase):
 
         related_roles = [link.extra_fields.get("roles") for link in response.links if link.rel == "related"]
         self.assertIn(["event"], related_roles)
-        self.assertEqual(related_roles.count(["hazard"]), len(hazards))
+        self.assertEqual(related_roles.count(["hazard"]), 1)
         derived = [link for link in response.links if link.rel == "derived_from"]
         self.assertEqual(len(derived), 1)
         self.assertEqual(derived[0].media_type, "text/html")
@@ -359,7 +434,7 @@ class CharterTest(unittest.TestCase):
         self.assertTrue(any(MontyExtension.ext(item).is_source_event() for item in items))
 
     def test_iter_charter_stac_items_from_submodule(self) -> None:
-        charter_dir = Path(__file__).resolve().parents[2] / "monty-stac-extension" / "docs" / "model" / "sources" / "Charter"
+        charter_dir = _charter_model_dir()
         if not list(charter_dir.glob("act-*-activation.json")):
             self.skipTest("monty-stac-extension submodule not initialized")
         roles = [item.properties.get("roles", []) for item in iter_charter_stac_items(charter_dir)]

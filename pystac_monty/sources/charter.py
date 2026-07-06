@@ -1,6 +1,8 @@
 """Charter STAC source transformer
 
 Transforms International Charter on Space and Major Disasters data into Monty STAC items.
+Batch export uses :mod:`pystac_monty.exporter`;
+this module provides :func:`convert_charter_activations` and :func:`iter_charter_stac_items`.
 
 Maps activations to events, areas to hazards (one item per disaster type), and VAP sidecars
 to response items with ``monty:response_detail`` (v1.3.0) when ``act-*-vap-*.json`` fixtures
@@ -12,13 +14,16 @@ import hashlib
 import json
 import logging
 import re
+from copy import deepcopy
 from dataclasses import dataclass
 from pathlib import Path
 from typing import Any, Iterator, List, Optional, cast
 
-import pytz
-from pystac import Collection, Item, Link
+import requests
+from pystac import Asset, Collection, Item, Link
+from pystac.provider import Provider, ProviderRole
 
+from pystac_monty.exporter import BatchExportConfig, export_collected_items, log_batch_role_counts
 from pystac_monty.extension import SCHEMA_URI, HazardDetail, MontyEstimateType, MontyExtension
 from pystac_monty.geocoding import MontyGeoCoder
 from pystac_monty.hazard_profiles import MontyHazardProfiles
@@ -65,14 +70,23 @@ CPE_STATUS_MAPPING = {
     "readyToArchive": "secondary",
 }
 
-# Default Sendai target crosswalk per response type, from the Monty response
-# taxonomy (monty-stac-extension/docs/model/response-taxonomy.md, section 4.5).
 RESPONSE_TYPE_SENDAI: dict[str, list[str]] = {
+    "eo-dat": ["D", "G"],
     "eo-gra": ["C", "D"],
     "eo-del": ["D", "G"],
     "eo-pop": ["B"],
     "eo-vap": ["D", "G"],
 }
+
+_CHARTER_PROVIDER = Provider(
+    "International Charter Space and Major Disasters",
+    roles=[ProviderRole.PRODUCER],
+    url="https://disasterscharter.org/",
+    description=(
+        "The Charter is an international collaboration through which satellite data "
+        "is made available for disaster management purposes."
+    ),
+)
 
 
 @dataclass
@@ -82,6 +96,7 @@ class CharterDataSource(MontyDataSourceV3):
     activation_data: dict
     areas_data: List[dict]
     vaps_data: List[dict]
+    calibrated_datasets_data: List[dict]
 
     def __init__(self, data: GenericDataSource, eoapi_url: Optional[str] = None):
         super().__init__(root=data, eoapi_url=eoapi_url)
@@ -90,13 +105,14 @@ class CharterDataSource(MontyDataSourceV3):
             self.activation_data = data.input_data.content
             self.areas_data = data.input_data.content.get("areas", [])
             self.vaps_data = data.input_data.content.get("vaps", [])
+            self.calibrated_datasets_data = data.input_data.content.get("calibrated_datasets", [])
         elif data.input_data.data_type == DataType.FILE:
-            file_path = data.input_data.path
-            path_str = file_path if isinstance(file_path, str) else file_path.name
-            file_data = json.loads(Path(path_str).read_text(encoding="utf-8"))
-            self.activation_data = file_data
-            self.areas_data = file_data.get("areas", [])
-            self.vaps_data = file_data.get("vaps", [])
+            with open(data.input_data.path, "r") as f:
+                file_data = json.load(f)
+                self.activation_data = file_data
+                self.areas_data = file_data.get("areas", [])
+                self.vaps_data = file_data.get("vaps", [])
+                self.calibrated_datasets_data = file_data.get("calibrated_datasets", [])
 
 
 class CharterTransformer(MontyDataTransformer[CharterDataSource]):
@@ -113,31 +129,22 @@ class CharterTransformer(MontyDataTransformer[CharterDataSource]):
 
     def __init__(self, data_source: CharterDataSource, geocoder: MontyGeoCoder | None = None) -> None:
         super().__init__(data_source, cast(MontyGeoCoder, geocoder))
-        self._charter_response_collection_cache: Collection | None = None
-        ext_root = Path(__file__).resolve().parents[2] / "monty-stac-extension"
-        ev = ext_root / "examples" / "charter-events" / "charter-events.json"
-        if ev.is_file():
-            self.events_collection_url = str(ev)
-            self.hazards_collection_url = str(ext_root / "examples" / "charter-hazards" / "charter-hazards.json")
-        rsp = ext_root / "examples" / "charter-response" / "charter-response.json"
-        _root_url = MontyDataTransformer.base_collection_url.removesuffix("/examples")
-        self._charter_response_collection_url = str(rsp) if rsp.is_file() else f"{_root_url}/charter-response.json"
+        self._response_collection_cache: Collection | None = None
+        self.response_collection_url = f"{MontyDataTransformer.base_collection_url}/charter-response/charter-response.json"
 
     def get_response_collection(self) -> Collection:
         """Collection for Charter response items (``charter-response``)."""
-        if self._charter_response_collection_cache is None:
-            url = self._charter_response_collection_url
+        if self._response_collection_cache is None:
+            url = self.response_collection_url
             if url.startswith("http"):
-                import requests
-
                 collection_dict = json.loads(requests.get(url, timeout=60).text)
             else:
                 with open(url, encoding="utf-8") as f:
                     collection_dict = json.load(f)
             collection = Collection.from_dict(collection_dict)
             collection.set_self_href(url)
-            self._charter_response_collection_cache = collection
-        return self._charter_response_collection_cache
+            self._response_collection_cache = collection
+        return self._response_collection_cache
 
     @staticmethod
     def _relative_item_href(collection_id: str, item_id: str) -> str:
@@ -153,14 +160,15 @@ class CharterTransformer(MontyDataTransformer[CharterDataSource]):
                 id="stub",
                 geometry={"type": "Point", "coordinates": [0.0, 0.0]},
                 bbox=[0.0, 0.0, 0.0, 0.0],
-                datetime=datetime.datetime(2020, 1, 1, tzinfo=pytz.utc),
+                datetime=datetime.datetime(2020, 1, 1, tzinfo=datetime.timezone.utc),
                 properties={"monty:hazard_codes": list(CHARTER_HAZARD_CODES[dtype])},
             )
             MontyExtension.add_to(stub)
             merged.extend(self.hazard_profiles.get_canonical_hazard_codes(stub))
         return merged
 
-    def parse_area_description(self, description: str) -> tuple[Optional[float], Optional[int], Optional[float]]:
+    @staticmethod
+    def parse_area_description(description: str) -> tuple[Optional[float], Optional[int], Optional[float]]:
         """Parse radius, priority, and surface area from area description."""
         radius: Optional[float] = None
         priority: Optional[int] = None
@@ -182,6 +190,14 @@ class CharterTransformer(MontyDataTransformer[CharterDataSource]):
             surface_area = float(surface_match.group(1))
 
         return radius, priority, surface_area
+
+    @staticmethod
+    def _parse_datetime(value: Any) -> datetime.datetime:
+        if isinstance(value, str):
+            return datetime.datetime.fromisoformat(value.replace("Z", "+00:00"))
+        if value.tzinfo is None:
+            return value.replace(tzinfo=datetime.timezone.utc)
+        return value
 
     def make_event_item(self, activation: dict) -> Optional[Item]:
         """Create Event STAC item from Charter activation."""
@@ -207,10 +223,7 @@ class CharterTransformer(MontyDataTransformer[CharterDataSource]):
             logger.warning(f"Missing datetime for activation {activation_id}")
             return None
 
-        if isinstance(datetime_str, str):
-            dt = pytz.utc.localize(datetime.datetime.fromisoformat(datetime_str.replace("Z", "")))
-        else:
-            dt = pytz.utc.localize(datetime_str)
+        dt = self._parse_datetime(datetime_str)
 
         safe_activation_id = sanitize_stac_item_id(str(activation_id))
         item = Item(
@@ -258,10 +271,7 @@ class CharterTransformer(MontyDataTransformer[CharterDataSource]):
         activation_types = props.get("disaster:type", [])
         country = props.get("disaster:country")
 
-        if isinstance(datetime_str, str):
-            dt = pytz.utc.localize(datetime.datetime.fromisoformat(datetime_str.replace("Z", "")))
-        else:
-            dt = pytz.utc.localize(datetime_str)
+        dt = self._parse_datetime(datetime_str)
 
         safe_activation_id = sanitize_stac_item_id(str(activation_id)) if activation_id else "x"
 
@@ -312,8 +322,7 @@ class CharterTransformer(MontyDataTransformer[CharterDataSource]):
                 monty = MontyExtension.ext(item)
 
                 monty.country_codes = [country] if country else []
-                monty.hazard_codes = CHARTER_HAZARD_CODES[dtype]
-                monty.hazard_codes = self.hazard_profiles.get_canonical_hazard_codes(item)
+                monty.hazard_codes = self._canonical_codes_for_types([dtype])
                 monty.correlation_id = event_corr_id
 
                 if radius is not None:
@@ -359,8 +368,9 @@ class CharterTransformer(MontyDataTransformer[CharterDataSource]):
 
     @staticmethod
     def _infer_response_type(title: str, description: str) -> str:
+        # Charter sidecars do not expose a normalized response type yet.
         text = f"{title} {description}".lower()
-        if "damage assessment" in text or "damaged building" in text:
+        if "damage assessment" in text or "damaged building" in text or "geological risk" in text or "landslide" in text:
             return "eo-gra"
         if "affected area" in text or "extent" in text:
             return "eo-del"
@@ -372,6 +382,8 @@ class CharterTransformer(MontyDataTransformer[CharterDataSource]):
     def _infer_producer(copyright: str) -> Optional[str]:
         if not copyright:
             return None
+        if "inpe" in copyright.lower():
+            return "INPE"
         if "airbus" in copyright.lower():
             return "Airbus"
         return None
@@ -396,10 +408,180 @@ class CharterTransformer(MontyDataTransformer[CharterDataSource]):
             cleaned_rings.append(pts)
         return {"type": "Polygon", "coordinates": cleaned_rings}
 
+    @staticmethod
+    def _dataset_source_id(dataset: dict) -> str:
+        return str(dataset.get("id", ""))
+
+    @staticmethod
+    def _matched_activation_call_id(dataset: dict, call_ids: list[str]) -> Optional[str]:
+        dataset_call_ids = set(map(str, dataset.get("properties", {}).get("disaster:call_ids", [])))
+        for call_id in call_ids:
+            if call_id in dataset_call_ids:
+                return call_id
+        return None
+
+    @staticmethod
+    def _dataset_response_id(dataset: dict) -> Optional[str]:
+        source_id = CharterTransformer._dataset_source_id(dataset)
+        if not source_id:
+            return None
+        match = re.match(r"DS_([A-Za-z0-9]+)_.*_([^_]+)_([^_]+)-calibrated$", source_id)
+        if match:
+            instrument, strip_id, scene_id = match.groups()
+            return f"{sanitize_stac_item_id(instrument.lower())}-{strip_id.lower()}-{scene_id.lower()}"
+        return None
+
+    @staticmethod
+    def _dataset_producer(dataset: dict) -> Optional[str]:
+        for provider in dataset.get("properties", {}).get("providers", []):
+            name = provider.get("name")
+            if isinstance(name, str) and name:
+                return name
+        return None
+
+    @staticmethod
+    def _hazard_types_for_product(title: str, description: str, activation_types: list[str]) -> list[str]:
+        text = f"{title} {description}".lower()
+        if "landslide" in text or "geological risk" in text:
+            return ["landslide"] if "landslide" in activation_types else activation_types[:1]
+        if "flood" in text:
+            return ["flood"] if "flood" in activation_types else activation_types[:1]
+        return activation_types[:1]
+
+    def _hazard_items_for_types(self, hazard_items: List[Item], disaster_types: list[str]) -> list[Item]:
+        selected: list[Item] = []
+        canonical = set(self._canonical_codes_for_types(disaster_types))
+        for hazard_item in hazard_items:
+            hazard_codes = set(MontyExtension.ext(hazard_item).hazard_codes or [])
+            if hazard_codes & canonical:
+                selected.append(hazard_item)
+        return selected
+
+    def _add_response_item_links(
+        self,
+        item: Item,
+        event_href: str,
+        hazard_items: List[Item],
+        disaster_types: list[str],
+        web_href: Optional[str],
+        activation_id: Any,
+        dataset_items: tuple[Item, ...] = (),
+    ) -> None:
+        """Add ``related`` event/hazard/dataset links and the ``derived_from`` web link."""
+        item.add_link(
+            Link(rel="related", target=event_href, media_type="application/geo+json", extra_fields={"roles": ["event"]})
+        )
+        for hazard_item in self._hazard_items_for_types(hazard_items, disaster_types):
+            item.add_link(
+                Link(
+                    rel="related",
+                    target=self._relative_item_href("charter-hazards", hazard_item.id),
+                    media_type="application/geo+json",
+                    extra_fields={"roles": ["hazard"]},
+                )
+            )
+        for dataset_item in dataset_items:
+            item.add_link(
+                Link(
+                    rel="related",
+                    target=f"./{dataset_item.id}.json",
+                    media_type="application/geo+json",
+                    extra_fields={"roles": ["response"]},
+                )
+            )
+        if web_href:
+            item.add_link(
+                Link(
+                    rel="derived_from",
+                    target=web_href,
+                    media_type="text/html",
+                    title=f"International Charter activation Act-{activation_id}",
+                )
+            )
+
+    def make_calibrated_dataset_response_items(
+        self,
+        activation: dict,
+        datasets: List[dict],
+        event_item: Item,
+        hazard_items: List[Item],
+    ) -> List[Item]:
+        """Create Response STAC items from calibrated dataset sidecars."""
+        if not datasets:
+            return []
+
+        act_props = activation.get("properties", {})
+        activation_types = act_props.get("disaster:type", [])
+        call_ids = list(map(str, act_props.get("disaster:call_ids", [])))
+        if not call_ids:
+            return []
+
+        event_monty = MontyExtension.ext(event_item)
+        event_href = self._relative_item_href("charter-events", event_item.id)
+        web_href = self._activation_web_href(activation)
+        response_items: List[Item] = []
+
+        for dataset in datasets:
+            source_id = self._dataset_source_id(dataset)
+            response_id = self._dataset_response_id(dataset)
+            matched_call_id = self._matched_activation_call_id(dataset, call_ids)
+            if not source_id or not response_id or not matched_call_id:
+                continue
+
+            dataset_doc = deepcopy(dataset)
+            props = dataset_doc.setdefault("properties", {})
+            props.pop("cpe:status", None)
+            props.pop("cpe:notified", None)
+            props.pop("cpe:cos2_xml", None)
+            props.pop("cpe:cos2_id", None)
+            props.pop("cpe:processing_monitoring_id", None)
+            props["disaster:class"] = "acquisition"
+            props["disaster:types"] = props.pop("disaster:type", activation_types)
+            props["disaster:country"] = act_props.get("disaster:country")
+            props["roles"] = ["response", "source"]
+            props["monty:country_codes"] = list(event_monty.country_codes or [])
+            props["monty:hazard_codes"] = self._canonical_codes_for_types(props["disaster:types"])
+            props["monty:corr_id"] = event_monty.correlation_id
+            response_detail = {
+                "type": "eo-dat",
+                "source_id": source_id,
+                "sendai_targets": RESPONSE_TYPE_SENDAI["eo-dat"],
+            }
+            if producer := self._dataset_producer(dataset):
+                response_detail["producer"] = producer
+            props["monty:response_detail"] = response_detail
+
+            stac_extensions = [
+                SCHEMA_URI,
+                *[
+                    uri
+                    for uri in dataset_doc.get("stac_extensions", [])
+                    if uri != "https://terradue.github.io/disaster/v1.0.0/schema.json"
+                ],
+                DISASTER_SCHEMA_URI,
+            ]
+            item = Item(
+                id=f"charter-response-{matched_call_id}-{response_id}",
+                geometry=dataset_doc.get("geometry"),
+                bbox=dataset_doc.get("bbox"),
+                datetime=self._parse_datetime(props["datetime"]),
+                properties=props,
+                stac_extensions=stac_extensions,
+                assets={key: Asset.from_dict(asset) for key, asset in dataset_doc.get("assets", {}).items()},
+            )
+            self._add_response_item_links(
+                item, event_href, hazard_items, props["disaster:types"], web_href, act_props.get("disaster:activation_id")
+            )
+            item.set_collection(self.get_response_collection())
+            response_items.append(item)
+
+        return response_items
+
     def make_response_items(
         self,
         activation: dict,
         vaps: List[dict],
+        calibrated_dataset_items: List[Item],
         event_item: Item,
         hazard_items: List[Item],
     ) -> List[Item]:
@@ -420,6 +602,7 @@ class CharterTransformer(MontyDataTransformer[CharterDataSource]):
 
         for vap in vaps:
             vap_props = vap.get("properties", {})
+            api_sidecar = bool(vap.get("_charter_api_sidecar"))
             source_id = self._vap_source_id(vap)
             if not source_id:
                 logger.warning("Skipping VAP without identifiable source_id: %s", vap.get("id"))
@@ -429,10 +612,7 @@ class CharterTransformer(MontyDataTransformer[CharterDataSource]):
             datetime_str = vap_props.get("datetime")
             if not datetime_str:
                 continue
-            if isinstance(datetime_str, str):
-                dt = pytz.utc.localize(datetime.datetime.fromisoformat(datetime_str.replace("Z", "")))
-            else:
-                dt = pytz.utc.localize(datetime_str)
+            dt = self._parse_datetime(datetime_str)
 
             title = vap_props.get("title", item_id)
             description = vap_props.get("additional_information") or vap_props.get("description", "")
@@ -443,7 +623,8 @@ class CharterTransformer(MontyDataTransformer[CharterDataSource]):
             resolution_class = self._infer_resolution_class(copyright_text)
 
             activation_types = act_props.get("disaster:type", [])
-            response_hazard_codes = self._canonical_codes_for_types(activation_types[:1])
+            hazard_types = self._hazard_types_for_product(title, description, activation_types)
+            response_hazard_codes = self._canonical_codes_for_types(hazard_types)
 
             item = Item(
                 id=item_id,
@@ -457,15 +638,30 @@ class CharterTransformer(MontyDataTransformer[CharterDataSource]):
                     "disaster:activation_id": activation_id,
                     "disaster:call_ids": act_props.get("disaster:call_ids", []),
                     "disaster:country": act_props.get("disaster:country"),
-                    "disaster:types": activation_types,
+                    "disaster:types": hazard_types,
                     "disaster:activation_status": act_props.get("cpe:activation_status"),
                 },
             )
+            if api_sidecar:
+                item.properties.pop("description", None)
+                for key in ("updated", "created", "copyright", "additional_information", "vap_status", "version"):
+                    if vap_props.get(key) is not None:
+                        item.properties[key] = vap_props[key]
             if resolution_class:
                 item.properties["disaster:resolution_class"] = resolution_class
 
             item.properties["roles"] = ["response", "source"]
             item.stac_extensions = [SCHEMA_URI, DISASTER_SCHEMA_URI]
+            if api_sidecar:
+                item.stac_extensions = [
+                    SCHEMA_URI,
+                    *[
+                        uri
+                        for uri in vap.get("stac_extensions", [])
+                        if uri != "https://terradue.github.io/disaster/v1.0.0/schema.json"
+                    ],
+                    DISASTER_SCHEMA_URI,
+                ]
 
             MontyExtension.add_to(item)
             monty = MontyExtension.ext(item)
@@ -477,41 +673,27 @@ class CharterTransformer(MontyDataTransformer[CharterDataSource]):
                 "type": response_type,
                 "source_id": source_id,
                 "methodology": "human_interpreted",
-                "sendai_targets": RESPONSE_TYPE_SENDAI.get(response_type, ["D", "G"]),
+                "sendai_targets": RESPONSE_TYPE_SENDAI[response_type],
             }
             if producer:
                 response_detail["producer"] = producer
             item.properties["monty:response_detail"] = response_detail
 
-            hazard_keywords = self.hazard_profiles.get_keywords(response_hazard_codes)
-            item.properties["keywords"] = sorted(set(hazard_keywords + monty.country_codes + ["ValueAddedProduct"]))
+            if api_sidecar:
+                item.assets = {key: Asset.from_dict(asset) for key, asset in vap.get("assets", {}).items()}
+            else:
+                hazard_keywords = self.hazard_profiles.get_keywords(response_hazard_codes)
+                item.properties["keywords"] = sorted(set(hazard_keywords + monty.country_codes + ["ValueAddedProduct"]))
 
-            item.add_link(
-                Link(
-                    rel="related",
-                    target=event_href,
-                    media_type="application/geo+json",
-                    extra_fields={"roles": ["event"]},
-                )
+            self._add_response_item_links(
+                item,
+                event_href,
+                hazard_items,
+                hazard_types,
+                web_href,
+                activation_id,
+                dataset_items=tuple(calibrated_dataset_items),
             )
-            for hazard_item in hazard_items:
-                item.add_link(
-                    Link(
-                        rel="related",
-                        target=self._relative_item_href("charter-hazards", hazard_item.id),
-                        media_type="application/geo+json",
-                        extra_fields={"roles": ["hazard"]},
-                    )
-                )
-            if web_href:
-                item.add_link(
-                    Link(
-                        rel="derived_from",
-                        target=web_href,
-                        media_type="text/html",
-                        title=f"International Charter activation Act-{activation_id}",
-                    )
-                )
 
             item.set_collection(self.get_response_collection())
             items.append(item)
@@ -564,7 +746,7 @@ class CharterTransformer(MontyDataTransformer[CharterDataSource]):
                 Link(rel="derived_from", target=event_href, media_type="application/json", title="Parent Charter Event")
             )
 
-    def get_stac_items(self):
+    def get_stac_items(self) -> Iterator[Item]:
         """Generate STAC items from Charter activation data."""
         self.transform_summary.mark_as_started()
         self.transform_summary.increment_rows()
@@ -580,12 +762,20 @@ class CharterTransformer(MontyDataTransformer[CharterDataSource]):
             hazard_items = self.make_hazard_items(
                 self.data_source.activation_data, self.data_source.areas_data, monty.correlation_id
             )
-            response_items = self.make_response_items(
+            calibrated_dataset_response_items = self.make_calibrated_dataset_response_items(
                 self.data_source.activation_data,
-                self.data_source.vaps_data,
+                self.data_source.calibrated_datasets_data,
                 event_item,
                 hazard_items,
             )
+            response_items = self.make_response_items(
+                self.data_source.activation_data,
+                self.data_source.vaps_data,
+                calibrated_dataset_response_items,
+                event_item,
+                hazard_items,
+            )
+            response_items.extend(calibrated_dataset_response_items)
 
             self.add_charter_related_links(event_item, hazard_items, response_items)
             self.add_derived_from_links(event_item, hazard_items)
@@ -607,13 +797,57 @@ class CharterTransformer(MontyDataTransformer[CharterDataSource]):
         return list(self.get_stac_items())
 
 
+# --- batch export (CLI) ---
+
+_CHARTER_BATCH = BatchExportConfig(
+    source_slug="charter",
+    provider=_CHARTER_PROVIDER,
+    titles={
+        "event": (
+            "Charter Source Events",
+            "International Charter Space and Major Disasters activation events providing satellite imagery for disaster response",
+        ),
+        "hazard": (
+            "Charter Source Hazards",
+            "Areas of Interest (AOI) from Charter activations representing hazard extents for satellite imagery acquisition",
+        ),
+        "response": (
+            "Charter Source Response",
+            (
+                "International Charter Value-Added Products (map products) and calibrated satellite acquisition datasets "
+                "(eo-dat), mapped to Monty Response items."
+            ),
+        ),
+    },
+)
+
+
 def iter_charter_stac_items(source_dir: Path) -> Iterator[Item]:
     """Yield STAC items for each ``act-*-activation.json`` under *source_dir* and sidecars."""
+    from pystac_monty.sources.batch_export import use_local_collection_examples
+
+    use_local_collection_examples()
+    api_dir = source_dir / "api-files"
     for act_path in sorted(source_dir.glob("act-*-activation.json")):
         act_id = act_path.stem.replace("-activation", "")
         data = json.loads(act_path.read_text(encoding="utf-8"))
         data["areas"] = [json.loads(p.read_text(encoding="utf-8")) for p in sorted(source_dir.glob(f"{act_id}-area-*.json"))]
-        data["vaps"] = [json.loads(p.read_text(encoding="utf-8")) for p in sorted(source_dir.glob(f"{act_id}-vap-*.json"))]
+        vap_paths = list(source_dir.glob(f"{act_id}-vap-*.json"))
+        if api_dir.is_dir():
+            vap_paths.extend(api_dir.glob(f"{act_id}-vap-*.json"))
+        data["vaps"] = []
+        for path in sorted(vap_paths):
+            vap = json.loads(path.read_text(encoding="utf-8"))
+            if path.parent == api_dir:
+                vap["_charter_api_sidecar"] = True
+            data["vaps"].append(vap)
+        call_ids = list(map(str, data.get("properties", {}).get("disaster:call_ids", [])))
+        data["calibrated_datasets"] = []
+        if api_dir.is_dir():
+            for path in sorted(api_dir.glob("*-calibrated.json")):
+                dataset = json.loads(path.read_text(encoding="utf-8"))
+                if CharterTransformer._matched_activation_call_id(dataset, call_ids) is not None:
+                    data["calibrated_datasets"].append(dataset)
         source = CharterDataSource(
             data=GenericDataSource(
                 source_url=f"{CHARTER_API_BASE}/activations/{act_id}",
@@ -621,3 +855,12 @@ def iter_charter_stac_items(source_dir: Path) -> Iterator[Item]:
             )
         )
         yield from CharterTransformer(source, None).get_stac_items()
+
+
+def convert_charter_activations(source_dir: Path, output_dir: Path) -> None:
+    """Read ``act-*-activation.json`` plus matching area/VAP sidecars from *source_dir*.
+
+    The Charter model directory in the ``monty-stac-extension`` submodule
+    (``docs/model/sources/Charter``) is a valid *source_dir* layout for end-to-end checks.
+    """
+    log_batch_role_counts(*export_collected_items(_CHARTER_BATCH, list(iter_charter_stac_items(source_dir)), output_dir))
