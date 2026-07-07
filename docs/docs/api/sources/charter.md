@@ -28,10 +28,10 @@ charter_source = CharterDataSource(
 transformer = CharterTransformer(charter_source)
 items = list(transformer.get_stac_items())
 
-# 4. The transformer creates up to three types of STAC items:
+# 4. The transformer creates three Monty item kinds:
 # - Event item (one per activation)
 # - Hazard items (one per disaster type per area)
-# - Response items (one per Value Added Product, when VAP sidecars are present)
+# - Response items (VAP map products and calibrated acquisition datasets)
 
 # Example: Print item details
 for item in items:
@@ -150,8 +150,10 @@ Hazard items include `derived_from` links to their parent event item:
 
 ### Response Item
 
-When Value Added Product (VAP) sidecars (`act-*-vap-*.json`) accompany an activation, the
-transformer also emits one response item per VAP, carrying `monty:response_detail`:
+When Value Added Product (VAP) sidecars (`act-*-vap-*.json`) or calibrated dataset sidecars
+(`*-calibrated.json`) accompany an activation/call, the transformer also emits response items
+carrying `monty:response_detail`. VAP products are classified as `eo-gra` / `eo-del` /
+`eo-pop` / `eo-vap`; calibrated datasets are emitted as `eo-dat`:
 
 ```json
 {
@@ -187,8 +189,19 @@ transformer also emits one response item per VAP, carrying `monty:response_detai
 }
 ```
 
-The `type`, `producer`, and `disaster:resolution_class` fields are inferred heuristically from
-the VAP title/description and copyright text (interim mapping).
+The VAP `type`, `producer`, and `disaster:resolution_class` fields are inferred heuristically
+from the VAP title/description and copyright text (interim mapping). Calibrated dataset responses
+preserve upstream imagery properties and use the upstream provider as producer when present.
+
+## Batch Export Input
+
+The `pystac-monty charter` batch exporter expects a local Charter model directory, such as
+`monty-stac-extension/docs/model/sources/Charter`, containing activation JSON files plus any
+area, VAP, and calibrated dataset sidecar bodies that should be emitted. Listing files such as
+`act-1019-vaps.json` and `call-1166-calibratedDatasets.json` are used to discover local item
+bodies, but the exporter does not fetch missing bodies from S3/OBS. To reproduce the full Act-1019
+contract, all 12 listed VAP JSON bodies and all 159 listed calibrated dataset JSON bodies must be
+present under the local `api-files/` directory.
 
 ## Item Relationships
 
@@ -200,6 +213,8 @@ The transformer creates relationships between items using STAC links:
   - `related` link back to the event item (bidirectional relationship)
 - **Event → Response** / **Response → Event/Hazard**: Response items have `related` links back to
   the event and each hazard item, plus a `derived_from` link to the activation web page.
+- **VAP Response ↔ eo-dat Response**: Matching VAP products and calibrated datasets are linked as
+  sibling responses with `related` links and `roles: ["response"]`.
 - **Correlation ID**: All items from the same activation share the same `monty:corr_id`
 
 ### Hazard Code Canonicalization
@@ -220,7 +235,7 @@ class CharterTransformer:
     """
     Transforms Charter activation data into STAC Items.
     Creates one event item, multiple hazard items (one per disaster type per area),
-    and one response item per VAP sidecar when present.
+    and response items for VAP and calibrated dataset sidecars when present.
     """
     def __init__(self, data_source: CharterDataSource, geocoder: MontyGeoCoder | None = None) -> None:
         """
@@ -281,9 +296,11 @@ directory, wiring up areas and VAP sidecars automatically. Items are registered 
 ``charter-events`` / ``charter-hazards`` / ``charter-response`` collections via PySTAC
 ``set_collection`` like other Monty sources.
 
-Input layout: a directory containing ``act-*-activation.json`` files and matching
-``act-*-area-*.json`` and optional ``act-*-vap-*.json`` sidecars, e.g.
-``monty-stac-extension/docs/model/sources/Charter`` in a full submodule checkout.
+Input layout: a directory containing ``act-*-activation.json`` files and matching sidecars, e.g.
+``monty-stac-extension/docs/model/sources/Charter`` in a full submodule checkout. When
+``api-files/`` is present, ``iter_charter_stac_items`` prefers listing files such as
+``activation-*-areas.json``, ``act-*-vaps.json``, and ``call-*-calibratedDatasets.json`` and
+loads the corresponding local JSON bodies when available.
 
 ```python
 from pathlib import Path

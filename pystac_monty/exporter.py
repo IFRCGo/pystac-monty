@@ -31,6 +31,7 @@ from pystac_monty.extension import SCHEMA_URI, ItemMontyExtension, MontyExtensio
 logger = logging.getLogger(__name__)
 
 MONTY_STAC_EXAMPLES_BASE_URL = "https://ifrcgo.org/monty-stac-extension/examples"
+MONTY_SOURCE_DATETIME_PROPERTY = "__monty_source_datetime"
 
 MONTY_STATIC_SUMMARY_FIELDS: dict[str, SummaryStrategy] = {
     "monty:country_codes": SummaryStrategy.ARRAY,
@@ -84,7 +85,10 @@ def summaries_for_monty_static_collection(
             summaries.add(key, sorted(values))
     datetimes: list[str] = []
     for item in items:
-        if item.datetime is not None:
+        source_datetime = item.properties.get(MONTY_SOURCE_DATETIME_PROPERTY)
+        if isinstance(source_datetime, str):
+            datetimes.append(source_datetime)
+        elif item.datetime is not None:
             datetimes.append(datetime_to_str(item.datetime))
         elif item.properties.get("datetime") is not None:
             value = item.properties["datetime"]
@@ -206,6 +210,8 @@ def save_static_monty_collection(
             item.clear_links()
         item.collection_id = collection.id
         item_doc = item.to_dict(include_self_link=False, transform_hrefs=False)
+        if isinstance(source_datetime := item_doc.get("properties", {}).pop(MONTY_SOURCE_DATETIME_PROPERTY, None), str):
+            item_doc["properties"]["datetime"] = source_datetime
         transformer_links = item_doc.get("links", [])
         if public_href_base:
             self_href = _published_example_href(public_href_base, collection.id, f"{item.id}.json")

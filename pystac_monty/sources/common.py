@@ -35,16 +35,16 @@ class TransformSummary:
     failed_rows: int = 0
     is_completed: bool = False
 
-    def increment_rows(self, increment=1):
+    def increment_rows(self, increment: int = 1) -> None:
         self.total_rows += increment
 
-    def increment_failed_rows(self, increment=1):
+    def increment_failed_rows(self, increment: int = 1) -> None:
         self.failed_rows += increment
 
-    def mark_as_complete(self):
+    def mark_as_complete(self) -> None:
         self.is_completed = True
 
-    def mark_as_started(self):
+    def mark_as_started(self) -> None:
         self.is_completed = False
         self.total_rows = 0
         self.failed_rows = 0
@@ -119,6 +119,11 @@ class PDCDataSourceType(BaseModel):
     geojson_path: str
 
 
+class CharterDataSourceType(BaseModel):
+    source_url: str
+    activation_data: Union[File, Memory]
+
+
 @dataclass
 class MontyDataSource:
     source_url: str
@@ -158,7 +163,14 @@ class MontyDataSourceV2:
 
 @dataclass
 class MontyDataSourceV3:
-    root: Union[GenericDataSource, GdacsDataSourceType, USGSDataSourceType, DesinventarDataSourceType, PDCDataSourceType]
+    root: Union[
+        GenericDataSource,
+        GdacsDataSourceType,
+        USGSDataSourceType,
+        DesinventarDataSourceType,
+        PDCDataSourceType,
+        CharterDataSourceType,
+    ]
     source_url: Optional[str] = field(init=False)
     eoapi_url: Optional[str]
 
