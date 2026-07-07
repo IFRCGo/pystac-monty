@@ -2,7 +2,7 @@
 name = "pystac-monty-docs"
 version = "0.0.0"
 description = "This package is only for uv, so it can share a lockfile with the top-level project. It should never be published"
-requires-python = ">=3.10"
+requires-python = ">=3.11"
 dependencies = [
     "boto3>=1.35.39",
     "ipython>=8.28.0",
