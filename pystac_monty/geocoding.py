@@ -163,8 +163,9 @@ class WorldAdministrativeBoundariesGeocoder(MontyGeoCoder):
             return None
 
         try:
-            # Convert input geometry to a shapely object
-            point = shape(geometry)
+            # Convert input geometry to a shapely object and use a point for lookup.
+            geom_shape = shape(geometry)
+            point = geom_shape if geom_shape.geom_type == "Point" else geom_shape.representative_point()
 
             # Use the spatial filter if available in the file handle
             # This leverages FlatGeobuf's spatial indexing capabilities
@@ -542,6 +543,25 @@ class GAULGeocoder(MontyGeoCoder):
         return "UNK"
 
     # FIXME: This is not implemented
+    def get_geometry_from_iso3(self, iso3: str, simplified: bool = False) -> Optional[Dict[str, Any]]:
+        return None
+
+
+class NoopMontyGeocoder(MontyGeoCoder):
+    """Geocoder that returns ``None`` for all lookups (no test fixtures or remote calls)."""
+
+    def get_geometry_from_admin_units(self, admin_units: str, simplified: bool) -> Optional[Dict[str, Any]]:
+        return None
+
+    def get_geometry_by_country_name(self, country_name: str, simplified: bool = False) -> Optional[Dict[str, Any]]:
+        return None
+
+    def get_iso3_from_point(self, point: Point) -> Optional[str]:
+        return None
+
+    def get_iso3_from_geometry(self, geometry: Dict[str, Any]) -> Optional[str]:
+        return None
+
     def get_geometry_from_iso3(self, iso3: str, simplified: bool = False) -> Optional[Dict[str, Any]]:
         return None
 

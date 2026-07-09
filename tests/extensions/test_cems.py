@@ -13,11 +13,15 @@ import pytest
 
 from pystac_monty.exporter import MONTY_SOURCE_DATETIME_PROPERTY
 from pystac_monty.extension import MontyExtension
+from pystac_monty.geocoding import MontyGeoCoder, NoopMontyGeocoder
 from pystac_monty.sources.batch_export import run_batch
 from pystac_monty.sources.cems import (
     CURATED_CEMS_EXAMPLE_IDS,
     CEMSDataSource,
     CEMSTransformer,
+    _country_codes,
+    _iso3_from_country_name,
+    default_cems_export_geocoder,
     iter_cems_stac_items,
     regenerate_cems_examples,
     resolve_gdacs_current_episode,
@@ -220,6 +224,57 @@ class CEMSTest(unittest.TestCase):
         event_corr = MontyExtension.ext(next(item for item in items if MontyExtension.ext(item).is_source_event())).correlation_id
         self.assertEqual(MontyExtension.ext(gra).correlation_id, event_corr)
         self.assertEqual(MontyExtension.ext(impact).correlation_id, event_corr)
+
+    def test_country_name_resolution_uses_pycountry(self) -> None:
+        geocoder = NoopMontyGeocoder()
+        self.assertEqual(_iso3_from_country_name("Jamaica", geocoder), "JAM")
+        self.assertEqual(_iso3_from_country_name("Italy", geocoder), "ITA")
+        self.assertEqual(_iso3_from_country_name("United States of America", geocoder), "USA")
+        self.assertEqual(
+            _country_codes([{"name": "Haiti"}, {"name": "Cuba"}, {"name": "Jamaica"}], geocoder),
+            ["HTI", "CUB", "JAM"],
+        )
+
+    def test_country_name_resolution_treats_geocoder_unk_as_unresolved(self) -> None:
+        class UnkGeocoder(MontyGeoCoder):
+            def get_geometry_from_admin_units(self, admin_units: str, simplified: bool) -> dict | None:
+                return None
+
+            def get_geometry_by_country_name(self, country_name: str, simplified: bool = False) -> dict | None:
+                return {"iso3": "UNK"}
+
+            def get_iso3_from_point(self, point) -> str | None:
+                return "UNK"
+
+            def get_iso3_from_geometry(self, geometry: dict) -> str | None:
+                return "UNK"
+
+            def get_geometry_from_iso3(self, iso3: str, simplified: bool = False) -> dict | None:
+                return None
+
+        self.assertIsNone(_iso3_from_country_name("Atlantis", UnkGeocoder()))
+
+    def test_fixture_emsm847_primary_country_and_corr_id(self) -> None:
+        fixture = _cems_fixture_dir() / "EMSR847-storm-detail.json"
+        if not fixture.is_file():
+            self.skipTest("monty-stac-extension submodule not initialized")
+
+        geocoder = default_cems_export_geocoder()
+        items = list(iter_cems_stac_items(fixture, geocoder=geocoder))
+        event = next(item for item in items if item.id == "cems-event-EMSR847")
+        hazard = next(item for item in items if item.id == "cems-hazard-EMSR847-aoi01-storm")
+        impact = next(item for item in items if item.id == "cems-impact-EMSR847-aoi01-gra-population")
+
+        event_monty = MontyExtension.ext(event)
+        hazard_monty = MontyExtension.ext(hazard)
+        impact_monty = MontyExtension.ext(impact)
+
+        self.assertEqual(event_monty.country_codes[0], "JAM")
+        self.assertEqual(hazard_monty.country_codes[0], "JAM")
+        self.assertEqual(impact_monty.country_codes[0], "JAM")
+        self.assertTrue(event_monty.correlation_id.startswith("20251026-JAM-"))
+        self.assertEqual(hazard_monty.correlation_id, event_monty.correlation_id)
+        self.assertEqual(impact_monty.correlation_id, event_monty.correlation_id)
 
     def test_status_no_impact_mapping(self) -> None:
         data = deepcopy(MINIMAL_ACTIVATION)

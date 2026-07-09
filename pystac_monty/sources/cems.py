@@ -10,11 +10,13 @@ from __future__ import annotations
 import datetime
 import json
 import logging
+import os
 import re
 from dataclasses import replace
 from pathlib import Path
 from typing import Any, Generator, Iterable, Sequence
 
+import pycountry
 import requests  # type: ignore[import-untyped]
 from pystac import Asset, Collection, Item, Link
 from pystac.provider import Provider, ProviderRole
@@ -40,7 +42,7 @@ from pystac_monty.extension import (
     MontyMethodology,
     MontyResponseStatus,
 )
-from pystac_monty.geocoding import MockGeocoder, MontyGeoCoder
+from pystac_monty.geocoding import MockGeocoder, MontyGeoCoder, WorldAdministrativeBoundariesGeocoder
 from pystac_monty.hazard_profiles import MontyHazardProfiles
 from pystac_monty.response import build_response_item, link_monitoring_update
 from pystac_monty.sources.common import (
@@ -192,109 +194,26 @@ HAZARD_KEY_TO_SLUG: dict[str, str] = {
     "other": "other",
 }
 
-COUNTRY_NAME_TO_ISO3: dict[str, str] = {
-    "afghanistan": "AFG",
-    "albania": "ALB",
-    "algeria": "DZA",
-    "argentina": "ARG",
-    "australia": "AUS",
-    "austria": "AUT",
-    "bangladesh": "BGD",
-    "belgium": "BEL",
-    "bolivia": "BOL",
-    "bosnia and herzegovina": "BIH",
-    "brazil": "BRA",
-    "bulgaria": "BGR",
-    "cambodia": "KHM",
-    "canada": "CAN",
-    "chile": "CHL",
-    "china": "CHN",
-    "colombia": "COL",
-    "costa rica": "CRI",
-    "croatia": "HRV",
-    "cuba": "CUB",
-    "cyprus": "CYP",
-    "czech republic": "CZE",
-    "czechia": "CZE",
-    "denmark": "DNK",
-    "dominican republic": "DOM",
-    "ecuador": "ECU",
-    "egypt": "EGY",
-    "el salvador": "SLV",
-    "ethiopia": "ETH",
-    "finland": "FIN",
-    "france": "FRA",
-    "germany": "DEU",
-    "greece": "GRC",
-    "guatemala": "GTM",
-    "haiti": "HTI",
-    "honduras": "HND",
-    "hungary": "HUN",
-    "india": "IND",
-    "indonesia": "IDN",
-    "iran": "IRN",
-    "iraq": "IRQ",
-    "ireland": "IRL",
-    "israel": "ISR",
-    "italy": "ITA",
-    "jamaica": "JAM",
-    "japan": "JPN",
-    "jordan": "JOR",
-    "kenya": "KEN",
-    "lebanon": "LBN",
-    "libya": "LBY",
-    "madagascar": "MDG",
-    "malawi": "MWI",
-    "malaysia": "MYS",
-    "mexico": "MEX",
-    "morocco": "MAR",
-    "mozambique": "MOZ",
-    "myanmar": "MMR",
-    "nepal": "NPL",
-    "netherlands": "NLD",
-    "new zealand": "NZL",
-    "nicaragua": "NIC",
-    "nigeria": "NGA",
-    "norway": "NOR",
-    "pakistan": "PAK",
-    "panama": "PAN",
-    "peru": "PER",
-    "philippines": "PHL",
-    "poland": "POL",
-    "portugal": "PRT",
-    "romania": "ROU",
-    "russia": "RUS",
-    "saudi arabia": "SAU",
-    "serbia": "SRB",
-    "slovakia": "SVK",
-    "slovenia": "SVN",
-    "somalia": "SOM",
-    "south africa": "ZAF",
-    "south korea": "KOR",
-    "spain": "ESP",
-    "sri lanka": "LKA",
-    "sudan": "SDN",
-    "sweden": "SWE",
-    "switzerland": "CHE",
-    "syria": "SYR",
-    "taiwan": "TWN",
-    "tanzania": "TZA",
-    "thailand": "THA",
-    "tunisia": "TUN",
-    "turkey": "TUR",
-    "türkiye": "TUR",
-    "uganda": "UGA",
-    "ukraine": "UKR",
-    "united kingdom": "GBR",
-    "united states": "USA",
+CEMS_COUNTRY_ALIASES: dict[str, str] = {
+    "bolivia (plurinational state of)": "BOL",
+    "cote d'ivoire": "CIV",
+    "côte d'ivoire": "CIV",
+    "democratic republic of the congo": "COD",
+    "iran (islamic republic of)": "IRN",
+    "korea, republic of": "KOR",
+    "lao people's democratic republic": "LAO",
+    "republic of korea": "KOR",
+    "republic of the congo": "COG",
+    "russian federation": "RUS",
+    "syrian arab republic": "SYR",
+    "tanzania, united republic of": "TZA",
+    "united kingdom of great britain and northern ireland": "GBR",
     "united states of america": "USA",
-    "uruguay": "URY",
-    "venezuela": "VEN",
-    "vietnam": "VNM",
-    "yemen": "YEM",
-    "zambia": "ZMB",
-    "zimbabwe": "ZWE",
+    "venezuela (bolivarian republic of)": "VEN",
+    "viet nam": "VNM",
 }
+
+_MONTY_WORLD_ADMIN_BOUNDARIES_FGB_ENV = "MONTY_WORLD_ADMIN_BOUNDARIES_FGB"
 
 IMPACT_THEMATIC_SLUG: dict[str, str] = {
     "estimated population": "population",
@@ -308,9 +227,8 @@ IMPACT_THEMATIC_SLUG: dict[str, str] = {
 
 _CEMS_PROVIDER = Provider(
     "Copernicus Emergency Management Service",
-    roles=[ProviderRole.PRODUCER],
+    roles=[ProviderRole.PRODUCER, ProviderRole.LICENSOR],
     url="https://mapping.emergency.copernicus.eu/",
-    description="Copernicus EMS Rapid Mapping provides geospatial crisis information worldwide.",
 )
 
 
@@ -423,18 +341,76 @@ def _bbox_from_geometry(geom: dict[str, Any] | None) -> list[float] | None:
         return None
 
 
+def _normalize_iso3(value: str | None) -> str | None:
+    if not value:
+        return None
+    normalized = value.strip().upper()
+    if normalized == "UNK":
+        return None
+    return normalized
+
+
+def _iso3_from_country_name(name: str, geocoder: MontyGeoCoder) -> str | None:
+    key = _normalize_key(name)
+    if not key:
+        return None
+
+    alias = CEMS_COUNTRY_ALIASES.get(key)
+    if alias:
+        return alias
+
+    try:
+        return pycountry.countries.lookup(name).alpha_3
+    except LookupError:
+        pass
+
+    for country in pycountry.countries:
+        candidate_names = {country.name}
+        official_name = getattr(country, "official_name", None)
+        common_name = getattr(country, "common_name", None)
+        if official_name:
+            candidate_names.add(official_name)
+        if common_name:
+            candidate_names.add(common_name)
+        if any(_normalize_key(candidate) == key for candidate in candidate_names):
+            return country.alpha_3
+
+    geom = geocoder.get_geometry_by_country_name(name, simplified=True)
+    if geom and isinstance(geom.get("iso3"), str):
+        return _normalize_iso3(geom["iso3"])
+
+    return None
+
+
+def _resolve_world_admin_boundaries_fgb_path() -> Path:
+    env_path = os.environ.get(_MONTY_WORLD_ADMIN_BOUNDARIES_FGB_ENV)
+    if env_path:
+        path = Path(env_path)
+        if path.is_file():
+            return path
+        raise FileNotFoundError(f"{_MONTY_WORLD_ADMIN_BOUNDARIES_FGB_ENV}={env_path!r} is not a readable FlatGeobuf file.")
+
+    repo_test_fgb = Path(__file__).resolve().parents[2] / "tests" / "data-files" / "world-administrative-boundaries.fgb"
+    if repo_test_fgb.is_file():
+        return repo_test_fgb
+
+    raise FileNotFoundError(
+        f"World administrative boundaries FlatGeobuf not found. Set {_MONTY_WORLD_ADMIN_BOUNDARIES_FGB_ENV} to a valid .fgb path."
+    )
+
+
+def default_cems_export_geocoder() -> MontyGeoCoder:
+    """Return a real geocoder for CEMS batch export and example regeneration."""
+    return WorldAdministrativeBoundariesGeocoder(str(_resolve_world_admin_boundaries_fgb_path()), 0.1)
+
+
 def _country_codes(countries: Iterable[dict[str, Any]], geocoder: MontyGeoCoder) -> list[str]:
     codes: list[str] = []
     for country in countries:
         name = country.get("name")
         if not isinstance(name, str) or not name.strip():
             continue
-        key = _normalize_key(name)
-        iso3 = COUNTRY_NAME_TO_ISO3.get(key)
-        if not iso3:
-            geom = geocoder.get_geometry_by_country_name(name, simplified=True)
-            if geom and isinstance(geom.get("iso3"), str):
-                iso3 = geom["iso3"]
+        iso3 = _iso3_from_country_name(name, geocoder)
         if not iso3:
             logger.warning("Unknown CEMS country name %r; using UNK", name)
             iso3 = "UNK"
@@ -446,7 +422,7 @@ def _country_codes(countries: Iterable[dict[str, Any]], geocoder: MontyGeoCoder)
 def _primary_country_code(geometry: dict[str, Any] | None, country_codes: list[str], geocoder: MontyGeoCoder) -> list[str]:
     if not country_codes:
         return []
-    primary = geocoder.get_iso3_from_geometry(geometry) if geometry else None
+    primary = _normalize_iso3(geocoder.get_iso3_from_geometry(geometry)) if geometry else None
     if primary and primary in country_codes:
         return [primary, *[code for code in country_codes if code != primary]]
     if primary and primary not in country_codes:
@@ -1360,20 +1336,20 @@ _CEMS_BATCH = BatchExportConfig(
     provider=_CEMS_PROVIDER,
     titles={
         "event": (
-            "CEMS Source Events",
-            "Copernicus EMS Rapid Mapping activations representing disaster events",
+            "Copernicus EMS RM Events",
+            "Copernicus EMS Rapid Mapping activations as Monty Event items.",
         ),
         "hazard": (
-            "CEMS Source Hazards",
-            "Areas of Interest from CEMS activations representing hazard extents refined by delineation products",
+            "Copernicus EMS RM Hazards",
+            "Copernicus EMS Rapid Mapping Areas of Interest as Monty Hazard items.",
         ),
         "response": (
-            "CEMS Source Response",
-            "Copernicus EMS Rapid Mapping products (REF, FEP, DEL, GRA) and situational reports mapped to Monty Response items",
+            "Copernicus EMS RM Response",
+            "Copernicus EMS Rapid Mapping products (REF/FEP/DEL/GRA/SR) as Monty Response items.",
         ),
         "impact": (
-            "CEMS Source Impacts",
-            "Exposure statistics from CEMS GRA products mapped to Monty Impact items",
+            "Copernicus EMS RM Impacts",
+            "Damage/exposure statistics from CEMS grading products as Monty Impact items.",
         ),
     },
 )
@@ -1398,7 +1374,11 @@ def _activation_from_payload(payload: dict[str, Any]) -> dict[str, Any]:
     return payload
 
 
-def iter_cems_stac_items(input_path: Path) -> Generator[Item, None, None]:
+def iter_cems_stac_items(
+    input_path: Path,
+    *,
+    geocoder: MontyGeoCoder | None = None,
+) -> Generator[Item, None, None]:
     """Yield STAC items from CEMS detail JSON file(s).
 
     *input_path* may be a single ``*-detail.json`` file or a directory containing
@@ -1407,6 +1387,7 @@ def iter_cems_stac_items(input_path: Path) -> Generator[Item, None, None]:
     from pystac_monty.sources.batch_export import use_local_collection_examples
 
     use_local_collection_examples()
+    resolved_geocoder = geocoder if geocoder is not None else default_cems_export_geocoder()
     paths: list[Path]
     if input_path.is_file():
         paths = [input_path]
@@ -1425,13 +1406,19 @@ def iter_cems_stac_items(input_path: Path) -> Generator[Item, None, None]:
                 input_data=Memory(content=payload, data_type=DataType.MEMORY),
             )
         )
-        yield from CEMSTransformer(source, None).get_stac_items()
+        yield from CEMSTransformer(source, resolved_geocoder).get_stac_items()
 
 
-def convert_cems(input_path: Path, output_dir: Path, public_href_base: str | None = None) -> None:
+def convert_cems(
+    input_path: Path,
+    output_dir: Path,
+    public_href_base: str | None = None,
+    *,
+    geocoder: MontyGeoCoder | None = None,
+) -> None:
     """Read CEMS activation detail JSON from *input_path* and export Monty STAC collections."""
     config = replace(_CEMS_BATCH, public_href_base=public_href_base)
-    log_batch_role_counts(*export_collected_items(config, list(iter_cems_stac_items(input_path)), output_dir))
+    log_batch_role_counts(*export_collected_items(config, list(iter_cems_stac_items(input_path, geocoder=geocoder)), output_dir))
 
 
 def export_curated_cems_examples(
@@ -1447,6 +1434,11 @@ def export_curated_cems_examples(
     log_batch_role_counts(*export_collected_items(config, curated, output_dir))
 
 
-def regenerate_cems_examples(input_path: Path, output_dir: Path) -> None:
+def regenerate_cems_examples(
+    input_path: Path,
+    output_dir: Path,
+    *,
+    geocoder: MontyGeoCoder | None = None,
+) -> None:
     """Regenerate published CEMS examples with absolute public self/collection links."""
-    export_curated_cems_examples(list(iter_cems_stac_items(input_path)), output_dir)
+    export_curated_cems_examples(list(iter_cems_stac_items(input_path, geocoder=geocoder)), output_dir)
