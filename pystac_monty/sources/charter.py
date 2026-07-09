@@ -22,6 +22,7 @@ from typing import Any, Generator, List, Optional
 from urllib.parse import unquote
 
 import requests  # type: ignore[import-untyped]
+from markdownify import markdownify as md
 from pystac import Asset, Collection, Item, Link
 from pystac.provider import Provider, ProviderRole
 
@@ -112,6 +113,14 @@ _CHARTER_PROVIDER = Provider(
         "is made available for disaster management purposes."
     ),
 )
+
+
+def _description_to_markdown(value: Any) -> str:
+    """Normalize Charter HTML snippets before writing STAC description fields."""
+    if value is None:
+        return ""
+    text = value if isinstance(value, str) else str(value)
+    return md(text).strip()
 
 
 @dataclass
@@ -340,7 +349,7 @@ class CharterTransformer(MontyDataTransformer[CharterDataSource]):
             datetime=dt,
             properties={
                 "title": props.get("title", f"Charter Activation {activation_id}"),
-                "description": props.get("description", ""),
+                "description": _description_to_markdown(props.get("description")),
             },
         )
 
@@ -391,10 +400,11 @@ class CharterTransformer(MontyDataTransformer[CharterDataSource]):
             if not area_geom:
                 continue
 
-            description = (
+            raw_description = (
                 area_props.get("description") or area_props.get("summary") or area_props.get("content", {}).get("value", "")
             )
-            radius, _priority, surface_area = self.parse_area_description(description)
+            description = _description_to_markdown(raw_description)
+            radius, _priority, surface_area = self.parse_area_description(raw_description)
 
             cpe_status = area_props.get("cpe:status", {})
             stage = cpe_status.get("stage", "notificationNew")
@@ -825,7 +835,7 @@ class CharterTransformer(MontyDataTransformer[CharterDataSource]):
             dt = self._parse_datetime(datetime_str)
 
             title = vap_props.get("title", item_id)
-            description = vap_props.get("additional_information") or vap_props.get("description", "")
+            description = _description_to_markdown(vap_props.get("additional_information") or vap_props.get("description", ""))
             copyright_text = vap_props.get("copyright", "")
 
             response_type = self._infer_response_type(title, description)

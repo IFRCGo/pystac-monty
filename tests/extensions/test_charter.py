@@ -249,6 +249,19 @@ class CharterTest(unittest.TestCase):
         )
         self.assertEqual((radius, priority, surface_area), (None, 1, 101.0))
 
+    def test_hazard_description_is_markdown(self) -> None:
+        data = deepcopy(JSON_MOCK_DATA)
+        data["areas"][0]["properties"]["description"] = "<p>Radius (km): 8.0<br>Priority: 1</p>"
+
+        hazard = next(item for item in _memory_transformer(data).get_stac_items() if MontyExtension.ext(item).is_source_hazard())
+
+        self.assertEqual(hazard.properties["description"], "Radius (km): 8.0  \nPriority: 1")
+        self.assertNotIn("<p>", hazard.properties["description"])
+
+        detail = MontyExtension.ext(hazard).hazard_detail
+        self.assertIsNotNone(detail)
+        self.assertEqual(detail.properties["severity_value"], 8.0)
+
     def test_transformer_with_file_data(self) -> None:
         tmpfile = save_json_data_into_tmp_file(JSON_MOCK_DATA)
         source = CharterDataSource(
