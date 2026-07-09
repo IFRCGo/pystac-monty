@@ -2445,6 +2445,7 @@ dependencies = [
     { name = "pystac" },
     { name = "python-dateutil" },
     { name = "pytz" },
+    { name = "shapely" },
 ]
 
 [package.dev-dependencies]
@@ -2492,6 +2493,7 @@ requires-dist = [
     { name = "pystac", specifier = ">=1.11.0" },
     { name = "python-dateutil", specifier = ">=2.7.0" },
     { name = "pytz", specifier = ">=2021.1" },
+    { name = "shapely", specifier = ">=2.0.0" },
 ]
 
 [package.metadata.requires-dev]
