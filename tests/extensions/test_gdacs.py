@@ -8,7 +8,6 @@ from os import makedirs
 from pathlib import Path
 
 import pytest
-import requests
 from parameterized import parameterized
 
 from pystac_monty.extension import MontyExtension
@@ -34,6 +33,11 @@ def fixture_tmp_file(name: str) -> tempfile._TemporaryFileWrapper:
     """Load committed GDACS JSON; no network at import/collection time."""
     data = json.loads((GDACS_FIXTURES / name).read_text(encoding="utf-8"))
     return save_json_data_into_tmp_file(data)
+
+
+def fixture_memory(name: str) -> dict:
+    """Load committed GDACS JSON for in-memory scenarios; no network at import/collection time."""
+    return json.loads((GDACS_FIXTURES / name).read_text(encoding="utf-8"))
 
 
 def load_scenarios(
@@ -89,40 +93,37 @@ def load_scenarios(
             )
             geocoder = MockGeocoder()
             transformers.append(GDACSTransformer(gdacs_data_sources, geocoder))
-        else:
-            event_data_url = scenario.get(GDACSDataSourceType.EVENT)
-            event_data = requests.get(event_data_url).json()
+        elif isinstance(scenario.get(GDACSDataSourceType.EVENT), dict):
+            event_data = scenario.get(GDACSDataSourceType.EVENT)
             episodes_data = []
             for episode in scenario.get("episodes"):
-                episode_event_url = episode.get(GDACSDataSourceType.EVENT)
-                episode_geometry_url = episode.get(GDACSDataSourceType.GEOMETRY)
-                episode_impact_url = episode.get(GDACSDataSourceType.IMPACT)
-                episode_event = requests.get(episode_event_url).json()
-                episode_geometry = requests.get(episode_geometry_url).json()
-                if episode_impact_url:
-                    episode_impact = requests.get(episode_impact_url).json()
+                episode_event = episode.get(GDACSDataSourceType.EVENT)
+                episode_geometry = episode.get(GDACSDataSourceType.GEOMETRY)
+                episode_impact = episode.get(GDACSDataSourceType.IMPACT)
                 event_episode_data = GdacsEpisodes(
                     type=GDACSDataSourceType.EVENT,
                     data=GenericDataSource(
-                        source_url=episode_event_url, input_data=Memory(content=episode_event, data_type=DataType.MEMORY)
+                        source_url="https://www.test.com",
+                        input_data=Memory(content=episode_event, data_type=DataType.MEMORY),
                     ),
                     hazard_type=hazard_type,
                 )
 
-                if episode_geometry_url is not None:
+                geometry_episode_data = None
+                if episode_geometry is not None:
                     geometry_episode_data = GdacsEpisodes(
                         type=GDACSDataSourceType.GEOMETRY,
                         data=GenericDataSource(
-                            source_url=episode_geometry_url,
+                            source_url="https://www.test.com",
                             input_data=Memory(content=episode_geometry, data_type=DataType.MEMORY),
                         ),
                         hazard_type=hazard_type,
                     )
-                if episode_impact_url:
+                if episode_impact:
                     impact_episode_data = GdacsEpisodes(
                         type=GDACSDataSourceType.IMPACT,
                         data=GenericDataSource(
-                            source_url=episode_impact_url,
+                            source_url="https://www.test.com",
                             input_data=Memory(content=episode_impact, data_type=DataType.MEMORY),
                         ),
                         hazard_type=hazard_type,
@@ -134,62 +135,66 @@ def load_scenarios(
 
             gdacs_data_sources = GDACSDataSource(
                 data=GdacsDataSourceType(
-                    source_url=event_data_url,
+                    source_url="https://www.test.com",
                     event_data=Memory(content=event_data, data_type=DataType.MEMORY),
                     episodes=episodes_data,
                 )
             )
             geocoder = MockGeocoder()
             transformers.append(GDACSTransformer(gdacs_data_sources, geocoder))
+        else:
+            raise TypeError(
+                "Scenario event data must be a committed fixture dict or temporary file; "
+                "live GDACS URLs are not supported at collection time."
+            )
 
     return transformers
 
 
 spain_flood = {
-    GDACSDataSourceType.EVENT: "https://github.com/IFRCGo/monty-stac-extension/raw/refs/heads/main/docs/model/sources/GDACS/1102983-1-geteventdata-source.json",  ## noqa E501
+    GDACSDataSourceType.EVENT: fixture_memory("1102983-1-geteventdata-source.json"),
     "episodes": [
         {
-            GDACSDataSourceType.EVENT: "https://www.gdacs.org/gdacsapi/api/events/getepisodedata?eventtype=FL&eventid=1102983&episodeid=1",
-            GDACSDataSourceType.GEOMETRY: "https://www.gdacs.org/gdacsapi/api/polygons/getgeometry?eventtype=FL&eventid=1102983&episodeid=1",
+            GDACSDataSourceType.EVENT: fixture_memory("fl-1102983-ep1-event.json"),
+            GDACSDataSourceType.GEOMETRY: fixture_memory("fl-1102983-ep1-geometry.json"),
         },
         {
-            GDACSDataSourceType.EVENT: "https://www.gdacs.org/gdacsapi/api/events/getepisodedata?eventtype=FL&eventid=1102983&episodeid=2",
-            GDACSDataSourceType.GEOMETRY: "https://www.gdacs.org/gdacsapi/api/polygons/getgeometry?eventtype=FL&eventid=1102983&episodeid=2",
+            GDACSDataSourceType.EVENT: fixture_memory("fl-1102983-ep2-event.json"),
+            GDACSDataSourceType.GEOMETRY: fixture_memory("fl-1102983-ep2-geometry.json"),
         },
     ],
 }
 
 drought_latam = {
-    GDACSDataSourceType.EVENT: "https://www.gdacs.org/gdacsapi/api/events/geteventdata?eventtype=DR&eventid=1016449",
-    # 7 episodes
+    GDACSDataSourceType.EVENT: fixture_memory("dr-1016449-event.json"),
     "episodes": [
         {
-            GDACSDataSourceType.EVENT: "https://www.gdacs.org/gdacsapi/api/events/getepisodedata?eventtype=DR&eventid=1016449&episodeid=1",
-            GDACSDataSourceType.GEOMETRY: "https://www.gdacs.org/gdacsapi/api/polygons/getgeometry?eventtype=DR&eventid=1016449&episodeid=1",
+            GDACSDataSourceType.EVENT: fixture_memory("dr-1016449-ep1-event.json"),
+            GDACSDataSourceType.GEOMETRY: fixture_memory("dr-1016449-ep1-geometry.json"),
         },
         {
-            GDACSDataSourceType.EVENT: "https://www.gdacs.org/gdacsapi/api/events/getepisodedata?eventtype=DR&eventid=1016449&episodeid=2",
-            GDACSDataSourceType.GEOMETRY: "https://www.gdacs.org/gdacsapi/api/polygons/getgeometry?eventtype=DR&eventid=1016449&episodeid=2",
+            GDACSDataSourceType.EVENT: fixture_memory("dr-1016449-ep2-event.json"),
+            GDACSDataSourceType.GEOMETRY: fixture_memory("dr-1016449-ep2-geometry.json"),
         },
         {
-            GDACSDataSourceType.EVENT: "https://www.gdacs.org/gdacsapi/api/events/getepisodedata?eventtype=DR&eventid=1016449&episodeid=3",
-            GDACSDataSourceType.GEOMETRY: "https://www.gdacs.org/gdacsapi/api/polygons/getgeometry?eventtype=DR&eventid=1016449&episodeid=3",
+            GDACSDataSourceType.EVENT: fixture_memory("dr-1016449-ep3-event.json"),
+            GDACSDataSourceType.GEOMETRY: fixture_memory("dr-1016449-ep3-geometry.json"),
         },
         {
-            GDACSDataSourceType.EVENT: "https://www.gdacs.org/gdacsapi/api/events/getepisodedata?eventtype=DR&eventid=1016449&episodeid=4",
-            GDACSDataSourceType.GEOMETRY: "https://www.gdacs.org/gdacsapi/api/polygons/getgeometry?eventtype=DR&eventid=1016449&episodeid=4",
+            GDACSDataSourceType.EVENT: fixture_memory("dr-1016449-ep4-event.json"),
+            GDACSDataSourceType.GEOMETRY: fixture_memory("dr-1016449-ep4-geometry.json"),
         },
         {
-            GDACSDataSourceType.EVENT: "https://www.gdacs.org/gdacsapi/api/events/getepisodedata?eventtype=DR&eventid=1016449&episodeid=5",
-            GDACSDataSourceType.GEOMETRY: "https://www.gdacs.org/gdacsapi/api/polygons/getgeometry?eventtype=DR&eventid=1016449&episodeid=5",
+            GDACSDataSourceType.EVENT: fixture_memory("dr-1016449-ep5-event.json"),
+            GDACSDataSourceType.GEOMETRY: fixture_memory("dr-1016449-ep5-geometry.json"),
         },
         {
-            GDACSDataSourceType.EVENT: "https://www.gdacs.org/gdacsapi/api/events/getepisodedata?eventtype=DR&eventid=1016449&episodeid=6",
-            GDACSDataSourceType.GEOMETRY: "https://www.gdacs.org/gdacsapi/api/polygons/getgeometry?eventtype=DR&eventid=1016449&episodeid=6",
+            GDACSDataSourceType.EVENT: fixture_memory("dr-1016449-ep6-event.json"),
+            GDACSDataSourceType.GEOMETRY: fixture_memory("dr-1016449-ep6-geometry.json"),
         },
         {
-            GDACSDataSourceType.EVENT: "https://www.gdacs.org/gdacsapi/api/events/getepisodedata?eventtype=DR&eventid=1016449&episodeid=7",
-            GDACSDataSourceType.GEOMETRY: "https://www.gdacs.org/gdacsapi/api/polygons/getgeometry?eventtype=DR&eventid=1016449&episodeid=7",
+            GDACSDataSourceType.EVENT: fixture_memory("dr-1016449-ep7-event.json"),
+            GDACSDataSourceType.GEOMETRY: fixture_memory("dr-1016449-ep7-geometry.json"),
         },
     ],
 }
