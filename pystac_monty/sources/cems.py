@@ -296,6 +296,9 @@ def _prune_curated_cems_links(item: Item, curated_ids: frozenset[str]) -> None:
                 kept_links.append(link)
                 continue
             item_id = _item_id_from_link_href(href)
+            if item_id is None and link.rel == "derived_from":
+                kept_links.append(link)
+                continue
             if item_id and _is_cems_cross_collection_href(href):
                 if item_id in curated_ids:
                     kept_links.append(link)
@@ -1000,13 +1003,6 @@ class CEMSTransformer(MontyDataTransformer[CEMSDataSource]):
                 if hazard_detail := hazard_details.get(hazard_key):
                     monty.hazard_detail = hazard_detail
 
-                item.add_link(
-                    Link(
-                        rel="derived_from",
-                        target=self._relative_item_href("cems-events", event_item.id),
-                        media_type="application/geo+json",
-                    )
-                )
                 item.set_collection(self.get_hazard_collection())
                 items.append(item)
 
@@ -1108,7 +1104,7 @@ class CEMSTransformer(MontyDataTransformer[CEMSDataSource]):
                             )
                 item.add_link(
                     Link(
-                        rel="via",
+                        rel="derived_from",
                         target=f"{CEMS_PORTAL_BASE}/{code}",
                         media_type="text/html",
                         title=f"CEMS {code} activation",
@@ -1331,9 +1327,16 @@ class CEMSTransformer(MontyDataTransformer[CEMSDataSource]):
         return list(self.get_stac_items())
 
 
+_CEMS_LICENSE = "other"
+_CEMS_LICENSE_URL = "https://mapping.emergency.copernicus.eu/terms-and-conditions/"
+_CEMS_LICENSE_TITLE = "Copernicus EMS On-Demand Mapping Terms and Conditions"
+
 _CEMS_BATCH = BatchExportConfig(
     source_slug="cems",
     provider=_CEMS_PROVIDER,
+    license=_CEMS_LICENSE,
+    license_url=_CEMS_LICENSE_URL,
+    license_title=_CEMS_LICENSE_TITLE,
     titles={
         "event": (
             "Copernicus EMS RM Events",

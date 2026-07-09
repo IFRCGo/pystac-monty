@@ -139,6 +139,7 @@ def build_monty_static_collection(
     role: MontyRole,
     provider: Provider,
     omit_keywords_from_summaries: bool = False,
+    license: str = "proprietary",
 ) -> pystac.Collection:
     keywords = sorted({kw for item in items for kw in (item.properties.get("keywords") or [])})
     summaries = summaries_for_monty_static_collection(items, role, include_keywords=not omit_keywords_from_summaries)
@@ -146,7 +147,7 @@ def build_monty_static_collection(
         id=collection_id,
         title=title,
         description=description,
-        license="proprietary",
+        license=license,
         extent=extent_for_monty_static_collection(items),
         stac_extensions=[SCHEMA_URI],
         providers=[provider],
@@ -163,6 +164,7 @@ def build_empty_static_source_collection(
     description: str,
     role: MontyRole,
     provider: Provider,
+    license: str = "proprietary",
 ) -> pystac.Collection:
     """Empty collection without the Monty extension (no items → required summary fields absent)."""
     summaries = Summaries(summaries={"roles": [role, "source"]})
@@ -170,7 +172,7 @@ def build_empty_static_source_collection(
         id=collection_id,
         title=title,
         description=description,
-        license="proprietary",
+        license=license,
         extent=_WORLD_EXTENT,
         stac_extensions=[],
         providers=[provider],
@@ -184,8 +186,11 @@ def _published_example_href(base: str, collection_id: str, name: str) -> str:
     return f"{base.rstrip('/')}/{collection_id}/{name}"
 
 
-def _json_link(rel: str, href: str) -> dict[str, str]:
-    return {"rel": rel, "href": href, "type": "application/json"}
+def _json_link(rel: str, href: str, *, media_type: str = "application/json", title: str | None = None) -> dict[str, str]:
+    link: dict[str, str] = {"rel": rel, "href": href, "type": media_type}
+    if title is not None:
+        link["title"] = title
+    return link
 
 
 def save_static_monty_collection(
@@ -195,6 +200,8 @@ def save_static_monty_collection(
     *,
     preserve_transformer_item_links: bool = True,
     public_href_base: str | None = None,
+    license_url: str | None = None,
+    license_title: str | None = None,
 ) -> None:
     """Write collection + items; each item JSON matches :meth:`pystac.Item.to_dict`."""
     out_dir = dest_dir.resolve()
@@ -235,9 +242,10 @@ def save_static_monty_collection(
         if public_href_base
         else f"./{collection.id}.json"
     )
-    collection_doc["links"] = [_json_link("item", f"./{item.id}.json") for item in ordered] + [
-        _json_link("self", collection_self)
-    ]
+    collection_links = [_json_link("item", f"./{item.id}.json") for item in ordered] + [_json_link("self", collection_self)]
+    if license_url:
+        collection_links.append(_json_link("license", license_url, media_type="text/html", title=license_title))
+    collection_doc["links"] = collection_links
     if not collection.stac_extensions and "stac_extensions" not in collection_doc:
         collection_doc["stac_extensions"] = []
     stac_io.save_json(str(collection_file), collection_doc)
@@ -257,6 +265,9 @@ class MontyCollectionSpec:
     preserve_transformer_item_links: bool = True
     omit_keywords_from_summaries: bool = False
     public_href_base: str | None = None
+    license: str = "proprietary"
+    license_url: str | None = None
+    license_title: str | None = None
 
 
 def export_monty_collection(spec: MontyCollectionSpec) -> None:
@@ -269,6 +280,7 @@ def export_monty_collection(spec: MontyCollectionSpec) -> None:
             role=spec.role,
             provider=spec.provider,
             omit_keywords_from_summaries=spec.omit_keywords_from_summaries,
+            license=spec.license,
         )
     else:
         collection = build_empty_static_source_collection(
@@ -277,6 +289,7 @@ def export_monty_collection(spec: MontyCollectionSpec) -> None:
             description=spec.description,
             role=spec.role,
             provider=spec.provider,
+            license=spec.license,
         )
     save_static_monty_collection(
         collection,
@@ -284,6 +297,8 @@ def export_monty_collection(spec: MontyCollectionSpec) -> None:
         spec.out_dir,
         preserve_transformer_item_links=spec.preserve_transformer_item_links,
         public_href_base=spec.public_href_base,
+        license_url=spec.license_url,
+        license_title=spec.license_title,
     )
 
 
@@ -312,6 +327,9 @@ def _collection_spec(
         preserve_transformer_item_links=config.preserve_transformer_item_links,
         omit_keywords_from_summaries=config.omit_keywords_from_summaries,
         public_href_base=config.public_href_base,
+        license=config.license,
+        license_url=config.license_url,
+        license_title=config.license_title,
     )
 
 
@@ -353,6 +371,9 @@ class BatchExportConfig:
     emit_empty_response_collection: bool = False
     omit_keywords_from_summaries: bool = False
     public_href_base: str | None = None
+    license: str = "proprietary"
+    license_url: str | None = None
+    license_title: str | None = None
 
 
 def log_batch_role_counts(events: int, hazards: int, impacts: int, responses: int = 0) -> None:

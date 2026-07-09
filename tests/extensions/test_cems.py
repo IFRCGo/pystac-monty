@@ -179,10 +179,25 @@ class CEMSTest(unittest.TestCase):
         for item in hazards + responses + impacts:
             self.assertEqual(MontyExtension.ext(item).correlation_id, corr)
 
+        for hazard in hazards:
+            event_links = [
+                link
+                for link in hazard.links
+                if link.rel in {"derived_from", "related"} and "cems-events/cems-event-EMSR999.json" in (link.get_href() or "")
+            ]
+            self.assertEqual(len(event_links), 1)
+            self.assertEqual(event_links[0].rel, "related")
+            self.assertEqual(event_links[0].extra_fields.get("roles"), ["event"])
+
         gra = next(item for item in responses if item.id.endswith("-gra"))
         self.assertEqual(gra.properties["monty:response_detail"]["type"], "eo-gra")
         self.assertEqual(gra.properties["monty:response_detail"]["status"], "published")
         self.assertTrue(gra.assets)
+        activation_links = [
+            link for link in gra.links if (link.get_href() or "") == "https://rapidmapping.emergency.copernicus.eu/EMSR999"
+        ]
+        self.assertEqual(len(activation_links), 1)
+        self.assertEqual(activation_links[0].rel, "derived_from")
 
         impact = impacts[0]
         self.assertEqual(impact.properties["monty:impact_detail"]["category"], "people")
