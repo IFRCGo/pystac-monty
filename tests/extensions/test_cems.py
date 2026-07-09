@@ -335,6 +335,7 @@ class CEMSTest(unittest.TestCase):
         landslide = next(item for item in hazards if item.id.endswith("-landslide"))
         detail = MontyExtension.ext(landslide).hazard_detail
         self.assertEqual(detail.severity_value, 3)
+        self.assertEqual(detail.severity_unit, "count")
         self.assertEqual(detail.severity_label, "Landslide")
 
     def test_impact_stats_emit_one_item_per_thematic_class(self) -> None:
@@ -471,7 +472,8 @@ class CEMSTest(unittest.TestCase):
             )
             linked_files = sorted(Path(href).name for href in item_hrefs)
             self.assertEqual(linked_files, item_files, collection)
-            self.assertEqual(len(item_files), 1, collection)
+            expected_count = 2 if collection == "cems-hazards" else 1
+            self.assertEqual(len(item_files), expected_count, collection)
 
     def test_curated_event_related_links_are_bounded(self) -> None:
         examples_dir = _cems_examples_dir()
@@ -486,9 +488,9 @@ class CEMSTest(unittest.TestCase):
         self.assertTrue(any("gdacs-events/" in href for href in related_hrefs))
         self.assertTrue(any("charter-events/" in href for href in related_hrefs))
         self.assertTrue(any("cems-hazard-EMSR847-aoi01-storm.json" in href for href in related_hrefs))
+        self.assertTrue(any("cems-hazard-EMSR847-aoi01-landslide.json" in href for href in related_hrefs))
         self.assertTrue(any("cems-response-EMSR847-aoi01-gra.json" in href for href in related_hrefs))
         self.assertTrue(any("cems-impact-EMSR847-aoi01-gra-population.json" in href for href in related_hrefs))
-        self.assertFalse(any("cems-hazard-EMSR847-aoi01-landslide.json" in href for href in related_hrefs))
 
     def test_curated_response_datetime_is_valid(self) -> None:
         examples_dir = _cems_examples_dir()

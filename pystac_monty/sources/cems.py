@@ -263,6 +263,7 @@ def _apply_delivery_datetime(item: Item, delivery_time: Any) -> None:
 CURATED_CEMS_EXAMPLE_IDS: tuple[str, ...] = (
     "cems-event-EMSR847",
     "cems-hazard-EMSR847-aoi01-storm",
+    "cems-hazard-EMSR847-aoi01-landslide",
     "cems-response-EMSR847-aoi01-gra",
     "cems-impact-EMSR847-aoi01-gra-population",
 )
@@ -680,7 +681,7 @@ def _hazard_detail_for_footprint(thematic_class: str, subclasses: dict[str, Any]
         return None
     return HazardDetail(
         severity_value=total,
-        severity_unit=unit,
+        severity_unit=unit or "count",
         severity_label=str(thematic_class),
         estimate_type=MontyEstimateType.PRIMARY,
     )
@@ -956,6 +957,7 @@ class CEMSTransformer(MontyDataTransformer[CEMSDataSource]):
             return []
         dt = _parse_datetime(event_time)
         activation_countries = _country_codes(activation.get("countries") or [], self.geocoder)
+        category_keys = set(_hazard_keys_for_activation(activation.get("category"), activation.get("subCategory")))
         items: list[Item] = []
 
         for aoi in activation.get("aois") or []:
@@ -980,7 +982,10 @@ class CEMSTransformer(MontyDataTransformer[CEMSDataSource]):
 
             for hazard_key in hazard_keys:
                 hazard_slug = _hazard_slug_for_key(hazard_key)
-                hazard_label = str(activation.get("subCategory") or activation.get("category") or hazard_slug).strip().lower()
+                if hazard_key in category_keys:
+                    hazard_label = str(activation.get("subCategory") or activation.get("category") or hazard_slug).strip().lower()
+                else:
+                    hazard_label = hazard_slug
                 hazard_codes = self._canonical_codes_for_keys([hazard_key])
                 item_id = f"cems-hazard-{sanitize_stac_item_id(code)}-{aoi_slug}-{hazard_slug}"
 
@@ -1028,6 +1033,7 @@ class CEMSTransformer(MontyDataTransformer[CEMSDataSource]):
             hazard_codes = self._canonical_codes_for_keys(
                 hazard_keys[:1] or _hazard_keys_for_activation(activation.get("category"), activation.get("subCategory"))
             )
+            latest_del = _latest_del_product(aoi.get("products") or [])
 
             for product in sorted(
                 aoi.get("products") or [],
@@ -1093,7 +1099,7 @@ class CEMSTransformer(MontyDataTransformer[CEMSDataSource]):
                                 extra_fields={"roles": ["hazard"]},
                             )
                         )
-                        if str(product.get("type", "")).upper() == "DEL":
+                        if str(product.get("type", "")).upper() == "DEL" and product is latest_del and product.get("extent"):
                             hazard_item.add_link(
                                 Link(
                                     rel="related",
