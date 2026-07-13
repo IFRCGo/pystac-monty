@@ -1,0 +1,96 @@
+"""Builder helpers for pairing Monty Impact STAC items with a Response item."""
+
+from __future__ import annotations
+
+from typing import Any, Mapping
+
+from pystac import Item, Link
+
+from pystac_monty.extension import (
+    ImpactDetail,
+    MontyEstimateType,
+    MontyExtension,
+    MontyImpactExposureCategory,
+    MontyImpactType,
+    MontyRoles,
+)
+
+
+def build_impact_from_response(
+    response_item: Item,
+    thematic: MontyImpactExposureCategory,
+    type: MontyImpactType,
+    value: float,
+    unit: str | None = None,
+    estimate_type: MontyEstimateType | None = None,
+    properties: dict[str, Any] | None = None,
+) -> Item:
+    """Builds a Monty Impact item carrying a single thematic figure, paired to
+    ``response_item``."""
+    monty_response = MontyExtension.ext(response_item)
+
+    item_properties = dict(properties or {})
+    roles = list(item_properties.get("roles", []))
+    if MontyRoles.IMPACT not in roles:
+        roles.append(MontyRoles.IMPACT)
+    item_properties["roles"] = roles
+
+    item = Item(
+        id=f"{response_item.id}-{thematic}-{type}",
+        geometry=response_item.geometry,
+        bbox=response_item.bbox,
+        datetime=response_item.datetime,
+        properties=item_properties,
+    )
+
+    MontyExtension.add_to(item)
+    monty = MontyExtension.ext(item)
+    monty.correlation_id = monty_response.correlation_id
+    monty.country_codes = monty_response.country_codes
+    if monty_response.hazard_codes:
+        monty.hazard_codes = monty_response.hazard_codes
+    monty.impact_detail = ImpactDetail(
+        category=thematic,
+        type=type,
+        value=value,
+        unit=unit,
+        estimate_type=estimate_type,
+    )
+
+    link_derived_from_response(item, response_item)
+
+    return item
+
+
+def link_derived_from_response(item: Item, response_item: Item) -> None:
+    """Adds a ``rel: derived_from`` link (``roles: ["response"]``) from an Impact item to
+    the Response item it was derived from."""
+    item.add_link(
+        Link(
+            rel="derived_from",
+            target=response_item,
+            media_type="application/geo+json",
+            extra_fields={"roles": [MontyRoles.RESPONSE]},
+        )
+    )
+
+
+def build_impacts_from_response(
+    response_item: Item,
+    thematics: Mapping[MontyImpactExposureCategory, float],
+    type: MontyImpactType,
+    unit: str | None = None,
+    estimate_type: MontyEstimateType | None = None,
+) -> list[Item]:
+    """Build impact item per thematic category."""
+    return [
+        build_impact_from_response(
+            response_item=response_item,
+            thematic=thematic,
+            type=type,
+            value=value,
+            unit=unit,
+            estimate_type=estimate_type,
+        )
+        for thematic, value in thematics.items()
+    ]
