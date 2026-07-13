@@ -664,6 +664,21 @@ class CharterTransformer(MontyDataTransformer[CharterDataSource]):
 
     @staticmethod
     def _dataset_matches_vap(vap: dict[str, Any], dataset_item: Item) -> bool:
+        """Best-effort guess at whether a calibrated dataset was an input to a VAP.
+
+        The Charter API exposes no join key between VAPs and datasets, so this
+        matches sensor-name tokens found in the VAP title/copyright text against
+        substrings of the dataset source id. That breaks down at scale (a real
+        activation can have ~159 datasets and 12 VAPs): two products from the
+        same operator are indistinguishable, and a VHR VAP built from multiple
+        acquisitions only matches the acquisitions whose sensor is named in the
+        free text.
+
+        TODO(charter-etl): replace this text heuristic with an authoritative
+        join key once the ETL/upstream API provides one (e.g. per-VAP input
+        dataset ids). Until then, treat the resulting ``related``/``response``
+        links as heuristic, not authoritative.
+        """
         props = vap.get("properties", {})
         text = f"{props.get('title', '')} {props.get('copyright', '')} {props.get('additional_information', '')}".lower()
         dataset_id = dataset_item.properties.get("monty:response_detail", {}).get("source_id", dataset_item.id).lower()
@@ -893,6 +908,7 @@ class CharterTransformer(MontyDataTransformer[CharterDataSource]):
                     set(hazard_keywords + list(event_monty.country_codes or []) + ["ValueAddedProduct"])
                 )
 
+            # Heuristic sibling edges; see the _dataset_matches_vap TODO before relying on them.
             related_datasets = tuple(
                 dataset_item for dataset_item in calibrated_dataset_items if self._dataset_matches_vap(vap, dataset_item)
             )
@@ -962,50 +978,56 @@ class CharterTransformer(MontyDataTransformer[CharterDataSource]):
             )
 
     def get_stac_items(self) -> Generator[Item, None, None]:
-        """Generate STAC items from Charter activation data."""
+        """Generate STAC items from Charter activation data.
+
+        Item construction is all-or-nothing per activation: the full Event /
+        Hazard / Response graph is built before anything is yielded, so a
+        transform failure never emits a partial activation (e.g. an Event
+        without its Hazards or Responses). A failed activation always means
+        zero items plus a failed row in ``transform_summary``. The blanket
+        ``except Exception`` matches the ETL-resilience pattern used by the
+        other source transformers.
+        """
         self.transform_summary.mark_as_started()
         self.transform_summary.increment_rows()
 
+        items: list[Item] = []
         try:
             event_item = self.make_event_item(self.data_source.activation_data)
-            if not event_item:
+            if event_item:
+                monty = MontyExtension.ext(event_item)
+                hazard_items = self.make_hazard_items(
+                    self.data_source.activation_data, self.data_source.areas_data, monty.correlation_id
+                )
+                calibrated_dataset_response_items = self.make_calibrated_dataset_response_items(
+                    self.data_source.activation_data,
+                    self.data_source.calibrated_datasets_data,
+                    event_item,
+                    hazard_items,
+                )
+                response_items = self.make_response_items(
+                    self.data_source.activation_data,
+                    self.data_source.vaps_data,
+                    calibrated_dataset_response_items,
+                    event_item,
+                    hazard_items,
+                )
+                response_items.extend(calibrated_dataset_response_items)
+
+                self.add_charter_related_links(event_item, hazard_items, response_items)
+                self.add_derived_from_links(event_item, hazard_items)
+
+                items = [event_item, *hazard_items, *response_items]
+            else:
                 self.transform_summary.increment_failed_rows()
-                self.transform_summary.mark_as_complete()
-                return
-
-            monty = MontyExtension.ext(event_item)
-            hazard_items = self.make_hazard_items(
-                self.data_source.activation_data, self.data_source.areas_data, monty.correlation_id
-            )
-            calibrated_dataset_response_items = self.make_calibrated_dataset_response_items(
-                self.data_source.activation_data,
-                self.data_source.calibrated_datasets_data,
-                event_item,
-                hazard_items,
-            )
-            response_items = self.make_response_items(
-                self.data_source.activation_data,
-                self.data_source.vaps_data,
-                calibrated_dataset_response_items,
-                event_item,
-                hazard_items,
-            )
-            response_items.extend(calibrated_dataset_response_items)
-
-            self.add_charter_related_links(event_item, hazard_items, response_items)
-            self.add_derived_from_links(event_item, hazard_items)
-
-            yield event_item
-            for hazard_item in hazard_items:
-                yield hazard_item
-            for response_item in response_items:
-                yield response_item
-
         except Exception:
+            items = []
             self.transform_summary.increment_failed_rows()
-            logger.warning("Failed to process Charter activation", exc_info=True)
+            activation_id = self.data_source.activation_data.get("properties", {}).get("disaster:activation_id")
+            logger.warning("Failed to process Charter activation %s", activation_id, exc_info=True)
 
         self.transform_summary.mark_as_complete()
+        yield from items
 
     def make_items(self) -> list[Item]:
         """Deprecated: use get_stac_items()"""
