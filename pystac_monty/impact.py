@@ -24,9 +24,11 @@ def build_impact_from_response(
     unit: str | None = None,
     estimate_type: MontyEstimateType | None = None,
     properties: dict[str, Any] | None = None,
+    id: str | None = None,
 ) -> Item:
     """Builds a Monty Impact item carrying a single thematic figure, paired to
-    ``response_item``."""
+    ``response_item``.
+    """
     monty_response = MontyExtension.ext(response_item)
 
     item_properties = dict(properties or {})
@@ -35,8 +37,18 @@ def build_impact_from_response(
         roles.append(MontyRoles.IMPACT)
     item_properties["roles"] = roles
 
+    if id is None:
+        response_detail = monty_response.response_detail
+        source_id = response_detail.properties.get("source_id") if response_detail else None
+        if not source_id:
+            try:
+                base_id = "-".join(response_item.id.split("-")[1:-1])
+            except (IndexError, ValueError):
+                base_id = response_item.id
+        id = f"impact-{source_id or base_id}-{thematic}-{type}"
+
     item = Item(
-        id=f"{response_item.id}-{thematic}-{type}",
+        id=id,
         geometry=response_item.geometry,
         bbox=response_item.bbox,
         datetime=response_item.datetime,
@@ -46,9 +58,9 @@ def build_impact_from_response(
     MontyExtension.add_to(item)
     monty = MontyExtension.ext(item)
     monty.correlation_id = monty_response.correlation_id
-    monty.country_codes = monty_response.country_codes
+    monty.country_codes = list(monty_response.country_codes)
     if monty_response.hazard_codes:
-        monty.hazard_codes = monty_response.hazard_codes
+        monty.hazard_codes = list(monty_response.hazard_codes)
     monty.impact_detail = ImpactDetail(
         category=thematic,
         type=type,

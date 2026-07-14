@@ -6,6 +6,7 @@ from datetime import datetime, timezone
 from pathlib import Path
 from typing import Any
 
+import pystac
 import pytest
 from pystac.validation import JsonSchemaSTACValidator
 
@@ -23,6 +24,10 @@ from tests.utils.test_cases import ARBITRARY_BBOX, ARBITRARY_GEOM
 CURRENT_SCHEMA_URI = SCHEMA_URI
 SUBMODULE_ROOT = Path(__file__).resolve().parents[2] / "monty-stac-extension"
 SUBMODULE_SCHEMA_PATH = SUBMODULE_ROOT / "json-schema" / "schema.json"
+
+PAIRING_FIXTURE_ROOT = SUBMODULE_ROOT / "examples" / "_response-impact-pairing"
+RESPONSE_FIXTURE_PATH = PAIRING_FIXTURE_ROOT / "response-EMSR-DEMO-001-GRA.json"
+IMPACT_FIXTURE_PATH = PAIRING_FIXTURE_ROOT / "impact-EMSR-DEMO-001-buildings-destroyed.json"
 
 
 def _load_submodule_schema() -> dict[str, Any]:
@@ -108,12 +113,28 @@ class BuildImpactFromResponseTest(unittest.TestCase):
 
         self.assertEqual([link.rel for link in impact_item.links if link.rel != "self"], ["derived_from"])
 
-    def test_id_defaults_from_response_category_and_type(self) -> None:
-        response_item = make_response_item(id="charter-response-1000-1144-1")
+    def test_id_defaults_from_response_source_id_category_and_type(self) -> None:
+        """Matches the item naming as in examples/_response-impact-pairing examples."""
+        response_item = make_response_item(id="response-EMSR-DEMO-001-GRA", source_id="EMSR-DEMO-001")
+        impact_item = build_impact_from_response(
+            response_item, MontyImpactExposureCategory.BUILDINGS, MontyImpactType.DESTROYED, 87
+        )
+        self.assertEqual(impact_item.id, "impact-EMSR-DEMO-001-buildings-destroyed")
+
+    def test_id_falls_back_to_response_id_without_source_id(self) -> None:
+        response_item = make_response_item(id="response-charter-1000-1144-GRA", source_id=None)
         impact_item = build_impact_from_response(
             response_item, MontyImpactExposureCategory.BUILDINGS, MontyImpactType.DAMAGED, 42
         )
-        self.assertEqual(impact_item.id, "charter-response-1000-1144-1-buildings-damaged")
+        self.assertEqual(impact_item.id, "impact-charter-1000-1144-buildings-damaged")
+
+    def test_id_override(self) -> None:
+        """Use the id if it is available."""
+        response_item = make_response_item()
+        impact_item = build_impact_from_response(
+            response_item, MontyImpactExposureCategory.BUILDINGS, MontyImpactType.DAMAGED, 42, id="custom-impact-id"
+        )
+        self.assertEqual(impact_item.id, "custom-impact-id")
 
 
 class BuildImpactsFromResponseTest(unittest.TestCase):
@@ -168,6 +189,43 @@ class ImpactFromResponseSchemaValidationTest(unittest.TestCase):
         for impact_item in impact_items:
             impact_item.set_self_href(f"./{impact_item.id}.json")
             impact_item.validate(validator=self.validator)
+
+
+class PairingFixtureRoundTripTest(unittest.TestCase):
+    """Round-trips the synthetic Response+Impact fixture under
+    examples/_response-impact-pairing building an Impact item
+    from the Response item."""
+
+    def setUp(self) -> None:
+        self.validator = CustomValidator()
+
+    def test_builds_matching_impact_fixture(self) -> None:
+        with RESPONSE_FIXTURE_PATH.open(encoding="utf-8") as f:
+            response_source = json.load(f)
+        with IMPACT_FIXTURE_PATH.open(encoding="utf-8") as f:
+            impact_source = json.load(f)
+
+        response_item = pystac.Item.from_dict(response_source)
+        response_item.set_self_href(str(RESPONSE_FIXTURE_PATH))
+
+        expected_detail = impact_source["properties"]["monty:impact_detail"]
+        impact_item = build_impact_from_response(
+            response_item,
+            MontyImpactExposureCategory(expected_detail["category"]),
+            MontyImpactType(expected_detail["type"]),
+            expected_detail["value"],
+            unit=expected_detail["unit"],
+            estimate_type=MontyEstimateType(expected_detail["estimate_type"]),
+        )
+
+        self.assertEqual(impact_item.id, impact_source["id"])
+        self.assertEqual(impact_item.properties["monty:impact_detail"], expected_detail)
+        self.assertEqual(impact_item.properties["monty:corr_id"], impact_source["properties"]["monty:corr_id"])
+        self.assertEqual(impact_item.properties["monty:country_codes"], impact_source["properties"]["monty:country_codes"])
+        self.assertEqual(impact_item.properties["monty:hazard_codes"], impact_source["properties"]["monty:hazard_codes"])
+
+        impact_item.set_self_href(f"./{impact_item.id}.json")
+        impact_item.validate(validator=self.validator)
 
 
 if __name__ == "__main__":
