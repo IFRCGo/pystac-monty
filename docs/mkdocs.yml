@@ -22,6 +22,7 @@ nav:
     - Sources:
       - Overview: api/sources.md
       - Common: api/sources/common.md
+      - Charter: api/sources/charter.md
       - GLIDE: api/sources/glide.md
       - GDACS: api/sources/gdacs.md
       - EMDAT: api/sources/emdat.md
