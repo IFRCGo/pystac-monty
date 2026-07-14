@@ -69,7 +69,10 @@ def build_impact_from_response(
         estimate_type=estimate_type,
     )
 
+    item.set_self_href(f"./{item.id}.json")
+
     link_derived_from_response(item, response_item)
+    link_related_for_response(response_item, item)
 
     return item
 
@@ -83,6 +86,18 @@ def link_derived_from_response(item: Item, response_item: Item) -> None:
             target=response_item,
             media_type="application/geo+json",
             extra_fields={"roles": [MontyRoles.RESPONSE]},
+        )
+    )
+
+
+def link_related_for_response(response_item: Item, item: Item) -> None:
+    """Adds a ``rel: related`` link (``roles: ["impact"]``) for the response item"""
+    response_item.add_link(
+        Link(
+            rel="related",
+            target=item,
+            media_type="application/geo+json",
+            extra_fields={"roles": [MontyRoles.IMPACT]},
         )
     )
 
