@@ -2,6 +2,7 @@
 
 from __future__ import annotations
 
+import functools
 import json
 import re
 import tempfile
@@ -105,6 +106,11 @@ MINIMAL_ACTIVATION = {
 }
 
 
+@functools.lru_cache(maxsize=1)
+def _shared_geocoder() -> MontyGeoCoder:
+    return default_cems_export_geocoder()
+
+
 def _memory_transformer(data: dict | None = None) -> CEMSTransformer:
     payload = {"results": [data or MINIMAL_ACTIVATION]}
     source = CEMSDataSource(
@@ -113,7 +119,7 @@ def _memory_transformer(data: dict | None = None) -> CEMSTransformer:
             input_data=Memory(content=payload, data_type=DataType.MEMORY),
         )
     )
-    return CEMSTransformer(source, None)
+    return CEMSTransformer(source, _shared_geocoder())
 
 
 def _partition(items):
@@ -167,7 +173,7 @@ class CEMSTest(unittest.TestCase):
         self.assertIsNotNone(event)
         self.assertEqual(event.collection_id, "cems-events")
         self.assertEqual(len(hazards), 2)
-        self.assertGreaterEqual(len(responses), 3)
+        self.assertEqual(len(responses), 3)  # DEL + GRA + situational report
         self.assertEqual(len(impacts), 1)
 
         monty_event = MontyExtension.ext(event)
@@ -240,8 +246,8 @@ class CEMSTest(unittest.TestCase):
         self.assertEqual(MontyExtension.ext(gra).correlation_id, event_corr)
         self.assertEqual(MontyExtension.ext(impact).correlation_id, event_corr)
 
-    def test_country_name_resolution_uses_pycountry(self) -> None:
-        geocoder = NoopMontyGeocoder()
+    def test_country_name_resolution_uses_geocoder(self) -> None:
+        geocoder = _shared_geocoder()
         self.assertEqual(_iso3_from_country_name("Jamaica", geocoder), "JAM")
         self.assertEqual(_iso3_from_country_name("Italy", geocoder), "ITA")
         self.assertEqual(_iso3_from_country_name("United States of America", geocoder), "USA")
@@ -249,6 +255,12 @@ class CEMSTest(unittest.TestCase):
             _country_codes([{"name": "Haiti"}, {"name": "Cuba"}, {"name": "Jamaica"}], geocoder),
             ["HTI", "CUB", "JAM"],
         )
+
+    def test_country_name_aliases_work_without_geocoder(self) -> None:
+        geocoder = NoopMontyGeocoder()
+        self.assertEqual(_iso3_from_country_name("Viet Nam", geocoder), "VNM")
+        self.assertEqual(_iso3_from_country_name("United States of America", geocoder), "USA")
+        self.assertIsNone(_iso3_from_country_name("Atlantis", geocoder))
 
     def test_country_name_resolution_treats_geocoder_unk_as_unresolved(self) -> None:
         class UnkGeocoder(MontyGeoCoder):
@@ -274,8 +286,14 @@ class CEMSTest(unittest.TestCase):
         if not fixture.is_file():
             self.skipTest("monty-stac-extension submodule not initialized")
 
-        geocoder = default_cems_export_geocoder()
-        items = list(iter_cems_stac_items(fixture, geocoder=geocoder))
+        items = list(iter_cems_stac_items(fixture, geocoder=_shared_geocoder()))
+
+        _, hazards, responses, impacts = _partition(items)
+        self.assertEqual(
+            (len(hazards), len(responses), len(impacts)),
+            (57, 68, 153),  # 39 AOIs; 67 products + 1 situational report
+        )
+
         event = next(item for item in items if item.id == "cems-event-EMSR847")
         hazard = next(item for item in items if item.id == "cems-hazard-EMSR847-aoi01-storm")
         impact = next(item for item in items if item.id == "cems-impact-EMSR847-aoi01-gra-population")
@@ -338,6 +356,77 @@ class CEMSTest(unittest.TestCase):
         self.assertEqual(detail.severity_unit, "count")
         self.assertEqual(detail.severity_label, "Landslide")
 
+    def test_footprint_hazard_uses_aoi_extent_when_del_exists(self) -> None:
+        data = deepcopy(MINIMAL_ACTIVATION)
+        data["category"] = "Storm"
+        data["subCategory"] = "Tropical cyclone, hurricane, typhoon"
+        data["aois"][0]["products"][1]["stats"] = {
+            "Landslide": {"None": {"affected": 3, "unit": ""}},
+            "Estimated population": {"None": {"total": 1200}},
+        }
+
+        items = list(_memory_transformer(data).get_stac_items())
+        _, hazards, _, _ = _partition(items)
+        storm = next(item for item in hazards if item.id.endswith("-storm"))
+        landslide = next(item for item in hazards if item.id.endswith("-landslide"))
+        # Primary hazard uses the delivered DEL delineation; the footprint-only
+        # secondary hazard falls back to the AOI extent (Decision #4).
+        self.assertEqual(storm.bbox, [12.2, 41.7, 12.8, 42.3])
+        self.assertEqual(landslide.bbox, [12.1, 41.6, 12.9, 42.4])
+
+    def test_activation_level_stats_fallback_emits_event_level_impacts(self) -> None:
+        data = deepcopy(MINIMAL_ACTIVATION)
+        data["aois"][0]["products"][1]["stats"] = None
+        data["stats"] = {"Population [No.]": 13030, "Roads [km]": 206.4, "max_extent": 8552.7}
+
+        items = list(_memory_transformer(data).get_stac_items())
+        _, _, _, impacts = _partition(items)
+        self.assertEqual(
+            sorted(item.id for item in impacts),
+            ["cems-impact-EMSR999-population", "cems-impact-EMSR999-roads"],
+        )
+        population = next(item for item in impacts if item.id.endswith("-population"))
+        roads = next(item for item in impacts if item.id.endswith("-roads"))
+        self.assertEqual(population.properties["monty:impact_detail"]["category"], "people")
+        self.assertEqual(population.properties["monty:impact_detail"]["value"], 13030.0)
+        self.assertEqual(roads.properties["monty:impact_detail"]["category"], "roads")
+        self.assertEqual(roads.properties["monty:impact_detail"]["type"], "disrupted")
+        self.assertEqual(roads.properties["monty:impact_detail"]["unit"], "km")
+
+    def test_activation_level_stats_ignored_when_gra_stats_exist(self) -> None:
+        data = deepcopy(MINIMAL_ACTIVATION)
+        data["stats"] = {"Population [No.]": 13030}
+
+        items = list(_memory_transformer(data).get_stac_items())
+        _, _, _, impacts = _partition(items)
+        self.assertEqual([item.id for item in impacts], ["cems-impact-EMSR999-aoi01-gra-population"])
+
+    def test_event_always_has_activation_page_via_link(self) -> None:
+        data = deepcopy(MINIMAL_ACTIVATION)
+        del data["reportLink"]
+
+        items = list(_memory_transformer(data).get_stac_items())
+        event, _, _, _ = _partition(items)
+        via_hrefs = [link.get_href() for link in event.links if link.rel == "via"]
+        self.assertEqual(via_hrefs, ["https://rapidmapping.emergency.copernicus.eu/EMSR999"])
+
+    def test_blocked_road_and_temporary_camp_impact_mapping(self) -> None:
+        data = deepcopy(MINIMAL_ACTIVATION)
+        data["aois"][0]["products"][1]["stats"]["Blocked road / interruption"] = {
+            "None": {"unit": "", "total": "NA", "affected": 3}
+        }
+        data["aois"][0]["products"][1]["stats"]["Temporary camp"] = {"None": {"affected": 2}}
+
+        items = list(_memory_transformer(data).get_stac_items())
+        _, _, _, impacts = _partition(items)
+        roads = next(item for item in impacts if item.id.endswith("-gra-roads"))
+        camps = next(item for item in impacts if item.id.endswith("-gra-camps"))
+        self.assertEqual(roads.properties["monty:impact_detail"]["category"], "roads")
+        self.assertEqual(roads.properties["monty:impact_detail"]["type"], "disrupted")
+        self.assertEqual(roads.properties["monty:impact_detail"]["value"], 3.0)
+        self.assertEqual(camps.properties["monty:impact_detail"]["type"], "shelter_temporary")
+        self.assertEqual(camps.properties["monty:impact_detail"]["value"], 2.0)
+
     def test_impact_stats_emit_one_item_per_thematic_class(self) -> None:
         data = deepcopy(MINIMAL_ACTIVATION)
         data["aois"][0]["products"][1]["stats"]["Facilities"] = {
@@ -390,12 +479,12 @@ class CEMSTest(unittest.TestCase):
         if not fixture.is_file():
             self.skipTest("monty-stac-extension submodule not initialized")
 
-        items = list(iter_cems_stac_items(fixture))
+        items = list(iter_cems_stac_items(fixture, geocoder=_shared_geocoder()))
         event, hazards, responses, impacts = _partition(items)
         self.assertIsNotNone(event)
-        self.assertGreater(len(hazards), 0)
-        self.assertGreater(len(responses), 0)
-        self.assertGreater(len(impacts), 0)
+        self.assertEqual(len(hazards), 8)
+        self.assertEqual(len(responses), 16)
+        self.assertEqual(len(impacts), 7)
 
         monitoring_del = [item for item in responses if item.id.endswith("-del-m2")]
         self.assertTrue(monitoring_del)
@@ -405,12 +494,13 @@ class CEMSTest(unittest.TestCase):
         if not fixture.is_file():
             self.skipTest("monty-stac-extension submodule not initialized")
 
-        items = list(iter_cems_stac_items(fixture))
+        items = list(iter_cems_stac_items(fixture, geocoder=_shared_geocoder()))
         event, hazards, responses, impacts = _partition(items)
         self.assertIsNotNone(event)
         self.assertEqual(event.id, "cems-event-EMSR842")
-        self.assertGreater(len(responses), 0)
-        self.assertGreater(len(impacts), 0)
+        self.assertEqual(len(hazards), 2)
+        self.assertEqual(len(responses), 3)
+        self.assertEqual(len(impacts), 6)
         self.assertIn("MH1301", MontyExtension.ext(event).hazard_codes or [])
 
     @pytest.mark.vcr()

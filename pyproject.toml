@@ -36,7 +36,6 @@ dependencies = [
     "ijson>=3.4.0",
     "pyarrow>=22.0.0",
     "shapely>=2.0.0",
-    "pycountry>=24.6.0",
 ]
 dynamic = ["version"]
 

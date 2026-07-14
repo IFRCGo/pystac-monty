@@ -16,7 +16,6 @@ from dataclasses import replace
 from pathlib import Path
 from typing import Any, Generator, Iterable, Sequence
 
-import pycountry
 import requests  # type: ignore[import-untyped]
 from pystac import Asset, Collection, Item, Link
 from pystac.provider import Provider, ProviderRole
@@ -355,6 +354,7 @@ def _normalize_iso3(value: str | None) -> str | None:
 
 
 def _iso3_from_country_name(name: str, geocoder: MontyGeoCoder) -> str | None:
+    """Resolve a CEMS country name to ISO3 via the alias map, then the geocoder."""
     key = _normalize_key(name)
     if not key:
         return None
@@ -364,22 +364,9 @@ def _iso3_from_country_name(name: str, geocoder: MontyGeoCoder) -> str | None:
         return alias
 
     try:
-        return pycountry.countries.lookup(name).alpha_3
-    except LookupError:
-        pass
-
-    for country in pycountry.countries:
-        candidate_names = {country.name}
-        official_name = getattr(country, "official_name", None)
-        common_name = getattr(country, "common_name", None)
-        if official_name:
-            candidate_names.add(official_name)
-        if common_name:
-            candidate_names.add(common_name)
-        if any(_normalize_key(candidate) == key for candidate in candidate_names):
-            return country.alpha_3
-
-    geom = geocoder.get_geometry_by_country_name(name, simplified=True)
+        geom = geocoder.get_geometry_by_country_name(name, simplified=True)
+    except NotImplementedError:
+        return None
     if geom and isinstance(geom.get("iso3"), str):
         return _normalize_iso3(geom["iso3"])
 
@@ -586,7 +573,7 @@ def _impact_detail_from_value(thematic_class: str, value: float, unit: str | Non
             unit or "count",
             MontyEstimateType.PRIMARY,
         )
-    if key == "transportation":
+    if key in {"transportation", "roads"}:
         return ImpactDetail(
             MontyImpactExposureCategory.ROADS,
             MontyImpactType.DISRUPTED,
@@ -610,6 +597,22 @@ def _impact_detail_from_value(thematic_class: str, value: float, unit: str | Non
             unit or "count",
             MontyEstimateType.PRIMARY,
         )
+    if key.startswith("blocked road"):
+        return ImpactDetail(
+            MontyImpactExposureCategory.ROADS,
+            MontyImpactType.DISRUPTED,
+            value,
+            unit or "count",
+            MontyEstimateType.PRIMARY,
+        )
+    if key == "temporary camp":
+        return ImpactDetail(
+            MontyImpactExposureCategory.TOTAL_AFFECTED,
+            MontyImpactType.TEMPORARY_ACCOMMODATED,
+            value,
+            unit or "count",
+            MontyEstimateType.PRIMARY,
+        )
     return ImpactDetail(
         MontyImpactExposureCategory.TOTAL_AFFECTED,
         MontyImpactType.TOTAL_AFFECTED,
@@ -617,6 +620,46 @@ def _impact_detail_from_value(thematic_class: str, value: float, unit: str | Non
         unit,
         MontyEstimateType.PRIMARY,
     )
+
+
+_ACTIVATION_STAT_UNIT_PATTERN = re.compile(r"\s*\[([^\]]+)\]\s*$")
+
+
+def _parse_activation_stat_key(key: str) -> tuple[str, str | None]:
+    """Split an aggregated stat key like ``Built-up [No.]`` into label and unit."""
+    match = _ACTIVATION_STAT_UNIT_PATTERN.search(key)
+    if not match:
+        return key.strip(), None
+    unit_raw = match.group(1).strip().lower()
+    unit = "count" if unit_raw in {"no.", "no"} else unit_raw
+    return key[: match.start()].strip(), unit
+
+
+def _activation_level_impact_entries(activation: dict[str, Any]) -> list[tuple[str, str, float, str | None]]:
+    """Exposure entries ``(slug, label, value, unit)`` from flat activation-level ``stats``."""
+    stats = activation.get("stats")
+    if not isinstance(stats, dict):
+        return []
+    entries: list[tuple[str, str, float, str | None]] = []
+    for raw_key, raw_value in stats.items():
+        if not isinstance(raw_key, str) or raw_key == "max_extent":
+            continue
+        label, unit = _parse_activation_stat_key(raw_key)
+        key = _normalize_key(label)
+        if not key or key in HAZARD_FOOTPRINT_CLASSES or key in AGGREGATE_STAT_CLASSES:
+            continue
+        if isinstance(raw_value, (int, float)):
+            value = float(raw_value)
+        elif isinstance(raw_value, str):
+            try:
+                value = float(raw_value)
+            except ValueError:
+                continue
+        else:
+            continue
+        slug = IMPACT_THEMATIC_SLUG.get(key, sanitize_stac_item_id(key))
+        entries.append((slug, label, value, unit))
+    return entries
 
 
 def _impact_detail_for_thematic(thematic_class: str, stat_entry: dict[str, Any]) -> ImpactDetail | None:
@@ -884,6 +927,14 @@ class CEMSTransformer(MontyDataTransformer[CEMSDataSource]):
         monty.hazard_codes = self._canonical_codes_for_keys(hazard_keys)
         item.properties["keywords"] = self._activation_keywords(activation, primary_codes)
 
+        item.add_link(
+            Link(
+                rel="via",
+                target=f"{CEMS_PORTAL_BASE}/{code}",
+                media_type="text/html",
+                title=f"CEMS {code} activation",
+            )
+        )
         if report_link := activation.get("reportLink"):
             item.add_link(
                 Link(
@@ -968,19 +1019,22 @@ class CEMSTransformer(MontyDataTransformer[CEMSDataSource]):
                 continue
             hazard_details = _hazard_details_for_aoi(activation, aoi, hazard_keys[0])
 
+            aoi_geom = _wkt_to_geometry(aoi.get("extent"))
             del_product = _latest_del_product(aoi.get("products") or [])
-            if del_product and del_product.get("extent"):
-                hazard_geom = _wkt_to_geometry(del_product.get("extent"))
-            else:
-                hazard_geom = _wkt_to_geometry(aoi.get("extent"))
-            if not hazard_geom:
+            del_geom = _wkt_to_geometry(del_product.get("extent")) if del_product and del_product.get("extent") else None
+            primary_geom = del_geom or aoi_geom
+            if not primary_geom:
                 continue
 
-            bbox = _bbox_from_geometry(hazard_geom)
             aoi_name = aoi.get("name") or f"AOI {aoi_number}"
-            country_codes = _primary_country_code(hazard_geom, activation_countries, self.geocoder)
+            country_codes = _primary_country_code(primary_geom, activation_countries, self.geocoder)
 
             for hazard_key in hazard_keys:
+                # Decision #4: a secondary hazard surfaced only from a GRA footprint
+                # class has no dedicated polygon — use the AOI extent, not the primary
+                # hazard's DEL delineation.
+                hazard_geom = primary_geom if hazard_key in category_keys else (aoi_geom or primary_geom)
+                bbox = _bbox_from_geometry(hazard_geom)
                 hazard_slug = _hazard_slug_for_key(hazard_key)
                 if hazard_key in category_keys:
                     hazard_label = str(activation.get("subCategory") or activation.get("category") or hazard_slug).strip().lower()
@@ -1116,6 +1170,10 @@ class CEMSTransformer(MontyDataTransformer[CEMSDataSource]):
                         title=f"CEMS {code} activation",
                     )
                 )
+                # Analysis Decision #6 (source imagery -> linked acquisition items built
+                # from product images[], referenced via derived_from) is deferred:
+                # acquisition items have no collection in the current export layout.
+                # Tracked in https://github.com/IFRCGo/pystac-monty/issues/166.
 
                 monitoring_key = (aoi_number, str(product.get("type", "")).upper())
                 monitoring_number = int(product.get("monitoringNumber") or 0)
@@ -1255,6 +1313,66 @@ class CEMSTransformer(MontyDataTransformer[CEMSDataSource]):
                     item.set_collection(self.get_impact_collection())
                     items.append(item)
 
+        if not items:
+            # Per the analysis (§ GRA statistics → Impact): if only aggregated
+            # activation-level stats exist, emit Impacts at Event level.
+            items.extend(self._activation_level_impact_items(activation, event_item, activation_countries))
+
+        return items
+
+    def _activation_level_impact_items(
+        self,
+        activation: dict[str, Any],
+        event_item: Item,
+        activation_countries: list[str],
+    ) -> list[Item]:
+        code = str(activation.get("code") or "x")
+        entries = _activation_level_impact_entries(activation)
+        if not entries:
+            return []
+
+        event_monty = MontyExtension.ext(event_item)
+        hazard_codes = self._canonical_codes_for_keys(
+            _hazard_keys_for_activation(activation.get("category"), activation.get("subCategory"))[:1]
+        )
+        geom = _wkt_to_geometry(activation.get("extent")) or event_item.geometry
+        bbox = _bbox_from_geometry(geom) or event_item.bbox
+        country_codes = _primary_country_code(geom, activation_countries, self.geocoder)
+
+        items: list[Item] = []
+        used_ids: set[str] = set()
+        for slug, label, value, unit in entries:
+            item_id = f"cems-impact-{sanitize_stac_item_id(code)}-{slug}"
+            if item_id in used_ids and unit:
+                item_id = f"{item_id}-{sanitize_stac_item_id(unit)}"
+            if item_id in used_ids:
+                continue
+            used_ids.add(item_id)
+
+            item = Item(
+                id=item_id,
+                geometry=geom,
+                bbox=bbox,
+                datetime=event_item.datetime,
+                properties={"title": f"{label} — {code} activation total"},
+            )
+            item.properties["roles"] = ["impact", "source"]
+            MontyExtension.add_to(item)
+            monty = MontyExtension.ext(item)
+            monty.country_codes = country_codes
+            monty.hazard_codes = hazard_codes
+            monty.correlation_id = event_monty.correlation_id
+            monty.impact_detail = _impact_detail_from_value(label, value, unit)
+            item.add_link(
+                Link(
+                    rel="related",
+                    target=self._relative_item_href("cems-events", event_item.id),
+                    media_type="application/geo+json",
+                    extra_fields={"roles": ["event"]},
+                )
+            )
+            item.set_collection(self.get_impact_collection())
+            items.append(item)
         return items
 
     def add_cems_related_links(
@@ -1301,33 +1419,38 @@ class CEMSTransformer(MontyDataTransformer[CEMSDataSource]):
             )
 
     def get_stac_items(self) -> Generator[Item, None, None]:
+        """Generate STAC items from CEMS activation data.
+
+        Item construction is all-or-nothing per activation: the full Event /
+        Hazard / Response / Impact graph is built before anything is yielded,
+        so a transform failure never emits a partial activation. A failed
+        activation always means zero items plus a failed row in
+        ``transform_summary``. The blanket ``except Exception`` matches the
+        ETL-resilience pattern used by the other source transformers.
+        """
         self.transform_summary.mark_as_started()
         self.transform_summary.increment_rows()
+
+        items: list[Item] = []
         try:
             activation = self.data_source.activation_data
             event_item = self.make_event_item(activation)
-            if not event_item:
+            if event_item:
+                event_monty = MontyExtension.ext(event_item)
+                hazard_items = self.make_hazard_items(activation, event_item, event_monty.correlation_id)
+                response_items = self.make_response_items(activation, event_item, hazard_items)
+                impact_items = self.make_impact_items(activation, event_item, response_items)
+                self.add_cems_related_links(event_item, hazard_items, response_items, impact_items)
+                items = [event_item, *hazard_items, *response_items, *impact_items]
+            else:
                 self.transform_summary.increment_failed_rows()
-                self.transform_summary.mark_as_complete()
-                return
-
-            event_monty = MontyExtension.ext(event_item)
-            hazard_items = self.make_hazard_items(activation, event_item, event_monty.correlation_id)
-            response_items = self.make_response_items(activation, event_item, hazard_items)
-            impact_items = self.make_impact_items(activation, event_item, response_items)
-            self.add_cems_related_links(event_item, hazard_items, response_items, impact_items)
-
-            yield event_item
-            for hazard_item in hazard_items:
-                yield hazard_item
-            for response_item in response_items:
-                yield response_item
-            for impact_item in impact_items:
-                yield impact_item
         except Exception:
+            items = []
             self.transform_summary.increment_failed_rows()
-            logger.warning("Failed to process CEMS activation", exc_info=True)
+            logger.warning("Failed to process CEMS activation %s", self.data_source.activation_data.get("code"), exc_info=True)
+
         self.transform_summary.mark_as_complete()
+        yield from items
 
     def make_items(self) -> list[Item]:
         return list(self.get_stac_items())
