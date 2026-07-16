@@ -93,6 +93,35 @@ def test_build_empty_static_source_collection_omits_monty_extension() -> None:
     assert collection.extra_fields["roles"] == ["response", "source"]
 
 
+def test_export_monty_collection_writes_license_link(tmp_path: Path) -> None:
+    items = [_source_item("event-1", "event")]
+    export_monty_collection(
+        MontyCollectionSpec(
+            out_dir=tmp_path / "demo-events",
+            collection_id="demo-events",
+            title="Demo events",
+            description="Demo source events",
+            role="event",
+            items=items,
+            provider=_PROVIDER,
+            license="other",
+            license_url="https://example.com/terms",
+            license_title="Example terms",
+        )
+    )
+    collection_doc = json.loads((tmp_path / "demo-events" / "demo-events.json").read_text(encoding="utf-8"))
+    assert collection_doc["license"] == "other"
+    license_links = [link for link in collection_doc["links"] if link["rel"] == "license"]
+    assert license_links == [
+        {
+            "rel": "license",
+            "href": "https://example.com/terms",
+            "type": "text/html",
+            "title": "Example terms",
+        }
+    ]
+
+
 def test_export_monty_collection_writes_collection_and_items(tmp_path: Path) -> None:
     items = [_source_item("event-1", "event"), _source_item("event-2", "event")]
     export_monty_collection(

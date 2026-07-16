@@ -184,6 +184,13 @@ def convert_charter(input_path: Path, output_dir: Path) -> None:
     convert_charter_activations(input_path, output_dir)
 
 
+def convert_cems(input_path: Path, output_dir: Path) -> None:
+    """Export CEMS data. *input_path*: CEMS detail JSON file or directory of ``*-detail.json`` fixtures."""
+    from pystac_monty.sources.cems import convert_cems as _convert_cems
+
+    _convert_cems(input_path, output_dir)
+
+
 BatchExportFn = Callable[[Path, Path], None]
 
 BATCH_EXPORTS: dict[str, BatchExportFn] = {
@@ -191,6 +198,7 @@ BATCH_EXPORTS: dict[str, BatchExportFn] = {
     "gfd": convert_gfd,
     "gdacs": convert_gdacs,
     "charter": convert_charter,
+    "cems": convert_cems,
 }
 
 
