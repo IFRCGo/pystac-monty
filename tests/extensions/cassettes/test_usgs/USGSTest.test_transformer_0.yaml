@@ -29,19 +29,23 @@ interactions:
         \                   \"roles\"\n                  ]\n                },\n                {\n
         \                 \"$ref\": \"#/definitions/fields\"\n                },\n
         \               {\n                  \"$ref\": \"#/definitions/roles\"\n                }\n
-        \             ]\n            }\n          }\n        }\n      ]\n    },\n
-        \   {\n      \"$comment\": \"This is the schema for STAC Collections.\",\n
-        \     \"allOf\": [\n        {\n          \"$ref\": \"#/definitions/stac_extensions\"\n
-        \       },\n        {\n          \"type\": \"object\",\n          \"required\":
-        [\n            \"type\",\n            \"providers\",\n            \"license\"\n
-        \         ],\n          \"properties\": {\n            \"type\": {\n              \"const\":
-        \"Collection\"\n            }\n          }\n        },\n        {\n          \"$ref\":
-        \"#/definitions/roles\"\n        }\n      ],\n      \"anyOf\": [\n        {\n
-        \         \"$comment\": \"This is the schema for the fields in Summaries.
-        By default, only checks the existence of the properties, but not the schema
-        of the summaries.\",\n          \"required\": [\n            \"summaries\"\n
-        \         ],\n          \"properties\": {\n            \"summaries\": {\n
-        \             \"required\": [\n                \"monty:country_codes\",\n
+        \             ]\n            },\n            \"links\": {\n              \"type\":
+        \"array\",\n              \"items\": {\n                \"anyOf\": [\n                  {\n
+        \                   \"$ref\": \"#/definitions/non_related_link\"\n                  },\n
+        \                 {\n                    \"$ref\": \"#/definitions/typed_related_link\"\n
+        \                 }\n                ]\n              }\n            }\n          }\n
+        \       }\n      ]\n    },\n    {\n      \"$comment\": \"This is the schema
+        for STAC Collections.\",\n      \"allOf\": [\n        {\n          \"$ref\":
+        \"#/definitions/stac_extensions\"\n        },\n        {\n          \"type\":
+        \"object\",\n          \"required\": [\n            \"type\",\n            \"providers\",\n
+        \           \"license\"\n          ],\n          \"properties\": {\n            \"type\":
+        {\n              \"const\": \"Collection\"\n            }\n          }\n        },\n
+        \       {\n          \"$ref\": \"#/definitions/roles\"\n        }\n      ],\n
+        \     \"anyOf\": [\n        {\n          \"$comment\": \"This is the schema
+        for the fields in Summaries. By default, only checks the existence of the
+        properties, but not the schema of the summaries.\",\n          \"required\":
+        [\n            \"summaries\"\n          ],\n          \"properties\": {\n
+        \           \"summaries\": {\n              \"required\": [\n                \"monty:country_codes\",\n
         \               \"monty:hazard_codes\"\n              ]\n            }\n          }\n
         \       }\n      ]\n    }\n  ],\n  \"definitions\": {\n    \"stac_extensions\":
         {\n      \"type\": \"object\",\n      \"required\": [\n        \"stac_extensions\"\n
@@ -69,7 +73,47 @@ interactions:
         \"string\"\n            },\n            \"severity_label\": {\n              \"type\":
         \"string\"\n            },\n            \"estimate_type\": {\n              \"$ref\":
         \"#/definitions/estimate_type\"\n            }\n          },\n          \"additionalProperties\":
-        true\n        },\n        \"monty:impact_detail\": {\n          \"type\":
+        true\n        },\n        \"monty:response_detail\": {\n          \"type\":
+        \"object\",\n          \"required\": [\n            \"type\"\n          ],\n
+        \         \"properties\": {\n            \"type\": {\n              \"type\":
+        \"string\",\n              \"$comment\": \"Response type code from the Monty
+        response taxonomy (see docs/model/response-taxonomy.md). Format: {domain}-{type}
+        with domain in {eo, hum, fin}.\",\n              \"pattern\": \"^(eo|hum|fin)-[a-z0-9]+(-[a-z0-9]+)*$\"\n
+        \           },\n            \"source_id\": {\n              \"type\": \"string\",\n
+        \             \"minLength\": 1,\n              \"description\": \"Source-system
+        identifier for the response (e.g., CEMS activation code `EMSR744`, Charter
+        call ID `ACT-849`, UNOSAT product code, DREF operation ID).\"\n            },\n
+        \           \"status\": {\n              \"type\": \"string\",\n              \"enum\":
+        [\n                \"planned\",\n                \"in-production\",\n                \"published\",\n
+        \               \"finished\",\n                \"no-impact\",\n                \"withdrawn\"\n
+        \             ],\n              \"description\": \"Lifecycle status of the
+        response product. Harmonises CEMS `statusCode` and Charter `disaster:activation_status`.\"\n
+        \           },\n            \"monitoring_number\": {\n              \"type\":
+        \"integer\",\n              \"minimum\": 1,\n              \"description\":
+        \"Iteration number for monitoring updates (mirrors CEMS `monitoringNumber`).
+        The presence of this field marks the item as a monitoring update. The prior
+        iteration this update monitors SHOULD be expressed via a `rel=\\\"prev\\\"`
+        link to that Response STAC item.\"\n            },\n            \"producer\":
+        {\n              \"type\": \"string\",\n              \"description\": \"Organisation
+        that produced the response (e.g., `JRC`, `UNOSAT`, `Airbus`, `IFRC`).\"\n
+        \           },\n            \"methodology\": {\n              \"type\": \"string\",\n
+        \             \"enum\": [\n                \"human_interpreted\",\n                \"semi_automated\",\n
+        \               \"automated\",\n                \"modelled\"\n              ],\n
+        \             \"description\": \"Type of analysis used to produce the response.\"\n
+        \           },\n            \"sendai_targets\": {\n              \"type\":
+        \"array\",\n              \"items\": {\n                \"type\": \"string\",\n
+        \               \"enum\": [\n                  \"A\",\n                  \"B\",\n
+        \                 \"C\",\n                  \"D\",\n                  \"E\",\n
+        \                 \"F\",\n                  \"G\"\n                ]\n              },\n
+        \             \"uniqueItems\": true,\n              \"description\": \"Sendai
+        Framework 2015\\u20132030 targets this response contributes to. Defaults per
+        response type are documented in the response taxonomy.\"\n            },\n
+        \           \"sectors\": {\n              \"type\": \"array\",\n              \"items\":
+        {\n                \"type\": \"string\"\n              },\n              \"uniqueItems\":
+        true,\n              \"description\": \"For humanitarian (`hum-*`) items,
+        the IASC clusters / IFRC EPoA sectors covered (e.g., `shelter`, `health`,
+        `wash`).\"\n            }\n          },\n          \"additionalProperties\":
+        false\n        },\n        \"monty:impact_detail\": {\n          \"type\":
         \"object\",\n          \"properties\": {\n            \"category\": {\n              \"type\":
         \"string\",\n              \"enum\": [\n                \"people\",\n                \"crops\",\n
         \               \"women\",\n                \"men\",\n                \"children_0_4\",\n
@@ -108,32 +152,54 @@ interactions:
         \"Prevent additional monty prefixed field\"\n        }\n      },\n      \"additionalProperties\":
         false\n    },\n    \"estimate_type\": {\n      \"type\": \"string\",\n      \"enum\":
         [\n        \"primary\",\n        \"secondary\",\n        \"modelled\"\n      ]\n
-        \   },\n    \"roles\": {\n      \"$comment\": \"Roles field\",\n      \"oneOf\":
-        [\n        {\n          \"$comment\": \"Reference Event\",\n          \"allOf\":
-        [\n            {\n              \"$ref\": \"#/definitions/is_event\"\n            },\n
-        \           {\n              \"$ref\": \"#/definitions/is_reference\"\n            }\n
-        \         ]\n        },\n        {\n          \"$comment\": \"Source Event\",\n
-        \         \"allOf\": [\n            {\n              \"$ref\": \"#/definitions/is_event\"\n
-        \           },\n            {\n              \"$ref\": \"#/definitions/is_source\"\n
+        \   },\n    \"base_link\": {\n      \"$comment\": \"Minimal STAC Link Object
+        requirements shared by all link variants in this extension.\",\n      \"type\":
+        \"object\",\n      \"required\": [\n        \"rel\",\n        \"href\"\n      ],\n
+        \     \"properties\": {\n        \"rel\": {\n          \"type\": \"string\"\n
+        \       },\n        \"href\": {\n          \"type\": \"string\"\n        },\n
+        \       \"type\": {\n          \"type\": \"string\"\n        }\n      }\n
+        \   },\n    \"non_related_link\": {\n      \"allOf\": [\n        {\n          \"$ref\":
+        \"#/definitions/base_link\"\n        },\n        {\n          \"not\": {\n
+        \           \"type\": \"object\",\n            \"required\": [\n              \"rel\"\n
+        \           ],\n            \"properties\": {\n              \"rel\": {\n
+        \               \"const\": \"related\"\n              }\n            }\n          }\n
+        \       }\n      ]\n    },\n    \"typed_related_link\": {\n      \"allOf\":
+        [\n        {\n          \"$ref\": \"#/definitions/base_link\"\n        },\n
+        \       {\n          \"type\": \"object\",\n          \"required\": [\n            \"rel\",\n
+        \           \"roles\"\n          ],\n          \"properties\": {\n            \"rel\":
+        {\n              \"const\": \"related\"\n            },\n            \"roles\":
+        {\n              \"type\": \"array\",\n              \"minItems\": 1,\n              \"maxItems\":
+        1,\n              \"items\": {\n                \"type\": \"string\",\n                \"enum\":
+        [\n                  \"event\",\n                  \"hazard\",\n                  \"impact\",\n
+        \                 \"response\"\n                ]\n              }\n            }\n
+        \         }\n        }\n      ]\n    },\n    \"roles\": {\n      \"$comment\":
+        \"Roles field\",\n      \"oneOf\": [\n        {\n          \"$comment\": \"Reference
+        Event\",\n          \"allOf\": [\n            {\n              \"$ref\": \"#/definitions/is_event\"\n
+        \           },\n            {\n              \"$ref\": \"#/definitions/is_reference\"\n
         \           }\n          ]\n        },\n        {\n          \"$comment\":
-        \"Hazard\",\n          \"allOf\": [\n            {\n              \"$ref\":
-        \"#/definitions/is_hazard\"\n            }\n          ]\n        },\n        {\n
-        \         \"$comment\": \"Impact\",\n          \"allOf\": [\n            {\n
-        \             \"$ref\": \"#/definitions/is_impact\"\n            }\n          ]\n
-        \       }\n      ]\n    },\n    \"is_event\": {\n      \"properties\": {\n
-        \       \"roles\": {\n          \"type\": \"array\",\n          \"minItems\":
-        2,\n          \"contains\": {\n            \"const\": \"event\"\n          }\n
-        \       }\n      }\n    },\n    \"is_reference\": {\n      \"properties\":
-        {\n        \"roles\": {\n          \"type\": \"array\",\n          \"minItems\":
-        2,\n          \"contains\": {\n            \"const\": \"reference\"\n          }\n
-        \       }\n      }\n    },\n    \"is_source\": {\n      \"properties\": {\n
-        \       \"roles\": {\n          \"type\": \"array\",\n          \"minItems\":
-        2,\n          \"contains\": {\n            \"const\": \"source\"\n          }\n
-        \       }\n      }\n    },\n    \"is_hazard\": {\n      \"properties\": {\n
-        \       \"roles\": {\n          \"type\": \"array\",\n          \"minItems\":
-        1,\n          \"contains\": {\n            \"const\": \"hazard\"\n          }\n
-        \       },\n        \"monty:hazard_codes\": {\n          \"minItems\": 1,\n
-        \         \"maxItems\": 3,\n          \"uniqueItems\": true,\n          \"$comment\":
+        \"Source Event\",\n          \"allOf\": [\n            {\n              \"$ref\":
+        \"#/definitions/is_event\"\n            },\n            {\n              \"$ref\":
+        \"#/definitions/is_source\"\n            }\n          ]\n        },\n        {\n
+        \         \"$comment\": \"Hazard\",\n          \"allOf\": [\n            {\n
+        \             \"$ref\": \"#/definitions/is_hazard\"\n            }\n          ]\n
+        \       },\n        {\n          \"$comment\": \"Impact\",\n          \"allOf\":
+        [\n            {\n              \"$ref\": \"#/definitions/is_impact\"\n            }\n
+        \         ]\n        },\n        {\n          \"$comment\": \"Response\",\n
+        \         \"allOf\": [\n            {\n              \"$ref\": \"#/definitions/is_response\"\n
+        \           }\n          ]\n        }\n      ]\n    },\n    \"is_event\":
+        {\n      \"properties\": {\n        \"roles\": {\n          \"type\": \"array\",\n
+        \         \"minItems\": 2,\n          \"contains\": {\n            \"const\":
+        \"event\"\n          }\n        }\n      }\n    },\n    \"is_reference\":
+        {\n      \"properties\": {\n        \"roles\": {\n          \"type\": \"array\",\n
+        \         \"minItems\": 2,\n          \"contains\": {\n            \"const\":
+        \"reference\"\n          }\n        }\n      }\n    },\n    \"is_source\":
+        {\n      \"properties\": {\n        \"roles\": {\n          \"type\": \"array\",\n
+        \         \"minItems\": 2,\n          \"contains\": {\n            \"const\":
+        \"source\"\n          }\n        }\n      }\n    },\n    \"is_hazard\": {\n
+        \     \"properties\": {\n        \"roles\": {\n          \"type\": \"array\",\n
+        \         \"minItems\": 1,\n          \"contains\": {\n            \"const\":
+        \"hazard\"\n          }\n        },\n        \"monty:hazard_codes\": {\n          \"minItems\":
+        1,\n          \"maxItems\": 3,\n          \"uniqueItems\": true,\n          \"$comment\":
         \"REQUIRED: Exactly 1 UNDRR-ISC 2025 code (format: 2 letters + 4 digits, e.g.,
         GH0101, MH0600). OPTIONAL: At most 1 GLIDE code (2 uppercase letters, e.g.,
         FL, EQ) and at most 1 EM-DAT code (nat-xxx-xxx-xxx format). LIMITATION: JSON
@@ -153,14 +219,19 @@ interactions:
         \         }\n        }\n      }\n    },\n    \"is_impact\": {\n      \"properties\":
         {\n        \"roles\": {\n          \"type\": \"array\",\n          \"minItems\":
         1,\n          \"contains\": {\n            \"const\": \"impact\"\n          }\n
-        \       }\n      }\n    }\n  }\n}\n"
+        \       }\n      }\n    },\n    \"is_response\": {\n      \"properties\":
+        {\n        \"roles\": {\n          \"type\": \"array\",\n          \"minItems\":
+        1,\n          \"contains\": {\n            \"const\": \"response\"\n          }\n
+        \       },\n        \"monty:response_detail\": {\n          \"$comment\":
+        \"Response items SHOULD carry monty:response_detail (validated when present
+        via the field definition).\"\n        }\n      }\n    }\n  }\n}\n"
     headers:
       Accept-Ranges:
       - bytes
       Access-Control-Allow-Origin:
       - '*'
       Age:
-      - '161'
+      - '7'
       Cache-Control:
       - max-age=600
       Connection:
@@ -168,15 +239,15 @@ interactions:
       Content-Encoding:
       - gzip
       Content-Length:
-      - '2252'
+      - '3407'
       Content-Type:
       - application/json; charset=utf-8
       Date:
-      - Thu, 14 May 2026 04:42:07 GMT
+      - Thu, 16 Jul 2026 05:52:37 GMT
       ETag:
-      - W/"6a04105b-299c"
+      - W/"6a54b727-3eda"
       Last-Modified:
-      - Wed, 13 May 2026 05:47:07 GMT
+      - Mon, 13 Jul 2026 10:00:07 GMT
       Server:
       - GitHub.com
       Vary:
@@ -186,17 +257,17 @@ interactions:
       X-Cache:
       - HIT
       X-Cache-Hits:
-      - '3'
+      - '1'
       X-Fastly-Request-ID:
-      - 38d9d3dd1eb807abb2de612ec3fef7b08c49e859
+      - 3e6034b5a07013294aa28ce4264652997d3bf15e
       X-GitHub-Request-Id:
-      - 46F8:F81A8:5EC08:7617C:6A05485B
+      - 4D9A:A955A:27B02:2B618:6A58719D
       X-Served-By:
-      - cache-del-vibw2260022-DEL
+      - cache-bom-vanm7210031-BOM
       X-Timer:
-      - S1778733727.150148,VS0,VE0
+      - S1784181157.352405,VS0,VE1
       expires:
-      - Thu, 14 May 2026 04:08:19 GMT
+      - Thu, 16 Jul 2026 06:02:30 GMT
       x-proxy-cache:
       - MISS
     status:

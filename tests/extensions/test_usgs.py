@@ -106,6 +106,10 @@ class USGSTest(unittest.TestCase):
             # Validate item against schema
             item.validate(validator=self.validator)
 
+            # Validate the EQ hazard codes and correlation id
+            if item:
+                self.assertEqual(item.properties["monty:hazard_codes"], ["GH0101", "nat-geo-ear-gro", "EQ"])
+                self.assertIn("GH0101", item.properties["monty:hazard_codes"])
             # Check item type
             monty_item_ext = MontyExtension.ext(item)
             if monty_item_ext.is_source_event():
@@ -310,7 +314,7 @@ class USGSTest(unittest.TestCase):
 
     @parameterized.expand(load_scenarios(scenarios))
     @pytest.mark.vcr()
-    def test_hazard_item_uses_2025_code_only(self, transformer: USGSTransformer) -> None:
+    def test_hazard_item_uses_2025_code(self, transformer: USGSTransformer) -> None:
         request_for_schema(url=CURRENT_SCHEMA_URI)  # Validate if the schema exists
 
         for item in transformer.get_stac_items():
@@ -321,5 +325,5 @@ class USGSTest(unittest.TestCase):
             item.validate(validator=self.validator)
             monty_item_ext = MontyExtension.ext(item)
             if monty_item_ext.is_source_hazard():
-                # Should contain only the first code (UNDRR-ISC 2025)
-                assert len(monty_item_ext.hazard_codes) == 1
+                # Should contain code based on UNDRR-ISC 2025
+                self.assertTrue(monty_item_ext.hazard_codes[0] == "GH0101")
