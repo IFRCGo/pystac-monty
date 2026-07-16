@@ -67,18 +67,16 @@ CEMS_HAZARD_CODES: dict[str, list[str]] = {
     "flood": ["MH0600", "FL", "nat-hyd-flo-flo"],
     "flood_riverine": ["MH0604", "FL", "nat-hyd-flo-flo"],
     "flood_flash": ["MH0603", "FF", "nat-hyd-flo-flo"],
-    "flood_coastal": ["MH0605", "SS", "nat-hyd-flo-flo"],
-    "wildfire": ["MH1301", "WF", "nat-cli-wil-for"],
-    "storm": ["MH0400", "ST", "nat-met-sto"],
-    "storm_tropical": ["MH0403", "TC", "nat-met-sto-tro"],
+    "flood_coastal": ["MH0601", "FL", "nat-hyd-flo-flo"],
+    "wildfire": ["EN0205", "WF", "nat-cli-wil-for"],
+    "storm_tropical": ["MH0306", "TC", "nat-met-sto-tro"],
     "earthquake": ["GH0101", "EQ", "nat-geo-ear-gro"],
-    "earthquake_tsunami": ["GH0301", "TS", "nat-geo-ear-tsu"],
-    "mass_movement": ["MH0901", "LS", "nat-geo-mmd-lan"],
-    "mass_movement_avalanche": ["MH1201", "AV", "nat-geo-mmd-ava"],
-    "volcanic_activity": ["GH0201", "VO", "nat-geo-vol"],
-    "industrial_accident": ["TH0300", "tec-ind-che"],
-    "industrial_explosion": ["TH0600", "tec-ind-exp"],
-    "transport_accident": ["tec-tra"],
+    "earthquake_tsunami": ["MH0705", "TS", "nat-geo-ear-tsu"],
+    "mass_movement": ["GH0300", "LS", "nat-geo-mmd-lan"],
+    "mass_movement_avalanche": ["MH0801", "AV", "nat-geo-mmd-ava"],
+    "volcanic_activity": ["GH0201", "VO", "nat-geo-vol-vol"],
+    "industrial_accident": ["TL0301", "tec-ind-che-che"],
+    "industrial_explosion": ["TL0304", "tec-ind-exp-exp"],
     "humanitarian_crisis": ["CE"],
     "other": ["OT"],
 }
@@ -431,7 +429,15 @@ def _hazard_keys_for_activation(category: str | None, sub_category: str | None) 
         logger.warning("Unmapped CEMS category %r", category)
         return []
     sub_key = SUBCATEGORY_TO_HAZARD_KEY.get(_normalize_key(sub_category))
-    return [sub_key or base_key]
+    hazard_key = sub_key or base_key
+    if hazard_key == "storm":
+        logger.warning(
+            "CEMS category %r with subCategory %r requires manual review (no single UNDRR-ISC chapeau)",
+            category,
+            sub_category,
+        )
+        return []
+    return [hazard_key]
 
 
 def _hazard_codes_for_keys(keys: list[str], hazard_profiles: MontyHazardProfiles) -> list[str]:
