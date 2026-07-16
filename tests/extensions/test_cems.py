@@ -17,10 +17,12 @@ from pystac_monty.extension import MontyExtension
 from pystac_monty.geocoding import MontyGeoCoder, NoopMontyGeocoder
 from pystac_monty.sources.batch_export import run_batch
 from pystac_monty.sources.cems import (
+    CEMS_HAZARD_CODES,
     CURATED_CEMS_EXAMPLE_IDS,
     CEMSDataSource,
     CEMSTransformer,
     _country_codes,
+    _hazard_keys_for_activation,
     _iso3_from_country_name,
     default_cems_export_geocoder,
     iter_cems_stac_items,
@@ -29,6 +31,7 @@ from pystac_monty.sources.cems import (
 )
 from pystac_monty.sources.common import DataType, GenericDataSource, Memory
 from tests.extensions.test_monty import CustomValidator
+from tests.utils.test_hazard_taxonomy import assert_hazard_code_dict_valid, taxonomy_md_path
 from tests.utils.test_utils import validate_correlation_id
 
 RFC3339_UTC_PATTERN = re.compile(r"(\+00:00|Z)$")
@@ -501,7 +504,7 @@ class CEMSTest(unittest.TestCase):
         self.assertEqual(len(hazards), 2)
         self.assertEqual(len(responses), 3)
         self.assertEqual(len(impacts), 6)
-        self.assertIn("MH1301", MontyExtension.ext(event).hazard_codes or [])
+        self.assertIn("EN0205", MontyExtension.ext(event).hazard_codes or [])
 
     @pytest.mark.vcr()
     def test_fixture_emsm847_cross_source_links(self) -> None:
@@ -596,3 +599,16 @@ class CEMSTest(unittest.TestCase):
         episode = resolve_gdacs_current_episode("TC1001230")
         self.assertIsNotNone(episode)
         self.assertGreater(episode, 0)
+
+    def test_cems_hazard_codes_match_taxonomy(self) -> None:
+        if not taxonomy_md_path().is_file():
+            self.skipTest("monty-stac-extension submodule not initialized")
+        assert_hazard_code_dict_valid(CEMS_HAZARD_CODES, label="CEMS_HAZARD_CODES")
+
+    def test_plain_storm_category_requires_manual_review(self) -> None:
+        self.assertEqual(_hazard_keys_for_activation("Storm", None), [])
+        self.assertEqual(_hazard_keys_for_activation("Storm", "Extratropical cyclone"), [])
+
+    def test_storm_with_tropical_subcategory_maps_to_storm_tropical(self) -> None:
+        keys = _hazard_keys_for_activation("Storm", "Tropical cyclone, hurricane, typhoon")
+        self.assertEqual(keys, ["storm_tropical"])

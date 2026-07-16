@@ -57,25 +57,27 @@ LEGACY_DISASTER_SCHEMA_URI = "https://terradue.github.io/disaster/v1.0.0/schema.
 # Charter disaster:type to [UNDRR-2025, EM-DAT, GLIDE]
 CHARTER_HAZARD_CODES = {
     "flood": ["MH0600", "nat-hyd-flo-flo", "FL"],
-    "fire": ["MH1301", "nat-cli-wil-for", "WF"],
+    "fire": ["EN0205", "nat-cli-wil-for", "WF"],
     "earthquake": ["GH0101", "nat-geo-ear-gro", "EQ"],
-    "volcano": ["GH0201", "nat-geo-vol", "VO"],
-    "storm_hurricane": ["MH0400", "nat-met-sto", "ST"],
-    "cyclone": ["MH0403", "nat-met-sto-tro", "TC"],
-    "tsunami": ["GH0301", "nat-geo-ear-tsu", "TS"],
-    "landslide": ["MH0901", "nat-geo-mmd-lan", "LS"],
-    "snow_hazard": ["MH1202", "nat-met-ext-col", "SW"],
-    "ice": ["MH0801", "nat-met-ext-col", "CW"],
-    "oil_spill": ["TH0300", "tec-ind-che"],
-    "explosive_event": ["TH0600", "tec-ind-exp"],
+    "volcano": ["GH0201", "nat-geo-vol-vol", "VO"],
+    "cyclone": ["MH0306", "nat-met-sto-tro", "TC"],
+    "tsunami": ["MH0705", "nat-geo-ear-tsu", "TS"],
+    "landslide": ["GH0300", "nat-geo-mmd-lan", "LS"],
+    "ice": ["MH0502", "nat-met-ext-col", "CW"],
+    "oil_spill": ["CH0203", "tec-ind-oil-oil"],
+    "explosive_event": ["TL0304", "tec-ind-exp-exp"],
     # Deprecated types (older activations)
-    "storm_hurricane_rural": ["MH0400", "nat-met-sto", "ST"],
-    "storm_hurricane_urban": ["MH0400", "nat-met-sto", "ST"],
     "flood_large": ["MH0604", "nat-hyd-flo-flo", "FL"],
     "flood_flash": ["MH0603", "nat-hyd-flo-flo", "FF"],
 }
 
-MANUAL_REVIEW_DISASTER_TYPES = {"other"}
+MANUAL_REVIEW_DISASTER_TYPES = {
+    "other",
+    "snow_hazard",
+    "storm_hurricane",
+    "storm_hurricane_rural",
+    "storm_hurricane_urban",
+}
 
 # CPE status to estimate_type (interim mapping)
 CPE_STATUS_MAPPING = {
@@ -226,6 +228,11 @@ class CharterTransformer(MontyDataTransformer[CharterDataSource]):
             surface_area = float(surface_match.group(1))
 
         return radius, priority, surface_area
+
+    @staticmethod
+    def _severity_number(value: float) -> float | int:
+        """Serialize whole-number severities as ints to match exported Charter examples."""
+        return int(value) if value.is_integer() else value
 
     @staticmethod
     def _as_disaster_type_list(value: Any) -> list[str]:
@@ -447,13 +454,13 @@ class CharterTransformer(MontyDataTransformer[CharterDataSource]):
                 hazard_detail_kwargs: dict[str, Any] = {"estimate_type": MontyEstimateType(estimate_type)}
                 if radius is not None:
                     hazard_detail_kwargs.update(
-                        severity_value=radius,
+                        severity_value=self._severity_number(radius),
                         severity_unit="km",
                         severity_label="Area radius",
                     )
                 elif surface_area is not None:
                     hazard_detail_kwargs.update(
-                        severity_value=surface_area,
+                        severity_value=self._severity_number(surface_area),
                         severity_unit="km2",
                         severity_label="Surface area",
                     )
@@ -974,7 +981,7 @@ class CharterTransformer(MontyDataTransformer[CharterDataSource]):
 
         for hazard_item in hazard_items:
             hazard_item.add_link(
-                Link(rel="derived_from", target=event_href, media_type="application/json", title="Parent Charter Event")
+                Link(rel="derived_from", target=event_href, media_type="application/geo+json", title="Parent Charter Event")
             )
 
     def get_stac_items(self) -> Generator[Item, None, None]:
