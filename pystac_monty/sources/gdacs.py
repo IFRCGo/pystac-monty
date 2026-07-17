@@ -291,7 +291,7 @@ class GDACSTransformer(MontyDataTransformer[GDACSDataSource]):
             "CE": ["SO0003", "CE"],
         }
         if hazard not in hazard_mapping:
-            print(f"Hazard {hazard} not found.")
+            logger.warning("Hazard %s not found.", hazard)
         return hazard_mapping.get(hazard, [])
 
     def make_source_event_item(self, data: GdacsEventDataValidator, source_url: str) -> Item:

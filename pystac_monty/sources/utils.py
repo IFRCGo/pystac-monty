@@ -1,4 +1,5 @@
 import json
+import logging
 import re
 import subprocess
 import tempfile
@@ -8,6 +9,8 @@ from pystac_monty.extension import (
     MontyImpactExposureCategory,
     MontyImpactType,
 )
+
+logger = logging.getLogger(__name__)
 
 
 def phrase_to_dashed(phrase: str) -> str:
@@ -97,7 +100,7 @@ def order_data_file(filepath: str, jq_filter: str):
     try:
         result = subprocess.run(["jq", jq_filter, filepath], capture_output=True, text=True, check=True)
     except subprocess.CalledProcessError as e:
-        print("Error running jq:", e.stderr)
+        logger.error("Error running jq: %s", e.stderr)
         raise
 
     temp_file = tempfile.NamedTemporaryFile(delete=False)

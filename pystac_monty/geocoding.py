@@ -1,4 +1,5 @@
 import json
+import logging
 import typing
 import zipfile
 from abc import ABC, abstractmethod
@@ -8,6 +9,8 @@ import fiona  # type: ignore
 import requests
 from shapely.geometry import Point, mapping, shape  # type: ignore
 from shapely.ops import unary_union  # type: ignore
+
+logger = logging.getLogger(__name__)
 
 WORLD_ADMIN_BOUNDARIES_FGB = "world_admin_boundaries.fgb"
 GAUL2014_2015_GPCK_ZIP = "gaul2014_2015.gpkg"
@@ -114,8 +117,8 @@ class WorldAdministrativeBoundariesGeocoder(MontyGeoCoder):
         if self._path and not self._file_handle:
             try:
                 self._file_handle = fiona.open(self._path, layer=self._layer)
-            except Exception as e:
-                print(f"Error opening file: {str(e)}")
+            except Exception:
+                logger.warning("Error opening file", exc_info=True)
                 self._file_handle = None
 
     def close(self) -> None:
@@ -190,8 +193,8 @@ class WorldAdministrativeBoundariesGeocoder(MontyGeoCoder):
 
             # Cache negative result to avoid repeated lookups
             self._cache[cache_key] = None
-        except Exception as e:
-            print(f"Error getting ISO3 from geometry: {str(e)}")
+        except Exception:
+            logger.warning("Error getting ISO3 from geometry", exc_info=True)
             return None
 
         return None
@@ -238,8 +241,8 @@ class WorldAdministrativeBoundariesGeocoder(MontyGeoCoder):
                 }
                 self._cache[cache_key] = result
                 return result
-        except Exception as e:
-            print(f"Error getting geometry by country name: {str(e)}")
+        except Exception:
+            logger.warning("Error getting geometry by country name", exc_info=True)
             return None
 
         return None
@@ -270,8 +273,8 @@ class WorldAdministrativeBoundariesGeocoder(MontyGeoCoder):
                     # Cache the result
                     self._cache[cache_key] = result
                     return result
-        except Exception as e:
-            print(f"Error getting geometry from ISO3: {str(e)}")
+        except Exception:
+            logger.warning("Error getting geometry from ISO3", exc_info=True)
             return None
 
         return None
@@ -325,8 +328,8 @@ class GAULGeocoder(MontyGeoCoder):
         if self._path and not self._file_handle:
             try:
                 self._file_handle = fiona.open(self._path, layer=self._layer)
-            except Exception as e:
-                print(f"Error opening file: {str(e)}")
+            except Exception:
+                logger.warning("Error opening file", exc_info=True)
                 self._file_handle = None
 
     def close(self) -> None:
@@ -532,8 +535,8 @@ class GAULGeocoder(MontyGeoCoder):
             self._cache[cache_key] = result
             return result
 
-        except Exception as e:
-            print(f"Error getting geometry from admin units: {str(e)}")
+        except Exception:
+            logger.warning("Error getting geometry from admin units", exc_info=True)
             return None
 
     def get_geometry_by_country_name(self, country_name: str, simplified: bool = False) -> Optional[Dict[str, Any]]:
@@ -569,8 +572,8 @@ class GAULGeocoder(MontyGeoCoder):
                 self._cache[cache_key] = result
             return result
 
-        except Exception as e:
-            print(f"Error getting country geometry for {country_name}: {str(e)}")
+        except Exception:
+            logger.warning("Error getting country geometry for %s", country_name, exc_info=True)
             return None
 
     # FIXME: This is not implemented
@@ -715,8 +718,8 @@ class MockGeocoder(MontyGeoCoder):
                 return self._test_geometries["admin1"]
             return None
 
-        except Exception as e:
-            print(f"Error getting mock geometry from admin units: {str(e)}")
+        except Exception:
+            logger.warning("Error getting mock geometry from admin units", exc_info=True)
             return None
 
     def get_geometry_by_country_name(self, country_name: str, simplified: bool = False) -> Optional[Dict[str, Any]]:
@@ -742,8 +745,8 @@ class MockGeocoder(MontyGeoCoder):
             return None
             return None
 
-        except Exception as e:
-            print(f"Error getting mock country geometry: {str(e)}")
+        except Exception:
+            logger.warning("Error getting mock country geometry", exc_info=True)
             return None
 
     def get_iso3_from_geometry(self, geometry: Dict[str, Any]) -> Optional[str]:
@@ -776,8 +779,8 @@ class MockGeocoder(MontyGeoCoder):
 
             return None
 
-        except Exception as e:
-            print(f"Error getting mock ISO3 from geometry: {str(e)}")
+        except Exception:
+            logger.warning("Error getting mock ISO3 from geometry", exc_info=True)
             return None
 
     def get_iso3_from_point(self, point: Point) -> Optional[str]:
@@ -812,7 +815,7 @@ class MockGeocoder(MontyGeoCoder):
 
         try:
             return self._test_geometries.get(iso3)
-        except Exception as e:
-            print(f"Error getting mock geometry from ISO3: {str(e)}")
+        except Exception:
+            logger.warning("Error getting mock geometry from ISO3", exc_info=True)
 
         return None

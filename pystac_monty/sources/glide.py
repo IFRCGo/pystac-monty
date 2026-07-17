@@ -280,6 +280,6 @@ class GlideTransformer(MontyDataTransformer[GlideDataSource]):
         """Validate the source fields"""
         glideset: list[Any] = self.data_source.get_data()["glideset"]
         if not glideset:
-            print(f"No Glide data found in {self.data_source.get_source_url()}")
+            logger.warning("No Glide data found in %s", self.data_source.get_source_url())
             return []
         return glideset

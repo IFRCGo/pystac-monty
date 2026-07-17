@@ -370,8 +370,8 @@ class EMDATTransformer(MontyDataTransformer[EMDATDataSource]):
             )
 
             return impact_item
-        except Exception as e:
-            print(f"Error creating impact item for field {field}: {str(e)}")
+        except Exception:
+            logger.warning("Error creating impact item for field %s", field, exc_info=True)
             return None
 
     def _create_datetimes(self, row: EmdatDataValidator) -> typing.Tuple[datetime | None, datetime | None]:
