@@ -28,6 +28,16 @@ def build_impact_from_response(
 ) -> Item:
     """Builds a Monty Impact item carrying a single thematic figure, paired to
     ``response_item``.
+
+    When ``id`` is omitted, it defaults to ``impact-{source_id}-{thematic}-{type}``
+    (falling back to a base derived from ``response_item.id`` when there is no
+    ``source_id``). ``source_id`` must be unique *per Response* for this to stay
+    collision-free: if callers reuse the same ``source_id`` across multiple Response
+    items (e.g. several products/AOIs from one CEMS activation), pass an explicit
+    ``id`` for each Response instead.
+
+    Also adds the reverse ``related``/``["impact"]`` link onto ``response_item`
+    so callers don't need to add it themselves.
     """
     monty_response = MontyExtension.ext(response_item)
 
@@ -40,12 +50,11 @@ def build_impact_from_response(
     if id is None:
         response_detail = monty_response.response_detail
         source_id = response_detail.properties.get("source_id") if response_detail else None
-        if not source_id:
-            try:
-                base_id = "-".join(response_item.id.split("-")[1:-1])
-            except (IndexError, ValueError):
-                base_id = response_item.id
-        id = f"impact-{source_id or base_id}-{thematic}-{type}"
+        if source_id:
+            base_id = source_id
+        else:
+            base_id = "-".join(response_item.id.split("-")[1:-1]) or response_item.id
+        id = f"impact-{base_id}-{thematic}-{type}"
 
     item = Item(
         id=id,
@@ -69,8 +78,6 @@ def build_impact_from_response(
         estimate_type=estimate_type,
     )
 
-    item.set_self_href(f"./{item.id}.json")
-
     link_derived_from_response(item, response_item)
     link_related_for_response(response_item, item)
 
@@ -91,7 +98,19 @@ def link_derived_from_response(item: Item, response_item: Item) -> None:
 
 
 def link_related_for_response(response_item: Item, item: Item) -> None:
-    """Adds a ``rel: related`` link (``roles: ["impact"]``) for the response item"""
+    """Adds a ``rel: related`` link (``roles: ["impact"]``) for the response item.
+
+    No operation if an equivalent link to ``item`` already exists, so repeated calls
+    don't add duplicate links.
+    """
+    for link in response_item.links:
+        if link.rel != "related" or link.extra_fields.get("roles") != [MontyRoles.IMPACT]:
+            continue
+        target = link.target
+        target_id = target.id if isinstance(target, Item) else target
+        if target_id == item.id:
+            return
+
     response_item.add_link(
         Link(
             rel="related",

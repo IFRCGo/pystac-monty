@@ -104,6 +104,34 @@ class BuildImpactFromResponseTest(unittest.TestCase):
         self.assertIs(derived_links[0].target, response_item)
         self.assertEqual(derived_links[0].extra_fields["roles"], ["response"])
 
+    def test_adds_related_link_to_response(self) -> None:
+        response_item = make_response_item()
+        impact_item = build_impact_from_response(response_item, MontyImpactExposureCategory.ALL_PEOPLE, MontyImpactType.DEATH, 12)
+
+        related_links = [link for link in response_item.links if link.rel == "related"]
+        self.assertEqual(len(related_links), 1)
+        self.assertIs(related_links[0].target, impact_item)
+        self.assertEqual(related_links[0].extra_fields["roles"], ["impact"])
+
+    def test_related_link_is_not_duplicated_on_repeated_calls(self) -> None:
+        """Test related_links with same parameters on response_item."""
+        response_item = make_response_item()
+        build_impact_from_response(
+            response_item, MontyImpactExposureCategory.ALL_PEOPLE, MontyImpactType.DEATH, 12, id="impact-fixed-id"
+        )
+        build_impact_from_response(
+            response_item, MontyImpactExposureCategory.ALL_PEOPLE, MontyImpactType.DEATH, 12, id="impact-fixed-id"
+        )
+
+        related_links = [link for link in response_item.links if link.rel == "related"]
+        self.assertEqual(len(related_links), 1)
+
+    def test_does_not_set_self_href(self) -> None:
+        """Setting the self href is left to the caller/exporter, not the builder."""
+        response_item = make_response_item()
+        impact_item = build_impact_from_response(response_item, MontyImpactExposureCategory.ALL_PEOPLE, MontyImpactType.DEATH, 12)
+        self.assertIsNone(impact_item.get_self_href())
+
     def test_link_derived_from_response_helper(self) -> None:
         response_item = make_response_item()
         impact_item = build_impact_from_response(response_item, MontyImpactExposureCategory.ALL_PEOPLE, MontyImpactType.DEATH, 12)
@@ -135,6 +163,42 @@ class BuildImpactFromResponseTest(unittest.TestCase):
             response_item, MontyImpactExposureCategory.BUILDINGS, MontyImpactType.DAMAGED, 42, id="custom-impact-id"
         )
         self.assertEqual(impact_item.id, "custom-impact-id")
+
+    def test_id_fallback_handles_short_response_id_without_double_hyphen(self) -> None:
+        """A response id with fewer than 3 segments has nothing to strip; fall back to the
+        full response id rather than an empty base (which would yield a double hyphen)."""
+        response_item = make_response_item(id="test-response", source_id=None)
+        impact_item = build_impact_from_response(
+            response_item, MontyImpactExposureCategory.BUILDINGS, MontyImpactType.DESTROYED, 1
+        )
+        self.assertEqual(impact_item.id, "impact-test-response-buildings-destroyed")
+
+    def test_ids_collide_when_responses_share_source_id(self) -> None:
+        """Documents a known limitation: source_id is not guaranteed unique per Response
+        (e.g. a shared CEMS activation code), so the derived id can collide. Callers in
+        that situation must pass an explicit id= per Response."""
+        response_1 = make_response_item(id="response-EMSR847-aoi01-gra", source_id="EMSR847")
+        response_2 = make_response_item(id="response-EMSR847-aoi02-gra", source_id="EMSR847")
+
+        impact_1 = build_impact_from_response(response_1, MontyImpactExposureCategory.BUILDINGS, MontyImpactType.DESTROYED, 1)
+        impact_2 = build_impact_from_response(response_2, MontyImpactExposureCategory.BUILDINGS, MontyImpactType.DESTROYED, 2)
+        self.assertEqual(impact_1.id, impact_2.id)
+
+        impact_1 = build_impact_from_response(
+            response_1,
+            MontyImpactExposureCategory.BUILDINGS,
+            MontyImpactType.DESTROYED,
+            1,
+            id="impact-EMSR847-aoi01-buildings-destroyed",
+        )
+        impact_2 = build_impact_from_response(
+            response_2,
+            MontyImpactExposureCategory.BUILDINGS,
+            MontyImpactType.DESTROYED,
+            2,
+            id="impact-EMSR847-aoi02-buildings-destroyed",
+        )
+        self.assertNotEqual(impact_1.id, impact_2.id)
 
 
 class BuildImpactsFromResponseTest(unittest.TestCase):
