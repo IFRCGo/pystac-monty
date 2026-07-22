@@ -382,6 +382,30 @@ class USGSTransformer(MontyDataTransformer[USGSDataSource]):
         # Fallback: iso2 is returned in case mapping not found.
         return iso_mappings.get(iso2.upper(), iso2)
 
+    def _get_primary_country_from_losses(self, losspager_items: typing.List[EmpiricalValidator] | None) -> typing.Optional[str]:
+        """Derive the most-affected country's ISO3 code from PAGER fatality estimates.
+
+        Used as a fallback when point-based reverse geocoding of the epicenter fails,
+        e.g. because the epicenter falls just offshore of the affected country.
+        """
+        if not losspager_items:
+            return None
+
+        fatalities_by_country: dict[str, int] = {}
+        for loss_data in losspager_items:
+            if not loss_data.empirical_fatality:
+                continue
+            for country in loss_data.empirical_fatality.country_fatalities:
+                fatalities_by_country[country.country_code] = (
+                    fatalities_by_country.get(country.country_code, 0) + country.fatalities
+                )
+
+        if not fatalities_by_country or max(fatalities_by_country.values()) == 0:
+            return None
+        # Use the max affected country
+        primary_iso2 = max(fatalities_by_country, key=fatalities_by_country.get)
+        return self.iso2_to_iso3(primary_iso2)
+
     def get_stac_items(self) -> typing.Generator[Item, None, None]:
         """Creates the STAC Items"""
         self.transform_summary.mark_as_started()
@@ -409,10 +433,10 @@ class USGSTransformer(MontyDataTransformer[USGSDataSource]):
                 return validated_alert_data
 
             validated_item = USGSValidator(**item_data)
+            losspager_validated_items = get_validated_data(losspager_data)
+            alert_validated_items = get_validated_alert_data(alert_data)
 
-            if event_item := self.make_source_event_item(item_data=validated_item):
-                losspager_validated_items = get_validated_data(losspager_data)
-                alert_validated_items = get_validated_alert_data(alert_data)
+            if event_item := self.make_source_event_item(item_data=validated_item, losspager_items=losspager_validated_items):
                 hazard_item = self.make_hazard_event_item(event_item=event_item, data_item=validated_item)
                 impact_items = self.make_impact_items(
                     event_item=event_item,
@@ -440,7 +464,9 @@ class USGSTransformer(MontyDataTransformer[USGSDataSource]):
     def make_items(self) -> typing.List[Item]:
         return list(self.get_stac_items())
 
-    def make_source_event_item(self, item_data: USGSValidator) -> Item:
+    def make_source_event_item(
+        self, item_data: USGSValidator, losspager_items: typing.List[EmpiricalValidator] | None = None
+    ) -> Item:
         """Create source event item from USGS data."""
 
         # Create geometry from coordinates
@@ -480,8 +506,15 @@ class USGSTransformer(MontyDataTransformer[USGSDataSource]):
         monty.episode_number = 1
         monty.hazard_codes = ["GH0101", "nat-geo-ear-gro", "EQ"]
 
-        # TODO Get country code from event data or geometry
-        iso3 = self.geocoder.get_iso3_from_point(point) or "UNK"
+        iso3 = self.geocoder.get_iso3_from_point(point) or self._get_primary_country_from_losses(losspager_items)
+        if not iso3:
+            logger.warning(
+                "Could not resolve a country code for USGS event %s at (lon=%s, lat=%s); falling back to 'UNK'",
+                item_data.id,
+                longitude,
+                latitude,
+            )
+            iso3 = "UNK"
         country_codes = [iso3]
 
         monty.country_codes = country_codes

@@ -1,0 +1,46 @@
+[
+    {
+        "empirical_fatality": {
+            "total_fatalities": 53704,
+            "country_fatalities": [
+                {
+                    "country_code": "CO",
+                    "fatalities": 0
+                },
+                {
+                    "country_code": "AW",
+                    "fatalities": 0
+                },
+                {
+                    "country_code": "BQ",
+                    "fatalities": 0
+                },
+                {
+                    "country_code": "VE",
+                    "fatalities": 53704
+                }
+            ]
+        },
+        "empirical_economic": {
+            "total_dollars": 55230193960,
+            "country_dollars": [
+                {
+                    "country_code": "CO",
+                    "us_dollars": 0
+                },
+                {
+                    "country_code": "AW",
+                    "us_dollars": 0
+                },
+                {
+                    "country_code": "BQ",
+                    "us_dollars": 0
+                },
+                {
+                    "country_code": "VE",
+                    "us_dollars": 55230193960
+                }
+            ]
+        }
+    }
+]

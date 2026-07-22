@@ -1,0 +1,36 @@
+{
+    "type": "Feature",
+    "properties": {
+        "mag": 7.5,
+        "place": "20 km ESE of Yumare, Venezuela",
+        "time": 1782338711743,
+        "felt": 771,
+        "status": "reviewed",
+        "tsunami": 0,
+        "magType": "mww",
+        "title": "M 7.5 - 20 km ESE of Yumare, Venezuela",
+        "products": {
+            "shakemap": [
+                {
+                    "properties": {
+                        "depth": "10.0",
+                        "maximum-latitude": "14.533",
+                        "maximum-longitude": "-62.583",
+                        "minimum-latitude": "6.383",
+                        "minimum-longitude": "-72.583"
+                    },
+                    "contents": {
+                        "download/pin-thumbnail.png": {
+                            "url": "https://earthquake.usgs.gov/pdl/products/urn:usgs-product:us:shakemap:us6000t7zp:1783916348611/contents/download/pin-thumbnail.png"
+                        }
+                    }
+                }
+            ]
+        }
+    },
+    "geometry": {
+        "type": "Point",
+        "coordinates": [-68.5036, 10.5086, 10]
+    },
+    "id": "us6000t7zp"
+}

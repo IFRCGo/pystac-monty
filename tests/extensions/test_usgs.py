@@ -64,6 +64,13 @@ tibetan_plateau_eq = (
     "./tests/data/usgs/losses.json",  # Losses File
 )
 
+# Test on Venezuela data (event id=us6000t7zp)
+venezuela_eq = (
+    "venezuela_eq",  # Scenario name
+    "./tests/data/usgs/venezuela_details.json",  # Event File
+    "./tests/data/usgs/venezuela_losses.json",  # Losses File
+)
+
 
 class USGSTest(unittest.TestCase):
     """Test suite for USGS transformation functionality"""
@@ -244,6 +251,47 @@ class USGSTest(unittest.TestCase):
 
         self.assertTrue(found_event)
         self.assertTrue(found_hazard)
+
+    def test_event_hazard_impact_country_codes_are_consistent(self) -> None:
+        """Regression test for https://github.com/IFRCGo/pystac-monty/issues/167
+
+        The event and hazard items must resolve a real ISO3 country code for the
+        epicenter (not fall back to the non-spec "UNK" placeholder), and that code
+        must be consistent with the countries impact items derive from PAGER losses.
+        """
+        data_source = USGSDataSource(
+            data=USGSDataSourceType(
+                source_url=venezuela_eq[1],
+                event_data=File(path=venezuela_eq[1], data_type=DataType.FILE),
+                loss_data=File(path=venezuela_eq[2], data_type=DataType.FILE),
+            )
+        )
+        transformer = USGSTransformer(data_source, geocoder)
+
+        source_event_item = None
+        source_hazard_item = None
+        impact_items = []
+        for item in transformer.get_stac_items():
+            item.validate(validator=self.validator)
+            monty_item_ext = MontyExtension.ext(item)
+            if monty_item_ext.is_source_event():
+                source_event_item = item
+            elif monty_item_ext.is_source_hazard():
+                source_hazard_item = item
+            elif monty_item_ext.is_source_impact():
+                impact_items.append(item)
+
+        self.assertIsNotNone(source_event_item)
+        self.assertIsNotNone(source_hazard_item)
+        self.assertTrue(impact_items)
+
+        event_country_codes = MontyExtension.ext(source_event_item).country_codes
+        hazard_country_codes = MontyExtension.ext(source_hazard_item).country_codes
+
+        self.assertEqual(event_country_codes, ["VEN"])
+        self.assertEqual(hazard_country_codes, ["VEN"])
+        for impact_item in impact_items:
+            self.assertEqual(MontyExtension.ext(impact_item).country_codes, ["VEN"])
 
     # def test_invalid_event_data(self) -> None:
     #     """Test handling of invalid event data
