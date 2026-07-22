@@ -293,6 +293,35 @@ class USGSTest(unittest.TestCase):
         for impact_item in impact_items:
             self.assertEqual(MontyExtension.ext(impact_item).country_codes, ["VEN"])
 
+    def test_alert_derived_impact_items_have_correct_roles_and_country(self) -> None:
+        """Regression test for alerts"""
+        data_source = USGSDataSource(
+            data=USGSDataSourceType(
+                source_url=venezuela_eq[1],
+                event_data=File(path=venezuela_eq[1], data_type=DataType.FILE),
+                alerts_data=File(path="./tests/data/usgs/venezuela_alerts.json", data_type=DataType.FILE),
+            )
+        )
+        transformer = USGSTransformer(data_source, geocoder)
+
+        impact_items = []
+        for item in transformer.get_stac_items():
+            item.validate(validator=self.validator)
+            monty_item_ext = MontyExtension.ext(item)
+            if monty_item_ext.is_source_impact():
+                impact_items.append(item)
+
+        # One alert-derived impact item each for fatality and economic estimates
+        self.assertEqual(len(impact_items), 2)
+
+        for impact_item in impact_items:
+            self.assertEqual(impact_item.properties["roles"], ["source", "impact"])
+            self.assertNotIn("event", impact_item.properties["roles"])
+
+            country_codes = MontyExtension.ext(impact_item).country_codes
+            self.assertEqual(country_codes, ["VEN"])
+            self.assertNotIn("UNK", impact_item.id)
+
     # def test_invalid_event_data(self) -> None:
     #     """Test handling of invalid event data
 

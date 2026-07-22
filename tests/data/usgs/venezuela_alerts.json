@@ -1,0 +1,58 @@
+[
+    {
+        "fatality": {
+            "type": "fatality",
+            "units": "fatalities",
+            "gvalue": 3.5,
+            "summary": false,
+            "level": "orange",
+            "bins": [
+                {
+                    "color": "yellow",
+                    "min": 1,
+                    "max": 10,
+                    "probability": 0.3
+                },
+                {
+                    "color": "orange",
+                    "min": 10,
+                    "max": 100,
+                    "probability": 0.5
+                },
+                {
+                    "color": "red",
+                    "min": 100,
+                    "max": 1000,
+                    "probability": 0.2
+                }
+            ]
+        },
+        "economic": {
+            "type": "economic",
+            "units": "USD",
+            "gvalue": 2.1,
+            "summary": false,
+            "level": "yellow",
+            "bins": [
+                {
+                    "color": "green",
+                    "min": 0,
+                    "max": 1000000,
+                    "probability": 0.4
+                },
+                {
+                    "color": "yellow",
+                    "min": 1000000,
+                    "max": 10000000,
+                    "probability": 0.4
+                },
+                {
+                    "color": "orange",
+                    "min": 10000000,
+                    "max": 100000000,
+                    "probability": 0.2
+                }
+            ]
+        }
+    }
+]
