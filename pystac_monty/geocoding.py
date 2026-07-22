@@ -200,7 +200,7 @@ class WorldAdministrativeBoundariesGeocoder(MontyGeoCoder):
         return None
 
     def get_iso3_from_point(self, point: Point) -> Optional[str]:
-        self.get_iso3_from_geometry(point.__geo_interface__)
+        return self.get_iso3_from_geometry(point.__geo_interface__)
 
     def get_geometry_from_admin_units(self, admin_units: str, simplified: bool = False) -> Optional[Dict[str, Any]]:
         raise NotImplementedError("Method not implemented")
