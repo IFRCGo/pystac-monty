@@ -1,6 +1,5 @@
 import logging
 from datetime import datetime
-from typing import List
 
 from pydantic import BaseModel, field_validator
 
@@ -81,7 +80,7 @@ class FieldReport(BaseModel):
 
 class IFRCsourceValidator(BaseModel):
     dtype: DisasterType
-    countries: List[Country]
+    countries: list[Country]
     # num_affected: Optional[int]
     # ifrc_severity_level: int
     # ifrc_severity_level_display: str
@@ -92,7 +91,7 @@ class IFRCsourceValidator(BaseModel):
     # appeals: List[Appeal]
     # is_featured: bool
     # is_featured_region: bool
-    field_reports: List[FieldReport]
+    field_reports: list[FieldReport]
     # updated_at: datetime
     id: int
     # slug: Optional[str]
