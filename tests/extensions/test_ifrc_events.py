@@ -268,7 +268,7 @@ class IfrcEventsTest(TestCase):
 
         # Test other disaster types
         assert transformer.map_ifrc_to_hazard_codes("Flood") == ["MH0600", "nat-hyd-flo-flo", "FL"]
-        assert transformer.map_ifrc_to_hazard_codes("Flash Flood") == ["MH0603", "nat-hyd-flo-fla", "FF"]
+        assert transformer.map_ifrc_to_hazard_codes("Pluvial/Flash Flood") == ["MH0603", "nat-hyd-flo-fla", "FF"]
         assert transformer.map_ifrc_to_hazard_codes("Volcanic Eruption") == ["GH0201", "nat-geo-vol-vol", "VO"]
         assert transformer.map_ifrc_to_hazard_codes("Drought") == ["MH0401", "nat-cli-dro-dro", "DR"]
         assert transformer.map_ifrc_to_hazard_codes("Heat Wave") == ["MH0501", "nat-met-ext-hea", "HT"]
@@ -292,7 +292,7 @@ class IfrcEventsTest(TestCase):
             "Drought",
             "Storm Surge",
             "Landslide",
-            "Flash Flood",
+            "Pluvial/Flash Flood",
             "Epidemic",
         ]
 

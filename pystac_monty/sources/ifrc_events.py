@@ -3,7 +3,7 @@ import logging
 import os
 import typing
 from dataclasses import dataclass, field
-from typing import List, Union
+from typing import List
 
 from pystac import Item
 
@@ -21,8 +21,8 @@ STAC_IMPACT_ID_PREFIX = "ifrcevent-impact-"
 @dataclass
 class IFRCEventDataSource(MontyDataSourceV3):
     file_path: str = field(init=False)
-    data: Union[str, dict] = field(init=False)
-    input_data: Union[File, Memory] = field(init=False)
+    data: str | dict = field(init=False)
+    input_data: File | Memory = field(init=False)
 
     def __init__(self, data: GenericDataSource, eoapi_url: str | None = None):
         super().__init__(root=data, eoapi_url=eoapi_url)
@@ -48,7 +48,7 @@ class IFRCEventDataSource(MontyDataSourceV3):
             case _:
                 typing.assert_never(input_data_type)
 
-    def get_data(self) -> Union[dict, str]:
+    def get_data(self) -> dict | str:
         if self.input_data.data_type == DataType.FILE:
             return self.file_path
         return self.data
@@ -70,20 +70,22 @@ class IFRCEventTransformer(MontyDataTransformer[IFRCEventDataSource]):
         with open(data_path, "r", encoding="utf-8") as f:
             filtered_ifrcevent_data = []
             for item in json.load(f):
-                appeals: list[typing.Dict] | None = item.get("appeals")
+                appeals: list[dict] | None = item.get("appeals")
                 if not appeals:
                     continue
 
-                first_appeal: typing.Dict = appeals[0]
+                first_appeal: dict = appeals[0]
+                # Handle the types DREF or APPEAL
                 if first_appeal.get("atype", None) not in {0, 1}:
                     continue
 
-                dtype: typing.Dict | None = item.get("dtype")
+                dtype: dict | None = item.get("dtype")
                 if not dtype:
                     continue
 
                 dtype_name: str | None = dtype.get("name")
                 if not self.check_accepted_disaster_types(dtype_name):
+                    logger.warning(f"The disaster type {dtype_name} is not processed. Ignoring")
                     continue
                 filtered_ifrcevent_data.append(item)
 
@@ -105,27 +107,30 @@ class IFRCEventTransformer(MontyDataTransformer[IFRCEventDataSource]):
                         self.transform_summary.increment_failed_rows()
                 except Exception:
                     self.transform_summary.increment_failed_rows()
-                    logger.warning("Failed to process IFRC events data", exc_info=True)
+                    e_id = data["id"] if "id" in data else "N/A"
+                    logger.warning(f"Failed to process IFRC events data with id {e_id}", exc_info=True)
             self.transform_summary.mark_as_complete()
 
     def get_stac_items_from_memory(self) -> typing.Generator[Item, None, None]:
         data = self.data_source.get_data()
         filtered_ifrcevent_data = []
         for item in data:
-            appeals: list[typing.Dict] | None = item.get("appeals")
+            appeals: list[dict] | None = item.get("appeals")
             if not appeals:
                 continue
 
-            first_appeal: typing.Dict = appeals[0]
+            first_appeal: dict = appeals[0]
+            # Handle the types DREF or APPEAL
             if first_appeal.get("atype", None) not in {0, 1}:
                 continue
 
-            dtype: typing.Dict | None = item.get("dtype")
+            dtype: dict | None = item.get("dtype")
             if not dtype:
                 continue
 
             dtype_name: str | None = dtype.get("name")
             if not self.check_accepted_disaster_types(dtype_name):
+                logger.warning(f"The disaster type {dtype_name} is not processed. Ignoring")
                 continue
             filtered_ifrcevent_data.append(item)
 
@@ -147,7 +152,8 @@ class IFRCEventTransformer(MontyDataTransformer[IFRCEventDataSource]):
                     self.transform_summary.increment_failed_rows()
             except Exception:
                 self.transform_summary.increment_failed_rows()
-                logger.warning("Failed to process IFRC events data", exc_info=True)
+                e_id = data["id"] if "id" in data else "N/A"
+                logger.warning(f"Failed to process IFRC events data with id {e_id}", exc_info=True)
         self.transform_summary.mark_as_complete()
 
     def get_stac_items(self) -> typing.Generator[Item, None, None]:
@@ -177,7 +183,6 @@ class IFRCEventTransformer(MontyDataTransformer[IFRCEventDataSource]):
         else:
             raise ValueError("Empty Countries; cannot generate geometry and bbox")
 
-        # start_date = datetime.fromisoformat(data["disaster_start_date"])
         start_date = data.disaster_start_date
         # Create item
         item = Item(
@@ -247,7 +252,7 @@ class IFRCEventTransformer(MontyDataTransformer[IFRCEventDataSource]):
             "Drought": ["MH0401", "nat-cli-dro-dro", "DR"],  # Drought
             "Storm Surge": ["MH0703", "nat-met-sto-sur", "SS"],  # Storm Surge
             "Landslide": ["GH0300", "nat-geo-mmd-lan", "LS"],  # Gravitational Mass Movement
-            "Flash Flood": ["MH0603", "nat-hyd-flo-fla", "FF"],  # Flash Flooding
+            "Pluvial/Flash Flood": ["MH0603", "nat-hyd-flo-fla", "FF"],  # Flash Flooding
             "Epidemic": ["BI0101", "nat-bio-epi-dis", "EP"],  # Infectious Diseases
         }
 
@@ -329,12 +334,11 @@ class IFRCEventTransformer(MontyDataTransformer[IFRCEventDataSource]):
             estimate_type=MontyEstimateType.PRIMARY,
         )
 
-    # FIXME: not used here
     def check_accepted_disaster_types(self, disaster: str | None):
         if not disaster:
             return []
 
-        # Filter out relevant disaster types
+        # Filter relevant disaster types from GO
         monty_accepted_disaster_types = [
             "Earthquake",
             "Cyclone",
@@ -347,7 +351,7 @@ class IFRCEventTransformer(MontyDataTransformer[IFRCEventDataSource]):
             "Drought",
             "Storm Surge",
             "Landslide",
-            "Flash Flood",
+            "Pluvial/Flash Flood",
             "Epidemic",
         ]
         return disaster in monty_accepted_disaster_types
