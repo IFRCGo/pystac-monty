@@ -13,6 +13,7 @@ from pystac_monty.exporter import MONTY_STAC_EXAMPLES_BASE_URL
 from pystac_monty.extension import MontyExtension
 from pystac_monty.sources.batch_export import run_batch
 from pystac_monty.sources.charter import (
+    CHARTER_HAZARD_CODES,
     CharterDataSource,
     CharterTransformer,
     convert_charter_activations,
@@ -21,6 +22,7 @@ from pystac_monty.sources.charter import (
 from pystac_monty.sources.common import DataType, File, GenericDataSource, Memory, sanitize_stac_item_id
 from pystac_monty.sources.utils import save_json_data_into_tmp_file
 from tests.extensions.test_monty import CustomValidator
+from tests.utils.test_hazard_taxonomy import assert_hazard_code_dict_valid, taxonomy_md_path
 from tests.utils.test_utils import validate_correlation_id
 
 
@@ -229,7 +231,7 @@ class CharterTest(unittest.TestCase):
             self.assertTrue(any(link.rel == "related" for link in hazard.links))
             derived = [link for link in hazard.links if link.rel == "derived_from"]
             self.assertEqual(len(derived), 1)
-            self.assertEqual(derived[0].media_type, "application/json")
+            self.assertEqual(derived[0].media_type, "application/geo+json")
 
     def test_sanitize_stac_item_id(self) -> None:
         self.assertEqual(sanitize_stac_item_id("abc/def:g[h]"), "abc-def-g-h")
@@ -260,7 +262,7 @@ class CharterTest(unittest.TestCase):
 
         detail = MontyExtension.ext(hazard).hazard_detail
         self.assertIsNotNone(detail)
-        self.assertEqual(detail.properties["severity_value"], 8.0)
+        self.assertEqual(detail.properties["severity_value"], 8)
 
     def test_transformer_with_file_data(self) -> None:
         tmpfile = save_json_data_into_tmp_file(JSON_MOCK_DATA)
@@ -321,7 +323,7 @@ class CharterTest(unittest.TestCase):
         hazards = [item for item in _memory_transformer(data).get_stac_items() if MontyExtension.ext(item).is_source_hazard()]
 
         self.assertEqual(len(hazards), 1)
-        self.assertEqual(MontyExtension.ext(hazards[0]).hazard_codes, ["MH0901", "LS", "nat-geo-mmd-lan"])
+        self.assertEqual(MontyExtension.ext(hazards[0]).hazard_codes, ["GH0300", "LS", "nat-geo-mmd-lan"])
 
     def test_api_area_search_url_uses_clean_aoi_slug(self) -> None:
         data = deepcopy(JSON_MOCK_DATA)
@@ -497,7 +499,7 @@ class CharterTest(unittest.TestCase):
         )
         self.assertEqual(
             event_monty.hazard_codes,
-            ["MH0600", "FL", "nat-hyd-flo-flo", "MH0901", "LS", "nat-geo-mmd-lan"],
+            ["MH0600", "FL", "nat-hyd-flo-flo", "GH0300", "LS", "nat-geo-mmd-lan"],
         )
         validate_correlation_id(event_monty.correlation_id, "MH0600")
         for item in hazards + responses:
@@ -758,3 +760,29 @@ class CharterTest(unittest.TestCase):
         self.assertTrue(any("event" in role for role in roles))
         self.assertTrue(any("hazard" in role for role in roles))
         self.assertTrue(any("response" in role for role in roles))
+
+    def test_charter_hazard_codes_match_taxonomy(self) -> None:
+        if not taxonomy_md_path().is_file():
+            self.skipTest("monty-stac-extension submodule not initialized")
+        assert_hazard_code_dict_valid(CHARTER_HAZARD_CODES, label="CHARTER_HAZARD_CODES")
+
+    def test_manual_review_disaster_types_skip_event(self) -> None:
+        transformer = _memory_transformer()
+        point = {"type": "Point", "coordinates": [0, 0]}
+        base_props = {
+            "disaster:activation_id": "manual",
+            "disaster:country": "BRA",
+            "datetime": "2024-01-01T00:00:00Z",
+            "title": "Manual review activation",
+        }
+        for dtype in ("storm_hurricane", "snow_hazard"):
+            with self.subTest(dtype=dtype):
+                self.assertIsNone(
+                    transformer.make_event_item(
+                        {
+                            "properties": {**base_props, "disaster:type": [dtype]},
+                            "geometry": point,
+                            "bbox": [0, 0, 0, 0],
+                        }
+                    )
+                )
