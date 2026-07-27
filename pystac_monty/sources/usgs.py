@@ -715,6 +715,7 @@ class USGSTransformer(MontyDataTransformer[USGSDataSource]):
         impact_item.set_collection(self.get_impact_collection())
 
         impact_item.properties["forecasted"] = True
+        impact_item.properties["roles"] = ["source", "impact"]
 
         monty.impact_detail = ImpactDetail(
             category=category, type=imp_type, value=value, unit=unit, estimate_type=MontyEstimateType.MODELLED
