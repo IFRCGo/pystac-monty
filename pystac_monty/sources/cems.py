@@ -67,7 +67,7 @@ CEMS_HAZARD_CODES: dict[str, list[str]] = {
     "flood": ["MH0600", "FL", "nat-hyd-flo-flo"],
     "flood_riverine": ["MH0604", "FL", "nat-hyd-flo-flo"],
     "flood_flash": ["MH0603", "FF", "nat-hyd-flo-flo"],
-    "flood_coastal": ["MH0601", "FL", "nat-hyd-flo-flo"],
+    "flood_coastal": ["MH0601", "FL", "nat-hyd-flo-coa"],
     "wildfire": ["EN0205", "WF", "nat-cli-wil-for"],
     "storm_tropical": ["MH0306", "TC", "nat-met-sto-tro"],
     "earthquake": ["GH0101", "EQ", "nat-geo-ear-gro"],
