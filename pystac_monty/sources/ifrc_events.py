@@ -74,9 +74,10 @@ class IFRCEventTransformer(MontyDataTransformer[IFRCEventDataSource]):
                 if not appeals:
                     continue
 
-                first_appeal: dict = appeals[0]
-                # Handle the types DREF or APPEAL
-                if first_appeal.get("atype", None) not in {0, 1}:
+                appeal_set = {appeal["atype"] for appeal in appeals if appeal.get("atype") not in [None, ""]}
+                # Only allow types DREF(0) and Emergency Appeal(1)
+                # Note: Might need to sync with the request query in montandon-etl repo
+                if not appeal_set.issubset({0, 1}):
                     continue
 
                 dtype: dict | None = item.get("dtype")
@@ -88,6 +89,7 @@ class IFRCEventTransformer(MontyDataTransformer[IFRCEventDataSource]):
                     logger.warning(f"The disaster type {dtype_name} is not processed. Ignoring")
                     continue
                 filtered_ifrcevent_data.append(item)
+            logger.info(f"Total items to process: {len(filtered_ifrcevent_data)}")
 
             self.transform_summary.mark_as_started()
             for data in filtered_ifrcevent_data:
@@ -107,7 +109,7 @@ class IFRCEventTransformer(MontyDataTransformer[IFRCEventDataSource]):
                         self.transform_summary.increment_failed_rows()
                 except Exception:
                     self.transform_summary.increment_failed_rows()
-                    e_id = data["id"] if "id" in data else "N/A"
+                    e_id = data.get("id", "N/A")
                     logger.warning(f"Failed to process IFRC events data with id {e_id}", exc_info=True)
             self.transform_summary.mark_as_complete()
 
@@ -119,9 +121,11 @@ class IFRCEventTransformer(MontyDataTransformer[IFRCEventDataSource]):
             if not appeals:
                 continue
 
-            first_appeal: dict = appeals[0]
-            # Handle the types DREF or APPEAL
-            if first_appeal.get("atype", None) not in {0, 1}:
+            appeal_set = {appeal["atype"] for appeal in appeals if appeal.get("atype") not in [None, ""]}
+
+            # Only allow types DREF(0) and Emergency Appeal(1)
+            # Note: Might need to sync with the request query in montandon-etl repo
+            if not appeal_set.issubset({0, 1}):
                 continue
 
             dtype: dict | None = item.get("dtype")
@@ -133,6 +137,7 @@ class IFRCEventTransformer(MontyDataTransformer[IFRCEventDataSource]):
                 logger.warning(f"The disaster type {dtype_name} is not processed. Ignoring")
                 continue
             filtered_ifrcevent_data.append(item)
+            logger.info(f"Total items to process: {len(filtered_ifrcevent_data)}")
 
         self.transform_summary.mark_as_started()
         for data in filtered_ifrcevent_data:
@@ -152,7 +157,7 @@ class IFRCEventTransformer(MontyDataTransformer[IFRCEventDataSource]):
                     self.transform_summary.increment_failed_rows()
             except Exception:
                 self.transform_summary.increment_failed_rows()
-                e_id = data["id"] if "id" in data else "N/A"
+                e_id = data.get("id", "N/A")
                 logger.warning(f"Failed to process IFRC events data with id {e_id}", exc_info=True)
         self.transform_summary.mark_as_complete()
 
@@ -301,26 +306,27 @@ class IFRCEventTransformer(MontyDataTransformer[IFRCEventDataSource]):
             ),
         }
 
-        for impact_field, (category, impact_type) in impact_field_category_map.items():
-            impact_item = event_item.clone()
-            impact_item.id = f"{STAC_IMPACT_ID_PREFIX}-{ifrcevent_data.id}-{impact_type}"
-            impact_item.properties["roles"] = ["source", "impact"]
-            impact_item.set_collection(self.get_impact_collection())
+        for field_report in ifrcevent_data.field_reports:
+            for impact_field, (category, impact_type) in impact_field_category_map.items():
+                impact_item = event_item.clone()
+                impact_item.id = f"{STAC_IMPACT_ID_PREFIX}{ifrcevent_data.id}-{impact_type}-{field_report.id}"
+                impact_item.properties["roles"] = ["source", "impact"]
+                impact_item.set_collection(self.get_impact_collection())
 
-            monty = MontyExtension.ext(impact_item)
+                monty = MontyExtension.ext(impact_item)
 
-            # only save impact value if not null
-            value = None
-            for field_name in impact_field:
-                value = getattr(ifrcevent_data.field_reports[0], field_name)
-                if value:
-                    break
+                # only save impact value if not null
+                value = None
+                for field_name in impact_field:
+                    value = getattr(field_report, field_name)
+                    if value:
+                        break
 
-            if not value:
-                continue
+                if not value:
+                    continue
 
-            monty.impact_detail = self.get_impact_details(category, impact_type, value)
-            items.append(impact_item)
+                monty.impact_detail = self.get_impact_details(category, impact_type, value)
+                items.append(impact_item)
 
         return items
 
