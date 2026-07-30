@@ -34,7 +34,7 @@ class Country(BaseModel):
 class FieldReport(BaseModel):
     # status: int
     # contacts: List[Contact]
-    # countries: List[Country]
+    countries: list[Country]
     # created_at: datetime
     # updated_at: datetime
     # report_date: datetime
