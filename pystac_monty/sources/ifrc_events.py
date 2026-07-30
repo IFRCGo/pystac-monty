@@ -6,6 +6,8 @@ from dataclasses import dataclass, field
 from typing import List
 
 from pystac import Item
+from shapely.geometry import mapping, shape
+from shapely.ops import unary_union
 
 from pystac_monty.extension import ImpactDetail, MontyEstimateType, MontyExtension, MontyImpactExposureCategory, MontyImpactType
 from pystac_monty.hazard_profiles import MontyHazardProfiles
@@ -74,9 +76,10 @@ class IFRCEventTransformer(MontyDataTransformer[IFRCEventDataSource]):
                 if not appeals:
                     continue
 
-                first_appeal: dict = appeals[0]
-                # Handle the types DREF or APPEAL
-                if first_appeal.get("atype", None) not in {0, 1}:
+                appeal_set = {appeal["atype"] for appeal in appeals if appeal.get("atype") not in [None, ""]}
+                # Only allow types DREF(0) and Emergency Appeal(1)
+                # Note: Might need to sync with the request query in montandon-etl repo
+                if not appeal_set.issubset({0, 1}):
                     continue
 
                 dtype: dict | None = item.get("dtype")
@@ -88,6 +91,7 @@ class IFRCEventTransformer(MontyDataTransformer[IFRCEventDataSource]):
                     logger.warning(f"The disaster type {dtype_name} is not processed. Ignoring")
                     continue
                 filtered_ifrcevent_data.append(item)
+            logger.info(f"Total items to process: {len(filtered_ifrcevent_data)}")
 
             self.transform_summary.mark_as_started()
             for data in filtered_ifrcevent_data:
@@ -107,7 +111,7 @@ class IFRCEventTransformer(MontyDataTransformer[IFRCEventDataSource]):
                         self.transform_summary.increment_failed_rows()
                 except Exception:
                     self.transform_summary.increment_failed_rows()
-                    e_id = data["id"] if "id" in data else "N/A"
+                    e_id = data.get("id", "N/A")
                     logger.warning(f"Failed to process IFRC events data with id {e_id}", exc_info=True)
             self.transform_summary.mark_as_complete()
 
@@ -119,9 +123,11 @@ class IFRCEventTransformer(MontyDataTransformer[IFRCEventDataSource]):
             if not appeals:
                 continue
 
-            first_appeal: dict = appeals[0]
-            # Handle the types DREF or APPEAL
-            if first_appeal.get("atype", None) not in {0, 1}:
+            appeal_set = {appeal["atype"] for appeal in appeals if appeal.get("atype") not in [None, ""]}
+
+            # Only allow types DREF(0) and Emergency Appeal(1)
+            # Note: Might need to sync with the request query in montandon-etl repo
+            if not appeal_set.issubset({0, 1}):
                 continue
 
             dtype: dict | None = item.get("dtype")
@@ -133,6 +139,7 @@ class IFRCEventTransformer(MontyDataTransformer[IFRCEventDataSource]):
                 logger.warning(f"The disaster type {dtype_name} is not processed. Ignoring")
                 continue
             filtered_ifrcevent_data.append(item)
+            logger.info(f"Total items to process: {len(filtered_ifrcevent_data)}")
 
         self.transform_summary.mark_as_started()
         for data in filtered_ifrcevent_data:
@@ -152,7 +159,7 @@ class IFRCEventTransformer(MontyDataTransformer[IFRCEventDataSource]):
                     self.transform_summary.increment_failed_rows()
             except Exception:
                 self.transform_summary.increment_failed_rows()
-                e_id = data["id"] if "id" in data else "N/A"
+                e_id = data.get("id", "N/A")
                 logger.warning(f"Failed to process IFRC events data with id {e_id}", exc_info=True)
         self.transform_summary.mark_as_complete()
 
@@ -166,23 +173,35 @@ class IFRCEventTransformer(MontyDataTransformer[IFRCEventDataSource]):
             case _:
                 typing.assert_never(data_type)
 
-    def make_source_event_item(self, data: IFRCsourceValidator) -> Item:
+    def _get_geometry(self, affected_iso3_or_countries: list[str]) -> tuple[dict[str, str | list] | None, list | None]:
+        """Generate the geometrical polygon or multipolygon of a country or countries involved in the event."""
+        polygon_geometries = []
+        for iso3_or_country in affected_iso3_or_countries:
+            geom_data = self.geocoder.get_geometry_from_iso3(iso3_or_country, simplified=True)
+            if not geom_data:
+                geom_data = self.geocoder.get_geometry_by_country_name(iso3_or_country, simplified=True)
+            if geom_data:
+                polygon_geometries.append(geom_data["geometry"])
+        if polygon_geometries:
+            combined_geometry = unary_union([shape(g) for g in polygon_geometries])
+            geometry = mapping(combined_geometry)
+            bbox = list(combined_geometry.bounds)
+        else:
+            logger.warning("No geometry polygons found. Skipping items formation.")
+            return None, None
+        return geometry, bbox
+
+    def make_source_event_item(self, data: IFRCsourceValidator) -> Item | None:
         """Create an event item"""
         geometry = None
         bbox = None
-
         if data.countries:
-            geom_data = self.geocoder.get_geometry_from_iso3(data.countries[0].iso3, simplified=True)
-            if not geom_data:
-                geom_data = self.geocoder.get_geometry_by_country_name(data.countries[0].name, simplified=True)
-            if geom_data:
-                geometry = geom_data["geometry"]
-                bbox = geom_data["bbox"]
-            else:
-                raise ValueError("No geometry data")
+            affected_iso3_or_countries = [item.iso3 if item.iso3 else item.name for item in data.countries]
+            geometry, bbox = self._get_geometry(affected_iso3_or_countries=affected_iso3_or_countries)
         else:
             raise ValueError("Empty Countries; cannot generate geometry and bbox")
-
+        if not geometry or not bbox:
+            return None
         start_date = data.disaster_start_date
         # Create item
         item = Item(
@@ -301,26 +320,48 @@ class IFRCEventTransformer(MontyDataTransformer[IFRCEventDataSource]):
             ),
         }
 
-        for impact_field, (category, impact_type) in impact_field_category_map.items():
-            impact_item = event_item.clone()
-            impact_item.id = f"{STAC_IMPACT_ID_PREFIX}-{ifrcevent_data.id}-{impact_type}"
-            impact_item.properties["roles"] = ["source", "impact"]
-            impact_item.set_collection(self.get_impact_collection())
+        for field_report in ifrcevent_data.field_reports:
+            iso3_list = [country.iso3 for country in field_report.countries]
+            geometry = None
+            bbox = None
+            geometry_computed = False
 
-            monty = MontyExtension.ext(impact_item)
+            for impact_field, (category, impact_type) in impact_field_category_map.items():
+                # only build the item if atleast one impact value is not null
+                value = None
+                for field_name in impact_field:
+                    value = getattr(field_report, field_name)
+                    if value:
+                        break
 
-            # only save impact value if not null
-            value = None
-            for field_name in impact_field:
-                value = getattr(ifrcevent_data.field_reports[0], field_name)
-                if value:
-                    break
+                if not value:
+                    continue
 
-            if not value:
-                continue
+                if not geometry_computed:
+                    # NOTE It is likely that the impacted countries might be different or just a part of where the event occurred
+                    # The field reports may contain different country/regions.
+                    affected_iso3_or_countries = [item.iso3 if item.iso3 else item.name for item in field_report.countries]
+                    geometry, bbox = self._get_geometry(affected_iso3_or_countries=affected_iso3_or_countries)
+                    geometry_computed = True
 
-            monty.impact_detail = self.get_impact_details(category, impact_type, value)
-            items.append(impact_item)
+                impact_item = event_item.clone()
+                impact_item.id = f"{STAC_IMPACT_ID_PREFIX}{ifrcevent_data.id}-{impact_type}-{field_report.id}"
+                impact_item.properties["roles"] = ["source", "impact"]
+                impact_item.set_collection(self.get_impact_collection())
+
+                # NOTE if the geometry and bbox can be generated from field report, use it
+                # Otherwise fallback to using them from the event item
+                if geometry and bbox:
+                    impact_item.geometry = geometry
+                    impact_item.bbox = bbox
+
+                monty = MontyExtension.ext(impact_item)
+                # If iso3_list is non-empty, use it, if not,  fallback to using the countries list from event item
+                if iso3_list:
+                    monty.country_codes = iso3_list
+
+                monty.impact_detail = self.get_impact_details(category, impact_type, value)
+                items.append(impact_item)
 
         return items
 

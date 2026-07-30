@@ -34,11 +34,11 @@ class Country(BaseModel):
 class FieldReport(BaseModel):
     # status: int
     # contacts: List[Contact]
-    # countries: List[Country]
+    countries: list[Country]
     # created_at: datetime
     # updated_at: datetime
     # report_date: datetime
-    # id: int
+    id: int
     # is_covid_report: bool
     # num_assisted: int | None
     # num_displaced: int | None
