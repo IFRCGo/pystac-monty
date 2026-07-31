@@ -1,11 +1,17 @@
 from datetime import datetime
 from typing import List
 
+import pandas as pd
 import pytest
 from pystac import Item
 
 from pystac_monty.extension import MontyExtension
 from pystac_monty.hazard_profiles import HazardProfiles, MontyHazardProfiles
+from tests.utils.test_hazard_taxonomy import (
+    load_cross_classification_mapping,
+    load_valid_undrr_2025_codes,
+    taxonomy_md_path,
+)
 
 TEST_DATETIME = datetime(2024, 1, 1)
 
@@ -359,3 +365,115 @@ class TestMontyHazardProfiles:
         # The code should return the single cluster code
         cluster_code = profile.get_cluster_code(item)
         assert cluster_code == "nat-cli-dro-dro"
+
+
+class TestHazardProfilesCsvDrift:
+    """Regression tests for https://github.com/IFRCGo/pystac-monty/issues/184.
+
+    HazardProfiles.csv had drifted from monty-stac-extension's taxonomy.md,
+    so the canonicaliser silently dropped codes it could not find.
+    """
+
+    def _canonical(self, profile: MontyHazardProfiles, codes: List[str]) -> List[str]:
+        item = Item(id="test", geometry=None, bbox=None, datetime=TEST_DATETIME, properties={})
+        MontyExtension.ext(item, add_if_missing=True).hazard_codes = codes
+        return profile.get_canonical_hazard_codes(item)
+
+    def test_epidemic_glide_code_survives(self) -> None:
+        """GLIDE 'EP' must not be dropped for general infectious disease items."""
+        profile = MontyHazardProfiles()
+        codes = ["BI0101", "nat-bio-epi-dis", "EP"]
+        assert self._canonical(profile, codes) == ["BI0101", "EP", "nat-bio-epi-dis"]
+
+    def test_wildfire_forest_fire_emdat_key_survives(self) -> None:
+        """'nat-cli-wil-for' (forest fire) must resolve, not just 'nat-cli-wil-wil'."""
+        profile = MontyHazardProfiles()
+        codes = ["EN0205", "nat-cli-wil-for", "WF"]
+        assert self._canonical(profile, codes) == ["EN0205", "WF", "nat-cli-wil-for"]
+
+    def test_volcanic_general_activity_maps_to_gh0201(self) -> None:
+        """'nat-geo-vol-vol' (volcanic activity general) belongs on GH0201, not GH0205."""
+        profile = MontyHazardProfiles()
+        codes = ["GH0201", "nat-geo-vol-vol", "VO"]
+        assert self._canonical(profile, codes) == ["GH0201", "VO", "nat-geo-vol-vol"]
+
+        keywords = profile.get_keywords(codes)
+        assert "Volcanic Gases and Aerosols" not in keywords
+
+    def test_industrial_fire_uses_2025_code_tl0305(self) -> None:
+        """The industrial fire hazard is TL0305 in HIPs 2025, not the 2020 id TL0032."""
+        profile = MontyHazardProfiles()
+        codes = ["TL0305", "tec-ind-fir-fir", "FR"]
+        assert self._canonical(profile, codes) == ["TL0305", "FR", "tec-ind-fir-fir"]
+
+        profiles_df = profile.get_profiles()
+        assert "TL0032" not in profiles_df["undrr_2025_key"].values
+        assert "TL0305" in profiles_df["undrr_2025_key"].values
+
+    def test_all_2025_hazard_codes_are_covered(self) -> None:
+        """Every hazard code in HIPs 2025 (281 hazards) must appear in the CSV."""
+        profile = MontyHazardProfiles()
+        profiles_df = profile.get_profiles()
+        assert profiles_df["undrr_2025_key"].nunique() == 281
+
+    def test_no_duplicate_rows(self) -> None:
+        """The CSV must not contain fully duplicated rows."""
+        profile = MontyHazardProfiles()
+        profiles_df = profile.get_profiles()
+        assert not profiles_df.duplicated().any()
+
+
+class TestHazardProfilesCsvTaxonomyDrift:
+    """CI guard against HazardProfiles.csv drifting from monty-stac-extension's taxonomy.md.
+
+    Unlike TestHazardProfilesCsvDrift (which pins specific known-fixed bugs), these
+    tests re-parse the live submodule content on every run, so they also catch new
+    drift introduced by a future taxonomy.md/submodule update, not just a regression
+    of the four bugs reported in issue #184.
+    """
+
+    def setup_method(self) -> None:
+        if not taxonomy_md_path().is_file():
+            pytest.skip("monty-stac-extension submodule not initialized")
+
+    def test_csv_covers_every_taxonomy_2025_hazard_code(self) -> None:
+        profiles_df = MontyHazardProfiles().get_profiles()
+        csv_codes = set(profiles_df["undrr_2025_key"])
+        taxonomy_codes = load_valid_undrr_2025_codes()
+
+        missing = taxonomy_codes - csv_codes
+        assert not missing, f"HazardProfiles.csv is missing 2025 hazard codes present in taxonomy.md: {sorted(missing)}"
+
+    def test_csv_has_no_undrr_2025_codes_unknown_to_taxonomy(self) -> None:
+        profiles_df = MontyHazardProfiles().get_profiles()
+        csv_codes = set(profiles_df["undrr_2025_key"])
+        taxonomy_codes = load_valid_undrr_2025_codes()
+
+        unknown = csv_codes - taxonomy_codes
+        assert not unknown, f"HazardProfiles.csv has undrr_2025_key values not in taxonomy.md's hazard list: {sorted(unknown)}"
+
+    def test_csv_covers_cross_classification_mapping(self) -> None:
+        """Every (GLIDE, EM-DAT, UNDRR-2025) association documented in taxonomy.md's
+        Cross-Classification Mapping table must have a matching row in the CSV, so a
+        GLIDE or EM-DAT code from that table can never be silently dropped."""
+        profiles_df = MontyHazardProfiles().get_profiles()
+        csv_triples = {
+            (
+                row.glide_code if pd.notna(row.glide_code) else "",
+                row.emdat_key if pd.notna(row.emdat_key) else "",
+                row.undrr_2025_key,
+            )
+            for row in profiles_df.itertuples()
+        }
+
+        # See pystac-monty#184: taxonomy.md itself double-books "nat-geo-vol-vol"
+        # (Volcanic activity general) onto both GH0201 and GH0205, but the EM-DAT
+        # tree has no distinct code for volcanic gases, so GH0205 is a copy artifact.
+        KNOWN_TAXONOMY_ARTIFACTS = {("VO", "nat-geo-vol-vol", "GH0205")}
+
+        missing = [
+            (glide, emdat, undrr)
+            for glide, emdat, undrr in load_cross_classification_mapping()
+            if (glide, emdat, undrr) not in csv_triples and (glide, emdat, undrr) not in KNOWN_TAXONOMY_ARTIFACTS
+        ]
+        assert not missing, f"HazardProfiles.csv is missing cross-classification mappings from taxonomy.md: {missing}"

@@ -42,8 +42,6 @@ The CSV now includes the following columns:
 | `label` | Human-readable hazard name |
 | `cluster_label` | Cluster name (e.g., "Water-related", "Seismic") |
 | `family_label` | Family name (e.g., "Meteorological & Hydrological") |
-| `link_group` | Internal cluster grouping |
-| `link_maingroup` | Internal family grouping |
 | `glide_code` | GLIDE classification code (e.g., FL, EQ) |
 | `emdat_key` | EM-DAT classification key (e.g., nat-hyd-flo-flo) |
 

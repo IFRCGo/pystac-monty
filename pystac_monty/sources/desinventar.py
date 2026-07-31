@@ -157,7 +157,7 @@ hazard_mapping = {
     "FLASH FLOOD": ["MH0603", "nat-hyd-flo-fla", "FF"],  # Flash flood
     "FLOOD": ["MH0600", "nat-hyd-flo-flo", "FL"],  # Flood
     "FOG": ["MH0202", "nat-met-fog-fog", "OT"],  # Fog
-    "FOREST FIRE": ["nat-cli-wil-for"],  # Forest fire
+    "FOREST FIRE": ["EN0205", "nat-cli-wil-for", "WF"],  # Forest fire
     "FROST": ["MH0505", "nat-met-ext-sev", "OT"],  # Severe frost
     "HAIL STORM": ["MH0404", "nat-met-sto-hai", "ST"],  # Hailstorm
     "HAILSTORM": ["MH0404", "nat-met-sto-hai", "ST"],  # Hailstorm
