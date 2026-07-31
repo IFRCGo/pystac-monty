@@ -38,3 +38,21 @@ jobs:
         run: uv sync --all-extras
       - name: Test
         run: uv run pytest tests
+
+  hazard-profiles-taxonomy-drift:
+    name: hazard-profiles-taxonomy-drift
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          submodules: true
+      - uses: actions/setup-python@v5
+        with:
+          python-version: "3.12"
+      - uses: astral-sh/setup-uv@v5
+        with:
+          enable-cache: true
+      - name: Sync
+        run: uv sync --all-extras
+      - name: Check HazardProfiles.csv against monty-stac-extension's taxonomy.md
+        run: uv run pytest tests/extensions/test_hazard_profiles_full.py::TestHazardProfilesCsvTaxonomyDrift -v
