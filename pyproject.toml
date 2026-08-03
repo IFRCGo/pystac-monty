@@ -117,6 +117,9 @@ filterwarnings = ["error"]
 include = ["pystac_monty*"]
 exclude = ["tests*"]
 
+[tool.setuptools.package-data]
+pystac_monty = ["HazardProfiles.csv"]
+
 [tool.setuptools.dynamic]
 version = { attr = "pystac_monty.extension.__version__" }
 

@@ -1,358 +1,303 @@
-﻿undrr_2025_key,undrr_key,label,cluster_label,family_label,link_group,link_maingroup,glide_code,emdat_key
-MH0101,MH0001,Downburst,Convective-Related,Meteorological & Hydrological,hazhmconv,haztypehydromet,ST,nat-met-sto-sev
-MH0102,MH0002,Lightning (electrical storm),Convective-Related,Meteorological & Hydrological,hazhmconv,haztypehydromet,ST,nat-met-sto-lig
-MH0103,MH0003,Thunderstorm,Convective-Related,Meteorological & Hydrological,hazhmconv,haztypehydromet,ST,nat-met-sto-sto
-MH0201,MH0015,Dust Storm or Sandstorm,Particle-related,Meteorological & Hydrological,hazhmlitho,haztypehydromet,VW,nat-met-sto-san
-MH0202,MH0016,Fog,Particle-related,Meteorological & Hydrological,hazhmlitho,haztypehydromet,OT,nat-met-fog-fog
-MH0203,MH0017,Haze,Particle-related,Meteorological & Hydrological,hazhmlitho,haztypehydromet,OT,
-MH0204,MH0019,Sand Haze,Particle-related,Meteorological & Hydrological,hazhmlitho,haztypehydromet,OT,
-MH0205,MH0020,Smoke,Particle-related,Meteorological & Hydrological,hazhmlitho,haztypehydromet,OT,
-MH0301,MH0060,Wind,Wind & Pressure-related,Meteorological & Hydrological,hazhmwind,haztypehydromet,VW,nat-met-sto-sto
-MH0302,MH0053,Derecho,Wind & Pressure-related,Meteorological & Hydrological,hazhmwind,haztypehydromet,VW,nat-met-sto-der
-MH0303,MH0054,Gale,Wind & Pressure-related,Meteorological & Hydrological,hazhmwind,haztypehydromet,OT,
-MH0304,MH0055,Squall,Wind & Pressure-related,Meteorological & Hydrological,hazhmwind,haztypehydromet,OT,
-MH0305,MH0059,Tornado,Wind & Pressure-related,Meteorological & Hydrological,hazhmwind,haztypehydromet,TO,nat-met-sto-tor
-MH0306,MH0030,Depression or Cyclone,Wind & Pressure-related,Meteorological & Hydrological,hazhmpress,haztypehydromet,TC,nat-met-sto-tro
-MH0307,MH0031,Extra-tropical Cyclone,Wind & Pressure-related,Meteorological & Hydrological,hazhmpress,haztypehydromet,EC,nat-met-sto-ext
-MH0308,MH0032,Sub-tropical Cyclone,Wind & Pressure-related,Meteorological & Hydrological,hazhmpress,haztypehydromet,TC,nat-met-sto-tro
-MH0309,MH0057,Tropical Cyclone,Wind & Pressure-related,Meteorological & Hydrological,hazhmwind,haztypehydromet,TC,nat-met-sto-tro
-MH0401,MH0035,Drought,Precipitation-related,Meteorological & Hydrological,hazhmprecip,haztypehydromet,DR,nat-cli-dro-dro
-MH0402,,Rain,Precipitation-related,Meteorological & Hydrological,hazhmprecip,haztypehydromet,OT,
-MH0403,MH0034,Blizzard,Precipitation-related,Meteorological & Hydrological,hazhmprecip,haztypehydromet,OT,nat-met-sto-bli
-MH0404,MH0036,Hail,Precipitation-related,Meteorological & Hydrological,hazhmprecip,haztypehydromet,ST,nat-met-sto-hai
-MH0405,MH0038,Snow,Precipitation-related,Meteorological & Hydrological,hazhmprecip,haztypehydromet,OT,
-MH0406,MH0039,Snow Storm,Precipitation-related,Meteorological & Hydrological,hazhmprecip,haztypehydromet,OT,
-MH0407,MH0037,Ice Storm,Precipitation-related,Meteorological & Hydrological,hazhmprecip,haztypehydromet,OT,
-MH0501,MH0047,Heatwave,Temperature-related,Meteorological & Hydrological,hazhmtemp,haztypehydromet,HT,nat-met-ext-hea
-MH0502,MH0040,Cold Wave,Temperature-related,Meteorological & Hydrological,hazhmtemp,haztypehydromet,CW,nat-met-ext-col
-MH0503,MH0041,Dzud,Temperature-related,Meteorological & Hydrological,hazhmtemp,haztypehydromet,OT,nat-met-ext-sev
-MH0504,MH0042,Freeze,Temperature-related,Meteorological & Hydrological,hazhmtemp,haztypehydromet,OT,nat-met-ext-sev
-MH0505,MH0043,Frost (Hoar Frost),Temperature-related,Meteorological & Hydrological,hazhmtemp,haztypehydromet,OT,nat-met-ext-sev
-MH0506,MH0044,Freezing Rain (Supercooled Rain),Temperature-related,Meteorological & Hydrological,hazhmtemp,haztypehydromet,OT,nat-met-ext-sev
-MH0507,MH0045,Glaze,Temperature-related,Meteorological & Hydrological,hazhmtemp,haztypehydromet,OT,nat-met-ext-sev
-MH0508,MH0046,Ground Frost,Temperature-related,Meteorological & Hydrological,hazhmtemp,haztypehydromet,OT,nat-met-ext-sev
-MH0509,MH0048,Icing (Including Ice),Temperature-related,Meteorological & Hydrological,hazhmtemp,haztypehydromet,OT,nat-met-ext-sev
-MH0510,MH0049,Thaw,Temperature-related,Meteorological & Hydrological,hazhmtemp,haztypehydromet,OT,nat-met-ext-sev
-MH0600,,Flooding,Water-related,Meteorological & Hydrological,hazhmflood,haztypehydromet,FL,nat-hyd-flo-flo
-MH0601,MH0004,Coastal Flooding,Water-related,Meteorological & Hydrological,hazhmflood,haztypehydromet,FL,nat-hyd-flo-coa
-MH0602,MH0005,Estuarine (Coastal) Flooding,Water-related,Meteorological & Hydrological,hazhmflood,haztypehydromet,OT,
-MH0603,MH0006,Flash Flooding,Water-related,Meteorological & Hydrological,hazhmflood,haztypehydromet,FF,nat-hyd-flo-fla
-MH0604,MH0007,Fluvial (Riverine) Flooding,Water-related,Meteorological & Hydrological,hazhmflood,haztypehydromet,FL,nat-hyd-flo-riv
-MH0605,MH0008,Groundwater Flooding,Water-related,Meteorological & Hydrological,hazhmflood,haztypehydromet,FL,nat-hyd-flo-flo
-MH0606,MH0012,Surface water Flooding,Water-related,Meteorological & Hydrological,hazhmflood,haztypehydromet,FL,nat-hyd-flo-flo
-MH0607,MH0013,Glacial Lake Outburst Flooding,Water-related,Meteorological & Hydrological,hazhmflood,haztypehydromet,FL,nat-cli-glo-glo
-MH0608,MH0009,Ice-Jam Flooding Including Debris,Water-related,Meteorological & Hydrological,hazhmflood,haztypehydromet,FL,nat-hyd-flo-ice
-MH0609,MH0010,Ponding (Drainage) Flooding,Water-related,Meteorological & Hydrological,hazhmflood,haztypehydromet,FL,nat-hyd-flo-flo
-MH0610,MH0011,Snowmelt Flooding,Water-related,Meteorological & Hydrological,hazhmflood,haztypehydromet,FL,nat-hyd-flo-flo
-MH0701,MH0022,Rogue Wave,Marine-related,Meteorological & Hydrological,hazhmmarine,haztypehydromet,OT,nat-hyd-wav-rog
-MH0702,MH0026,Seiche,Marine-related,Meteorological & Hydrological,hazhmmarine,haztypehydromet,OT,nat-hyd-wav-sei
-MH0703,MH0027,Storm Surge,Marine-related,Meteorological & Hydrological,hazhmmarine,haztypehydromet,SS,nat-met-sto-sur
-MH0704,MH0028,Storm Tides,Marine-related,Meteorological & Hydrological,hazhmmarine,haztypehydromet,SS,nat-hyd-wav-rog
-MH0705,MH0029,Tsunami,Marine-related,Meteorological & Hydrological,hazhmmarine,haztypehydromet,TS,nat-geo-ear-tsu
-MH0706,MH0024,Sea ice,Marine-related,Meteorological & Hydrological,hazhmmarine,haztypehydromet,OT,
-MH0707,MH0025,Ice flow,Marine-related,Meteorological & Hydrological,hazhmmarine,haztypehydromet,OT,
-MH0708,,Marine Heatwave,Marine-related,Meteorological & Hydrological,hazhmmarine,haztypehydromet,OT,
-MH0801,MH0050,Avalanche,Terrestrial,Meteorological & Hydrological,hazhmterr,haztypehydromet,AV,nat-geo-mmd-ava
-ET0101,ET0002,Geomagnetic Disturbance,Space Weather,Extraterrestrial,hazetextraterr,haztypeextraterr,OT,nat-ext-spa-geo
-ET0102,ET0005,Ionospheric Disturbance,Space Weather,Extraterrestrial,hazetextraterr,haztypeextraterr,OT,
-ET0103,ET0006,Solar Flare,Space Weather,Extraterrestrial,hazetextraterr,haztypeextraterr,OT,nat-ext-spa-rad
-ET0104,ET0007,Solar Energetic Particles,Space Weather,Extraterrestrial,hazetextraterr,haztypeextraterr,OT,
-ET0201,ET0001,Airburst,Extraterrestrial Hazard,Extraterrestrial,hazetextraterr,haztypeextraterr,OT,nat-ext-imp-air
-ET0202,ET0003,UV Radiation,Extraterrestrial Hazard,Extraterrestrial,hazetextraterr,haztypeextraterr,OT,
-ET0203,ET0004,Meteorite Impact,Extraterrestrial Hazard,Extraterrestrial,hazetextraterr,haztypeextraterr,OT,nat-ext-imp-col
-ET0204,ET0008,Space Hazard / Accident,Extraterrestrial Hazard,Extraterrestrial,hazetextraterr,haztypeextraterr,OT,nat-ext-spa-sho
-ET0205,ET0009,Near-Earth Object,Extraterrestrial Hazard,Extraterrestrial,hazetextraterr,haztypeextraterr,OT,
-ET0206,,Space Debris,Extraterrestrial Hazard,Extraterrestrial,hazetextraterr,haztypeextraterr,OT,
-GH0101,GH0001,Earthquake,Seismic,Geological,hazgeoseis,haztypegeohaz,EQ,nat-geo-ear-gro
-GH0201,GH0009,Lava Flows (Lava Domes),Volcanic,Geological,hazgeovolc,haztypegeohaz,VO,nat-geo-vol-lav
-GH0202,GH0010,Ash/Tephra Fall (including Volcanic Ballistic projectiles),Volcanic,Geological,hazgeovolc,haztypegeohaz,VO,nat-geo-vol-ash
-GH0203,GH0012,Pyroclastic Density Current,Volcanic,Geological,hazgeovolc,haztypegeohaz,VO,nat-geo-vol-pyr
-GH0204,GH0013,Lahars,Volcanic,Geological,hazgeovolc,haztypegeohaz,VO,nat-geo-vol-lah
-GH0205,GH0016,Volcanic Gases and Aerosols,Volcanic,Geological,hazgeovolc,haztypegeohaz,VO,nat-geo-vol-vol
-GH0300,,Gravitational Mass Movement (Landslide),Ground Failure,Geological,hazgeoseis,haztypegeohaz,LS,nat-geo-mmd-lan
-GH0301,,Falls,Ground Failure,Geological,hazhmterr,haztypehydromet,OT,
-GH0302,,Spreads,Ground Failure,Geological,hazgeoother,haztypegeohaz,OT,
-GH0303,MH0051,Flows,Ground Failure,Geological,hazhmterr,haztypehydromet,MS,nat-hyd-mmw-mud
-GH0304,,Slides,Ground Failure,Geological,hazgeoother,haztypegeohaz,OT,
-GH0305,,Topples,Ground Failure,Geological,hazgeoother,haztypegeohaz,OT,
-GH0306,,Submarine Landslide,Ground Failure,Geological,hazgeoother,haztypegeohaz,OT,
-GH0307,GH0003,Liquefaction,Ground Failure,Geological,hazgeoseis,haztypegeohaz,EQ,nat-geo-ear-gro
-GH0308,GH0026,Sinkhole,Ground Failure,Geological,hazgeoother,haztypegeohaz,OT,nat-geo-mmd-sub
-GH0309,GH0005,Subsidence and Uplift,Ground Failure,Geological,hazgeoseis,haztypegeohaz,EQ,nat-geo-ear-gro
-GH0310,GH0025,Shrink-Swell Subsidence,Ground Failure,Geological,hazgeoother,haztypegeohaz,OT,
-GH0311,GH0004,Surface Rupture & Fissure,Ground Failure,Geological,hazgeoseis,haztypegeohaz,EQ,nat-geo-ear-gro
-GH0401,,Compressive Soils,Other Hazards,Geological,hazgeoother,haztypegeohaz,OT,
-GH0402,,Soil Degradation,Other Hazards,Geological,hazgeoother,haztypegeohaz,OT,
-GH0403,,Soil Erosion,Other Hazards,Geological,hazgeoother,haztypegeohaz,OT,nat-geo-env-soi
-GH0404,GH0028,River Erosion & Accretion,Other Hazards,Geological,hazgeoother,haztypegeohaz,OT,
-GH0405,,Coastal Erosion & Accretion,Other Hazards,Geological,hazenvenvdeg,haztypeenviron,OT,nat-geo-env-sed
-GH0406,GH0029,Sand Encroachment,Other Hazards,Geological,hazgeoother,haztypegeohaz,OT,
-GH0407,GH0008,Ground Gases (CH4 Rn etc.),Other Hazards,Geological,hazgeoseis,haztypegeohaz,OT,
-EN0101,,Household Air Pollution,Environmental Degradation,Environmental,hazenvenvdeg,haztypeenviron,OT,
-EN0102,,Air Pollution (Point Source),Environmental Degradation,Environmental,hazenvenvdeg,haztypeenviron,OT,
-EN0103,MH0018,Ambient (Outdoor) Air Pollution,Environmental Degradation,Environmental,hazhmlitho,haztypehydromet,OT,
-EN0104,MH0014,Black Carbon,Environmental Degradation,Environmental,hazhmlitho,haztypehydromet,OT,
-EN0105,MH0033,Acid Rain,Environmental Degradation,Environmental,hazhmprecip,haztypehydromet,OT,
-EN0106,,Runoff / Nonpoint Source Pollution,Environmental Degradation,Environmental,hazenvenvdeg,haztypeenviron,OT,
-EN0201,,Deforestation,Environmental Degradation,Environmental,hazenvenvdeg,haztypeenviron,OT,
-EN0202,,Forest Declines and Diebacks,Environmental Degradation,Environmental,hazenvenvdeg,haztypeenviron,OT,
-EN0203,,Forest Disturbances,Environmental Degradation,Environmental,hazenvenvdeg,haztypeenviron,OT,
-EN0204,,Forest Invasive Species,Environmental Degradation,Environmental,hazenvenvdeg,haztypeenviron,OT,
-EN0205,EN0013,Wildfires,Environmental Degradation,Environmental,hazenvenvdeg,haztypeenviron,WF,nat-cli-wil-wil
-EN0206,,Desertification,Environmental Degradation,Environmental,hazenvenvdeg,haztypeenviron,OT,nat-geo-env-des
-EN0207,,Loss of Mangroves,Environmental Degradation,Environmental,hazenvenvdeg,haztypeenviron,OT,
-EN0301,,Land Degradation,Environmental Degradation,Environmental,hazenvenvdeg,haztypeenviron,OT,
-EN0302,MH0023,Seawater intrusion,Environmental Degradation,Environmental,hazhmmarine,haztypehydromet,OT,
-EN0303,,Salinity & Sodicity,Environmental Degradation,Environmental,hazenvenvdeg,haztypeenviron,OT,nat-geo-env-slr
-EN0304,,Wetland Loss/Degradation,Environmental Degradation,Environmental,hazenvenvdeg,haztypeenviron,OT,
-EN0305,,Permafrost Loss,Environmental Degradation,Environmental,hazenvenvdeg,haztypeenviron,OT,
-EN0401,MH0021,Ocean Acidification,Environmental Degradation,Environmental,hazhmmarine,haztypehydromet,OT,
-EN0402,,Sea Level Rise,Environmental Degradation,Environmental,hazenvenvdeg,haztypeenviron,OT,
-EN0403,,Eutrophication,Environmental Degradation,Environmental,hazenvenvdeg,haztypeenviron,OT,
-EN0404,,Coral Bleaching,Environmental Degradation,Environmental,hazenvenvdeg,haztypeenviron,OT,
-EN0405,,Sand Mining,Environmental Degradation,Environmental,hazenvenvdeg,haztypeenviron,OT,
-EN0501,,Biodiversity Loss,Environmental Degradation,Environmental,hazenvenvdeg,haztypeenviron,OT,
-CH0100,,Heavy Metals & Trace Elements,Heavy Metals & Trace Element Contaminants,Chemical,haztechcbrne,haztypetech,OT,
-CH0101,,Arsenic,Heavy Metals & Trace Element Contaminants,Chemical,haztechcbrne,haztypetech,OT,
-CH0102,,Cadmium,Heavy Metals & Trace Element Contaminants,Chemical,haztechcbrne,haztypetech,OT,
-CH0103,,Lead,Heavy Metals & Trace Element Contaminants,Chemical,haztechcbrne,haztypetech,OT,
-CH0104,,Mercury,Heavy Metals & Trace Element Contaminants,Chemical,haztechcbrne,haztypetech,OT,
-CH0105,,Fluoride & Iodine/Iodide Excess or Inadequate Intake,Heavy Metals & Trace Element Contaminants,Chemical,haztechcbrne,haztypetech,OT,
-CH0201,,Aflatoxins,Carcinogens,Chemical,haztechcbrne,haztypetech,OT,
-CH0202,,Asbestos,Carcinogens,Chemical,haztechcbrne,haztypetech,OT,
-CH0203,,Benzene & Hydrocarbons,Carcinogens,Chemical,haztechcbrne,haztypetech,OT,
-CH0300,,Toxic Gases,Toxic Gases,Chemical,haztechcbrne,haztypetech,OT,
-CH0301,,Ammonia,Toxic Gases,Chemical,haztechcbrne,haztypetech,OT,
-CH0302,,Carbon Monoxide,Toxic Gases,Chemical,haztechcbrne,haztypetech,OT,
-CH0303,,Chlorine,Toxic Gases,Chemical,haztechcbrne,haztypetech,OT,
-CH0400,,Asphyxiant Gases,Asphyxiant Gases,Chemical,haztechcbrne,haztypetech,OT,
-CH0500,,Persistent Organic Pollutants,Persistent Organic Pollutants,Chemical,haztechcbrne,haztypetech,OT,
-CH0501,,Pesticides,Persistent Organic Pollutants,Chemical,haztechcbrne,haztypetech,OT,
-CH0502,,Dioxins & Dioxin-like Substance,Persistent Organic Pollutants,Chemical,haztechcbrne,haztypetech,OT,
-CH0503,,Polyfluoroalkyl Substances,Persistent Organic Pollutants,Chemical,haztechcbrne,haztypetech,OT,
-CH0504,,Microplastics,Persistent Organic Pollutants,Chemical,haztechcbrne,haztypetech,OT,
-CH0601,,Levels of Contaminants in Food & Feed,Chemical Hazards in Food and Pharmaceuticals,Chemical,haztechcbrne,haztypetech,OT,
-CH0602,,Substandard & Falsified Medical Products,Chemical Hazards in Food and Pharmaceuticals,Chemical,haztechcbrne,haztypetech,OT,
-CH0603,,Methanol,Chemical Hazards in Food and Pharmaceuticals,Chemical,haztechcbrne,haztypetech,OT,
-CH0604,,Opioids & Other Addictive Substances,Chemical Hazards in Food and Pharmaceuticals,Chemical,haztechcbrne,haztypetech,OT,
-CH0605,,Marine Toxins,Chemical Hazards in Food and Pharmaceuticals,Chemical,haztechcbrne,haztypetech,OT,
-CH0901,,Corrosive Substances,Other Chemical Hazards,Chemical,haztechcbrne,haztypetech,OT,
-CH0902,,Ammonium Nitrate,Other Chemical Hazards,Chemical,haztechcbrne,haztypetech,OT,
-CH0903,,Chemical Warfare Agents,Other Chemical Hazards,Chemical,haztechcbrne,haztypetech,OT,
-BI0101,,Airborne Diseases (human and Animal),Infectious Diseases,Biological,hazsocbio,haztypesoc,OT,nat-bio-epi-dis
-BI0102,,Blood Borne Viruses (Human and Animal),Infectious Diseases,Biological,hazsocbio,haztypesoc,OT,
-BI0103,,Diarrhoeal Diseases (Human),Infectious Diseases,Biological,hazsocbio,haztypesoc,OT,
-BI0104,,Foodborne Diseases (Human impact),Infectious Diseases,Biological,hazsocbio,haztypesoc,OT,
-BI0105,,Neglected Tropical Diseases (Human),Infectious Diseases,Biological,hazsocbio,haztypesoc,OT,
-BI0106,,Sexually Transmitted Diseases (Human),Infectious Diseases,Biological,hazsocbio,haztypesoc,OT,
-BI0107,,Vaccine-Preventable Diseases (Human),Infectious Diseases,Biological,hazsocbio,haztypesoc,OT,
-BI0108,,Vector Borne Diseases (VBD) (Human and Animal),Infectious Diseases,Biological,hazsocbio,haztypesoc,OT,
-BI0109,,Viral Haemorrhagic Fevers (Human),Infectious Diseases,Biological,hazsocbio,haztypesoc,OT,
-BI0110,,Waterborne Diseases (Human),Infectious Diseases,Biological,hazsocbio,haztypesoc,OT,
-BI0111,,Cryptosporidium (Human and Animal),Infectious Diseases,Biological,hazsocbio,haztypesoc,OT,
-BI0112,,Cysticercosis (Human and Animal),Infectious Diseases,Biological,hazsocbio,haztypesoc,OT,
-BI0113,,Zoonotic Diseases,Infectious Diseases,Biological,hazsocbio,haztypesoc,OT,
-BI0201,,Anthrax,Specific Infectious Disease of Public Health Concern,Biological,hazsocbio,haztypesoc,OT,
-BI0202,,Brucellosis (Human and Animal),Specific Infectious Disease of Public Health Concern,Biological,hazsocbio,haztypesoc,OT,
-BI0203,,Chikungunya,Specific Infectious Disease of Public Health Concern,Biological,hazsocbio,haztypesoc,OT,
-BI0204,,Cholera (Human),Specific Infectious Disease of Public Health Concern,Biological,hazsocbio,haztypesoc,OT,
-BI0205,,COVID-19 (SARS-CoV-2) (Human),Specific Infectious Disease of Public Health Concern,Biological,hazsocbio,haztypesoc,OT,
-BI0206,,Crimean-Congo Haemorrhagic Fever (Human),Specific Infectious Disease of Public Health Concern,Biological,hazsocbio,haztypesoc,OT,
-BI0207,,Dengue (Human),Specific Infectious Disease of Public Health Concern,Biological,hazsocbio,haztypesoc,OT,
-BI0208,,Diphtheria (Human),Specific Infectious Disease of Public Health Concern,Biological,hazsocbio,haztypesoc,OT,
-BI0209,,Ebola (Human),Specific Infectious Disease of Public Health Concern,Biological,hazsocbio,haztypesoc,OT,
-BI0210,,Escherichia Coli (STEC) (Human),Specific Infectious Disease of Public Health Concern,Biological,hazsocbio,haztypesoc,OT,
-BI0211,,Hepatitis A (Human),Specific Infectious Disease of Public Health Concern,Biological,hazsocbio,haztypesoc,OT,
-BI0212,,Hepatitis B (Human),Specific Infectious Disease of Public Health Concern,Biological,hazsocbio,haztypesoc,OT,
-BI0213,,Hepatitis C (Human),Specific Infectious Disease of Public Health Concern,Biological,hazsocbio,haztypesoc,OT,
-BI0214,,HIV and AIDS (Human),Specific Infectious Disease of Public Health Concern,Biological,hazsocbio,haztypesoc,OT,
-BI0215,,Human Influenza Pandemic,Specific Infectious Disease of Public Health Concern,Biological,hazsocbio,haztypesoc,OT,
-BI0216,,Lassa Fever,Specific Infectious Disease of Public Health Concern,Biological,hazsocbio,haztypesoc,OT,
-BI0217,,Malaria,Specific Infectious Disease of Public Health Concern,Biological,hazsocbio,haztypesoc,OT,
-BI0218,,Measles,Specific Infectious Disease of Public Health Concern,Biological,hazsocbio,haztypesoc,OT,
-BI0219,,MERS-CoV,Specific Infectious Disease of Public Health Concern,Biological,hazsocbio,haztypesoc,OT,
-BI0220,,Marburg Virus,Specific Infectious Disease of Public Health Concern,Biological,hazsocbio,haztypesoc,OT,
-BI0221,,Monkeypox,Specific Infectious Disease of Public Health Concern,Biological,hazsocbio,haztypesoc,OT,
-BI0222,,Nipah Virus,Specific Infectious Disease of Public Health Concern,Biological,hazsocbio,haztypesoc,OT,
-BI0223,,Plague,Specific Infectious Disease of Public Health Concern,Biological,hazsocbio,haztypesoc,OT,
-BI0224,,Poliomyelitis,Specific Infectious Disease of Public Health Concern,Biological,hazsocbio,haztypesoc,OT,
-BI0225,,Rabies,Specific Infectious Disease of Public Health Concern,Biological,hazsocbio,haztypesoc,OT,
-BI0226,,Rift Valley Fever,Specific Infectious Disease of Public Health Concern,Biological,hazsocbio,haztypesoc,OT,
-BI0227,,SARS,Specific Infectious Disease of Public Health Concern,Biological,hazsocbio,haztypesoc,OT,
-BI0228,,Smallpox,Specific Infectious Disease of Public Health Concern,Biological,hazsocbio,haztypesoc,OT,
-BI0229,,Tuberculosis,Specific Infectious Disease of Public Health Concern,Biological,hazsocbio,haztypesoc,OT,
-BI0230,,Typhoid Fever,Specific Infectious Disease of Public Health Concern,Biological,hazsocbio,haztypesoc,OT,
-BI0231,,West Nile Virus,Specific Infectious Disease of Public Health Concern,Biological,hazsocbio,haztypesoc,OT,
-BI0232,,Yellow Fever,Specific Infectious Disease of Public Health Concern,Biological,hazsocbio,haztypesoc,OT,
-BI0233,,Zika Virus,Specific Infectious Disease of Public Health Concern,Biological,hazsocbio,haztypesoc,OT,
-BI0234,,Disease X,Specific Infectious Disease of Public Health Concern,Biological,hazsocbio,haztypesoc,OT,
-BI0235,,Avian Influenza (Bird Flu),Specific Infectious Disease of Public Health Concern,Biological,hazsocbio,haztypesoc,OT,
-BI0236,,Bovine Spongiform Encephalopathy (Mad Cow Disease),Specific Infectious Disease of Public Health Concern,Biological,hazsocbio,haztypesoc,OT,
-BI0237,,Foot and Mouth Disease,Specific Infectious Disease of Public Health Concern,Biological,hazsocbio,haztypesoc,OT,
-BI0238,,Screwworm,Specific Infectious Disease of Public Health Concern,Biological,hazsocbio,haztypesoc,OT,
-BI0239,,African Swine Fever,Specific Infectious Disease of Public Health Concern,Biological,hazsocbio,haztypesoc,OT,
-BI0240,,Bluetongue,Specific Infectious Disease of Public Health Concern,Biological,hazsocbio,haztypesoc,OT,
-BI0241,,Lumpy Skin Disease,Specific Infectious Disease of Public Health Concern,Biological,hazsocbio,haztypesoc,OT,
-BI0242,,Newcastle Disease,Specific Infectious Disease of Public Health Concern,Biological,hazsocbio,haztypesoc,OT,
-BI0243,,Rinderpest,Specific Infectious Disease of Public Health Concern,Biological,hazsocbio,haztypesoc,OT,
-BI0244,,Sheep and Goat Pox,Specific Infectious Disease of Public Health Concern,Biological,hazsocbio,haztypesoc,OT,
-BI0245,,Classical Swine Fever,Specific Infectious Disease of Public Health Concern,Biological,hazsocbio,haztypesoc,OT,
-BI0301,,Locust Swarms,Animal Infectious Diseases,Biological,hazsocbio,haztypesoc,OT,
-BI0302,,Desert Locust,Animal Infectious Diseases,Biological,hazsocbio,haztypesoc,OT,
-BI0303,,Migratory Locust,Animal Infectious Diseases,Biological,hazsocbio,haztypesoc,OT,
-BI0304,,Red Locust,Animal Infectious Diseases,Biological,hazsocbio,haztypesoc,OT,
-BI0305,,Brown Locust,Animal Infectious Diseases,Biological,hazsocbio,haztypesoc,OT,
-BI0306,,Italian Locust,Animal Infectious Diseases,Biological,hazsocbio,haztypesoc,OT,
-BI0307,,Moroccan Locust,Animal Infectious Diseases,Biological,hazsocbio,haztypesoc,OT,
-BI0308,,Australian Plague Locust,Animal Infectious Diseases,Biological,hazsocbio,haztypesoc,OT,
-BI0309,,Tree Locust,Animal Infectious Diseases,Biological,hazsocbio,haztypesoc,OT,
-BI0310,,Rocky Mountain Locust,Animal Infectious Diseases,Biological,hazsocbio,haztypesoc,OT,
-BI0401,,Bees (including Africanized Honeybees),Insect-related Diseases,Biological,hazsocbio,haztypesoc,OT,
-BI0402,,Wasps,Insect-related Diseases,Biological,hazsocbio,haztypesoc,OT,
-BI0403,,Hornets,Insect-related Diseases,Biological,hazsocbio,haztypesoc,OT,
-BI0404,,Ants (including Fire Ants),Insect-related Diseases,Biological,hazsocbio,haztypesoc,OT,
-BI0405,,Spiders,Insect-related Diseases,Biological,hazsocbio,haztypesoc,OT,
-BI0406,,Scorpions,Insect-related Diseases,Biological,hazsocbio,haztypesoc,OT,
-BI0407,,Ticks,Insect-related Diseases,Biological,hazsocbio,haztypesoc,OT,
-BI0408,,Mosquitoes,Insect-related Diseases,Biological,hazsocbio,haztypesoc,OT,
-BI0409,,Fleas,Insect-related Diseases,Biological,hazsocbio,haztypesoc,OT,
-BI0410,,Chiggers,Insect-related Diseases,Biological,hazsocbio,haztypesoc,OT,
-BI0501,,Plant Diseases (Agricultural),Plant Diseases,Biological,hazsocbio,haztypesoc,OT,
-BI0502,,Bacterial Plant Diseases,Plant Diseases,Biological,hazsocbio,haztypesoc,OT,
-BI0503,,Fungal Plant Diseases,Plant Diseases,Biological,hazsocbio,haztypesoc,OT,
-BI0504,,Viral Plant Diseases,Plant Diseases,Biological,hazsocbio,haztypesoc,OT,
-BI0505,,Nematode Plant Diseases,Plant Diseases,Biological,hazsocbio,haztypesoc,OT,
-BI0506,,Phytoplasma Plant Diseases,Plant Diseases,Biological,hazsocbio,haztypesoc,OT,
-BI0507,,Plant Rust,Plant Diseases,Biological,hazsocbio,haztypesoc,OT,
-BI0508,,Rice Blast,Plant Diseases,Biological,hazsocbio,haztypesoc,OT,
-BI0509,,Wheat Blast,Plant Diseases,Biological,hazsocbio,haztypesoc,OT,
-BI0510,,Citrus Greening,Plant Diseases,Biological,hazsocbio,haztypesoc,OT,
-BI0601,,Harmful Algal Blooms,Other Biological Hazards,Biological,hazsocbio,haztypesoc,OT,
-BI0602,,Jellyfish Blooms,Other Biological Hazards,Biological,hazsocbio,haztypesoc,OT,
-BI0603,,Mycotoxins,Other Biological Hazards,Biological,hazsocbio,haztypesoc,OT,
-BI0604,,Snakes,Other Biological Hazards,Biological,hazsocbio,haztypesoc,OT,
-BI0605,,Marine Organisms,Other Biological Hazards,Biological,hazsocbio,haztypesoc,OT,
-BI0606,,Invasive Species,Other Biological Hazards,Biological,hazsocbio,haztypesoc,OT,
-TL0001,,Radioactive Waste,Radiation,Technological,haztechrad,haztypetech,AC,tec-ind-rad-rad
-TL0002,,Radioactive Material,Radiation,Technological,haztechrad,haztypetech,AC,tec-ind-rad-rad
-TL0003,,Radiation Agents,Radiation,Technological,haztechcbrne,haztypetech,AC,tec-ind-rad-rad
-TL0004,,Nuclear Agents,Radiation,Technological,haztechcbrne,haztypetech,AC,tec-ind-rad-rad
-TL0005,,Building Collapse,Construction/Structural Failure,Technological,haztechstrfail,haztypetech,AC,tec-mis-col-col
-TL0006,,Building highrise cladding,Construction/Structural Failure,Technological,haztechstrfail,haztypetech,AC,tec-mis-col-col
-TL0007,,Structural Failure,Construction/Structural Failure,Technological,haztechstrfail,haztypetech,AC,tec-mis-col-col
-TL0008,,Bridge Failure,Construction/Structural Failure,Technological,haztechstrfail,haztypetech,AC,tec-mis-col-col
-TL0009,,Dam Failure,Construction/Structural Failure,Technological,haztechstrfail,haztypetech,FL,tec-mis-col-col
-TL0010,,Supply Chain Failure,Construction/Structural Failure,Technological,haztechstrfail,haztypetech,AC,tec-ind-ind-ind
-TL0011,,Critical Infrastructure Failure,Construction/Structural Failure,Technological,haztechstrfail,haztypetech,AC,tec-ind-ind-ind
-TL0012,,Nuclear Plant Failure,Industrial Failure,Technological,haztechinffail,haztypetech,AC,tec-ind-rad-rad
-TL0013,,Power Outage or Blackout,Industrial Failure,Technological,haztechinffail,haztypetech,AC,tec-ind-ind-ind
-TL0014,,Emergency Telecommunications Failure,Industrial Failure,Technological,haztechinffail,haztypetech,AC,tec-ind-ind-ind
-TL0015,,Water Supply Failure,Industrial Failure,Technological,haztechinffail,haztypetech,AC,tec-ind-ind-ind
-TL0016,,Radio and Other Telecommunication Failures,Industrial Failure,Technological,haztechinffail,haztypetech,AC,tec-ind-ind-ind
-TL0017,,Misconfiguration of Software and Hardware,Cyberhazards,Technological,haztechcyb,haztypetech,OT,
-TL0018,,Non-Conformity and Interoperability,Cyberhazards,Technological,haztechcyb,haztypetech,OT,
-TL0019,,Malware,Cyberhazards,Technological,haztechcyb,haztypetech,OT,
-TL0020,,Data Breach,Cyberhazards,Technological,haztechcyb,haztypetech,OT,
-TL0021,,Data Security-Related Hazards,Cyberhazards,Technological,haztechcyb,haztypetech,OT,
-TL0022,,Disrupt,Cyberhazards,Technological,haztechcyb,haztypetech,OT,
-TL0023,,Outage,Cyberhazards,Technological,haztechcyb,haztypetech,OT,
-TL0024,,Personally Identifiable Information (PII) Breach,Cyberhazards,Technological,haztechcyb,haztypetech,OT,
-TL0025,,Internet of Things (IOT)-Related Hazards,Cyberhazards,Technological,haztechcyb,haztypetech,OT,
-TL0026,,Cyberbullying,Cyberhazards,Technological,haztechcyb,haztypetech,OT,
-TL0027,,Natech,Industrial Failure,Technological,haztechindfail,haztypetech,AC,tec-ind-ind-ind
-TL0028,,Pollution,Industrial Failure,Technological,haztechindfail,haztypetech,AC,tec-ind-ind-ind
-TL0029,,Explosion,Industrial Failure,Technological,haztechindfail,haztypetech,AC,tec-ind-exp-exp
-TL0030,,Leaks and Spills,Industrial Failure,Technological,haztechindfail,haztypetech,AC,tec-ind-che-che
-TL0031,,Soil Pollution,Industrial Failure,Technological,haztechindfail,haztypetech,AC,tec-ind-ind-ind
-TL0032,GH0019,Fire,Industrial Failure,Technological,haztechindfail,haztypetech,FR,tec-ind-fir-fir
-TL0033,,Mining Hazards,Industrial Failure,Technological,haztechindfail,haztypetech,AC,tec-ind-ind-ind
-TL0034,,Safety Hazards Associated with Oil and Gas Extraction Activities,Industrial Failure,Technological,haztechindfail,haztypetech,AC,tec-ind-ind-ind
-TL0035,,Disaster Waste,Waste,Technological,haztechwaste,haztypetech,OT,
-TL0036,,Solid Waste,Waste,Technological,haztechwaste,haztypetech,OT,
-TL0037,,Wastewater,Waste,Technological,haztechwaste,haztypetech,OT,
-TL0038,,Hazardous Waste,Waste,Technological,haztechwaste,haztypetech,OT,
-TL0039,,Plastic Waste,Waste,Technological,haztechwaste,haztypetech,OT,
-TL0040,,Marine Debris,Waste,Technological,haztechwaste,haztypetech,OT,
-TL0041,,Electronic Waste (E-Waste),Waste,Technological,haztechwaste,haztypetech,OT,
-TL0042,,Healthcare Risk Waste,Waste,Technological,haztechwaste,haztypetech,OT,
-TL0043,,Landfilling,Waste,Technological,haztechwaste,haztypetech,OT,
-TL0044,,Tailings,Waste,Technological,haztechwaste,haztypetech,OT,
-TL0045,,Waste Treatment Lagoons,Waste,Technological,haztechwaste,haztypetech,OT,
-TL0046,,Drain and Sewer Flooding,Waste,Technological,haztechflood,haztypetech,OT,
-TL0047,,Reservoir Flooding,Waste,Technological,haztechflood,haztypetech,OT,
-TL0048,,Air Transportation Accident,Transportation Accidents,Technological,haztechtransp,haztypetech,AC,tec-tra-air-air
-TL0049,,Inland Water Ways,Transportation Accidents,Technological,haztechtransp,haztypetech,AC,tec-tra-wat-wat
-TL0050,,Marine Accident,Transportation Accidents,Technological,haztechtransp,haztypetech,AC,tec-tra-wat-wat
-TL0051,,Rail Accident,Transportation Accidents,Technological,haztechtransp,haztypetech,AC,tec-tra-rai-rai
-TL0052,,Road Traffic Accident,Transportation Accidents,Technological,haztechtransp,haztypetech,AC,tec-tra-roa-roa
-TL0053,,Explosive agents,Radiation,Technological,haztechcbrne,haztypetech,AC,tec-ind-exp-exp
-SO0001,,International Armed Conflict (IAC),Conflict,Societal,hazsocconf,haztypesoc,CE,
-SO0002,,Non-International Armed Conflict (NIAC),Conflict,Societal,hazsocconf,haztypesoc,CE,
-SO0003,,Civil Unrest,Conflict,Societal,hazsocconf,haztypesoc,CE,
-SO0004,,Explosive Remnants of War,Post-conflict,Societal,hazsocpostconf,haztypesoc,CE,
-SO0005,,Environmental Degradation from Conflict,Post-conflict,Societal,hazsocpostconf,haztypesoc,CE,
-SO0006,,Violence,Behavioural,Societal,hazsocbeh,haztypesoc,OT,
-SO0007,,Stampede or Crushing (Human),Behavioural,Societal,hazsocbeh,haztypesoc,OT,
-SO0008,,Financial shock,Economic,Societal,hazsoceco,haztypesoc,OT,
-GH0405,,Coastal Erosion & Accretion,Other Hazards,Geological,hazenvenvdeg,haztypeenviron,OT,nat-geo-env-sed
-TL0001,,Radioactive Waste,Radiation,Technological,haztechrad,haztypetech,AC,tec-ind-rad-rad
-TL0002,,Radioactive Material,Radiation,Technological,haztechrad,haztypetech,AC,tec-ind-rad-rad
-TL0003,,Radiation Agents,Radiation,Technological,haztechcbrne,haztypetech,AC,tec-ind-rad-rad
-TL0004,,Nuclear Agents,Radiation,Technological,haztechcbrne,haztypetech,AC,tec-ind-rad-rad
-TL0005,,Building Collapse,Construction/Structural Failure,Technological,haztechstrfail,haztypetech,AC,tec-mis-col-col
-TL0006,,Building highrise cladding,Construction/Structural Failure,Technological,haztechstrfail,haztypetech,AC,tec-mis-col-col
-TL0007,,Structural Failure,Construction/Structural Failure,Technological,haztechstrfail,haztypetech,AC,tec-mis-col-col
-TL0008,,Bridge Failure,Construction/Structural Failure,Technological,haztechstrfail,haztypetech,AC,tec-mis-col-col
-TL0009,,Dam Failure,Construction/Structural Failure,Technological,haztechstrfail,haztypetech,FL,tec-mis-col-col
-TL0010,,Supply Chain Failure,Construction/Structural Failure,Technological,haztechstrfail,haztypetech,AC,tec-ind-ind-ind
-TL0011,,Critical Infrastructure Failure,Construction/Structural Failure,Technological,haztechstrfail,haztypetech,AC,tec-ind-ind-ind
-TL0012,,Nuclear Plant Failure,Industrial Failure,Technological,haztechinffail,haztypetech,AC,tec-ind-rad-rad
-TL0013,,Power Outage or Blackout,Industrial Failure,Technological,haztechinffail,haztypetech,AC,tec-ind-ind-ind
-TL0014,,Emergency Telecommunications Failure,Industrial Failure,Technological,haztechinffail,haztypetech,AC,tec-ind-ind-ind
-TL0015,,Water Supply Failure,Industrial Failure,Technological,haztechinffail,haztypetech,AC,tec-ind-ind-ind
-TL0016,,Radio and Other Telecommunication Failures,Industrial Failure,Technological,haztechinffail,haztypetech,AC,tec-ind-ind-ind
-TL0017,,Misconfiguration of Software and Hardware,Cyberhazards,Technological,haztechcyb,haztypetech,OT,
-TL0018,,Non-Conformity and Interoperability,Cyberhazards,Technological,haztechcyb,haztypetech,OT,
-TL0019,,Malware,Cyberhazards,Technological,haztechcyb,haztypetech,OT,
-TL0020,,Data Breach,Cyberhazards,Technological,haztechcyb,haztypetech,OT,
-TL0021,,Data Security-Related Hazards,Cyberhazards,Technological,haztechcyb,haztypetech,OT,
-TL0022,,Disrupt,Cyberhazards,Technological,haztechcyb,haztypetech,OT,
-TL0023,,Outage,Cyberhazards,Technological,haztechcyb,haztypetech,OT,
-TL0024,,Personally Identifiable Information (PII) Breach,Cyberhazards,Technological,haztechcyb,haztypetech,OT,
-TL0025,,Internet of Things (IOT)-Related Hazards,Cyberhazards,Technological,haztechcyb,haztypetech,OT,
-TL0026,,Cyberbullying,Cyberhazards,Technological,haztechcyb,haztypetech,OT,
-TL0027,,Natech,Industrial Failure,Technological,haztechindfail,haztypetech,AC,tec-ind-ind-ind
-TL0028,,Pollution,Industrial Failure,Technological,haztechindfail,haztypetech,AC,tec-ind-ind-ind
-TL0029,,Explosion,Industrial Failure,Technological,haztechindfail,haztypetech,AC,tec-ind-exp-exp
-TL0030,,Leaks and Spills,Industrial Failure,Technological,haztechindfail,haztypetech,AC,tec-ind-che-che
-TL0031,,Soil Pollution,Industrial Failure,Technological,haztechindfail,haztypetech,AC,tec-ind-ind-ind
-TL0032,GH0019,Fire,Industrial Failure,Technological,haztechindfail,haztypetech,FR,tec-ind-fir-fir
-TL0033,,Mining Hazards,Industrial Failure,Technological,haztechindfail,haztypetech,AC,tec-ind-ind-ind
-TL0034,,Safety Hazards Associated with Oil and Gas Extraction Activities,Industrial Failure,Technological,haztechindfail,haztypetech,AC,tec-ind-ind-ind
-TL0035,,Disaster Waste,Waste,Technological,haztechwaste,haztypetech,OT,
-TL0036,,Solid Waste,Waste,Technological,haztechwaste,haztypetech,OT,
-TL0037,,Wastewater,Waste,Technological,haztechwaste,haztypetech,OT,
-TL0038,,Hazardous Waste,Waste,Technological,haztechwaste,haztypetech,OT,
-TL0039,,Plastic Waste,Waste,Technological,haztechwaste,haztypetech,OT,
-TL0040,,Marine Debris,Waste,Technological,haztechwaste,haztypetech,OT,
-TL0041,,Electronic Waste (E-Waste),Waste,Technological,haztechwaste,haztypetech,OT,
-TL0042,,Healthcare Risk Waste,Waste,Technological,haztechwaste,haztypetech,OT,
-TL0043,,Landfilling,Waste,Technological,haztechwaste,haztypetech,OT,
-TL0044,,Tailings,Waste,Technological,haztechwaste,haztypetech,OT,
-TL0045,,Waste Treatment Lagoons,Waste,Technological,haztechwaste,haztypetech,OT,
-TL0046,,Drain and Sewer Flooding,Waste,Technological,haztechflood,haztypetech,OT,
-TL0047,,Reservoir Flooding,Waste,Technological,haztechflood,haztypetech,OT,
-TL0048,,Air Transportation Accident,Transportation Accidents,Technological,haztechtransp,haztypetech,AC,tec-tra-air-air
-TL0049,,Inland Water Ways,Transportation Accidents,Technological,haztechtransp,haztypetech,AC,tec-tra-wat-wat
-TL0050,,Marine Accident,Transportation Accidents,Technological,haztechtransp,haztypetech,AC,tec-tra-wat-wat
-TL0051,,Rail Accident,Transportation Accidents,Technological,haztechtransp,haztypetech,AC,tec-tra-rai-rai
-TL0052,,Road Traffic Accident,Transportation Accidents,Technological,haztechtransp,haztypetech,AC,tec-tra-roa-roa
-TL0053,,Explosive agents,Radiation,Technological,haztechcbrne,haztypetech,AC,tec-ind-exp-exp
-SO0001,,International Armed Conflict (IAC),Conflict,Societal,hazsocconf,haztypesoc,CE,
-SO0002,,Non-International Armed Conflict (NIAC),Conflict,Societal,hazsocconf,haztypesoc,CE,
-SO0003,,Civil Unrest,Conflict,Societal,hazsocconf,haztypesoc,CE,
-SO0004,,Explosive Remnants of War,Post-conflict,Societal,hazsocpostconf,haztypesoc,CE,
-SO0005,,Environmental Degradation from Conflict,Post-conflict,Societal,hazsocpostconf,haztypesoc,CE,
-SO0006,,Violence,Behavioural,Societal,hazsocbeh,haztypesoc,OT,
-SO0007,,Stampede or Crushing (Human),Behavioural,Societal,hazsocbeh,haztypesoc,OT,
-SO0008,,Financial shock,Economic,Societal,hazsoceco,haztypesoc,OT,
+undrr_2025_key,undrr_key,label,cluster_label,family_label,glide_code,emdat_key
+MH0101,MH0001,Downburst,Convective-Related,Meteorological & Hydrological,ST,nat-met-sto-sev
+MH0102,MH0002,Lightning (electrical storm),Convective-Related,Meteorological & Hydrological,ST,nat-met-sto-lig
+MH0103,MH0003,Thunderstorm,Convective-Related,Meteorological & Hydrological,ST,nat-met-sto-sto
+MH0103,MH0003,Thunderstorm,Convective-Related,Meteorological & Hydrological,ST,nat-met-sto-sev
+MH0201,MH0015,Dust Storm or Sandstorm,Particle-related,Meteorological & Hydrological,VW,nat-met-sto-san
+MH0202,MH0016,Fog,Particle-related,Meteorological & Hydrological,OT,nat-met-fog-fog
+MH0203,MH0017,Haze,Particle-related,Meteorological & Hydrological,OT,
+MH0204,MH0019,Sand Haze,Particle-related,Meteorological & Hydrological,OT,
+MH0205,MH0020,Smoke,Particle-related,Meteorological & Hydrological,OT,
+MH0301,MH0060,Wind,Wind & Pressure-related,Meteorological & Hydrological,VW,nat-met-sto-sto
+MH0302,MH0053,Derecho,Wind & Pressure-related,Meteorological & Hydrological,VW,nat-met-sto-der
+MH0303,MH0054,Gale,Wind & Pressure-related,Meteorological & Hydrological,OT,
+MH0304,MH0055,Squall,Wind & Pressure-related,Meteorological & Hydrological,OT,
+MH0305,MH0059,Tornado,Wind & Pressure-related,Meteorological & Hydrological,TO,nat-met-sto-tor
+MH0306,MH0030,Depression or Cyclone,Wind & Pressure-related,Meteorological & Hydrological,TC,nat-met-sto-tro
+MH0307,MH0031,Extra-tropical Cyclone,Wind & Pressure-related,Meteorological & Hydrological,EC,nat-met-sto-ext
+MH0308,MH0032,Sub-tropical Cyclone,Wind & Pressure-related,Meteorological & Hydrological,TC,nat-met-sto-tro
+MH0309,MH0057,Tropical Cyclone,Wind & Pressure-related,Meteorological & Hydrological,TC,nat-met-sto-tro
+MH0401,MH0035,Drought,Precipitation-related,Meteorological & Hydrological,DR,nat-cli-dro-dro
+MH0402,,Rain,Precipitation-related,Meteorological & Hydrological,OT,
+MH0403,MH0034,Blizzard,Precipitation-related,Meteorological & Hydrological,OT,nat-met-sto-bli
+MH0404,MH0036,Hail,Precipitation-related,Meteorological & Hydrological,ST,nat-met-sto-hai
+MH0405,MH0038,Snow,Precipitation-related,Meteorological & Hydrological,OT,
+MH0406,MH0039,Snow Storm,Precipitation-related,Meteorological & Hydrological,OT,
+MH0501,MH0047,Heatwave,Temperature-related,Meteorological & Hydrological,HT,nat-met-ext-hea
+MH0502,MH0040,Cold Wave,Temperature-related,Meteorological & Hydrological,CW,nat-met-ext-col
+MH0503,MH0041,Dzud,Temperature-related,Meteorological & Hydrological,OT,nat-met-ext-sev
+MH0504,MH0042,Freeze,Temperature-related,Meteorological & Hydrological,OT,nat-met-ext-sev
+MH0505,MH0043,Frost (Hoar Frost),Temperature-related,Meteorological & Hydrological,OT,nat-met-ext-sev
+MH0506,MH0044,Freezing Rain (Supercooled Rain),Temperature-related,Meteorological & Hydrological,OT,nat-met-ext-sev
+MH0507,MH0045,Glaze,Temperature-related,Meteorological & Hydrological,OT,nat-met-ext-sev
+MH0508,MH0046,Ground Frost,Temperature-related,Meteorological & Hydrological,OT,nat-met-ext-sev
+MH0509,MH0048,Icing (Including Ice),Temperature-related,Meteorological & Hydrological,OT,nat-met-ext-sev
+MH0510,MH0049,Thaw,Temperature-related,Meteorological & Hydrological,OT,nat-met-ext-sev
+MH0600,,Flooding,Water-related,Meteorological & Hydrological,FL,nat-hyd-flo-flo
+MH0601,MH0004,Coastal Flooding,Water-related,Meteorological & Hydrological,FL,nat-hyd-flo-coa
+MH0602,MH0005,Estuarine (Coastal) Flooding,Water-related,Meteorological & Hydrological,OT,
+MH0603,MH0006,Flash Flooding,Water-related,Meteorological & Hydrological,FF,nat-hyd-flo-fla
+MH0604,MH0007,Fluvial (Riverine) Flooding,Water-related,Meteorological & Hydrological,FL,nat-hyd-flo-riv
+MH0605,MH0008,Groundwater Flooding,Water-related,Meteorological & Hydrological,FL,nat-hyd-flo-flo
+MH0606,MH0012,Surface water Flooding,Water-related,Meteorological & Hydrological,FL,nat-hyd-flo-flo
+MH0607,MH0013,Glacial Lake Outburst Flooding,Water-related,Meteorological & Hydrological,FL,nat-cli-glo-glo
+MH0608,MH0009,Ice-Jam Flooding Including Debris,Water-related,Meteorological & Hydrological,FL,nat-hyd-flo-ice
+MH0609,MH0010,Ponding (Drainage) Flooding,Water-related,Meteorological & Hydrological,FL,nat-hyd-flo-flo
+MH0610,MH0011,Snowmelt Flooding,Water-related,Meteorological & Hydrological,FL,nat-hyd-flo-flo
+MH0701,MH0022,Rogue Wave,Marine-related,Meteorological & Hydrological,OT,nat-hyd-wav-rog
+MH0702,MH0026,Seiche,Marine-related,Meteorological & Hydrological,OT,nat-hyd-wav-sei
+MH0703,MH0027,Storm Surge,Marine-related,Meteorological & Hydrological,SS,nat-met-sto-sur
+MH0704,MH0028,Storm Tides,Marine-related,Meteorological & Hydrological,SS,nat-hyd-wav-rog
+MH0705,MH0029,Tsunami,Marine-related,Meteorological & Hydrological,TS,nat-geo-ear-tsu
+MH0706,MH0024,Sea ice,Marine-related,Meteorological & Hydrological,OT,
+MH0707,MH0025,Ice flow,Marine-related,Meteorological & Hydrological,OT,
+MH0708,,Marine Heatwave,Marine-related,Meteorological & Hydrological,OT,
+MH0801,MH0050,Avalanche,Terrestrial,Meteorological & Hydrological,AV,nat-geo-mmd-ava
+MH0801,MH0050,Avalanche,Terrestrial,Meteorological & Hydrological,AV,nat-hyd-mmw-ava
+ET0101,ET0002,Geomagnetic Disturbance,Space Weather,Extraterrestrial,OT,nat-ext-spa-geo
+ET0102,ET0005,Ionospheric Disturbance,Space Weather,Extraterrestrial,OT,
+ET0103,ET0006,Solar Flare,Space Weather,Extraterrestrial,OT,nat-ext-spa-rad
+ET0104,ET0007,Solar Energetic Particles,Space Weather,Extraterrestrial,OT,nat-ext-spa-ene
+ET0104,ET0007,Solar Energetic Particles,Space Weather,Extraterrestrial,OT,
+ET0201,ET0001,Airburst,Extraterrestrial Hazard,Extraterrestrial,OT,nat-ext-imp-air
+ET0202,ET0003,UV Radiation,Extraterrestrial Hazard,Extraterrestrial,OT,
+ET0203,ET0004,Meteorite Impact,Extraterrestrial Hazard,Extraterrestrial,OT,nat-ext-imp-col
+ET0204,ET0008,Space Hazard / Accident,Extraterrestrial Hazard,Extraterrestrial,OT,nat-ext-spa-sho
+ET0205,ET0009,Near-Earth Object,Extraterrestrial Hazard,Extraterrestrial,OT,
+ET0206,,Space Debris,Extraterrestrial Hazard,Extraterrestrial,OT,
+GH0101,GH0001,Earthquake,Seismic,Geological,EQ,nat-geo-ear-gro
+GH0201,GH0009,Lava Flows (Lava Domes),Volcanic,Geological,VO,nat-geo-vol-lav
+GH0201,GH0009,Lava Flows (Lava Domes),Volcanic,Geological,VO,nat-geo-vol-vol
+GH0202,GH0010,Ash/Tephra Fall (including Volcanic Ballistic projectiles),Volcanic,Geological,VO,nat-geo-vol-ash
+GH0203,GH0012,Pyroclastic Density Current,Volcanic,Geological,VO,nat-geo-vol-pyr
+GH0204,GH0013,Lahars,Volcanic,Geological,VO,nat-geo-vol-lah
+GH0205,GH0016,Volcanic Gases and Aerosols,Volcanic,Geological,,
+GH0300,,Gravitational Mass Movement (Landslide),Ground Failure,Geological,LS,nat-geo-mmd-lan
+GH0301,,Falls,Ground Failure,Geological,OT,
+GH0302,,Spreads,Ground Failure,Geological,OT,
+GH0303,MH0051,Flows,Ground Failure,Geological,MS,nat-hyd-mmw-mud
+GH0304,,Slides,Ground Failure,Geological,LS,nat-hyd-mmw-lan
+GH0304,,Slides,Ground Failure,Geological,OT,
+GH0305,,Topples,Ground Failure,Geological,OT,
+GH0306,,Submarine Landslide,Ground Failure,Geological,OT,
+GH0307,GH0003,Liquefaction,Ground Failure,Geological,EQ,nat-geo-ear-gro
+GH0308,GH0026,Sinkhole,Ground Failure,Geological,OT,nat-geo-mmd-sub
+GH0309,GH0005,Subsidence and Uplift,Ground Failure,Geological,EQ,nat-geo-ear-gro
+GH0310,GH0025,Shrink-Swell Subsidence,Ground Failure,Geological,OT,
+GH0311,GH0004,Surface Rupture & Fissure,Ground Failure,Geological,EQ,nat-geo-ear-gro
+GH0401,,Compressive Soils,Other Hazards,Geological,OT,
+GH0402,,Soil Degradation,Other Hazards,Geological,OT,
+GH0403,,Soil Erosion,Other Hazards,Geological,OT,nat-geo-env-soi
+GH0404,GH0028,River Erosion & Accretion,Other Hazards,Geological,OT,
+GH0405,,Coastal Erosion & Accretion,Other Hazards,Geological,OT,nat-geo-env-sed
+GH0406,GH0029,Sand Encroachment,Other Hazards,Geological,OT,
+GH0407,GH0008,"Ground Gases (CH4, Rn, etc.)",Other Hazards,Geological,OT,
+EN0101,,Household Air Pollution,Environmental Degradation,Environmental,OT,
+EN0102,,Air Pollution (Point Source),Environmental Degradation,Environmental,OT,
+EN0103,MH0018,Ambient (Outdoor) Air Pollution,Environmental Degradation,Environmental,OT,
+EN0104,MH0014,Black Carbon,Environmental Degradation,Environmental,OT,
+EN0105,MH0033,Acid Rain,Environmental Degradation,Environmental,OT,
+EN0106,,Runoff / Nonpoint Source Pollution,Environmental Degradation,Environmental,OT,
+EN0201,,Deforestation,Environmental Degradation,Environmental,OT,
+EN0202,,Forest Declines and Diebacks,Environmental Degradation,Environmental,OT,
+EN0203,,Forest Disturbances,Environmental Degradation,Environmental,OT,
+EN0204,,Forest Invasive Species,Environmental Degradation,Environmental,OT,
+EN0205,EN0013,Wildfires,Environmental Degradation,Environmental,WF,nat-cli-wil-for
+EN0205,EN0013,Wildfires,Environmental Degradation,Environmental,WF,nat-cli-wil-lan
+EN0205,EN0013,Wildfires,Environmental Degradation,Environmental,WF,nat-cli-wil-wil
+EN0206,,Desertification,Environmental Degradation,Environmental,OT,nat-geo-env-des
+EN0207,,Loss of Mangroves,Environmental Degradation,Environmental,OT,
+EN0301,,Land Degradation,Environmental Degradation,Environmental,OT,
+EN0302,MH0023,Seawater intrusion,Environmental Degradation,Environmental,OT,
+EN0303,,Salinity & Sodicity,Environmental Degradation,Environmental,OT,nat-geo-env-slr
+EN0304,,Wetland Loss/Degradation,Environmental Degradation,Environmental,OT,
+EN0305,,Permafrost Loss,Environmental Degradation,Environmental,OT,
+EN0401,MH0021,Ocean Acidification,Environmental Degradation,Environmental,OT,
+EN0402,,Sea Level Rise,Environmental Degradation,Environmental,OT,
+EN0403,,Eutrophication,Environmental Degradation,Environmental,OT,
+EN0404,,Coral Bleaching,Environmental Degradation,Environmental,OT,
+EN0405,,Sand Mining,Environmental Degradation,Environmental,OT,
+EN0501,,Biodiversity Loss,Environmental Degradation,Environmental,OT,
+CH0100,,Heavy Metals & Trace Elements,Heavy Metals & Trace Element Contaminants,Chemical,OT,
+CH0101,,Arsenic,Heavy Metals & Trace Element Contaminants,Chemical,OT,
+CH0102,,Cadmium,Heavy Metals & Trace Element Contaminants,Chemical,OT,
+CH0103,,Lead,Heavy Metals & Trace Element Contaminants,Chemical,OT,
+CH0104,,Mercury,Heavy Metals & Trace Element Contaminants,Chemical,OT,
+CH0105,,Fluoride & Iodine/Iodide Excess or Inadequate Intake,Heavy Metals & Trace Element Contaminants,Chemical,OT,
+CH0201,,Aflatoxins,Carcinogens,Chemical,OT,
+CH0202,,Asbestos,Carcinogens,Chemical,OT,
+CH0203,,Benzene & Hydrocarbons,Carcinogens,Chemical,AC,tec-ind-oil-oil
+CH0203,,Benzene & Hydrocarbons,Carcinogens,Chemical,OT,
+CH0300,,Toxic Gases,Toxic Gases,Chemical,OT,
+CH0301,,Ammonia,Toxic Gases,Chemical,OT,
+CH0302,,Carbon Monoxide,Toxic Gases,Chemical,OT,
+CH0303,,Chlorine,Toxic Gases,Chemical,OT,
+CH0400,,Asphyxiant Gases,Asphyxiant Gases,Chemical,OT,
+CH0500,,Persistent Organic Pollutants,Persistent Organic Pollutants,Chemical,OT,
+CH0501,,Pesticides,Persistent Organic Pollutants,Chemical,OT,
+CH0502,,Dioxins & Dioxin-like Substance,Persistent Organic Pollutants,Chemical,OT,
+CH0503,,Polyfluoroalkyl Substances,Persistent Organic Pollutants,Chemical,OT,
+CH0504,,Microplastics,Persistent Organic Pollutants,Chemical,OT,
+CH0601,,Levels of Contaminants in Food & Feed,Chemical Hazards in Food and Pharmaceuticals,Chemical,OT,
+CH0602,,Substandard & Falsified Medical Products,Chemical Hazards in Food and Pharmaceuticals,Chemical,AC,tec-ind-poi-poi
+CH0602,,Substandard & Falsified Medical Products,Chemical Hazards in Food and Pharmaceuticals,Chemical,OT,
+CH0603,,Methanol,Chemical Hazards in Food and Pharmaceuticals,Chemical,OT,
+CH0604,,Opioids & Other Addictive Substances,Chemical Hazards in Food and Pharmaceuticals,Chemical,OT,
+CH0605,,Marine Toxins,Chemical Hazards in Food and Pharmaceuticals,Chemical,OT,
+CH0901,,Corrosive Substances,Other Chemical Hazards,Chemical,OT,
+CH0902,,Ammonium Nitrate,Other Chemical Hazards,Chemical,OT,
+CH0903,,Chemical Warfare Agents,Other Chemical Hazards,Chemical,OT,
+BI0101,,Airborne Diseases (human and Animal),Infectious Diseases,Biological,EP,nat-bio-epi-vir
+BI0101,,Airborne Diseases (human and Animal),Infectious Diseases,Biological,EP,nat-bio-epi-bac
+BI0101,,Airborne Diseases (human and Animal),Infectious Diseases,Biological,EP,nat-bio-epi-fun
+BI0101,,Airborne Diseases (human and Animal),Infectious Diseases,Biological,EP,nat-bio-epi-dis
+BI0102,,Blood Borne Viruses (Human and Animal),Infectious Diseases,Biological,OT,
+BI0103,,Diarrhoeal Diseases (Human),Infectious Diseases,Biological,OT,
+BI0104,,Foodborne Diseases (Human impact),Infectious Diseases,Biological,OT,
+BI0105,,Neglected Tropical Diseases (Human),Infectious Diseases,Biological,EP,nat-bio-epi-par
+BI0105,,Neglected Tropical Diseases (Human),Infectious Diseases,Biological,OT,
+BI0106,,Sexually Transmitted Diseases (Human),Infectious Diseases,Biological,OT,
+BI0107,,Vaccine-Preventable Diseases (Human),Infectious Diseases,Biological,OT,
+BI0108,,Vector Borne Diseases (VBD) (Human and Animal),Infectious Diseases,Biological,OT,
+BI0109,,Viral Haemorrhagic Fevers (Human),Infectious Diseases,Biological,OT,
+BI0110,,Waterborne Diseases (Human),Infectious Diseases,Biological,OT,
+BI0111,,Cryptosporidium (Human and Animal),Infectious Diseases,Biological,OT,
+BI0112,,Cysticercosis (Human and Animal),Infectious Diseases,Biological,OT,
+BI0113,,Zoonotic Diseases,Infectious Diseases,Biological,OT,
+BI0201,,Anthrax,Specific Infectious Disease of Public Health Concern,Biological,OT,
+BI0202,,Brucellosis (Human and Animal),Specific Infectious Disease of Public Health Concern,Biological,OT,
+BI0203,,Chikungunya,Specific Infectious Disease of Public Health Concern,Biological,OT,
+BI0204,,Cholera (Human),Specific Infectious Disease of Public Health Concern,Biological,OT,
+BI0205,,COVID-19 (SARS-CoV-2) (Human),Specific Infectious Disease of Public Health Concern,Biological,OT,
+BI0206,,Crimean-Congo Haemorrhagic Fever (Human),Specific Infectious Disease of Public Health Concern,Biological,OT,
+BI0207,,Dengue (Human),Specific Infectious Disease of Public Health Concern,Biological,OT,
+BI0208,,Diphtheria (Human),Specific Infectious Disease of Public Health Concern,Biological,OT,
+BI0209,,Ebola (Human),Specific Infectious Disease of Public Health Concern,Biological,OT,
+BI0210,,Escherichia Coli (STEC) (Human),Specific Infectious Disease of Public Health Concern,Biological,OT,
+BI0211,,Hepatitis A (Human),Specific Infectious Disease of Public Health Concern,Biological,OT,
+BI0212,,Hepatitis B (Human),Specific Infectious Disease of Public Health Concern,Biological,OT,
+BI0213,,Hepatitis C (Human),Specific Infectious Disease of Public Health Concern,Biological,OT,
+BI0214,,HIV and AIDS (Human),Specific Infectious Disease of Public Health Concern,Biological,OT,
+BI0215,,Lassa Fever (Human),Specific Infectious Disease of Public Health Concern,Biological,OT,
+BI0216,,Leprosy (Human),Specific Infectious Disease of Public Health Concern,Biological,OT,
+BI0217,,Leptospirosis (Human),Specific Infectious Disease of Public Health Concern,Biological,OT,
+BI0218,,Listeriosis (Human),Specific Infectious Disease of Public Health Concern,Biological,OT,
+BI0219,,Malaria (Human),Specific Infectious Disease of Public Health Concern,Biological,OT,
+BI0220,,Marburg Virus,Specific Infectious Disease of Public Health Concern,Biological,OT,
+BI0221,,Measles (Human),Specific Infectious Disease of Public Health Concern,Biological,OT,
+BI0222,,Meningococcal Meningitis (Human),Specific Infectious Disease of Public Health Concern,Biological,OT,
+BI0223,,Middle East Respiratory Syndrome (MERS) (Human),Specific Infectious Disease of Public Health Concern,Biological,OT,
+BI0224,,Mpox (Human),Specific Infectious Disease of Public Health Concern,Biological,OT,
+BI0225,,Paratyphoid Fever (Human),Specific Infectious Disease of Public Health Concern,Biological,OT,
+BI0226,,Typhoid Fever (Human),Specific Infectious Disease of Public Health Concern,Biological,OT,
+BI0227,,Pertussis (Human),Specific Infectious Disease of Public Health Concern,Biological,OT,
+BI0228,,Plague (Human),Specific Infectious Disease of Public Health Concern,Biological,OT,
+BI0229,,Polio (Human),Specific Infectious Disease of Public Health Concern,Biological,OT,
+BI0230,,Prion Diseases,Specific Infectious Disease of Public Health Concern,Biological,EP,nat-bio-epi-pri
+BI0230,,Prion Diseases,Specific Infectious Disease of Public Health Concern,Biological,OT,
+BI0231,,Q Fever,Specific Infectious Disease of Public Health Concern,Biological,OT,
+BI0232,,Rabies (Animal and Human),Specific Infectious Disease of Public Health Concern,Biological,OT,
+BI0233,,Rotavirus (Human),Specific Infectious Disease of Public Health Concern,Biological,OT,
+BI0234,,Shigellosis (Human),Specific Infectious Disease of Public Health Concern,Biological,OT,
+BI0235,,Smallpox (Human),Specific Infectious Disease of Public Health Concern,Biological,OT,
+BI0236,,Severe Acute Respiratory Syndrome (SARS) (Human),Specific Infectious Disease of Public Health Concern,Biological,OT,
+BI0237,,Tuberculosis (Human and Animal),Specific Infectious Disease of Public Health Concern,Biological,OT,
+BI0238,,Trypanosomiasis & Tripanomosis (Human and Animal),Specific Infectious Disease of Public Health Concern,Biological,OT,
+BI0239,,Varicella and Herpes Zoster (Human),Specific Infectious Disease of Public Health Concern,Biological,OT,
+BI0240,,West Nile Fever (Human),Specific Infectious Disease of Public Health Concern,Biological,OT,
+BI0241,,Yellow Fever (Human),Specific Infectious Disease of Public Health Concern,Biological,OT,
+BI0242,,Zika Virus (Human),Specific Infectious Disease of Public Health Concern,Biological,OT,
+BI0243,,Seasonal Influenza (Human),Specific Infectious Disease of Public Health Concern,Biological,OT,
+BI0244,,Pandemic Influenza (Human),Specific Infectious Disease of Public Health Concern,Biological,OT,
+BI0245,,Avian Influenza (Human and Animal),Specific Infectious Disease of Public Health Concern,Biological,OT,
+BI0301,,Animal Diseases (Not Zoonoses),Animal Infectious Diseases,Biological,OT,
+BI0302,,African Swine Fever (Animal),Animal Infectious Diseases,Biological,OT,
+BI0303,,Classical Swine Fever (Animal),Animal Infectious Diseases,Biological,OT,
+BI0304,,Contagious Bovine Pleuropneumonia (CBPP) (Animal),Animal Infectious Diseases,Biological,OT,
+BI0305,,Contagious Caprine Pleuropneumonia (CCPP) (Animal),Animal Infectious Diseases,Biological,OT,
+BI0306,,Foot and Mouth Disease Virus (Animal),Animal Infectious Diseases,Biological,OT,
+BI0307,,Lumpy Skin Disease (Animal),Animal Infectious Diseases,Biological,OT,
+BI0308,,Newcastle Disease (Animal),Animal Infectious Diseases,Biological,OT,
+BI0309,,New World Screwworm (NWS) (Animal),Animal Infectious Diseases,Biological,OT,
+BI0310,,Peste des Petits Ruminants (Animal),Animal Infectious Diseases,Biological,OT,
+BI0311,,Rift Valley Fever (Animal),Animal Infectious Diseases,Biological,,
+BI0312,,Rinderpest (Animal),Animal Infectious Diseases,Biological,,
+BI0313,,Oyster Disease Aquaculture,Animal Infectious Diseases,Biological,,
+BI0314,,Shrimp Diseases (Bacterial) - Acute Hepatic Pancreatic Necrosis,Animal Infectious Diseases,Biological,,
+BI0401,,Insect Pest Infestations,Insect-related Diseases,Biological,IN,nat-bio-inf-loc
+BI0401,,Insect Pest Infestations,Insect-related Diseases,Biological,IN,nat-bio-inf-gra
+BI0401,,Insect Pest Infestations,Insect-related Diseases,Biological,IN,nat-bio-inf-wor
+BI0401,,Insect Pest Infestations,Insect-related Diseases,Biological,IN,nat-bio-inf-inf
+BI0401,,Insect Pest Infestations,Insect-related Diseases,Biological,OT,
+BI0402,,Locust,Insect-related Diseases,Biological,IN,nat-bio-inf-loc
+BI0402,,Locust,Insect-related Diseases,Biological,OT,
+BI0403,,Invasive weed/species,Insect-related Diseases,Biological,OT,
+BI0501,,Bacterial Plant Disease,Plant Diseases,Biological,OT,
+BI0502,,Fungal Plant Disease,Plant Diseases,Biological,OT,
+BI0503,,"Viral, Phytoplasma and Viroid Plant Disease Outbreaks",Plant Diseases,Biological,OT,
+BI0601,,Antimicrobial Resistance,Other Biological Hazards,Biological,OT,
+BI0602,,Biological Agents CBRNE,Other Biological Hazards,Biological,OT,
+BI0603,,Harmful Algal Blooms,Other Biological Hazards,Biological,OT,
+BI0604,,Human-Wildlife Conflict,Other Biological Hazards,Biological,OT,
+BI0605,,Snakebite Envenoming,Other Biological Hazards,Biological,OT,
+TL0101,,Malware,Cyberhazards,Technological,,
+TL0102,,Data Breach,Cyberhazards,Technological,,
+TL0103,,Advanced Persistent Threat,Cyberhazards,Technological,,
+TL0104,,Denial of Service,Cyberhazards,Technological,,
+TL0105,,Supply Chain Attack,Cyberhazards,Technological,,
+TL0106,,Cyberbullying,Cyberhazards,Technological,,
+TL0107,,Social Engineering,Cyberhazards,Technological,,
+TL0201,,Building Collapse,Construction / Structural Failure,Technological,AC,tec-mis-col-col
+TL0202,,"Building, Highrise, Cladding",Construction / Structural Failure,Technological,AC,tec-mis-col-col
+TL0203,,Structural Failure,Construction / Structural Failure,Technological,AC,tec-mis-col-col
+TL0204,,Bridge Failure,Construction / Structural Failure,Technological,AC,tec-mis-col-col
+TL0205,,Dam Failure,Construction / Structural Failure,Technological,FL,tec-mis-col-col
+TL0206,,Supply Chain Failure,Construction / Structural Failure,Technological,AC,tec-ind-ind-ind
+TL0207,,Critical Infrastructure Failure,Construction / Structural Failure,Technological,AC,tec-ind-ind-ind
+TL0208,,Nuclear Plant Failure,Construction / Structural Failure,Technological,AC,tec-ind-rad-rad
+TL0209,,Power Outage / Blackout,Construction / Structural Failure,Technological,AC,tec-ind-ind-ind
+TL0210,,Water Supply Failure,Construction / Structural Failure,Technological,AC,tec-ind-ind-ind
+TL0211,,Emergency Telecommunication Failure,Construction / Structural Failure,Technological,AC,tec-ind-ind-ind
+TL0212,,Radio and other Telecommunication Failures,Construction / Structural Failure,Technological,AC,tec-ind-ind-ind
+TL0213,,Tunnel Failure,Construction / Structural Failure,Technological,,
+TL0214,,Drain and Sewer Flooding,Construction / Structural Failure,Technological,OT,
+TL0215,,Reservoir Flooding,Construction / Structural Failure,Technological,OT,
+TL0301,,Leaks and Spills,Industrial Failure,Technological,AC,tec-ind-che-che
+TL0301,,Leaks and Spills,Industrial Failure,Technological,AC,tec-ind-gas-gas
+TL0302,,Pollution,Industrial Failure,Technological,AC,tec-ind-ind-ind
+TL0303,,Soil Pollution,Industrial Failure,Technological,AC,tec-ind-ind-ind
+TL0304,,Explosion,Industrial Failure,Technological,AC,tec-ind-exp-exp
+TL0305,,Fire,Industrial Failure,Technological,FR,tec-ind-fir-fir
+TL0305,,Fire,Industrial Failure,Technological,FR,tec-mis-fir-fir
+TL0306,,Explosive Agents,Industrial Failure,Technological,AC,tec-ind-exp-exp
+TL0307,,Mining Hazards,Industrial Failure,Technological,AC,tec-ind-ind-ind
+TL0308,,Safety Hazards Associated with Oil and Gas Extraction Activities,Industrial Failure,Technological,AC,tec-ind-ind-ind
+TL0309,,Natech,Industrial Failure,Technological,AC,tec-ind-ind-ind
+TL0401,,Air Transportation Accident,Transportation Accidents,Technological,AC,tec-tra-air-air
+TL0402,,Inland Water Way Accidents,Transportation Accidents,Technological,AC,tec-tra-wat-wat
+TL0403,,Maritime Accident,Transportation Accidents,Technological,AC,tec-tra-wat-wat
+TL0404,,Rail Accident,Transportation Accidents,Technological,AC,tec-tra-rai-rai
+TL0405,,Road Traffic Accident,Transportation Accidents,Technological,AC,tec-tra-roa-roa
+TL0501,,Disaster & Conflict Waste,Waste,Technological,OT,
+TL0502,,Solid Waste,Waste,Technological,OT,
+TL0503,,Wastewater,Waste,Technological,OT,
+TL0504,,Hazardous Waste,Waste,Technological,OT,
+TL0505,,Plastic Waste,Waste,Technological,OT,
+TL0506,,Marine Debris,Waste,Technological,OT,
+TL0507,,Electronic Waste (E-Waste),Waste,Technological,OT,
+TL0508,,Health-care Waste,Waste,Technological,OT,
+TL0509,,Landfilling,Waste,Technological,OT,
+TL0510,,Waste Treatment Lagoons,Waste,Technological,OT,
+TL0511,,Tailings,Waste,Technological,OT,
+TL0601,,Radioactive Waste,Radiation,Technological,AC,tec-ind-rad-rad
+TL0602,,Radioactive Agents & Material,Radiation,Technological,AC,tec-ind-rad-rad
+TL0603,,Nuclear Agents,Radiation,Technological,AC,tec-ind-rad-rad
+SO0101,,International Armed Conflict (IAC),Conflict,Societal,CE,
+SO0102,,Non-International Armed Conflict (NIAC),Conflict,Societal,CE,
+SO0103,,Civil Unrest,Conflict,Societal,CE,
+SO0201,,Explosive Ordnance,Post-conflict,Societal,CE,
+SO0202,,Environmental Degradation from Conflict,Post-conflict,Societal,CE,
+SO0301,,Violence,Behavioural,Societal,OT,
+SO0302,,Stampede or Crushing (Human),Behavioural,Societal,OT,
+SO0303,,Suicide Cluster,Behavioural,Societal,,
+SO0401,,Financial Shock,Economic,Societal,OT,

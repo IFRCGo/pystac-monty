@@ -74,6 +74,29 @@ def load_valid_emdat_codes() -> set[str]:
     return codes
 
 
+def load_cross_classification_mapping() -> list[tuple[str, str, str]]:
+    """Parse the Cross-Classification Mapping table from taxonomy.md.
+
+    Returns a list of distinct (glide_code, emdat_key, undrr_2025_code) triples.
+    "Multiple codes" EM-DAT entries (e.g. for conflict-related GLIDE 'CE' rows)
+    are normalized to an empty string, matching how HazardProfiles.csv represents
+    hazards with no single EM-DAT key.
+    """
+    path = taxonomy_md_path()
+    text = path.read_text(encoding="utf-8")
+    rows = _parse_markdown_table_rows(text, "### Cross-Classification Mapping")
+    rows = [row for row in rows if row and row[0] != "GLIDE Code"]
+
+    triples: set[tuple[str, str, str]] = set()
+    for glide, emdat, _name, undrr in rows:
+        if emdat == "Multiple codes":
+            emdat = ""
+        triples.add((glide, emdat, undrr))
+    if not triples:
+        raise ValueError(f"No cross-classification mapping rows parsed from {path}")
+    return sorted(triples)
+
+
 def assert_hazard_code_dict_valid(
     hazard_codes: dict[str, list[str]],
     *,
