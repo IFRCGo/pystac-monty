@@ -529,6 +529,7 @@ class CEMSTest(unittest.TestCase):
             self.assertTrue((output_dir / "cems-events" / "cems-event-EMSR842.json").is_file())
             self.assertTrue((output_dir / "cems-response" / "cems-response.json").is_file())
 
+    @pytest.mark.vcr()
     def test_convert_cems_matches_regenerated_examples(self) -> None:
         fixture = _cems_fixture_dir() / "EMSR847-storm-detail.json"
         examples_dir = _cems_examples_dir()
