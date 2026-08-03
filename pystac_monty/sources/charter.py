@@ -57,7 +57,7 @@ LEGACY_DISASTER_SCHEMA_URI = "https://terradue.github.io/disaster/v1.0.0/schema.
 # Charter disaster:type to [UNDRR-2025, EM-DAT, GLIDE]
 CHARTER_HAZARD_CODES = {
     "flood": ["MH0600", "nat-hyd-flo-flo", "FL"],
-    "fire": ["EN0205", "nat-cli-wil-for", "WF"],
+    "fire": ["EN0205", "nat-cli-wil-wil", "WF"],
     "earthquake": ["GH0101", "nat-geo-ear-gro", "EQ"],
     "volcano": ["GH0201", "nat-geo-vol-vol", "VO"],
     "cyclone": ["MH0306", "nat-met-sto-tro", "TC"],

@@ -274,7 +274,7 @@ class PDCTransformer(MontyDataTransformer):
             "CYCLONE": ["MH0306", "nat-met-sto-tro", "TC"],
             "TSUNAMI": ["MH0705", "nat-geo-ear-tsu", "TS"],
             "VOLCANO": ["GH0201", "nat-geo-vol-vol", "VO"],
-            "WILDFIRE": ["EN0205", "nat-cli-wil-for", "WF"],
+            "WILDFIRE": ["EN0205", "nat-cli-wil-wil", "WF"],
             "WINTERSTORM": ["MH0403", "nat-met-sto-bli", "OT"],
         }
 

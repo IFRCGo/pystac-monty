@@ -1,9 +1,10 @@
 import json
 import logging
 import os
+import re
 import typing
 from dataclasses import dataclass, field
-from typing import List
+from typing import Dict, List
 
 from pystac import Item
 from shapely.geometry import mapping, shape
@@ -18,6 +19,43 @@ logger = logging.getLogger(__name__)
 
 STAC_EVENT_ID_PREFIX = "ifrcevent-event-"
 STAC_IMPACT_ID_PREFIX = "ifrcevent-impact-"
+
+# IFRC DREF disaster type (dtype.name) -> [UNDRR-ISC 2025, EM-DAT, GLIDE] hazard codes.
+# Source of truth: monty-stac-extension docs/model/sources/IFRC-DREF/README.md
+# ("Hazard Type Mapping"). "Fire" and "Cyclone" are defaults refined by name-based
+# rules below ("the fire rule" / "the cyclone rule" in that doc).
+IFRC_HAZARD_CODES: Dict[str, List[str]] = {
+    "Earthquake": ["GH0101", "nat-geo-ear-gro", "EQ"],
+    "Cyclone": ["MH0306", "nat-met-sto-tro", "TC"],  # Depression or Cyclone (default)
+    # General eruption: HIP 2025 has no volcanic chapeau (GH0201-GH0205 only), so
+    # GH0201 carries the general case -- not because the event is a lava flow.
+    "Volcanic Eruption": ["GH0201", "nat-geo-vol-vol", "VO"],
+    "Tsunami": ["MH0705", "nat-geo-ear-tsu", "TS"],
+    "Flood": ["MH0600", "nat-hyd-flo-flo", "FL"],  # Flooding (chapeau)
+    "Cold Wave": ["MH0502", "nat-met-ext-col", "CW"],
+    "Fire": ["EN0205", "nat-cli-wil-wil", "WF"],  # Wildfires (default)
+    "Heat Wave": ["MH0501", "nat-met-ext-hea", "HT"],
+    "Drought": ["MH0401", "nat-cli-dro-dro", "DR"],
+    "Storm Surge": ["MH0703", "nat-met-sto-sur", "SS"],
+    "Landslide": ["GH0300", "nat-geo-mmd-lan", "LS"],  # Gravitational Mass Movement (chapeau)
+    "Pluvial/Flash Flood": ["MH0603", "nat-hyd-flo-fla", "FF"],
+    "Epidemic": ["BI0101", "nat-bio-epi-dis", "EP"],
+    # Societal hazard type has no GLIDE/EM-DAT row in the cross-classification mapping.
+    "Civil Unrest": ["SO0103"],
+    "Insect Infestation": ["BI0401", "nat-bio-inf-inf", "IN"],
+}
+
+# "The fire rule": GO's single "Fire" type is dominated by wildfires, so EN0205/WF is
+# the default and these patterns refine to the industrial/structural EM-DAT split.
+# Checked against the event `name` only -- `summary` is narrative impact prose that
+# describes what a wildfire destroyed, not what kind of fire it was.
+FIRE_INDUSTRIAL_PATTERN = re.compile(r"\b(factory|industrial|plant|refinery|warehouse)\b", re.IGNORECASE)
+FIRE_MISC_PATTERN = re.compile(r"\b(landfill|market|building|structural|residential|apartment|camp|slum)\b", re.IGNORECASE)
+
+# "The cyclone rule": GO's "Cyclone" type is not exclusively tropical, so MH0306
+# (Depression or Cyclone) is the default and these patterns refine using the name.
+CYCLONE_EXTRATROPICAL_PATTERN = re.compile(r"extratropical|extra-tropical", re.IGNORECASE)
+CYCLONE_TROPICAL_PATTERN = re.compile(r"hurricane|typhoon|tropical|\bTCs?\b", re.IGNORECASE)
 
 
 @dataclass
@@ -223,7 +261,7 @@ class IFRCEventTransformer(MontyDataTransformer[IFRCEventDataSource]):
         monty = MontyExtension.ext(item)
         monty.src_event_id = str(data.id)
         monty.episode_number = 1  # IFRC DREF doesn't have episodes
-        monty.hazard_codes = self.map_ifrc_to_hazard_codes(data.dtype.name)
+        monty.hazard_codes = self.map_ifrc_to_hazard_codes(data.dtype.name, data.name)
         monty.hazard_codes = self.hazard_profiles.get_canonical_hazard_codes(item=item)
 
         monty.country_codes = [country.iso3 for country in data.countries]
@@ -238,47 +276,42 @@ class IFRCEventTransformer(MontyDataTransformer[IFRCEventDataSource]):
         item.properties["roles"] = ["source", "event"]
         return item
 
-    def map_ifrc_to_hazard_codes(self, classification_key: str) -> List[str]:
+    def map_ifrc_to_hazard_codes(self, classification_key: str, name: str = "") -> List[str]:
         """
         Map IFRC DREF disaster type names to standard hazard codes.
         Returns codes in order: [UNDRR-ISC 2025, EM-DAT, GLIDE]
 
         The UNDRR-ISC 2025 code is the reference classification for the Monty extension.
-        All three codes are included for maximum interoperability.
+        All three codes are included for maximum interoperability, except "Civil Unrest"
+        (Societal hazards have no GLIDE/EM-DAT row in the cross-classification mapping).
 
-        **Important 2025 Updates:**
-        - Earthquake: Consolidated to single code GH0101 (was GH0001-GH0005)
-        - Cyclone: Consolidated to single code MH0306 (was MH0030-MH0032)
-        - Tsunami: Reclassified from Geological to Meteorological (MH0705)
+        "Fire" and "Cyclone" default to a general code and are refined using the event
+        `name` -- see "the fire rule" / "the cyclone rule" in monty-stac-extension's
+        docs/model/sources/IFRC-DREF/README.md, which is the source of truth for this
+        mapping.
 
         Args:
             classification_key: IFRC disaster type name (e.g., 'Flood', 'Earthquake')
+            name: Event name, used to refine the "Fire" and "Cyclone" defaults
 
         Returns:
             List of classification codes [2025, EM-DAT, GLIDE]
         """
+        if classification_key == "Fire":
+            if FIRE_INDUSTRIAL_PATTERN.search(name):
+                return ["TL0305", "tec-ind-fir-fir", "FR"]
+            if FIRE_MISC_PATTERN.search(name):
+                return ["TL0305", "tec-mis-fir-fir", "FR"]
+        elif classification_key == "Cyclone":
+            if CYCLONE_EXTRATROPICAL_PATTERN.search(name):
+                return ["MH0307", "nat-met-sto-ext", "EC"]
+            if CYCLONE_TROPICAL_PATTERN.search(name):
+                return ["MH0309", "nat-met-sto-tro", "TC"]
 
-        # IFRC DREF hazards classification mapping to UNDRR-ISC 2025 codes
-        mapping = {
-            "Earthquake": ["GH0101", "nat-geo-ear-gro", "EQ"],  # 2025: Consolidated to single code
-            "Cyclone": ["MH0306", "nat-met-sto-tro", "TC"],  # 2025: Consolidated to single code
-            "Volcanic Eruption": ["GH0201", "nat-geo-vol-vol", "VO"],  # 2025: Lava Flows
-            "Tsunami": ["MH0705", "nat-geo-ear-tsu", "TS"],  # 2025: Reclassified to Meteorological
-            "Flood": ["MH0600", "nat-hyd-flo-flo", "FL"],  # Flooding (chapeau)
-            "Cold Wave": ["MH0502", "nat-met-ext-col", "CW"],  # Cold Wave
-            "Fire": ["TL0305", "tec-ind-fir-fir", "FR"],  # Industrial Fire
-            "Heat Wave": ["MH0501", "nat-met-ext-hea", "HT"],  # Heatwave
-            "Drought": ["MH0401", "nat-cli-dro-dro", "DR"],  # Drought
-            "Storm Surge": ["MH0703", "nat-met-sto-sur", "SS"],  # Storm Surge
-            "Landslide": ["GH0300", "nat-geo-mmd-lan", "LS"],  # Gravitational Mass Movement
-            "Pluvial/Flash Flood": ["MH0603", "nat-hyd-flo-fla", "FF"],  # Flash Flooding
-            "Epidemic": ["BI0101", "nat-bio-epi-dis", "EP"],  # Infectious Diseases
-        }
-
-        if classification_key not in mapping:
+        if classification_key not in IFRC_HAZARD_CODES:
             logger.warning(f"IFRC disaster type '{classification_key}' not found in UNDRR-ISC 2025 mapping.")
 
-        return mapping.get(classification_key, [])
+        return IFRC_HAZARD_CODES.get(classification_key, [])
 
     def make_impact_items(self, event_item: Item, ifrcevent_data: IFRCsourceValidator) -> List[Item]:
         """Create impact items"""
@@ -375,24 +408,10 @@ class IFRCEventTransformer(MontyDataTransformer[IFRCEventDataSource]):
             estimate_type=MontyEstimateType.PRIMARY,
         )
 
-    def check_accepted_disaster_types(self, disaster: str | None):
+    def check_accepted_disaster_types(self, disaster: str | None) -> bool:
         if not disaster:
-            return []
+            return False
 
-        # Filter relevant disaster types from GO
-        monty_accepted_disaster_types = [
-            "Earthquake",
-            "Cyclone",
-            "Volcanic Eruption",
-            "Tsunami",
-            "Flood",
-            "Cold Wave",
-            "Fire",
-            "Heat Wave",
-            "Drought",
-            "Storm Surge",
-            "Landslide",
-            "Pluvial/Flash Flood",
-            "Epidemic",
-        ]
-        return disaster in monty_accepted_disaster_types
+        # Derived from IFRC_HAZARD_CODES so the accepted-types list and the hazard
+        # code mapping can never drift apart (see monty-stac-extension#96).
+        return disaster in IFRC_HAZARD_CODES
