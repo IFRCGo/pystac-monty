@@ -60,10 +60,9 @@ class EmdatDataValidator(BaseModelWithExtra):
 
     @field_validator("*", mode="before")
     def replace_nan_with_none(cls, value: Any, info: ValidationInfo):
-        # Ignore the check for admin_units as it will be an ambiguous check (being a list of dicts)
-        if info.field_name in {"admin_units"}:
-            if pd.isna(value):
-                return None
+        # admin_units is a list of dicts, so pd.isna(value) on it is ambiguous; only
+        # scalar (e.g. NaN for a missing column) values need to be normalized to None.
+        if info.field_name == "admin_units" and isinstance(value, list):
             return value
         if pd.isna(value):
             return None
