@@ -275,7 +275,8 @@ class IfrcEventsTest(TestCase):
         assert transformer.map_ifrc_to_hazard_codes("Cold Wave") == ["MH0502", "nat-met-ext-col", "CW"]
         assert transformer.map_ifrc_to_hazard_codes("Landslide") == ["GH0300", "nat-geo-mmd-lan", "LS"]
         assert transformer.map_ifrc_to_hazard_codes("Storm Surge") == ["MH0703", "nat-met-sto-sur", "SS"]
-        assert transformer.map_ifrc_to_hazard_codes("Fire") == ["TL0305", "tec-ind-fir-fir", "FR"]
+        assert transformer.map_ifrc_to_hazard_codes("Fire") == ["EN0205", "nat-cli-wil-wil", "WF"]
+        assert transformer.map_ifrc_to_hazard_codes("Fire", "Factory Fire", "") == ["TL0305", "tec-ind-fir-fir", "FR"]
         assert transformer.map_ifrc_to_hazard_codes("Epidemic") == ["BI0101", "nat-bio-epi-dis", "EP"]
 
     @parameterized.expand(load_scenarios(scenarios))
