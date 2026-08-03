@@ -2,6 +2,7 @@
 
 import json
 import tempfile
+from datetime import datetime, timezone
 from os import makedirs
 from typing import List, Union
 from unittest import TestCase
@@ -9,12 +10,13 @@ from unittest import TestCase
 import pytest
 import requests
 from parameterized import parameterized
+from pystac import Item
 
 from pystac_monty.extension import MontyExtension
 from pystac_monty.geocoding import MockGeocoder
 from pystac_monty.hazard_profiles import MontyHazardProfiles
 from pystac_monty.sources.common import DataType, File, GenericDataSource, Memory
-from pystac_monty.sources.ifrc_events import IFRCEventDataSource, IFRCEventTransformer
+from pystac_monty.sources.ifrc_events import IFRC_HAZARD_CODES, IFRCEventDataSource, IFRCEventTransformer
 from pystac_monty.sources.utils import save_json_data_into_tmp_file
 from tests.conftest import get_data_file
 from tests.extensions.test_monty import CustomValidator
@@ -275,32 +277,119 @@ class IfrcEventsTest(TestCase):
         assert transformer.map_ifrc_to_hazard_codes("Cold Wave") == ["MH0502", "nat-met-ext-col", "CW"]
         assert transformer.map_ifrc_to_hazard_codes("Landslide") == ["GH0300", "nat-geo-mmd-lan", "LS"]
         assert transformer.map_ifrc_to_hazard_codes("Storm Surge") == ["MH0703", "nat-met-sto-sur", "SS"]
-        assert transformer.map_ifrc_to_hazard_codes("Fire") == ["TL0305", "tec-ind-fir-fir", "FR"]
         assert transformer.map_ifrc_to_hazard_codes("Epidemic") == ["BI0101", "nat-bio-epi-dis", "EP"]
 
+        # "Fire" now defaults to wildfire, not industrial fire (see the fire rule)
+        assert transformer.map_ifrc_to_hazard_codes("Fire") == ["EN0205", "nat-cli-wil-wil", "WF"]
+
+        # New disaster types (monty-stac-extension#182/#96)
+        assert transformer.map_ifrc_to_hazard_codes("Civil Unrest") == ["SO0103"]
+        assert transformer.map_ifrc_to_hazard_codes("Insect Infestation") == ["BI0401", "nat-bio-inf-inf", "IN"]
+
     @parameterized.expand(load_scenarios(scenarios))
-    def test_all_disaster_types_return_three_codes(self, transformer: IFRCEventTransformer):
-        ifrc_disaster_types = [
-            "Earthquake",
-            "Cyclone",
-            "Volcanic Eruption",
-            "Tsunami",
-            "Flood",
-            "Cold Wave",
-            "Fire",
-            "Heat Wave",
-            "Drought",
-            "Storm Surge",
-            "Landslide",
-            "Pluvial/Flash Flood",
-            "Epidemic",
+    def test_all_disaster_types_return_valid_codes(self, transformer: IFRCEventTransformer):
+        # Derived from IFRC_HAZARD_CODES so this test can't drift from the mapping itself.
+        for disaster_type in IFRC_HAZARD_CODES:
+            codes = transformer.map_ifrc_to_hazard_codes(disaster_type)
+            if disaster_type == "Civil Unrest":
+                # Societal hazards have no GLIDE/EM-DAT row in the cross-classification
+                # mapping, so a single UNDRR-2025 code is the valid triplet here.
+                assert len(codes) == 1, "Civil Unrest should return a single UNDRR-2025 code"
+            else:
+                assert len(codes) == 3, f"{disaster_type} should return exactly 3 codes"
+            # First should be 2025 format
+            assert codes[0].startswith(("MH", "GH", "BI", "TL", "EN", "SO"))
+
+    @parameterized.expand(load_scenarios(scenarios))
+    def test_fire_rule_default_and_refinements(self, transformer: IFRCEventTransformer):
+        # Default: wildfire (GO's "Fire" type is dominated by wildfires)
+        assert transformer.map_ifrc_to_hazard_codes("Fire", name="Greece Wildfires") == ["EN0205", "nat-cli-wil-wil", "WF"]
+        assert transformer.map_ifrc_to_hazard_codes("Fire") == ["EN0205", "nat-cli-wil-wil", "WF"]
+
+        # Industrial/structural refinement, keyed on the event name only
+        for name in ["Factory Fire in Daejeon", "Industrial Plant Fire", "Oil Refinery Fire", "Chemical Warehouse Fire"]:
+            assert transformer.map_ifrc_to_hazard_codes("Fire", name=name) == ["TL0305", "tec-ind-fir-fir", "FR"]
+
+        for name in [
+            "Nairobi Residential Fire",
+            "AMSA Landfill Fire",
+            "Hargeisa Market Fire",
+            "Structural Fire",
+            "Apartment Fire",
+            "Refugee Camp Fire",
+            "Slum Fire",
+        ]:
+            assert transformer.map_ifrc_to_hazard_codes("Fire", name=name) == ["TL0305", "tec-mis-fir-fir", "FR"]
+
+        # summary is deliberately excluded from the refinement -- only name matters
+        assert transformer.map_ifrc_to_hazard_codes("Fire", name="Greece Wildfires") == ["EN0205", "nat-cli-wil-wil", "WF"]
+
+    @parameterized.expand(load_scenarios(scenarios))
+    def test_cyclone_rule_default_and_refinements(self, transformer: IFRCEventTransformer):
+        # Default: Depression or Cyclone (GO's "Cyclone" type is not exclusively tropical)
+        assert transformer.map_ifrc_to_hazard_codes("Cyclone", name="Cyclone Beryl") == ["MH0306", "nat-met-sto-tro", "TC"]
+        assert transformer.map_ifrc_to_hazard_codes("Cyclone") == ["MH0306", "nat-met-sto-tro", "TC"]
+
+        # Extratropical refinement
+        assert transformer.map_ifrc_to_hazard_codes("Cyclone", name="ARG: Extratropical Cyclone - Misiones") == [
+            "MH0307",
+            "nat-met-sto-ext",
+            "EC",
+        ]
+        assert transformer.map_ifrc_to_hazard_codes("Cyclone", name="Extra-tropical Cyclone - Misiones") == [
+            "MH0307",
+            "nat-met-sto-ext",
+            "EC",
         ]
 
-        for disaster_type in ifrc_disaster_types:
-            codes = transformer.map_ifrc_to_hazard_codes(disaster_type)
-            assert len(codes) == 3, f"{disaster_type} should return exactly 3 codes"
-            # First should be 2025 format
-            assert codes[0].startswith(("MH", "GH", "BI", "TL", "EN"))
+        # Tropical refinement
+        for name in ["TC Alfred", "TCs Nika (Toraji) and Ofel", "Hurricane Melissa", "Typhoon Kalmaegi", "Tropical Storm Erick"]:
+            assert transformer.map_ifrc_to_hazard_codes("Cyclone", name=name) == ["MH0309", "nat-met-sto-tro", "TC"]
+
+    @parameterized.expand(load_scenarios(scenarios))
+    def test_check_accepted_disaster_types(self, transformer: IFRCEventTransformer):
+        for disaster_type in IFRC_HAZARD_CODES:
+            assert transformer.check_accepted_disaster_types(disaster_type) is True
+
+        assert transformer.check_accepted_disaster_types("Civil Unrest") is True
+        assert transformer.check_accepted_disaster_types("Insect Infestation") is True
+        assert transformer.check_accepted_disaster_types("Population Movement") is False
+        assert transformer.check_accepted_disaster_types("Other") is False
+        assert transformer.check_accepted_disaster_types(None) is False
+        assert transformer.check_accepted_disaster_types("") is False
+
+    @parameterized.expand(load_scenarios(scenarios))
+    def test_new_and_refined_mappings_canonicalize_correctly(self, transformer: IFRCEventTransformer):
+        """Verify by running the real code, not by reading it: every new/refined
+        mapping must survive get_canonical_hazard_codes()/get_keywords() unchanged,
+        and untouched types (Earthquake, Flood) must still round-trip too."""
+
+        def canonicalize(codes: List[str]) -> List[str]:
+            item = Item(id="test", geometry=None, bbox=None, datetime=datetime.now(timezone.utc), properties={})
+            MontyExtension.add_to(item)
+            MontyExtension.ext(item).hazard_codes = codes
+            return transformer.hazard_profiles.get_canonical_hazard_codes(item=item)
+
+        cases = {
+            "Civil Unrest": ["SO0103"],
+            "Insect Infestation": ["BI0401", "nat-bio-inf-inf", "IN"],
+            "Fire (default)": ["EN0205", "nat-cli-wil-wil", "WF"],
+            "Fire (industrial)": ["TL0305", "tec-ind-fir-fir", "FR"],
+            "Fire (miscellaneous)": ["TL0305", "tec-mis-fir-fir", "FR"],
+            "Cyclone (default)": ["MH0306", "nat-met-sto-tro", "TC"],
+            "Cyclone (extratropical)": ["MH0307", "nat-met-sto-ext", "EC"],
+            "Cyclone (tropical)": ["MH0309", "nat-met-sto-tro", "TC"],
+            # Regression check: untouched types must still resolve correctly
+            "Earthquake": ["GH0101", "nat-geo-ear-gro", "EQ"],
+            "Flood": ["MH0600", "nat-hyd-flo-flo", "FL"],
+        }
+
+        for label, codes in cases.items():
+            canonical = canonicalize(codes)
+            assert set(canonical) == set(codes), f"{label}: {canonical} != {codes}"
+
+            keywords = transformer.hazard_profiles.get_keywords(canonical)
+            assert keywords, f"{label}: expected non-empty keywords, got {keywords}"
 
     @parameterized.expand(load_scenarios(scenarios))
     def test_ifrc_event_item_has_all_codes(self, transformer: IFRCEventTransformer):
