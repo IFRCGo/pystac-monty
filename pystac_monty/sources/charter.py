@@ -79,6 +79,21 @@ MANUAL_REVIEW_DISASTER_TYPES = {
     "storm_hurricane_urban",
 }
 
+
+def compute_file_hash(content: bytes) -> str:
+    """Hash Charter JSON after stripping volatile properties."""
+    try:
+        data = json.loads(content)
+    except (json.JSONDecodeError, UnicodeDecodeError):
+        return hashlib.sha256(content).hexdigest()
+    if isinstance(data, dict):
+        props = data.get("properties")
+        if isinstance(props, dict):
+            data = {**data, "properties": {k: v for k, v in props.items() if k not in CHARTER_VOLATILE_PROPERTIES}}
+    normalized = json.dumps(data, sort_keys=True, ensure_ascii=False).encode()
+    return hashlib.sha256(normalized).hexdigest()
+
+
 # CPE status to estimate_type (interim mapping)
 CPE_STATUS_MAPPING = {
     "notificationNew": "primary",
@@ -105,6 +120,11 @@ _INTERNAL_CHARTER_PROPS = {
     "cpe:processing_monitoring_id",
     "cpe:notification_source",
 }
+
+# Fields in GeoJSON `properties` that change on every source touch but carry no
+# meaningful data — excluded from the semantic hash so extraction doesn't re-transform
+# when only an administrative timestamp or internal Charter field changed.
+CHARTER_VOLATILE_PROPERTIES: frozenset[str] = frozenset({"updated", "created"} | _INTERNAL_CHARTER_PROPS)
 
 _CHARTER_PROVIDER = Provider(
     "International Charter Space and Major Disasters",
