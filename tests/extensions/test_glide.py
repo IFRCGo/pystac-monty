@@ -16,6 +16,7 @@ from pystac_monty.hazard_profiles import MontyHazardProfiles
 from pystac_monty.sources.common import DataType, File, GenericDataSource, Memory
 from pystac_monty.sources.glide import GlideDataSource, GlideTransformer
 from pystac_monty.sources.utils import save_json_data_into_tmp_file
+from pystac_monty.validators.glide import GlideSetValidator
 from tests.conftest import get_data_file
 from tests.extensions.test_monty import CustomValidator
 from tests.utils.test_utils import request_for_schema, validate_correlation_id
@@ -238,3 +239,120 @@ class GlideTest(unittest.TestCase):
         assert transformer.get_hazard_codes("SS") == ["MH0703", "nat-met-sto-sur", "SS"]
         assert transformer.get_hazard_codes("FR") == ["TL0305", "tec-ind-fir-fir", "FR"]
         assert transformer.get_hazard_codes("EP") == ["BI0101", "nat-bio-epi-dis", "EP"]
+
+        # "ET" is refined from comments into Heatwave/Cold Wave
+        assert transformer.get_hazard_codes("ET", " (Cold wave)") == ["MH0502", "nat-met-ext-col", "CW"]
+        assert transformer.get_hazard_codes("ET", " (Heat wave)") == ["MH0501", "nat-met-ext-hea", "HT"]
+        assert transformer.get_hazard_codes("ET", "A Cold Wave occurred in Puncak Jaya, Papua.") == [
+            "MH0502",
+            "nat-met-ext-col",
+            "CW",
+        ]
+        assert transformer.get_hazard_codes("ET", "cold wave and snow") == ["MH0502", "nat-met-ext-col", "CW"]
+
+    def _make_transformer(self) -> GlideTransformer:
+        glide_data_source = GlideDataSource(
+            data=GenericDataSource(
+                source_url="https://www.glidenumber.net/glide/jsonglideset.jsp",
+                input_data=File(path=DATA_FILE.name, data_type=DataType.FILE),
+            )
+        )
+        return GlideTransformer(glide_data_source, MockGeocoder())
+
+    def _make_glideset_row(self, **overrides) -> GlideSetValidator:
+        defaults = {
+            "comments": "Test event",
+            "year": 2024,
+            "docid": 1,
+            "latitude": 40.0,
+            "longitude": -3.0,
+            "homeless": 0,
+            "source": "Test",
+            "idsource": "",
+            "killed": 0,
+            "affected": 0,
+            "duration": 1,
+            "number": "2024-000001",
+            "injured": 0,
+            "month": 1,
+            "geocode": "ESP",
+            "location": "Spain",
+            "magnitude": "0",
+            "time": "",
+            "id": "",
+            "event": "FL",
+            "day": 1,
+            "status": "A",
+        }
+        defaults.update(overrides)
+        return GlideSetValidator(**defaults)
+
+    def test_get_ac_hazard_codes_tag_match(self):
+        transformer = self._make_transformer()
+
+        # Simple tag, no subcategory
+        assert transformer.get_ac_hazard_codes("Road accident on the highway (Road)") == [
+            "TL0405",
+            "tec-tra-roa-roa",
+            "AC",
+        ]
+
+        # Tag with subcategory
+        assert transformer.get_ac_hazard_codes("Warehouse fire in Lagos (Ind: Fire)") == [
+            "TL0305",
+            "tec-ind-fir-fir",
+            "FR",
+        ]
+        assert transformer.get_ac_hazard_codes("Chemical incident at plant (Ind: Chemical Spill)") == [
+            "TL0301",
+            "tec-ind-che-che",
+            "AC",
+        ]
+
+    def test_get_ac_hazard_codes_freetext_fallback(self):
+        transformer = self._make_transformer()
+
+        # No trailing "(Category)" tag, must fall back to freetext regexes
+        assert transformer.get_ac_hazard_codes("A helicopter crash occurred in the mountains today.") == [
+            "TL0401",
+            "tec-tra-air-air",
+            "AC",
+        ]
+        assert transformer.get_ac_hazard_codes("The bus collided with a truck causing an accident.") == [
+            "TL0405",
+            "tec-tra-roa-roa",
+            "AC",
+        ]
+        assert transformer.get_ac_hazard_codes("A ferry capsized off the coast.") == [
+            "TL0402",
+            "tec-tra-wat-wat",
+            "AC",
+        ]
+
+    def test_get_ac_hazard_codes_no_match(self):
+        transformer = self._make_transformer()
+
+        # Neither a recognized tag nor any freetext pattern matches
+        assert transformer.get_ac_hazard_codes("Random incident happened with no further details.") == []
+        assert transformer.get_ac_hazard_codes("") == []
+        # A trailing tag that isn't in AC_TAG_HAZARD_CODES, and no freetext match either
+        assert transformer.get_ac_hazard_codes("Something happened (Unknown)") == []
+
+    def test_country_code_uses_geocoder_fallback_when_geocode_is_dash(self):
+        transformer = self._make_transformer()
+        # (longitude, latitude) falls inside the MockGeocoder ESP test geometry
+        row = self._make_glideset_row(geocode="---", latitude=40.0, longitude=-3.0)
+
+        item = transformer.make_source_event_items(row)
+
+        monty = MontyExtension.ext(item)
+        assert monty.country_codes == ["ESP"]
+
+    def test_country_code_uses_geocode_when_not_dash(self):
+        transformer = self._make_transformer()
+        row = self._make_glideset_row(geocode="ESP")
+
+        item = transformer.make_source_event_items(row)
+
+        monty = MontyExtension.ext(item)
+        assert monty.country_codes == ["ESP"]

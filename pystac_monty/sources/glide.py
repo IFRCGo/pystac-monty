@@ -1,10 +1,11 @@
 import logging
 import mimetypes
 import os
+import re
 import typing
 from dataclasses import dataclass
 from datetime import datetime
-from typing import Any, List, Union
+from typing import Any, Union
 
 import ijson
 from pystac import Asset, Item, Link
@@ -20,13 +21,95 @@ logger = logging.getLogger(__name__)
 STAC_EVENT_ID_PREFIX = "glide-event-"
 STAC_HAZARD_ID_PREFIX = "glide-hazard-"
 
+AC_TAG_PATTERN = re.compile(r"\(([A-Za-z]+)(?::\s*([A-Za-z][A-Za-z \-]*))?\)\s*$")
+
+AC_TAG_HAZARD_CODES: dict[str, list[str]] = {
+    "road": ["TL0405", "tec-tra-roa-roa", "AC"],
+    "rail": ["TL0404", "tec-tra-rai-rai", "AC"],
+    "water": ["TL0402", "tec-tra-wat-wat", "AC"],
+    "air": ["TL0401", "tec-tra-air-air", "AC"],
+    "misc:fire": ["TL0305", "tec-mis-fir-fir", "FR"],
+    "ind:fire": ["TL0305", "tec-ind-fir-fir", "FR"],
+    "misc:explosion": ["TL0304", "tec-ind-exp-exp", "AC"],
+    "ind:explosion": ["TL0304", "tec-ind-exp-exp", "AC"],
+    "misc:collapse": ["TL0201", "tec-mis-col-col", "AC"],
+    "ind:collapse": ["TL0201", "tec-mis-col-col", "AC"],
+    "ind:gas leak": ["TL0301", "tec-ind-gas-gas", "AC"],
+    "ind:chemical spill": ["TL0301", "tec-ind-che-che", "AC"],
+    "ind:other": ["TL0207", "tec-ind-ind-ind", "AC"],
+    # "misc:other" deliberately absent -- covers stampedes, poisonings,
+}
+
+AC_FREETEXT_HAZARD_CODES: list[tuple[re.Pattern, list[str]]] = [
+    (
+        re.compile(r"\b(plane|aircraft|airplane|jet|helicopter|airline|flight|air)\b.*\b(crash|accident|down)\b", re.IGNORECASE),
+        ["TL0401", "tec-tra-air-air", "AC"],
+    ),
+    (
+        re.compile(r"\b(ship|boat|vessel|ferry|dhow|barge)\w*\b|\bshipwreck\b|\bcapsiz\w+\b|\bdrown\w*\b", re.IGNORECASE),
+        ["TL0402", "tec-tra-wat-wat", "AC"],
+    ),
+    (
+        re.compile(r"\btrain\b|\brail\w*\b|\blocomotive\b|\bderail\w*\b", re.IGNORECASE),
+        ["TL0404", "tec-tra-rai-rai", "AC"],
+    ),
+    (
+        re.compile(
+            r"\b(bus|minibus|car|truck|lorry|van|vehicle|motorcycle|taxi)\w*\b.{0,30}\b(accident|crash|collision)\b"
+            r"|\b(accident|crash|collision)\b.{0,30}\b(bus|minibus|car|truck|lorry|van|vehicle|motorcycle|taxi)\w*\b"
+            r"|\broad\s*(traffic\s*)?accident\b",
+            re.IGNORECASE,
+        ),
+        ["TL0405", "tec-tra-roa-roa", "AC"],
+    ),
+    (
+        re.compile(
+            r"\bcollapse\w*\b|\bbridge\s*failure\b|\bdam\s*(break|failure|burst)\b|\btunnel\s*(collapse|failure)\b", re.IGNORECASE
+        ),
+        ["TL0201", "tec-mis-col-col", "AC"],
+    ),
+    (
+        re.compile(r"\bexplo\w+\b|\bblast\b", re.IGNORECASE),
+        ["TL0304", "tec-ind-exp-exp", "AC"],
+    ),
+    (
+        re.compile(r"\bfire\b|\bblaze\b|\bburn\w*\b", re.IGNORECASE),
+        ["TL0305", "tec-mis-fir-fir", "FR"],
+    ),
+]
+
+# GLIDE tags "ET" (Extreme Temperature) comments with a trailing "(Cold wave)"
+# or "(Heat wave)" suffix, same convention as the "AC" category tag above but
+# without a ":subcategory" part.
+ET_TAG_PATTERN = re.compile(r"\(([A-Za-z][A-Za-z \-]*)\)\s*$")
+
+# tag key -> [UNDRR-ISC 2025, EM-DAT, GLIDE]. "ET" itself has no row in
+# HazardProfiles.csv -- GLIDE conflates what UNDRR-ISC 2025 splits into
+# Heatwave (HT) and Cold Wave (CW) -- so it must be refined from comments.
+ET_TAG_HAZARD_CODES: dict[str, list[str]] = {
+    "cold wave": ["MH0502", "nat-met-ext-col", "CW"],
+    "heat wave": ["MH0501", "nat-met-ext-hea", "HT"],
+}
+
+# Fallback for "ET" comments with no structured "(Category)" suffix (e.g.
+ET_FREETEXT_HAZARD_CODES: list[tuple[re.Pattern, list[str]]] = [
+    (
+        re.compile(r"\bheat\s*wave\b", re.IGNORECASE),
+        ["MH0501", "nat-met-ext-hea", "HT"],
+    ),
+    (
+        re.compile(r"\bcold\s*wave\b", re.IGNORECASE),
+        ["MH0502", "nat-met-ext-col", "CW"],
+    ),
+]
+
 
 @dataclass
 class GlideDataSource(MontyDataSourceV3):
     file_path: str
     source_url: str
-    data: Union[str, dict]
-    data_source: Union[File, Memory]
+    data: str | dict
+    data_source: File | Memory
 
     def __init__(self, data: GenericDataSource, eoapi_url: str | None = None):
         super().__init__(root=data, eoapi_url=eoapi_url)
@@ -142,12 +225,65 @@ class GlideTransformer(MontyDataTransformer[GlideDataSource]):
                 logger.warning("Failed to process Glide data", exc_info=True)
         self.transform_summary.mark_as_complete()
 
-    def get_hazard_codes(self, hazard: str) -> List[str]:
+    def get_ac_hazard_codes(self, comments: str) -> list[str]:
+        """
+        Sub-classify GLIDE's generic "AC" (Accident) event using its comments field.
+        The reason being there are more than one mapping in HazardProfiles.csv file.
+        """
+        text = comments or ""
+
+        tag_match = AC_TAG_PATTERN.search(text)
+        if tag_match:
+            category, subcategory = tag_match.group(1), tag_match.group(2)
+            if subcategory:
+                normalized_subcategory = re.sub(r"\s+", " ", subcategory.strip()).lower()
+                key = f"{category.lower()}:{normalized_subcategory}"
+            else:
+                key = category.lower()
+            if key in AC_TAG_HAZARD_CODES:
+                return AC_TAG_HAZARD_CODES[key]
+            logger.warning(f"GLIDE 'AC' tag '{tag_match.group(0)}' not found in AC_TAG_HAZARD_CODES mapping.")
+
+        for pattern, codes in AC_FREETEXT_HAZARD_CODES:
+            if pattern.search(text):
+                return codes
+
+        logger.warning(f"GLIDE 'AC' comment '{text}' could not be classified into a hazard sub-type.")
+        return []
+
+    def get_et_hazard_codes(self, comments: str) -> list[str]:
+        """
+        Sub-classify GLIDE's generic "ET" (Extreme Temperature) event using its comments field.
+
+        "ET" itself has no row in HazardProfiles.csv -- so use the
+        info in comments to split into Heatwave (HT) and Cold Wave (CW).
+        """
+        text = comments or ""
+
+        tag_match = ET_TAG_PATTERN.search(text)
+        if tag_match:
+            key = re.sub(r"\s+", " ", tag_match.group(1).strip()).lower()
+            if key in ET_TAG_HAZARD_CODES:
+                return ET_TAG_HAZARD_CODES[key]
+            logger.warning(f"GLIDE 'ET' tag '{tag_match.group(0)}' not found in ET_TAG_HAZARD_CODES mapping.")
+
+        for pattern, codes in ET_FREETEXT_HAZARD_CODES:
+            if pattern.search(text):
+                return codes
+
+        logger.warning(f"GLIDE 'ET' comment '{text}' could not be classified into a hazard sub-type.")
+        return []
+
+    def get_hazard_codes(self, hazard: str, comments: str = "") -> list[str]:
         similar_hazard_mapping = {
             "SL": "LS",
             "WV": "SS",
         }
         hazard = similar_hazard_mapping.get(hazard, hazard)
+        if hazard == "AC":
+            return self.get_ac_hazard_codes(comments)
+        if hazard == "ET":
+            return self.get_et_hazard_codes(comments)
         hazard_mapping = {
             "EQ": ["GH0101", "nat-geo-ear-gro", "EQ"],
             "TC": ["MH0309", "nat-met-sto-tro", "TC"],
@@ -159,7 +295,6 @@ class GlideTransformer(MontyDataTransformer[GlideDataSource]):
             "CW": ["MH0502", "nat-met-ext-col", "CW"],
             "EP": ["BI0101", "nat-bio-epi-dis", "EP"],
             "EC": ["MH0307", "nat-met-sto-ext", "EC"],
-            "ET": ["nat-met-ext-col", "nat-met-ext-hea", "nat-met-ext-sev"],
             "FR": ["TL0305", "tec-ind-fir-fir", "FR"],
             "FF": ["MH0603", "nat-hyd-flo-fla", "FF"],
             "HT": ["MH0501", "nat-met-ext-hea", "HT"],
@@ -217,10 +352,16 @@ class GlideTransformer(MontyDataTransformer[GlideDataSource]):
         # in the method monty.compute_and_set_correlation_id(..)
         monty.src_event_id = str(data.number)
         monty.episode_number = 1
-        monty.hazard_codes = self.get_hazard_codes(data.event)
+        monty.hazard_codes = self.get_hazard_codes(data.event, data.comments)
         monty.hazard_codes = self.hazard_profiles.get_canonical_hazard_codes(item)
 
-        monty.country_codes = [data.geocode]
+        # Fallback when the iso3 is not available in property `geocode`
+        country_code = []
+        if data.geocode == "---":
+            country_code = [self.geocoder.get_iso3_from_point(point)] if self.geocoder else []
+        else:
+            country_code = [data.geocode]
+        monty.country_codes = country_code
 
         hazard_keywords = self.hazard_profiles.get_keywords(monty.hazard_codes)
         country_keywords = [data.geocode] if data.geocode else []
