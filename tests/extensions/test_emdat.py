@@ -17,6 +17,7 @@ from pystac_monty.sources.common import DataType, File, GenericDataSource, Memor
 from pystac_monty.sources.emdat import EMDATDataSource, EMDATTransformer
 from tests.conftest import get_data_file
 from tests.extensions.test_monty import CustomValidator
+from tests.utils.test_hazard_taxonomy import assert_hazard_code_dict_valid
 from tests.utils.test_utils import request_for_schema, validate_correlation_id
 
 CURRENT_SCHEMA_URI = "https://ifrcgo.org/monty-stac-extension/v1.3.0/schema.json"
@@ -467,3 +468,83 @@ class EMDATTest(unittest.TestCase):
             if monty_item_ext.is_source_hazard() and monty_item_ext.hazard_codes:
                 # Should contain only the first code (UNDRR-ISC 2025)
                 assert len(monty_item_ext.hazard_codes) == 1
+
+
+class TestEmdatHazardCodeMappingDrift(unittest.TestCase):
+    """Regression tests to counter hazard code mapping drifts."""
+
+    def setUp(self) -> None:
+        emdat_data_source = EMDATDataSource(
+            data=GenericDataSource(
+                source_url="www.test.com",
+                input_data=Memory(content=pd.DataFrame(), data_type=DataType.MEMORY),
+            )
+        )
+        self.transformer = EMDATTransformer(emdat_data_source, MockGeocoder())
+
+    def test_volcanic_general_activity_maps_to_gh0201(self) -> None:
+        """'nat-geo-vol-vol' (volcanic activity general) belongs on GH0201."""
+        assert self.transformer.map_emdat_to_hazard_codes("nat-geo-vol-vol") == ["GH0201", "nat-geo-vol-vol", "VO"]
+
+    def test_technological_codes_use_hip_2025_standard(self) -> None:
+        """Technological hazards must use HIP 2025 TL codes, not the 2020-era ids."""
+        expected_undrr_code = {
+            "tec-ind-fir-fir": "TL0305",
+            "tec-ind-rad-rad": "TL0601",
+            "tec-mis-col-col": "TL0201",
+            "tec-ind-ind-ind": "TL0309",
+            "tec-ind-exp-exp": "TL0304",
+            "tec-ind-che-che": "TL0301",
+            "tec-tra-air-air": "TL0401",
+            "tec-tra-wat-wat": "TL0403",
+            "tec-tra-rai-rai": "TL0404",
+            "tec-tra-roa-roa": "TL0405",
+        }
+        for classification_key, undrr_code in expected_undrr_code.items():
+            codes = self.transformer.map_emdat_to_hazard_codes(classification_key)
+            assert codes[0] == undrr_code, f"{classification_key} should map to {undrr_code}, got {codes}"
+
+    def test_epidemic_disease_uses_ep_glide_code(self) -> None:
+        """'nat-bio-epi-dis' (general infectious disease) must use GLIDE 'EP'."""
+        assert self.transformer.map_emdat_to_hazard_codes("nat-bio-epi-dis") == ["BI0101", "nat-bio-epi-dis", "EP"]
+
+    def test_passthrough_entries_resolve_full_triplets(self) -> None:
+        expected = {
+            "nat-cli-wil-for": ["EN0205", "nat-cli-wil-for", "WF"],
+            "nat-cli-wil-lan": ["EN0205", "nat-cli-wil-lan", "WF"],
+            # "nat-geo-env-coa": ["GH0405", "nat-geo-env-coa", "OT"],
+            # "tec-mis-exp-exp": ["TL0304", "tec-mis-exp-exp", "AC"],
+            "nat-hyd-mmw-lan": ["GH0304", "nat-hyd-mmw-lan", "LS"],
+            "tec-mis-fir-fir": ["TL0305", "tec-mis-fir-fir", "FR"],
+            # "tec-ind-col-col": ["TL0201", "tec-ind-col-col", "AC"],
+            "nat-hyd-mmw-ava": ["MH0801", "nat-hyd-mmw-ava", "AV"],
+        }
+        for classification_key, codes in expected.items():
+            assert self.transformer.map_emdat_to_hazard_codes(classification_key) == codes
+
+    def test_mapped_codes_are_taxonomy_valid(self) -> None:
+        """Every UNDRR/GLIDE/EM-DAT code produced by the mapping must exist in taxonomy.md."""
+        classification_keys = [
+            "nat-geo-vol-vol",
+            "nat-bio-epi-dis",
+            "tec-ind-fir-fir",
+            "tec-ind-rad-rad",
+            "tec-mis-col-col",
+            "tec-ind-ind-ind",
+            "tec-ind-exp-exp",
+            "tec-ind-che-che",
+            "tec-tra-air-air",
+            "tec-tra-wat-wat",
+            "tec-tra-rai-rai",
+            "tec-tra-roa-roa",
+            "nat-cli-wil-for",
+            "nat-cli-wil-lan",
+            "nat-geo-env-coa",
+            "tec-mis-exp-exp",
+            "nat-hyd-mmw-lan",
+            "tec-mis-fir-fir",
+            "tec-ind-col-col",
+            "nat-hyd-mmw-ava",
+        ]
+        hazard_codes = {key: self.transformer.map_emdat_to_hazard_codes(key) for key in classification_keys}
+        assert_hazard_code_dict_valid(hazard_codes, label="EMDAT_HAZARD_CODES")
