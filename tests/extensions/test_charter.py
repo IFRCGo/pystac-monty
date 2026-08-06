@@ -16,6 +16,7 @@ from pystac_monty.sources.charter import (
     CHARTER_HAZARD_CODES,
     CharterDataSource,
     CharterTransformer,
+    compute_file_hash,
     convert_charter_activations,
     iter_charter_stac_items,
 )
@@ -786,3 +787,11 @@ class CharterTest(unittest.TestCase):
                         }
                     )
                 )
+
+    def test_compute_file_hash_stable_across_updated_only_diff(self) -> None:
+        props = {"title": "Flood", "disaster:type": ["flood"]}
+
+        content_old = json.dumps({"type": "Feature", "properties": {**props, "updated": "2024-01-01T00:00:00Z"}}).encode()
+        content_new = json.dumps({"type": "Feature", "properties": {**props, "updated": "2024-06-15T12:00:00Z"}}).encode()
+
+        self.assertEqual(compute_file_hash(content_old), compute_file_hash(content_new))
