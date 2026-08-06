@@ -4,7 +4,7 @@ import os
 import typing
 from dataclasses import dataclass
 from datetime import datetime
-from typing import List, Optional, Union
+from typing import List, Optional
 
 import ijson
 import pandas as pd
@@ -37,7 +37,7 @@ class EMDATDataSource(MontyDataSourceV3):
 
     df: pd.DataFrame
     file_path: str
-    data_source: Union[File, Memory]
+    data_source: File | Memory
 
     def __init__(self, data: GenericDataSource, eoapi_url: str | None = None):
         super().__init__(root=data, eoapi_url=eoapi_url)
@@ -123,7 +123,7 @@ class EMDATDataSource(MontyDataSourceV3):
             case _:
                 typing.assert_never(input_data_type)
 
-    def get_data(self) -> Union[pd.DataFrame, str]:
+    def get_data(self) -> pd.DataFrame | str:
         if self.input_data.data_type == DataType.FILE:
             return self.file_path
         return self.df
@@ -208,7 +208,7 @@ class EMDATTransformer(MontyDataTransformer[EMDATDataSource]):
                 logger.warning("Failed to process emdat", exc_info=True)
         self.transform_summary.mark_as_complete()
 
-    def make_source_event_item(self, row: EmdatDataValidator) -> Optional[Item]:
+    def make_source_event_item(self, row: EmdatDataValidator) -> Item | None:
         """Create a single event item from a DataFrame row"""
 
         # Create geometry from lat/lon if available
@@ -532,7 +532,7 @@ class EMDATTransformer(MontyDataTransformer[EMDATDataSource]):
             "nat-met-ext-sev": ["MH0503", "nat-met-ext-sev", "OT"],
             "nat-met-ext-hea": ["MH0501", "nat-met-ext-hea", "HT"],
             "nat-geo-mmd-ava": ["MH0801", "nat-geo-mmd-ava", "AV"],
-            "nat-hyd-mmw-ava": ["nat-hyd-mmw-ava"],
+            "nat-hyd-mmw-ava": ["MH0801", "nat-hyd-mmw-ava", "AV"],
             "nat-hyd-mmw-mud": ["GH0303", "nat-hyd-mmw-mud", "MS"],
             "nat-met-sto-der": ["MH0302", "nat-met-sto-der", "VW"],
             "nat-met-sto-tor": ["MH0305", "nat-met-sto-tor", "TO"],
@@ -547,31 +547,31 @@ class EMDATTransformer(MontyDataTransformer[EMDATDataSource]):
             "nat-geo-vol-ash": ["GH0202", "nat-geo-vol-ash", "VO"],
             "nat-geo-vol-pyr": ["GH0203", "nat-geo-vol-pyr", "VO"],
             "nat-geo-vol-lah": ["GH0204", "nat-geo-vol-lah", "VO"],
-            "nat-geo-vol-vol": ["GH0205", "nat-geo-vol-vol", "VO"],
+            "nat-geo-vol-vol": ["GH0201", "nat-geo-vol-vol", "VO"],
             "nat-geo-env-slr": ["EN0303", "nat-geo-env-slr", "OT"],
             "nat-cli-wil-wil": ["EN0205", "nat-cli-wil-wil", "WF"],
-            "nat-cli-wil-for": ["nat-cli-wil-for"],
-            "nat-cli-wil-lan": ["nat-cli-wil-lan"],
+            "nat-cli-wil-for": ["EN0205", "nat-cli-wil-for", "WF"],
+            "nat-cli-wil-lan": ["EN0205", "nat-cli-wil-lan", "WF"],
             "nat-geo-env-des": ["EN0206", "nat-geo-env-des", "OT"],
             "nat-geo-env-soi": ["GH0403", "nat-geo-env-soi", "OT"],
             "nat-geo-env-coa": ["nat-geo-env-coa"],
-            "tec-ind-rad-rad": ["TL0001", "tec-ind-rad-rad", "AC"],
-            "tec-mis-col-col": ["TL0005", "tec-mis-col-col", "AC"],
-            "tec-ind-ind-ind": ["TL0010", "tec-ind-ind-ind", "AC"],
-            "tec-ind-exp-exp": ["TL0029", "tec-ind-exp-exp", "AC"],
-            "tec-ind-che-che": ["TL0030", "tec-ind-che-che", "AC"],
-            "tec-ind-fir-fir": ["TL0032", "tec-ind-fir-fir", "FR"],
-            "tec-tra-air-air": ["TL0048", "tec-tra-air-air", "AC"],
-            "tec-tra-wat-wat": ["TL0049", "tec-tra-wat-wat", "AC"],
-            "tec-tra-rai-rai": ["TL0051", "tec-tra-rai-rai", "AC"],
-            "tec-tra-roa-roa": ["TL0052", "tec-tra-roa-roa", "AC"],
+            "tec-ind-rad-rad": ["TL0601", "tec-ind-rad-rad", "AC"],
+            "tec-mis-col-col": ["TL0201", "tec-mis-col-col", "AC"],
+            "tec-ind-ind-ind": ["TL0309", "tec-ind-ind-ind", "AC"],
+            "tec-ind-exp-exp": ["TL0304", "tec-ind-exp-exp", "AC"],
+            "tec-ind-che-che": ["TL0301", "tec-ind-che-che", "AC"],
+            "tec-ind-fir-fir": ["TL0305", "tec-ind-fir-fir", "FR"],
+            "tec-tra-air-air": ["TL0401", "tec-tra-air-air", "AC"],
+            "tec-tra-wat-wat": ["TL0403", "tec-tra-wat-wat", "AC"],
+            "tec-tra-rai-rai": ["TL0404", "tec-tra-rai-rai", "AC"],
+            "tec-tra-roa-roa": ["TL0405", "tec-tra-roa-roa", "AC"],
             "nat-geo-env-sed": ["GH0405", "nat-geo-env-sed", "OT"],
             "mix-mix-mix-mix": ["mix-mix-mix-mix"],
-            "nat-bio-epi-dis": ["BI0101", "nat-bio-epi-dis", "OT"],
+            "nat-bio-epi-dis": ["BI0101", "nat-bio-epi-dis", "EP"],
             "tec-mis-exp-exp": ["tec-mis-exp-exp"],
             "nat-geo-mmd-sub": ["GH0308", "nat-geo-mmd-sub", "OT"],
-            "nat-hyd-mmw-lan": ["nat-hyd-mmw-lan"],
-            "tec-mis-fir-fir": ["tec-mis-fir-fir"],
+            "nat-hyd-mmw-lan": ["GH0304", "nat-hyd-mmw-lan", "LS"],
+            "tec-mis-fir-fir": ["TL0305", "tec-mis-fir-fir", "FR"],
             "tec-ind-col-col": ["tec-ind-col-col"],
         }
 
