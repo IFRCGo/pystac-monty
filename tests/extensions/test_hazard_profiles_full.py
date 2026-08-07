@@ -469,7 +469,15 @@ class TestHazardProfilesCsvTaxonomyDrift:
         # See pystac-monty#184: taxonomy.md itself double-books "nat-geo-vol-vol"
         # (Volcanic activity general) onto both GH0201 and GH0205, but the EM-DAT
         # tree has no distinct code for volcanic gases, so GH0205 is a copy artifact.
-        KNOWN_TAXONOMY_ARTIFACTS = {("VO", "nat-geo-vol-vol", "GH0205")}
+        #
+        # See pystac-monty#194: taxonomy.md ties "nat-hyd-wav-rog" (name match:
+        # rogue wave) to MH0704 "Storm Tides" under GLIDE SS, but MH0701 is
+        # literally named "Rogue Wave" and is what emdat.py actually emits for
+        # this key, so the MH0704 row is treated as a mislabeled upstream artifact.
+        KNOWN_TAXONOMY_ARTIFACTS = {
+            ("VO", "nat-geo-vol-vol", "GH0205"),
+            ("SS", "nat-hyd-wav-rog", "MH0704"),
+        }
 
         missing = [
             (glide, emdat, undrr)
@@ -477,3 +485,21 @@ class TestHazardProfilesCsvTaxonomyDrift:
             if (glide, emdat, undrr) not in csv_triples and (glide, emdat, undrr) not in KNOWN_TAXONOMY_ARTIFACTS
         ]
         assert not missing, f"HazardProfiles.csv is missing cross-classification mappings from taxonomy.md: {missing}"
+
+    def test_csv_has_no_cross_classification_associations_unknown_to_taxonomy(self) -> None:
+        """Reverse of test_csv_covers_cross_classification_mapping (see pystac-monty#194):
+        every (GLIDE, EM-DAT, UNDRR-2025) triple in the CSV where both GLIDE and EM-DAT
+        are set must trace back to a row in taxonomy.md's Cross-Classification Mapping
+        table, so the CSV can never independently assert an association taxonomy.md
+        doesn't document."""
+        profiles_df = MontyHazardProfiles().get_profiles()
+        taxonomy_triples = set(load_cross_classification_mapping())
+
+        extra = [
+            (row.glide_code, row.emdat_key, row.undrr_2025_key)
+            for row in profiles_df.itertuples()
+            if pd.notna(row.glide_code)
+            and pd.notna(row.emdat_key)
+            and (row.glide_code, row.emdat_key, row.undrr_2025_key) not in taxonomy_triples
+        ]
+        assert not extra, f"HazardProfiles.csv has GLIDE/EM-DAT associations undocumented in taxonomy.md: {extra}"

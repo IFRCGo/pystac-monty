@@ -1,5 +1,5 @@
 undrr_2025_key,undrr_key,label,cluster_label,family_label,glide_code,emdat_key
-MH0101,MH0001,Downburst,Convective-Related,Meteorological & Hydrological,ST,nat-met-sto-sev
+MH0101,MH0001,Downburst,Convective-Related,Meteorological & Hydrological,OT,
 MH0102,MH0002,Lightning (electrical storm),Convective-Related,Meteorological & Hydrological,ST,nat-met-sto-lig
 MH0103,MH0003,Thunderstorm,Convective-Related,Meteorological & Hydrological,ST,nat-met-sto-sto
 MH0103,MH0003,Thunderstorm,Convective-Related,Meteorological & Hydrological,ST,nat-met-sto-sev
@@ -39,7 +39,7 @@ MH0602,MH0005,Estuarine (Coastal) Flooding,Water-related,Meteorological & Hydrol
 MH0603,MH0006,Flash Flooding,Water-related,Meteorological & Hydrological,FF,nat-hyd-flo-fla
 MH0604,MH0007,Fluvial (Riverine) Flooding,Water-related,Meteorological & Hydrological,FL,nat-hyd-flo-riv
 MH0605,MH0008,Groundwater Flooding,Water-related,Meteorological & Hydrological,FL,nat-hyd-flo-flo
-MH0606,MH0012,Surface water Flooding,Water-related,Meteorological & Hydrological,FL,nat-hyd-flo-flo
+MH0606,MH0012,Surface water Flooding,Water-related,Meteorological & Hydrological,OT,
 MH0607,MH0013,Glacial Lake Outburst Flooding,Water-related,Meteorological & Hydrological,FL,nat-cli-glo-glo
 MH0608,MH0009,Ice-Jam Flooding Including Debris,Water-related,Meteorological & Hydrological,FL,nat-hyd-flo-ice
 MH0609,MH0010,Ponding (Drainage) Flooding,Water-related,Meteorological & Hydrological,FL,nat-hyd-flo-flo
@@ -47,7 +47,7 @@ MH0610,MH0011,Snowmelt Flooding,Water-related,Meteorological & Hydrological,FL,n
 MH0701,MH0022,Rogue Wave,Marine-related,Meteorological & Hydrological,OT,nat-hyd-wav-rog
 MH0702,MH0026,Seiche,Marine-related,Meteorological & Hydrological,OT,nat-hyd-wav-sei
 MH0703,MH0027,Storm Surge,Marine-related,Meteorological & Hydrological,SS,nat-met-sto-sur
-MH0704,MH0028,Storm Tides,Marine-related,Meteorological & Hydrological,SS,nat-hyd-wav-rog
+MH0704,MH0028,Storm Tides,Marine-related,Meteorological & Hydrological,,
 MH0705,MH0029,Tsunami,Marine-related,Meteorological & Hydrological,TS,nat-geo-ear-tsu
 MH0706,MH0024,Sea ice,Marine-related,Meteorological & Hydrological,OT,
 MH0707,MH0025,Ice flow,Marine-related,Meteorological & Hydrological,OT,
@@ -248,33 +248,33 @@ TL0105,,Supply Chain Attack,Cyberhazards,Technological,,
 TL0106,,Cyberbullying,Cyberhazards,Technological,,
 TL0107,,Social Engineering,Cyberhazards,Technological,,
 TL0201,,Building Collapse,Construction / Structural Failure,Technological,AC,tec-mis-col-col
-TL0202,,"Building, Highrise, Cladding",Construction / Structural Failure,Technological,AC,tec-mis-col-col
-TL0203,,Structural Failure,Construction / Structural Failure,Technological,AC,tec-mis-col-col
-TL0204,,Bridge Failure,Construction / Structural Failure,Technological,AC,tec-mis-col-col
+TL0202,,"Building, Highrise, Cladding",Construction / Structural Failure,Technological,OT,
+TL0203,,Structural Failure,Construction / Structural Failure,Technological,OT,
+TL0204,,Bridge Failure,Construction / Structural Failure,Technological,OT,
 TL0205,,Dam Failure,Construction / Structural Failure,Technological,FL,tec-mis-col-col
-TL0206,,Supply Chain Failure,Construction / Structural Failure,Technological,AC,tec-ind-ind-ind
-TL0207,,Critical Infrastructure Failure,Construction / Structural Failure,Technological,AC,tec-ind-ind-ind
-TL0208,,Nuclear Plant Failure,Construction / Structural Failure,Technological,AC,tec-ind-rad-rad
-TL0209,,Power Outage / Blackout,Construction / Structural Failure,Technological,AC,tec-ind-ind-ind
-TL0210,,Water Supply Failure,Construction / Structural Failure,Technological,AC,tec-ind-ind-ind
-TL0211,,Emergency Telecommunication Failure,Construction / Structural Failure,Technological,AC,tec-ind-ind-ind
-TL0212,,Radio and other Telecommunication Failures,Construction / Structural Failure,Technological,AC,tec-ind-ind-ind
+TL0206,,Supply Chain Failure,Construction / Structural Failure,Technological,OT,
+TL0207,,Critical Infrastructure Failure,Construction / Structural Failure,Technological,OT,
+TL0208,,Nuclear Plant Failure,Construction / Structural Failure,Technological,OT,
+TL0209,,Power Outage / Blackout,Construction / Structural Failure,Technological,OT,
+TL0210,,Water Supply Failure,Construction / Structural Failure,Technological,OT,
+TL0211,,Emergency Telecommunication Failure,Construction / Structural Failure,Technological,OT,
+TL0212,,Radio and other Telecommunication Failures,Construction / Structural Failure,Technological,OT,
 TL0213,,Tunnel Failure,Construction / Structural Failure,Technological,,
 TL0214,,Drain and Sewer Flooding,Construction / Structural Failure,Technological,OT,
 TL0215,,Reservoir Flooding,Construction / Structural Failure,Technological,OT,
 TL0301,,Leaks and Spills,Industrial Failure,Technological,AC,tec-ind-che-che
 TL0301,,Leaks and Spills,Industrial Failure,Technological,AC,tec-ind-gas-gas
-TL0302,,Pollution,Industrial Failure,Technological,AC,tec-ind-ind-ind
-TL0303,,Soil Pollution,Industrial Failure,Technological,AC,tec-ind-ind-ind
+TL0302,,Pollution,Industrial Failure,Technological,OT,
+TL0303,,Soil Pollution,Industrial Failure,Technological,OT,
 TL0304,,Explosion,Industrial Failure,Technological,AC,tec-ind-exp-exp
 TL0305,,Fire,Industrial Failure,Technological,FR,tec-ind-fir-fir
 TL0305,,Fire,Industrial Failure,Technological,FR,tec-mis-fir-fir
-TL0306,,Explosive Agents,Industrial Failure,Technological,AC,tec-ind-exp-exp
-TL0307,,Mining Hazards,Industrial Failure,Technological,AC,tec-ind-ind-ind
-TL0308,,Safety Hazards Associated with Oil and Gas Extraction Activities,Industrial Failure,Technological,AC,tec-ind-ind-ind
+TL0306,,Explosive Agents,Industrial Failure,Technological,OT,
+TL0307,,Mining Hazards,Industrial Failure,Technological,OT,
+TL0308,,Safety Hazards Associated with Oil and Gas Extraction Activities,Industrial Failure,Technological,OT,
 TL0309,,Natech,Industrial Failure,Technological,AC,tec-ind-ind-ind
 TL0401,,Air Transportation Accident,Transportation Accidents,Technological,AC,tec-tra-air-air
-TL0402,,Inland Water Way Accidents,Transportation Accidents,Technological,AC,tec-tra-wat-wat
+TL0402,,Inland Water Way Accidents,Transportation Accidents,Technological,OT,
 TL0403,,Maritime Accident,Transportation Accidents,Technological,AC,tec-tra-wat-wat
 TL0404,,Rail Accident,Transportation Accidents,Technological,AC,tec-tra-rai-rai
 TL0405,,Road Traffic Accident,Transportation Accidents,Technological,AC,tec-tra-roa-roa
@@ -290,8 +290,8 @@ TL0509,,Landfilling,Waste,Technological,OT,
 TL0510,,Waste Treatment Lagoons,Waste,Technological,OT,
 TL0511,,Tailings,Waste,Technological,OT,
 TL0601,,Radioactive Waste,Radiation,Technological,AC,tec-ind-rad-rad
-TL0602,,Radioactive Agents & Material,Radiation,Technological,AC,tec-ind-rad-rad
-TL0603,,Nuclear Agents,Radiation,Technological,AC,tec-ind-rad-rad
+TL0602,,Radioactive Agents & Material,Radiation,Technological,OT,
+TL0603,,Nuclear Agents,Radiation,Technological,OT,
 SO0101,,International Armed Conflict (IAC),Conflict,Societal,CE,
 SO0102,,Non-International Armed Conflict (NIAC),Conflict,Societal,CE,
 SO0103,,Civil Unrest,Conflict,Societal,CE,

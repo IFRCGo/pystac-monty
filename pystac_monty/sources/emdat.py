@@ -508,7 +508,7 @@ class EMDATTransformer(MontyDataTransformer[EMDATDataSource]):
         # EMDAT hazards classification mapping to UNDRR-ISC 2025 codes
 
         mapping = {
-            "nat-met-sto-sev": ["MH0101", "nat-met-sto-sev", "ST"],
+            "nat-met-sto-sev": ["MH0103", "nat-met-sto-sev", "ST"],
             "nat-met-sto-lig": ["MH0101", "nat-met-sto-lig", "ST"],
             "nat-met-sto-sto": ["MH0101", "nat-met-sto-sto", "ST"],
             "nat-hyd-flo-coa": ["MH0601", "nat-hyd-flo-coa", "FL"],
