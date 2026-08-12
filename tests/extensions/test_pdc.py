@@ -153,6 +153,7 @@ class PDCTest(unittest.TestCase):
         assert transformer._map_pdc_to_hazard_codes("EARTHQUAKE") == ["GH0101", "nat-geo-ear-gro", "EQ"]
         assert transformer._map_pdc_to_hazard_codes("TSUNAMI") == ["MH0705", "nat-geo-ear-tsu", "TS"]
         assert transformer._map_pdc_to_hazard_codes("WILDFIRE") == ["EN0205", "nat-cli-wil-wil", "WF"]
+        assert transformer._map_pdc_to_hazard_codes("HIGHWIND") == ["MH0301", "nat-met-sto-sto", "VW"]
 
     @parameterized.expand(load_scenarios(scenarios))
     def test_pdc_tech_social_hazard_codes_2025(self, transformer: PDCTransformer):

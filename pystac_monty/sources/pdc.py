@@ -276,6 +276,7 @@ class PDCTransformer(MontyDataTransformer):
             "VOLCANO": ["GH0201", "nat-geo-vol-vol", "VO"],
             "WILDFIRE": ["EN0205", "nat-cli-wil-wil", "WF"],
             "WINTERSTORM": ["MH0403", "nat-met-sto-bli", "OT"],
+            "HIGHWIND": ["MH0301", "nat-met-sto-sto", "VW"],
         }
 
         # Geopolitical & Technological Hazards
