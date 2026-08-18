@@ -264,7 +264,7 @@ class DesinventarTransformer(MontyDataTransformer[DesinventarDataSource]):
         xml.sax.parse(xml_file, handler)
         return handler
 
-    def _create_event_item_from_row(self, row: DataRow) -> Optional[Item]:
+    def _create_event_item_from_row(self, row: DataRow) -> Item | None:
         # FIXME: Do we treat this as error or noise
         if not row.event_start_date:
             return None
@@ -285,6 +285,18 @@ class DesinventarTransformer(MontyDataTransformer[DesinventarDataSource]):
             geometry = geojson_features[0].get("geometry", None)
             # TODO: investigate if properties can be added to keywords
             # properties = geojson_features[0].get('properties', None)
+
+        # Fall back to the geometry of the country currently being processed
+        # when the source has no admin-level geometry for this row.
+        if geometry is None and self.geocoder:
+            geom_data = self.geocoder.get_geometry_from_iso3(self.data_source.iso3, simplified=True)
+            if geom_data:
+                geometry = geom_data["geometry"]
+                bbox = geom_data["bbox"]
+
+        if not geometry:
+            logger.warning(f"Geometry could not be determined for {row.event_stac_id}. Skipping.")
+            return None
 
         item = Item(
             id=row.event_stac_id,
