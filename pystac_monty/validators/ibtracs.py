@@ -32,17 +32,17 @@ class IBTracsdataValidator(BaseModelWithExtra):
     USA_STATUS: Optional[str]
 
     @field_validator("BASIN")
-    def validate_basin(cls, value: str):
+    def validate_basin(cls, value: str | None):
         if value not in ["NA", "SA", "EP", "SP", "WP", "SI", "NI"]:
             # FIXME: Add log extra
             logger.warning("Invalid basin code.")
-            return False
+            return None
         return value
 
     @field_validator("SID")
     def validate_sid(cls, value: str):
-        if value == " ":
+        if not value.strip():
             # FIXME: Add log extra
             logger.warning("Invalid SID")
-            return False
+            raise ValueError("SID must not be blank")
         return value
