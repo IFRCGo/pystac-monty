@@ -977,7 +977,13 @@ class CEMSTransformer(MontyDataTransformer[CEMSDataSource]):
                 )
             )
 
-        for related_code in activation.get("relatedevents") or []:
+        for related_entry in activation.get("relatedevents") or []:
+            # Only bare code strings (e.g. "EMSR661") resolve to another
+            # cems-events item we actually ingest; the API also returns
+            # {"title", "url"} objects for related EMSN monitoring activations,
+            # which are out of scope (see CEMS/README.md "Rapid Mapping only")
+            # and would otherwise produce a dangling related link.
+            related_code = related_entry.strip() if isinstance(related_entry, str) else None
             if related_code and related_code != code:
                 item.add_link(
                     Link(

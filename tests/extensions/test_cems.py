@@ -413,6 +413,37 @@ class CEMSTest(unittest.TestCase):
         via_hrefs = [link.get_href() for link in event.links if link.rel == "via"]
         self.assertEqual(via_hrefs, ["https://rapidmapping.emergency.copernicus.eu/EMSR999"])
 
+    def test_relatedevents_accepts_bare_code_strings(self) -> None:
+        data = deepcopy(MINIMAL_ACTIVATION)
+        data["relatedevents"] = ["EMSR001"]
+
+        items = list(_memory_transformer(data).get_stac_items())
+        event, _, _, _ = _partition(items)
+        related_hrefs = [
+            link.get_href() for link in event.links if link.rel == "related" and "cems-event-" in (link.get_href() or "")
+        ]
+        self.assertTrue(any(href.endswith("cems-event-EMSR001.json") for href in related_hrefs))
+
+    def test_relatedevents_object_shape_does_not_crash(self) -> None:
+        # The live API has been observed returning {"title", "url"} objects
+        # (linking to an out-of-scope EMSN monitoring activation) instead of
+        # bare code strings, e.g. EMSR682/EMSR715 - regression for issue #205.
+        data = deepcopy(MINIMAL_ACTIVATION)
+        data["relatedevents"] = [
+            {
+                "title": "EMSN163: Post-wildfire damage assessment",
+                "url": "https://mapping.emergency.copernicus.eu/activations/EMSN163/",
+            }
+        ]
+
+        items = list(_memory_transformer(data).get_stac_items())
+        event, _, _, _ = _partition(items)
+        self.assertIsNotNone(event)
+        related_hrefs = [
+            link.get_href() for link in event.links if link.rel == "related" and "cems-event-" in (link.get_href() or "")
+        ]
+        self.assertEqual(related_hrefs, [])
+
     def test_blocked_road_and_temporary_camp_impact_mapping(self) -> None:
         data = deepcopy(MINIMAL_ACTIVATION)
         data["aois"][0]["products"][1]["stats"]["Blocked road / interruption"] = {

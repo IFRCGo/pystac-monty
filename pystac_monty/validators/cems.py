@@ -93,7 +93,11 @@ class CEMSActivation(BaseModelWithExtra):
     centroid: str | None = None
     extent: str | None = None
     stats: dict[str, Any] | None = None
-    relatedevents: list[str] = Field(default_factory=list)
+    # The API has been observed returning bare activation-code strings (documented
+    # shape) as well as ``{"title": ..., "url": ...}`` objects linking to a related
+    # EMSN monitoring activation (e.g. EMSR682, EMSR715) - accept both rather than
+    # rejecting the whole envelope.
+    relatedevents: list[Any] = Field(default_factory=list)
 
 
 class CEMSDetailEnvelope(BaseModelWithExtra):
