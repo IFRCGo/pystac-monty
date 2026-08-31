@@ -439,7 +439,7 @@ class CEMSTest(unittest.TestCase):
         related_hrefs = [
             link.get_href() for link in event.links if link.rel == "related" and "cems-event-" in (link.get_href() or "")
         ]
-        self.assertTrue(any(href.endswith("cems-event-EMSR001.json") for href in related_hrefs))
+        self.assertTrue(any(href.endswith("cems-event-EMSR001") for href in related_hrefs))
 
     def test_relatedevents_object_shape_does_not_crash(self) -> None:
         # The live API has been observed returning {"title", "url"} objects
@@ -587,8 +587,7 @@ class CEMSTest(unittest.TestCase):
 
         with tempfile.TemporaryDirectory() as tmp:
             output_dir = Path(tmp)
-            with _with_test_eoapi_url():
-                regenerate_cems_examples(fixture, output_dir)
+            regenerate_cems_examples(fixture, output_dir)
 
             for item_id in CURATED_CEMS_EXAMPLE_IDS:
                 collection = _collection_for_item_id(item_id)
