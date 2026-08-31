@@ -128,6 +128,7 @@ class USGSTransformer(MontyDataTransformer[USGSDataSource]):
 
     hazard_profiles = MontyHazardProfiles()
     source_name = "usgs"
+    PAGER_ALERT_ECONOMIC_UNIT_SCALE = 1_000_000
 
     @staticmethod
     def iso2_to_iso3(iso2: str) -> str:
@@ -672,7 +673,7 @@ class USGSTransformer(MontyDataTransformer[USGSDataSource]):
                     category=MontyImpactExposureCategory.ALL_PEOPLE,
                     imp_type=MontyImpactType.POTENTIALLY_AFFECTED,
                     value=self._calculate_value_from_bins(alert_data.fatality.bins),
-                    unit=alert_data.fatality.units,
+                    unit="people",
                     event_item=event_item,
                 )
                 impact_items.append(alert_ppl_item)
@@ -681,8 +682,8 @@ class USGSTransformer(MontyDataTransformer[USGSDataSource]):
                     impact_type=alert_data.economic.type or "economic",
                     category=MontyImpactExposureCategory.GLOBAL_CURRENCY,
                     imp_type=MontyImpactType.POTENTIALLY_AFFECTED,
-                    value=self._calculate_value_from_bins(alert_data.economic.bins),
-                    unit=alert_data.economic.units,
+                    value=self._calculate_value_from_bins(alert_data.economic.bins) * self.PAGER_ALERT_ECONOMIC_UNIT_SCALE,
+                    unit="usd",
                     event_item=event_item,
                 )
                 impact_items.append(alert_economic_item)
