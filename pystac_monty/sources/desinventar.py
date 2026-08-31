@@ -573,7 +573,7 @@ hazard_mapping = {
     "CYCLONE": ["MH0309", "nat-met-sto-tro", "TC"],  # Tropical cyclone
     "DROUGHT": ["MH0401", "nat-cli-dro-dro", "DR"],  # Drought
     "EARTHQUAKE": ["GH0101", "nat-geo-ear-gro", "EQ"],  # Earthquake
-    "EPIDEMIC": ["BI0101", "nat-bio-epi-dis", "OT"],  # Epidemic
+    "EPIDEMIC": ["BI0101", "nat-bio-epi-dis", "EP"],  # Epidemic
     "EPIZOOTIC": ["BI0027", "nat-bio-ani-ani"],  # Animal Diseases (Not Zoonoses)
     "EROSION": ["GH0403", "nat-geo-env-soi", "OT"],  # Soil erosion
     "EXPLOSION": ["TL0029", "tec-ind-exp-exp", "AC"],  # Explosion
