@@ -4,7 +4,6 @@ import csv
 import io
 import itertools
 import logging
-import tempfile
 import typing
 from dataclasses import dataclass
 from typing import Dict, List, Union
@@ -30,7 +29,6 @@ STAC_HAZARD_ID_PREFIX = "ibtracs-hazard-"
 class IBTrACSDataSource(MontyDataSourceV3):
     """IBTrACS data source that handles tropical cyclone track data."""
 
-    file_path: str
     source_url: str
     data_source: Union[File, Memory]
 
@@ -47,9 +45,9 @@ class IBTrACSDataSource(MontyDataSourceV3):
         def handle_file_data():
             df = pd.read_csv(self.input_data.path)
             df = df.sort_values(by=["SID", "ISO_TIME"])
-            with tempfile.NamedTemporaryFile(delete=False, mode="w", newline="", encoding="utf-8") as tmp_file:
-                df.to_csv(tmp_file, index=False)
-                self.file_path = tmp_file.name
+            buffer = io.StringIO()
+            df.to_csv(buffer, index=False)
+            self.file_content = buffer.getvalue()
 
         def handle_memory_data(): ...
 
@@ -73,22 +71,21 @@ class IBTrACSDataSource(MontyDataSourceV3):
     def get_data_for_file(self):
         """Yield storm data grouped by SID from a sorted CSV."""
 
-        with open(self.file_path, mode="r", newline="", encoding="utf-8") as f:
-            reader = csv.DictReader(f)
-            current_storm_id = None
-            storm_data = []
+        reader = csv.DictReader(io.StringIO(self.file_content))
+        current_storm_id = None
+        storm_data = []
 
-            for row in reader:
-                storm_id = row["SID"]
-                if storm_id != current_storm_id:
-                    if storm_data:
-                        yield storm_data
-                    storm_data = [row]
-                    current_storm_id = storm_id
-                else:
-                    storm_data.append(row)
-            if storm_data:
-                yield storm_data
+        for row in reader:
+            storm_id = row["SID"]
+            if storm_id != current_storm_id:
+                if storm_data:
+                    yield storm_data
+                storm_data = [row]
+                current_storm_id = storm_id
+            else:
+                storm_data.append(row)
+        if storm_data:
+            yield storm_data
 
     def get_data_for_memory(self):
         parsed_data = self._parse_csv()
@@ -106,6 +103,51 @@ class IBTrACSTransformer(MontyDataTransformer[IBTrACSDataSource]):
 
     hazard_profiles = MontyHazardProfiles()
     source_name = "ibtracs"
+
+    @staticmethod
+    def _get_wind_and_pressure(row: IBTracsdataValidator, pressure_default: float = 0) -> typing.Tuple[float, float]:
+        """Get wind speed (knots) and pressure (mb), preferring USA_* then falling back to WMO_*."""
+        try:
+            wind = float(row.USA_WIND or 0)
+        except (ValueError, TypeError):
+            try:
+                wind = float(row.WMO_WIND or 0)
+            except (ValueError, TypeError):
+                wind = 0
+
+        try:
+            pressure = float(row.USA_PRES or pressure_default)
+        except (ValueError, TypeError):
+            try:
+                pressure = float(row.WMO_PRES or pressure_default)
+            except (ValueError, TypeError):
+                pressure = pressure_default
+
+        return wind, pressure
+
+    def _add_common_assets_and_links(self, item: Item, source_url: str) -> None:
+        """Add the `via` link and data/documentation assets shared by event and hazard items."""
+        item.add_link(Link("via", source_url, "text/csv"))
+
+        item.add_asset(
+            "data",
+            Asset(
+                href=source_url,
+                title="IBTrACS Best Track Data",
+                media_type="text/csv",
+                extra_fields={"roles": ["data"]},
+            ),
+        )
+
+        item.add_asset(
+            "documentation",
+            Asset(
+                href="https://www.ncei.noaa.gov/products/international-best-track-archive",
+                title="IBTrACS Documentation",
+                media_type="text/html",
+                extra_fields={"roles": ["documentation"]},
+            ),
+        )
 
     def get_stac_items(self) -> typing.Generator[Item, None, None]:
         self.transform_summary.mark_as_started()
@@ -215,25 +257,7 @@ class IBTrACSTransformer(MontyDataTransformer[IBTrACSDataSource]):
         min_pressure = 9999
 
         for row in storm_data:
-            # Try to get wind speed from USA_WIND or WMO_WIND
-            # FIXME: Need to simplify this logic
-            try:
-                wind = float(row.USA_WIND or 0)
-            except (ValueError, TypeError):
-                try:
-                    wind = float(row.WMO_WIND or 0)
-                except (ValueError, TypeError):
-                    wind = 0
-
-            # Try to get pressure from USA_PRES or WMO_PRES
-            # FIXME: Need to simplify this logic
-            try:
-                pressure = float(row.USA_PRES or 9999)
-            except (ValueError, TypeError):
-                try:
-                    pressure = float(row.WMO_PRES or 9999)
-                except (ValueError, TypeError):
-                    pressure = 9999
+            wind, pressure = self._get_wind_and_pressure(row, pressure_default=9999)
 
             max_wind = max(max_wind, wind)
             min_pressure = min(min_pressure, pressure)
@@ -324,38 +348,16 @@ class IBTrACSTransformer(MontyDataTransformer[IBTrACSDataSource]):
 
         # Add links and assets
         source_url = self.data_source.get_source_url()
-        item.add_link(Link("via", source_url, "text/csv"))
-
-        # Add data asset
-        item.add_asset(
-            "data",
-            Asset(
-                href=source_url,
-                title="IBTrACS North Atlantic Basin Data",
-                media_type="text/csv",
-                extra_fields={"roles": ["data"]},
-            ),
-        )
+        self._add_common_assets_and_links(item, source_url)
 
         # Add track plot asset
         item.add_asset(
             "thumbnail",
             Asset(
-                href=f"https://ncics.org/ibtracs/html/plots//{self.data_source.version}.{storm_id}.png",
+                href=f"https://ncics.org/ibtracs/html/plots/{self.data_source.version}.{storm_id}.png",
                 title="IBTrACS Track Plot",
                 media_type="image/png",
                 extra_fields={"roles": ["track-plot"]},
-            ),
-        )
-
-        # Add documentation asset
-        item.add_asset(
-            "documentation",
-            Asset(
-                href="https://www.ncei.noaa.gov/products/international-best-track-archive",
-                title="IBTrACS Documentation",
-                media_type="text/html",
-                extra_fields={"roles": ["documentation"]},
             ),
         )
 
@@ -379,8 +381,16 @@ class IBTrACSTransformer(MontyDataTransformer[IBTrACSDataSource]):
 
         # Sort storm data by time
 
+        source_url = self.data_source.get_source_url()
+
         # Create a hazard item for each position
         track_coords = []
+
+        # Countries affected by the track so far, accumulated incrementally so each
+        # position only geocodes the points not already covered by earlier iterations.
+        accumulated_countries: list[str] = []
+        seen_countries: set[str] = set()
+        geocoded_up_to = -1
 
         for i, row in enumerate(storm_data):
             lat = row.LAT or 0  # FIXME: Do we need these default values? Are these even correct?
@@ -421,21 +431,7 @@ class IBTrACSTransformer(MontyDataTransformer[IBTrACSDataSource]):
             season = row.SEASON or ""
 
             # Get wind and pressure data
-            try:
-                wind = float(row.USA_WIND or 0)
-            except (ValueError, TypeError):
-                try:
-                    wind = float(row.WMO_WIND or 0)
-                except (ValueError, TypeError):
-                    wind = 0
-
-            try:
-                pressure = float(row.USA_PRES or 0)
-            except (ValueError, TypeError):
-                try:
-                    pressure = float(row.WMO_PRES or 0)
-                except (ValueError, TypeError):
-                    pressure = 0
+            wind, pressure = self._get_wind_and_pressure(row)
 
             # Determine storm status
             status = row.USA_STATUS
@@ -506,9 +502,14 @@ class IBTrACSTransformer(MontyDataTransformer[IBTrACSDataSource]):
                 # For the first position, there may not be any affected countries yet
                 countries = []
             else:
-                # For subsequent positions, get countries from the track so far
-                track_so_far = LineString(track_coords[: i + 1])
-                countries = self._get_countries_from_track(track_so_far)
+                # Geocode only the points not yet covered by a previous iteration
+                for j in range(geocoded_up_to + 1, i + 1):
+                    country_code = self._get_country_for_point(*track_coords[j])
+                    if country_code and country_code not in seen_countries:
+                        seen_countries.add(country_code)
+                        accumulated_countries.append(country_code)
+                geocoded_up_to = i
+                countries = list(accumulated_countries) if accumulated_countries else ["XYZ"]
 
             monty_ext.country_codes = countries
 
@@ -544,40 +545,7 @@ class IBTrACSTransformer(MontyDataTransformer[IBTrACSDataSource]):
             item.properties["keywords"] = keywords
 
             # Add links and assets
-            source_url = self.data_source.get_source_url()
-            item.add_link(Link("via", source_url, "text/csv"))
-
-            # Add data asset
-            item.add_asset(
-                "data",
-                Asset(
-                    href=source_url,
-                    title="IBTrACS North Atlantic Basin Data",
-                    media_type="text/csv",
-                    extra_fields={"roles": ["data"]},
-                ),
-            )
-
-            # Add documentation asset
-            item.add_asset(
-                "documentation",
-                Asset(
-                    href="https://www.ncei.noaa.gov/products/international-best-track-archive",
-                    title="IBTrACS Documentation",
-                    media_type="text/html",
-                    extra_fields={"roles": ["documentation"]},
-                ),
-            )
-
-            # Add link to related event
-            item.add_link(
-                Link(
-                    rel="related",
-                    target=f"../ibtracs-events/{storm_id}.json",
-                    media_type="application/json",
-                    extra_fields={"roles": ["event"]},
-                )
-            )
+            self._add_common_assets_and_links(item, source_url)
 
             hazard_items.append(item)
 
@@ -613,6 +581,17 @@ class IBTrACSTransformer(MontyDataTransformer[IBTrACSDataSource]):
 
         return basin_names.get(basin_code, "Unknown Basin")
 
+    def _get_country_for_point(self, lon: float, lat: float) -> str | None:
+        """Get the ISO3 country code for a single point, or None if unavailable/unresolvable."""
+        if self.geocoder is None:
+            return None
+
+        try:
+            return self.geocoder.get_iso3_from_point(Point(lon, lat))
+        except Exception as e:
+            logger.warning(f"Geocoding error: {e}", exc_info=True)
+            return None
+
     def _get_countries_from_track(self, track_geometry: Union[LineString, Point]) -> List[str]:
         """Get a list of countries affected by a storm track.
 
@@ -622,39 +601,16 @@ class IBTrACSTransformer(MontyDataTransformer[IBTrACSDataSource]):
         Returns:
             List of ISO3 country codes
         """
-        if self.geocoder is None:
-            # FIXME: Should we use ["UNK"] instead?
-            return ["XYZ"]  # Default to international waters if no geocoder
+        coords = track_geometry.coords if isinstance(track_geometry, LineString) else [(track_geometry.x, track_geometry.y)]
 
-        # Use the geocoder to find countries
         countries = []
-
-        try:
-            # For LineString, check each point
-            if isinstance(track_geometry, LineString):
-                for point in track_geometry.coords:
-                    lon, lat = point
-                    country_code = self.geocoder.get_iso3_from_point(Point(lon, lat))
-                    if country_code:
-                        countries.append(country_code)
-            # For Point, check the single point
-            elif isinstance(track_geometry, Point):
-                lon, lat = track_geometry.x, track_geometry.y
-                country_code = self.geocoder.get_iso3_from_geometry(track_geometry)
-                if country_code:
-                    countries.append(country_code)
-        except Exception as e:
-            # If geocoding fails, default to international waters
-            logger.warning(f"Geocoding error: {e}", exc_info=True)
-            # FIXME: Should we use ["UNK"] instead?
-            return ["XYZ"]
-
-        # Remove duplicates and sort
-        countries = list(dict.fromkeys(countries))
+        seen = set()
+        for lon, lat in coords:
+            country_code = self._get_country_for_point(lon, lat)
+            if country_code and country_code not in seen:
+                seen.add(country_code)
+                countries.append(country_code)
 
         # If no countries found, use XYZ for international waters
-        if not countries:
-            # FIXME: Should we use ["UNK"] instead?
-            return ["XYZ"]
-
-        return countries
+        # FIXME: Should we use ["UNK"] instead?
+        return countries or ["XYZ"]
