@@ -1,6 +1,8 @@
 default_language_version:
   python: python3
 
+default_install_hook_types: [pre-commit, commit-msg]
+
 # NOTE: Update in .flake8 pyproject.toml as well
 exclude: |
     (?x)^(
@@ -62,3 +64,9 @@ repos:
     rev: v1.1.409
     hooks:
       - id: pyright
+
+  - repo: https://github.com/compilerla/conventional-pre-commit
+    rev: v4.4.0
+    hooks:
+      - id: conventional-pre-commit
+        stages: [commit-msg]
