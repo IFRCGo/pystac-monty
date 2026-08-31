@@ -2,11 +2,13 @@
 
 from __future__ import annotations
 
+import contextlib
 import functools
 import json
 import re
 import tempfile
 import unittest
+import unittest.mock
 from copy import deepcopy
 from pathlib import Path
 
@@ -35,6 +37,20 @@ from tests.utils.test_hazard_taxonomy import assert_hazard_code_dict_valid, taxo
 from tests.utils.test_utils import validate_correlation_id
 
 RFC3339_UTC_PATTERN = re.compile(r"(\+00:00|Z)$")
+
+_TEST_EOAPI_URL = "https://example.com"
+
+
+@contextlib.contextmanager
+def _with_test_eoapi_url():
+    """Patch CEMSDataSource to use _TEST_EOAPI_URL when eoapi_url is not provided."""
+    orig = CEMSDataSource.__init__
+
+    def _init(self, data, eoapi_url=None):
+        orig(self, data, eoapi_url=eoapi_url if eoapi_url is not None else _TEST_EOAPI_URL)
+
+    with unittest.mock.patch.object(CEMSDataSource, "__init__", _init):
+        yield
 
 
 @pytest.fixture(scope="module")
@@ -120,7 +136,8 @@ def _memory_transformer(data: dict | None = None) -> CEMSTransformer:
         data=GenericDataSource(
             source_url="https://rapidmapping.emergency.copernicus.eu/backend/dashboard-api/public-activations/?code=EMSR999",
             input_data=Memory(content=payload, data_type=DataType.MEMORY),
-        )
+        ),
+        eoapi_url=_TEST_EOAPI_URL,
     )
     return CEMSTransformer(source, _shared_geocoder())
 
@@ -192,7 +209,7 @@ class CEMSTest(unittest.TestCase):
             event_links = [
                 link
                 for link in hazard.links
-                if link.rel in {"derived_from", "related"} and "cems-events/cems-event-EMSR999.json" in (link.get_href() or "")
+                if link.rel in {"derived_from", "related"} and "cems-events/items/cems-event-EMSR999" in (link.get_href() or "")
             ]
             self.assertEqual(len(event_links), 1)
             self.assertEqual(event_links[0].rel, "related")
@@ -543,10 +560,11 @@ class CEMSTest(unittest.TestCase):
         if not fixture.is_file():
             self.skipTest("monty-stac-extension submodule not initialized")
 
-        event = next(item for item in iter_cems_stac_items(fixture) if MontyExtension.ext(item).is_source_event())
-        related_hrefs = [link.get_href() for link in event.links if link.rel == "related"]
-        self.assertTrue(any("gdacs-events/1001230-" in href for href in related_hrefs))
-        self.assertTrue(any("charter-events/charter-event-996.json" in href for href in related_hrefs))
+        with _with_test_eoapi_url():
+            event = next(item for item in iter_cems_stac_items(fixture) if MontyExtension.ext(item).is_source_event())
+        related_hrefs = [link.get_href() or "" for link in event.links if link.rel == "related"]
+        self.assertTrue(any("gdacs-events/items/1001230-" in href for href in related_hrefs))
+        self.assertTrue(any("charter-events/items/charter-event-996" in href for href in related_hrefs))
         self.assertTrue(any(link.rel == "via" for link in event.links))
 
     def test_cems_batch_export_dispatches_through_registry(self) -> None:
@@ -569,7 +587,8 @@ class CEMSTest(unittest.TestCase):
 
         with tempfile.TemporaryDirectory() as tmp:
             output_dir = Path(tmp)
-            regenerate_cems_examples(fixture, output_dir)
+            with _with_test_eoapi_url():
+                regenerate_cems_examples(fixture, output_dir)
 
             for item_id in CURATED_CEMS_EXAMPLE_IDS:
                 collection = _collection_for_item_id(item_id)
@@ -612,10 +631,10 @@ class CEMSTest(unittest.TestCase):
         related_hrefs = [link["href"] for link in related_links]
         self.assertTrue(any("gdacs-events/" in href for href in related_hrefs))
         self.assertTrue(any("charter-events/" in href for href in related_hrefs))
-        self.assertTrue(any("cems-hazard-EMSR847-aoi01-storm.json" in href for href in related_hrefs))
-        self.assertTrue(any("cems-hazard-EMSR847-aoi01-landslide.json" in href for href in related_hrefs))
-        self.assertTrue(any("cems-response-EMSR847-aoi01-gra.json" in href for href in related_hrefs))
-        self.assertTrue(any("cems-impact-EMSR847-aoi01-gra-population.json" in href for href in related_hrefs))
+        self.assertTrue(any("cems-hazard-EMSR847-aoi01-storm" in href for href in related_hrefs))
+        self.assertTrue(any("cems-hazard-EMSR847-aoi01-landslide" in href for href in related_hrefs))
+        self.assertTrue(any("cems-response-EMSR847-aoi01-gra" in href for href in related_hrefs))
+        self.assertTrue(any("cems-impact-EMSR847-aoi01-gra-population" in href for href in related_hrefs))
 
     def test_curated_response_datetime_is_valid(self) -> None:
         examples_dir = _cems_examples_dir()

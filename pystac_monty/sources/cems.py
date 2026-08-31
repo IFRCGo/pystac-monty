@@ -861,9 +861,9 @@ class CEMSTransformer(MontyDataTransformer[CEMSDataSource]):
             self._response_collection_cache = collection
         return self._response_collection_cache
 
-    @staticmethod
-    def _relative_item_href(collection_id: str, item_id: str) -> str:
-        return f"../{collection_id}/{item_id}.json"
+    def _relative_item_href(self, collection_id: str, item_id: str) -> str:
+        eoapi_url = self.data_source.eoapi_url or ".."
+        return f"{eoapi_url}/collections/{collection_id}/items/{item_id}"
 
     def _canonical_codes_for_keys(self, hazard_keys: list[str]) -> list[str]:
         return _hazard_codes_for_keys(hazard_keys, self.hazard_profiles)
