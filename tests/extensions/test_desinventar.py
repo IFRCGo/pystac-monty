@@ -23,6 +23,53 @@ from tests.utils.test_utils import request_for_schema, validate_correlation_id
 CURRENT_SCHEMA_URI = "https://ifrcgo.org/monty-stac-extension/v1.3.0/schema.json"
 CURRENT_SCHEMA_MAPURL = "https://raw.githubusercontent.com/IFRCGo/monty-stac-extension/refs/heads/main/json-schema/schema.json"
 
+# UNDRR-ISC 2025 codes for which HazardProfiles.csv defines no EM-DAT cluster
+# code, so pystac_monty.sources.desinventar.hazard_mapping only supplies
+# [UNDRR code, GLIDE code] for them -- get_canonical_hazard_codes() therefore
+# emits 2 codes, not 3, for events of these hazard types. Kept as an explicit,
+# hand-maintained list (rather than derived from hazard_mapping) so that a
+# future 2-element entry not accounted for here fails this test instead of
+# silently passing.
+UNDRR_2025_CODES_WITHOUT_EMDAT_CODE = {
+    "BI0027",  # EPIZOOTIC
+    "BI0204",  # Cholera
+    "BI0219",  # MALARIA
+    "BI0221",  # MEASLE
+    "BI0222",  # MENINGITIS
+    "BI0224",  # Mpox
+    "BI0228",  # PLAGUE
+    "BI0241",  # YELLOW FEVER
+    "BI0301",  # ANIMAL DISEASE
+    "BI0604",  # ANIMAL ATTACK
+    "BI0605",  # SNAKE BITE
+    "CH0201",  # AFLATOXIN
+    "CH0400",  # ASPHYXIA
+    "CH0601",  # INTOXICACION
+    "CH0903",  # CHEMICAL SUBSTANCE
+    "EN0102",  # Air pollution
+    "EN0103",  # CONTAMINATION
+    "EN0105",  # Acid rain
+    "EN0201",  # Deforestación
+    "EN0301",  # LAND DEGRADATION
+    "EN0304",  # WETLAND LOSS/DEGRADATION
+    "EN0402",  # SEA LEVEL RISE
+    "GH0301",  # ROCK FALL
+    "GH0309",  # SUBSIDENCE
+    "GH0404",  # RIVERBANK EROSION
+    "MH0303",  # GALE
+    "MH0402",  # RAIN, HEAVY RAINS
+    "MH0405",  # Snowfall
+    "MH0406",  # SNOW STORM
+    "MH0606",  # URBAN FLOOD
+    "SO0103",  # CONFLICT
+    "SO0301",  # GUNSHOT
+    "TL0208",  # Nuclear accidents
+    "TL0209",  # ELECTROCUTION
+    "TL0210",  # Racionamiento
+    "TL0302",  # POLLUTION
+    "TL0307",  # MINING HAZARD
+}
+
 geocoder = MockGeocoder()
 
 
@@ -170,6 +217,27 @@ class DesinventarTest(TestCase):
 
         assert event_item_self_link in [item.href for item in impact_item_related_items]
         assert impact_item_self_link in [item.href for item in event_item_related_items]
+
+    @parameterized.expand(load_scenarios(scenarios))
+    @pytest.mark.vcr()
+    def test_event_item_uses_all_codes(self, country_code: str, transformer: DesinventarTransformer) -> None:
+        request_for_schema(url=CURRENT_SCHEMA_URI)  # Validate if the schema exists
+
+        for item in transformer.get_stac_items():
+            # write pretty json in a temporary folder
+            item_path = get_data_file(f"temp/desinventar/{item.id}.json")
+            with open(item_path, "w") as f:
+                json.dump(item.to_dict(), f, indent=2)
+            item.validate(validator=self.validator)
+            monty_item_ext = MontyExtension.ext(item)
+            if monty_item_ext.is_source_event() and monty_item_ext.hazard_codes:
+                undrr_2025_code = monty_item_ext.hazard_codes[0]
+                if undrr_2025_code in UNDRR_2025_CODES_WITHOUT_EMDAT_CODE:
+                    # No EM-DAT cluster defined for this hazard: [UNDRR code, GLIDE code]
+                    assert len(monty_item_ext.hazard_codes) == 2
+                else:
+                    # Full trio: [UNDRR code, GLIDE code, EM-DAT cluster code]
+                    assert len(monty_item_ext.hazard_codes) == 3
 
     @parameterized.expand(load_scenarios(scenarios))
     @pytest.mark.vcr()
