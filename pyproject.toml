@@ -14,7 +14,7 @@ keywords = [
 ]
 license = { text = "Apache-2.0" }
 classifiers = [
-    "Development Status :: 0 - Proposal",
+    "Development Status :: 4 - Beta",
     "Intended Audience :: Developers",
     "License :: OSI Approved :: Apache Software License",
     "Natural Language :: English",
@@ -40,10 +40,10 @@ dependencies = [
 dynamic = ["version"]
 
 [project.urls]
-Documentation = "https://pystac.readthedocs.io"
-Repository = "https://github.com/IFRCGo/monty-stac-extension"
-Issues = "https://github.com/IFRCGo/monty-stac-extension/issues"
-Changelog = "https://github.com/IFRCGo/monty-stac-extension/blob/main/CHANGELOG.md"
+Documentation = "https://ifrcgo.org/monty-stac-extension/"
+Repository = "https://github.com/IFRCGo/pystac-monty"
+Issues = "https://github.com/IFRCGo/pystac-monty/issues"
+Changelog = "https://github.com/IFRCGo/pystac-monty/blob/main/CHANGELOG.md"
 Discussions = "https://github.com/radiantearth/stac-spec/discussions/categories/stac-software"
 
 [project.scripts]
