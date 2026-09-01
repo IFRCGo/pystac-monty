@@ -17,7 +17,7 @@ from pystac.utils import StringEnum, get_opt, get_required, map_opt
 from pystac_monty.hazard_profiles import HazardProfiles, MontyHazardProfiles
 from pystac_monty.paring import Pairing
 
-__version__ = "0.1.0"  # x-release-please-version
+__version__ = "0.1.1"  # x-release-please-version
 
 T = TypeVar("T", pystac.Collection, pystac.Item, pystac.Asset, item_assets.AssetDefinition)
 
