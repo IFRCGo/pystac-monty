@@ -22,7 +22,14 @@ from pystac_monty.extension import (
 )
 from pystac_monty.geocoding import MontyGeoCoder
 from pystac_monty.hazard_profiles import MontyHazardProfiles
-from pystac_monty.sources.common import DataType, GenericDataSource, MontyDataSourceV3, MontyDataTransformer, PDCDataSourceType
+from pystac_monty.sources.common import (
+    DataType,
+    GenericDataSource,
+    MontyDataSourceV3,
+    MontyDataTransformer,
+    PDCDataSourceType,
+    with_processing_extension,
+)
 from pystac_monty.validators.pdc import AdminData, ExposureDetailValidator, HazardEventValidator
 
 logger = logging.getLogger(__name__)
@@ -142,6 +149,7 @@ class PDCTransformer(MontyDataTransformer):
     def make_items(self):
         return list(self.get_stac_items())
 
+    @with_processing_extension
     def get_stac_items(self) -> Generator[Item, None, None]:
         """Creates the STAC Items"""
 

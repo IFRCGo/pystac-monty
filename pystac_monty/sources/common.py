@@ -1,20 +1,58 @@
 import abc
+import functools
 import json
 import re
 import tempfile
 import typing
 from dataclasses import dataclass, field
 from enum import Enum
-from typing import List, Literal, Optional, Tuple, Union
+from typing import Callable, Generator, List, Literal, Optional, Tuple, Union
 
 import requests
 from pydantic import BaseModel, ConfigDict, Field
 from pystac import Collection, Item, Link
 
+from pystac_monty.extension import __version__ as PYSTAC_MONTY_VERSION
 from pystac_monty.geocoding import MontyGeoCoder
 
 # Characters some STAC API deployments reject in item identifiers (GDACS / Montandon ETL learnings).
 _STAC_API_ITEM_ID_FORBIDDEN = re.compile(r"[:/?#\[\]@!$&\'()*+,;=]")
+
+# STAC processing extension (https://stac-extensions.github.io/processing) — stamped on every item
+# produced by a MontyDataTransformer so ``processing:version``/``processing:software`` always match
+# the installed pystac-monty release rather than a value hand-typed per source (see issue #208).
+PROCESSING_SCHEMA_BASE = "https://stac-extensions.github.io/processing/"
+PROCESSING_SCHEMA_URI = f"{PROCESSING_SCHEMA_BASE}v1.2.0/schema.json"
+PROCESSING_SOFTWARE_NAME = "pystac-monty"
+
+
+def stamp_processing_extension(item: Item) -> Item:
+    """Add the processing extension URI and ``processing:version``/``processing:software`` to *item*."""
+    extensions = list(item.stac_extensions or [])
+    existing_index = next((i for i, e in enumerate(extensions) if e.startswith(PROCESSING_SCHEMA_BASE)), None)
+    extensions = [e for e in extensions if not e.startswith(PROCESSING_SCHEMA_BASE)]
+    if existing_index is None:
+        extensions.append(PROCESSING_SCHEMA_URI)
+    else:
+        extensions.insert(existing_index, PROCESSING_SCHEMA_URI)
+    item.stac_extensions = extensions
+    item.properties.setdefault("processing:version", PYSTAC_MONTY_VERSION)
+    software = item.properties.setdefault("processing:software", {})
+    software[PROCESSING_SOFTWARE_NAME] = PYSTAC_MONTY_VERSION
+    return item
+
+
+def with_processing_extension(
+    func: Callable[..., Generator[Item, None, None]],
+) -> Callable[..., Generator[Item, None, None]]:
+    """Decorate a ``get_stac_items``-style generator so every yielded item is stamped automatically."""
+
+    @functools.wraps(func)
+    def wrapper(*args: typing.Any, **kwargs: typing.Any) -> Generator[Item, None, None]:
+        for item in func(*args, **kwargs):
+            yield stamp_processing_extension(item)
+
+    return wrapper
 
 
 def sanitize_stac_item_id(raw: str) -> str:

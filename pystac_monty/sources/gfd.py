@@ -24,6 +24,7 @@ from pystac_monty.sources.common import (
     Memory,
     MontyDataSourceV3,
     MontyDataTransformer,
+    with_processing_extension,
 )
 from pystac_monty.validators.gfd import GFDSourceValidator
 
@@ -90,6 +91,7 @@ class GFDTransformer(MontyDataTransformer[GFDDataSource]):
     def make_items(self) -> List[Item]:
         return list(self.get_stac_items())
 
+    @with_processing_extension
     def get_stac_items(self) -> typing.Generator[Item, None, None]:
         data = self.data_source.get_data()
 

@@ -24,6 +24,7 @@ from pystac_monty.sources.common import (
     GenericDataSource,
     MontyDataSourceV3,
     MontyDataTransformer,
+    with_processing_extension,
 )
 from pystac_monty.sources.utils import IDMCUtils, order_data_file
 from pystac_monty.validators.gidd import GiddValidator
@@ -80,6 +81,7 @@ class GIDDTransformer(MontyDataTransformer[GIDDDataSource]):
     hazard_profiles = MontyHazardProfiles()
     source_name = "idmc-gidd"
 
+    @with_processing_extension
     def get_stac_items(self) -> Generator[Item, None, None]:
         """Creates the STAC Items"""
         self.transform_summary.mark_as_started()

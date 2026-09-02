@@ -12,7 +12,15 @@ from shapely.ops import unary_union
 
 from pystac_monty.extension import ImpactDetail, MontyEstimateType, MontyExtension, MontyImpactExposureCategory, MontyImpactType
 from pystac_monty.hazard_profiles import MontyHazardProfiles
-from pystac_monty.sources.common import DataType, File, GenericDataSource, Memory, MontyDataSourceV3, MontyDataTransformer
+from pystac_monty.sources.common import (
+    DataType,
+    File,
+    GenericDataSource,
+    Memory,
+    MontyDataSourceV3,
+    MontyDataTransformer,
+    with_processing_extension,
+)
 from pystac_monty.validators.ifrc import IFRCsourceValidator
 
 logger = logging.getLogger(__name__)
@@ -201,6 +209,7 @@ class IFRCEventTransformer(MontyDataTransformer[IFRCEventDataSource]):
                 logger.warning(f"Failed to process IFRC events data with id {e_id}", exc_info=True)
         self.transform_summary.mark_as_complete()
 
+    @with_processing_extension
     def get_stac_items(self) -> typing.Generator[Item, None, None]:
         data_type = self.data_source.get_input_data_type()
         match data_type:

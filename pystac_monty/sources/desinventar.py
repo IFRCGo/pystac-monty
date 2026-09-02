@@ -14,7 +14,12 @@ from pystac.item import Item
 
 from pystac_monty.extension import ImpactDetail, MontyEstimateType, MontyExtension, MontyImpactExposureCategory, MontyImpactType
 from pystac_monty.hazard_profiles import MontyHazardProfiles
-from pystac_monty.sources.common import DesinventarDataSourceType, MontyDataSourceV3, MontyDataTransformer
+from pystac_monty.sources.common import (
+    DesinventarDataSourceType,
+    MontyDataSourceV3,
+    MontyDataTransformer,
+    with_processing_extension,
+)
 from pystac_monty.validators.desinventar import (
     STAC_EVENT_ID_PREFIX,
     STAC_HAZARD_ID_PREFIX,
@@ -1129,6 +1134,7 @@ class DesinventarTransformer(MontyDataTransformer[DesinventarDataSource]):
 
         return hazard_name_mapping
 
+    @with_processing_extension
     def get_stac_items(self) -> typing.Generator[Item, None, None]:
         # TODO: Use sax xml parser for memory efficient usage
         with self.data_source.with_xml_file() as xml_file:

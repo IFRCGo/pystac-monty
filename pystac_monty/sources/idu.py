@@ -22,7 +22,13 @@ from pystac_monty.extension import (
     MontyImpactType,
 )
 from pystac_monty.hazard_profiles import MontyHazardProfiles
-from pystac_monty.sources.common import DataType, GenericDataSource, MontyDataSourceV3, MontyDataTransformer
+from pystac_monty.sources.common import (
+    DataType,
+    GenericDataSource,
+    MontyDataSourceV3,
+    MontyDataTransformer,
+    with_processing_extension,
+)
 from pystac_monty.sources.utils import IDMCUtils, order_data_file
 from pystac_monty.validators.idu import IDUSourceValidator
 
@@ -80,6 +86,7 @@ class IDUTransformer(MontyDataTransformer[IDUDataSource]):
     hazard_profiles = MontyHazardProfiles()
     source_name = "idmc-idu"
 
+    @with_processing_extension
     def get_stac_items(self) -> typing.Generator[Item, None, None]:
         """Creates the STAC Items"""
         self.transform_summary.mark_as_started()

@@ -22,7 +22,7 @@ from pystac_monty.extension import (
     MontyImpactType,
 )
 from pystac_monty.hazard_profiles import MontyHazardProfiles
-from pystac_monty.sources.common import GenericDataSource, MontyDataTransformer, USGSDataSourceType
+from pystac_monty.sources.common import GenericDataSource, MontyDataTransformer, USGSDataSourceType, with_processing_extension
 from pystac_monty.sources.gdacs import DataType, MontyDataSourceV3
 from pystac_monty.validators.usgs import AlertBin, AlertValidator, EmpiricalValidator, USGSValidator
 
@@ -407,6 +407,7 @@ class USGSTransformer(MontyDataTransformer[USGSDataSource]):
         primary_iso2 = max(fatalities_by_country, key=fatalities_by_country.get)
         return self.iso2_to_iso3(primary_iso2)
 
+    @with_processing_extension
     def get_stac_items(self) -> typing.Generator[Item, None, None]:
         """Creates the STAC Items"""
         self.transform_summary.mark_as_started()
