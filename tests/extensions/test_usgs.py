@@ -15,7 +15,7 @@ from pystac_monty.sources.gdacs import DataType
 from pystac_monty.sources.usgs import USGSDataSource, USGSTransformer
 from tests.conftest import get_data_file
 from tests.extensions.test_monty import CustomValidator
-from tests.utils.test_utils import request_for_schema, validate_correlation_id
+from tests.utils.test_utils import assert_processing_extension_fields, request_for_schema, validate_correlation_id
 
 CURRENT_SCHEMA_URI = "https://ifrcgo.org/monty-stac-extension/v1.3.0/schema.json"
 CURRENT_SCHEMA_MAPURL = "https://raw.githubusercontent.com/IFRCGo/monty-stac-extension/refs/heads/main/json-schema/schema.json"
@@ -112,6 +112,7 @@ class USGSTest(unittest.TestCase):
                 json.dump(item.to_dict(), f, indent=2, ensure_ascii=False)
             # Validate item against schema
             item.validate(validator=self.validator)
+            assert_processing_extension_fields(item)
 
             # Validate the EQ hazard codes and correlation id
             if item:
@@ -176,6 +177,7 @@ class USGSTest(unittest.TestCase):
                 json.dump(item.to_dict(), f, indent=2, ensure_ascii=False)
             # Validate item against schema
             item.validate(validator=self.validator)
+            assert_processing_extension_fields(item)
 
             # Check item type
             monty_item_ext = MontyExtension.ext(item)
@@ -248,6 +250,7 @@ class USGSTest(unittest.TestCase):
                 self.fail("Unexpected item type found")
 
             item.validate(validator=self.validator)
+            assert_processing_extension_fields(item)
 
         self.assertTrue(found_event)
         self.assertTrue(found_hazard)
@@ -273,6 +276,7 @@ class USGSTest(unittest.TestCase):
         impact_items = []
         for item in transformer.get_stac_items():
             item.validate(validator=self.validator)
+            assert_processing_extension_fields(item)
             monty_item_ext = MontyExtension.ext(item)
             if monty_item_ext.is_source_event():
                 source_event_item = item
@@ -307,6 +311,7 @@ class USGSTest(unittest.TestCase):
         impact_items = []
         for item in transformer.get_stac_items():
             item.validate(validator=self.validator)
+            assert_processing_extension_fields(item)
             monty_item_ext = MontyExtension.ext(item)
             if monty_item_ext.is_source_impact():
                 impact_items.append(item)
@@ -384,6 +389,7 @@ class USGSTest(unittest.TestCase):
             with open(item_path, "w") as f:
                 json.dump(item.to_dict(), f, indent=2)
             item.validate(validator=self.validator)
+            assert_processing_extension_fields(item)
             monty_item_ext = MontyExtension.ext(item)
             if monty_item_ext.is_source_event():
                 # Should contain only the first code (UNDRR-ISC 2025)
@@ -400,6 +406,7 @@ class USGSTest(unittest.TestCase):
             with open(item_path, "w") as f:
                 json.dump(item.to_dict(), f, indent=2)
             item.validate(validator=self.validator)
+            assert_processing_extension_fields(item)
             monty_item_ext = MontyExtension.ext(item)
             if monty_item_ext.is_source_hazard():
                 # Should contain code based on UNDRR-ISC 2025

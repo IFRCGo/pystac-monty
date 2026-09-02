@@ -45,6 +45,7 @@ from pystac_monty.sources.common import (
     MontyDataSourceV3,
     MontyDataTransformer,
     sanitize_stac_item_id,
+    with_processing_extension,
 )
 from pystac_monty.validators.charter import CharterSourceModel
 
@@ -1004,6 +1005,7 @@ class CharterTransformer(MontyDataTransformer[CharterDataSource]):
                 Link(rel="derived_from", target=event_href, media_type="application/geo+json", title="Parent Charter Event")
             )
 
+    @with_processing_extension
     def get_stac_items(self) -> Generator[Item, None, None]:
         """Generate STAC items from Charter activation data.
 

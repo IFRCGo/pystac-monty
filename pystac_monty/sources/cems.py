@@ -45,12 +45,14 @@ from pystac_monty.geocoding import MockGeocoder, MontyGeoCoder, WorldAdministrat
 from pystac_monty.hazard_profiles import MontyHazardProfiles
 from pystac_monty.response import build_response_item, link_monitoring_update
 from pystac_monty.sources.common import (
+    PROCESSING_SCHEMA_URI,
     DataType,
     GenericDataSource,
     Memory,
     MontyDataSourceV3,
     MontyDataTransformer,
     sanitize_stac_item_id,
+    with_processing_extension,
 )
 from pystac_monty.validators.cems import CEMSDetailEnvelope
 
@@ -60,7 +62,6 @@ CEMS_DASHBOARD_API = "https://rapidmapping.emergency.copernicus.eu/backend/dashb
 CEMS_PORTAL_BASE = "https://rapidmapping.emergency.copernicus.eu"
 CEMS_AWS_VIEWER = "https://rapidmapping-viewer.s3.eu-west-1.amazonaws.com"
 GDACS_API_BASE = "https://www.gdacs.org/gdacsapi/api/events"
-PROCESSING_SCHEMA_URI = "https://stac-extensions.github.io/processing/v1.2.0/schema.json"
 
 # CEMS category (+ subCategory refinement) -> [UNDRR-2025, GLIDE, EM-DAT]
 CEMS_HAZARD_CODES: dict[str, list[str]] = {
@@ -1430,6 +1431,7 @@ class CEMSTransformer(MontyDataTransformer[CEMSDataSource]):
                 )
             )
 
+    @with_processing_extension
     def get_stac_items(self) -> Generator[Item, None, None]:
         """Generate STAC items from CEMS activation data.
 

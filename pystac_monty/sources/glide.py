@@ -13,7 +13,15 @@ from shapely.geometry import Point, mapping
 
 from pystac_monty.extension import HazardDetail, MontyEstimateType, MontyExtension
 from pystac_monty.hazard_profiles import MontyHazardProfiles
-from pystac_monty.sources.common import DataType, File, GenericDataSource, Memory, MontyDataSourceV3, MontyDataTransformer
+from pystac_monty.sources.common import (
+    DataType,
+    File,
+    GenericDataSource,
+    Memory,
+    MontyDataSourceV3,
+    MontyDataTransformer,
+    with_processing_extension,
+)
 from pystac_monty.validators.glide import GlideSetValidator
 
 logger = logging.getLogger(__name__)
@@ -156,6 +164,7 @@ class GlideTransformer(MontyDataTransformer[GlideDataSource]):
     def make_items(self) -> list[Item]:
         return list(self.get_stac_items())
 
+    @with_processing_extension
     def get_stac_items(self) -> typing.Generator[Item, None, None]:
         data_type = self.data_source.get_input_data_type()
         match data_type:

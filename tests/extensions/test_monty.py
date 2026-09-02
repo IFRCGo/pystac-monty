@@ -13,14 +13,21 @@ from pystac import Asset, Item
 from pystac.validation import JsonSchemaSTACValidator
 
 from pystac_monty.extension import SCHEMA_URI, MontyExtension
+from pystac_monty.sources.common import PROCESSING_SCHEMA_URI
 
 CURRENT_SCHEMA_URI = SCHEMA_URI
 CURRENT_SCHEMA_MAPURL = "https://raw.githubusercontent.com/IFRCGo/monty-stac-extension/refs/heads/main/json-schema/schema.json"
 SUBMODULE_SCHEMA_PATH = Path(__file__).resolve().parents[2] / "monty-stac-extension" / "json-schema" / "schema.json"
+PROCESSING_SCHEMA_PATH = Path(__file__).resolve().parent.parent / "data-files" / "schemas" / "processing-v1.2.0.json"
 
 
 def _load_submodule_schema() -> dict[str, Any]:
     with SUBMODULE_SCHEMA_PATH.open(encoding="utf-8") as f:
+        return json.load(f)
+
+
+def _load_processing_schema() -> dict[str, Any]:
+    with PROCESSING_SCHEMA_PATH.open(encoding="utf-8") as f:
         return json.load(f)
 
 
@@ -61,12 +68,17 @@ def make_item() -> Item:
 
 class CustomValidator(JsonSchemaSTACValidator):
     _schema_cache = None
+    _processing_schema_cache = None
 
     def _get_schema(self, schema_uri: str) -> dict[str, Any]:
         if schema_uri == CURRENT_SCHEMA_URI:
             if self._schema_cache is None:
                 self.__class__._schema_cache = _load_submodule_schema()
             return self._schema_cache
+        if schema_uri == PROCESSING_SCHEMA_URI:
+            if self._processing_schema_cache is None:
+                self.__class__._processing_schema_cache = _load_processing_schema()
+            return self._processing_schema_cache
         return super()._get_schema(schema_uri)
 
 

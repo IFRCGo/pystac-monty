@@ -24,7 +24,11 @@ from pystac_monty.sources.common import DataType, File, GenericDataSource, Memor
 from pystac_monty.sources.utils import save_json_data_into_tmp_file
 from tests.extensions.test_monty import CustomValidator
 from tests.utils.test_hazard_taxonomy import assert_hazard_code_dict_valid, taxonomy_md_path
-from tests.utils.test_utils import validate_correlation_id
+from tests.utils.test_utils import (
+    assert_processing_extension_fields,
+    normalize_processing_version_fields,
+    validate_correlation_id,
+)
 
 
 @pytest.fixture(scope="module")
@@ -209,6 +213,7 @@ class CharterTest(unittest.TestCase):
         items = list(_memory_transformer().get_stac_items())
         for item in items:
             item.validate(validator=self.validator)
+            assert_processing_extension_fields(item)
 
         event, hazards = _partition(items)
         self.assertIsNotNone(event)
@@ -453,8 +458,8 @@ class CharterTest(unittest.TestCase):
                 for expected_path in expected_files:
                     generated_path = output_dir / collection / expected_path.name
                     self.assertEqual(
-                        json.loads(generated_path.read_text(encoding="utf-8")),
-                        json.loads(expected_path.read_text(encoding="utf-8")),
+                        normalize_processing_version_fields(json.loads(generated_path.read_text(encoding="utf-8"))),
+                        normalize_processing_version_fields(json.loads(expected_path.read_text(encoding="utf-8"))),
                         expected_path.name,
                     )
 
@@ -466,6 +471,7 @@ class CharterTest(unittest.TestCase):
         for item in iter_charter_stac_items(charter_dir):
             if MontyExtension.ext(item).is_source_response():
                 item.validate(validator=self.validator)
+                assert_processing_extension_fields(item)
 
     def test_calibrated_dataset_response_detail(self) -> None:
         charter_dir = _charter_model_dir()
@@ -576,6 +582,7 @@ class CharterTest(unittest.TestCase):
         items = list(_memory_transformer(_activation_with_vaps()).get_stac_items())
         for item in items:
             item.validate(validator=self.validator)
+            assert_processing_extension_fields(item)
 
         event, hazards = _partition(items)
         responses = _responses(items)

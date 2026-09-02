@@ -14,7 +14,7 @@ from pystac_monty.sources.gfd import GFDDataSource, GFDTransformer
 from pystac_monty.sources.utils import save_json_data_into_tmp_file
 from tests.conftest import get_data_file
 from tests.extensions.test_monty import CustomValidator
-from tests.utils.test_utils import request_for_schema, validate_correlation_id
+from tests.utils.test_utils import assert_processing_extension_fields, request_for_schema, validate_correlation_id
 
 CURRENT_SCHEMA_URI = "https://ifrcgo.org/monty-stac-extension/v1.3.0/schema.json"
 CURRENT_SCHEMA_MAPURL = "https://raw.githubusercontent.com/IFRCGo/monty-stac-extension/refs/heads/main/json-schema/schema.json"
@@ -165,6 +165,7 @@ class GFDTest(unittest.TestCase):
             with open(item_path, "w", encoding="utf-8") as f:
                 json.dump(item.to_dict(), f, indent=2)
             item.validate(validator=self.validator)
+            assert_processing_extension_fields(item)
             monty_item_ext = MontyExtension.ext(item)
             if monty_item_ext.is_source_event():
                 source_event_item = item
@@ -193,6 +194,7 @@ class GFDTest(unittest.TestCase):
             with open(item_path, "w", encoding="utf-8") as f:
                 json.dump(item.to_dict(), f, indent=2)
             item.validate(validator=self.validator)
+            assert_processing_extension_fields(item)
             monty_item_ext = MontyExtension.ext(item)
             if monty_item_ext.is_source_event():
                 source_event_item = item
@@ -230,6 +232,7 @@ class GFDTest(unittest.TestCase):
             with open(item_path, "w", encoding="utf-8") as f:
                 json.dump(item.to_dict(), f, indent=2)
             item.validate(validator=self.validator)
+            assert_processing_extension_fields(item)
             monty_item_ext = MontyExtension.ext(item)
             if monty_item_ext.is_source_event():
                 source_event_item = item
@@ -269,6 +272,7 @@ class GFDTest(unittest.TestCase):
             with open(item_path, "w") as f:
                 json.dump(item.to_dict(), f, indent=2)
             item.validate(validator=self.validator)
+            assert_processing_extension_fields(item)
             monty_item_ext = MontyExtension.ext(item)
             if monty_item_ext.is_source_event() and monty_item_ext.hazard_codes:
                 # Should contain only the first code (UNDRR-ISC 2025)
@@ -285,6 +289,7 @@ class GFDTest(unittest.TestCase):
             with open(item_path, "w") as f:
                 json.dump(item.to_dict(), f, indent=2)
             item.validate(validator=self.validator)
+            assert_processing_extension_fields(item)
             monty_item_ext = MontyExtension.ext(item)
             if monty_item_ext.is_source_hazard() and monty_item_ext.hazard_codes:
                 # Should contain only the first code (UNDRR-ISC 2025)

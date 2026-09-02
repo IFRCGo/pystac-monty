@@ -29,6 +29,7 @@ from pystac_monty.sources.common import (
     GdacsEpisodes,
     MontyDataSourceV3,
     MontyDataTransformer,
+    with_processing_extension,
 )
 from pystac_monty.sources.utils import phrase_to_dashed
 from pystac_monty.validators.gdacs_events import GdacsEventDataValidator, Sendai
@@ -117,6 +118,7 @@ class GDACSTransformer(MontyDataTransformer[GDACSDataSource]):
     hazard_profiles = MontyHazardProfiles()
     source_name = "gdacs"
 
+    @with_processing_extension
     def get_stac_items(self) -> typing.Generator[Item, None, None]:
         data_type = self.data_source.get_input_data_type()
         match data_type:

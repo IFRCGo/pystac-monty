@@ -44,19 +44,20 @@ interactions:
         productionresultssa19.blob.core.windows.net github-production-repository-image-32fea6.s3.amazonaws.com
         github-production-release-asset-2e65be.s3.amazonaws.com insights.github.com
         wss://alive.github.com wss://alive-staging.github.com api.githubcopilot.com
-        api.individual.githubcopilot.com api.business.githubcopilot.com api.enterprise.githubcopilot.com;
-        font-src github.githubassets.com; form-action ''self'' github.com gist.github.com
-        copilot-workspace.githubnext.com objects-origin.githubusercontent.com; frame-ancestors
-        ''none''; frame-src viewscreen.githubusercontent.com notebooks.githubusercontent.com;
-        img-src ''self'' data: blob: github.githubassets.com media.githubusercontent.com
-        camo.githubusercontent.com identicons.github.com avatars.githubusercontent.com
-        private-avatars.githubusercontent.com github-cloud.s3.amazonaws.com objects.githubusercontent.com
-        release-assets.githubusercontent.com secured-user-images.githubusercontent.com
-        user-images.githubusercontent.com private-user-images.githubusercontent.com
-        opengraph.githubassets.com marketplace-screenshots.githubusercontent.com copilotprodattachments.blob.core.windows.net/github-production-copilot-attachments/
+        api.individual.githubcopilot.com api.business.githubcopilot.com api.enterprise.githubcopilot.com
+        wss://production-copilot-host.webpubsub.azure.com; font-src github.githubassets.com;
+        form-action ''self'' github.com gist.github.com copilot-workspace.githubnext.com
+        objects-origin.githubusercontent.com; frame-ancestors ''none''; frame-src
+        viewscreen.githubusercontent.com notebooks.githubusercontent.com; img-src
+        ''self'' data: blob: github.githubassets.com media.githubusercontent.com camo.githubusercontent.com
+        identicons.github.com avatars.githubusercontent.com private-avatars.githubusercontent.com
+        github-cloud.s3.amazonaws.com objects.githubusercontent.com release-assets.githubusercontent.com
+        secured-user-images.githubusercontent.com user-images.githubusercontent.com
+        private-user-images.githubusercontent.com opengraph.githubassets.com repository-images.githubusercontent.com
+        marketplace-screenshots.githubusercontent.com copilotprodattachments.blob.core.windows.net/github-production-copilot-attachments/
         github-production-user-asset-6210df.s3.amazonaws.com customer-stories-feed.github.com
-        spotlights-feed.github.com objects-origin.githubusercontent.com *.githubusercontent.com;
-        manifest-src ''self''; media-src github.com user-images.githubusercontent.com
+        spotlights-feed.github.com explore-feed.github.com objects-origin.githubusercontent.com
+        *.githubusercontent.com; manifest-src ''self''; media-src github.com user-images.githubusercontent.com
         secured-user-images.githubusercontent.com private-user-images.githubusercontent.com
         github-production-user-asset-6210df.s3.amazonaws.com gist.github.com github.githubassets.com;
         script-src github.githubassets.com; style-src ''unsafe-inline'' github.githubassets.com;
@@ -65,7 +66,7 @@ interactions:
       Content-Type:
       - text/html; charset=utf-8
       Date:
-      - Thu, 14 May 2026 04:42:05 GMT
+      - Wed, 02 Sep 2026 08:32:49 GMT
       Location:
       - https://raw.githubusercontent.com/IFRCGo/monty-stac-extension/refs/heads/main/examples/reference-events/20241027T150000-ESP-HM-FLOOD-001-GCDB.json
       Referrer-Policy:
@@ -75,16 +76,18 @@ interactions:
       Strict-Transport-Security:
       - max-age=31536000; includeSubdomains; preload
       Vary:
-      - X-PJAX, X-PJAX-Container, Turbo-Visit, Turbo-Frame, X-Requested-With, Sec-Fetch-Site,Accept-Encoding,
-        Accept, X-Requested-With
+      - X-PJAX, X-PJAX-Container, Turbo-Visit, Turbo-Frame, X-Requested-With, X-GitHub-Client-Version,
+        Sec-Fetch-Site,Accept-Encoding, Accept, X-Requested-With
       X-Content-Type-Options:
       - nosniff
       X-Frame-Options:
       - deny
       X-GitHub-Request-Id:
-      - C0C8:260B5B:4F4FA0:570E32:6A05529C
+      - D324:43AFA:1D4030:1EFF0B:6A97DF30
       X-XSS-Protection:
       - '0'
+      x-github-edge-region:
+      - southeastasia
     status:
       code: 302
       message: Found
@@ -103,7 +106,8 @@ interactions:
     uri: https://raw.githubusercontent.com/IFRCGo/monty-stac-extension/refs/heads/main/examples/reference-events/20241027T150000-ESP-HM-FLOOD-001-GCDB.json
   response:
     body:
-      string: "{\n  \"stac_version\": \"1.0.0\",\n  \"stac_extensions\": [\n    \"https://ifrcgo.org/monty-stac-extension/v1.3.0/schema.json\"\n
+      string: "{\n  \"stac_version\": \"1.0.0\",\n  \"stac_extensions\": [\n    \"https://ifrcgo.org/monty-stac-extension/v1.3.0/schema.json\",\n
+        \   \"https://stac-extensions.github.io/processing/v1.2.0/schema.json\"\n
         \ ],\n  \"type\": \"Feature\",\n  \"id\": \"20241027T150000-ESP-HM-FLOOD-001-GCDB\",\n
         \ \"collection\": \"gdacs-events\",\n  \"bbox\": [\n    -3.4110253455683806,\n
         \   38.60133168687446,\n    -3.4110253455683806,\n    38.60133168687446\n
@@ -116,12 +120,14 @@ interactions:
         \   ],\n    \"monty:hazard_codes\": [\n      \"FL\",\n      \"nat-hyd-flo-flo\",\n
         \     \"MH0601\",\n      \"MH0602\",\n      \"FF\",\n      \"nat-hyd-flo-fla\",\n
         \     \"MH0603\",\n      \"MH0604\"\n    ],\n    \"monty:corr_id\": \"20241027T150000-ESP-HM-FLOOD-001-GCDB\",\n
-        \   \"roles\": [\n      \"event\",\n      \"source\"\n    ],\n    \"keywords\":
-        [\n      \"flood\",\n      \"spain\",\n      \"Coastal Flood\",\n      \"Estuarine
-        (Coastal) Flood\",\n      \"Flash Flood\",\n      \"Fluvial (Riverine) Flood\"\n
-        \   ]\n  },\n  \"assets\": {},\n  \"links\": [\n    {\n      \"href\": \"20241027T150000-ESP-HM-FLOOD-001-GCDB..json\",\n
-        \     \"rel\": \"self\"\n    },\n    {\n      \"href\": \"reference-events.json\",\n
-        \     \"rel\": \"collection\"\n    }\n  ]\n}\n"
+        \   \"processing:version\": \"1.0.0\",\n    \"processing:software\": {\n      \"pystac-monty\":
+        \"1.0.0\"\n    },\n    \"roles\": [\n      \"event\",\n      \"source\"\n
+        \   ],\n    \"keywords\": [\n      \"flood\",\n      \"spain\",\n      \"Coastal
+        Flood\",\n      \"Estuarine (Coastal) Flood\",\n      \"Flash Flood\",\n      \"Fluvial
+        (Riverine) Flood\"\n    ]\n  },\n  \"assets\": {},\n  \"links\": [\n    {\n
+        \     \"href\": \"20241027T150000-ESP-HM-FLOOD-001-GCDB..json\",\n      \"rel\":
+        \"self\"\n    },\n    {\n      \"href\": \"reference-events.json\",\n      \"rel\":
+        \"collection\"\n    }\n  ]\n}\n"
     headers:
       Accept-Ranges:
       - bytes
@@ -134,7 +140,7 @@ interactions:
       Content-Encoding:
       - gzip
       Content-Length:
-      - '601'
+      - '651'
       Content-Security-Policy:
       - default-src 'none'; style-src 'unsafe-inline'; sandbox
       Content-Type:
@@ -142,11 +148,11 @@ interactions:
       Cross-Origin-Resource-Policy:
       - cross-origin
       Date:
-      - Thu, 14 May 2026 04:42:05 GMT
+      - Wed, 02 Sep 2026 08:32:49 GMT
       ETag:
-      - W/"3951b0ab71350e61fffa83c5a21af4a0f03a2471bb0afeed093cd72b24824742"
+      - W/"83a6271874370001e819192cd2b8e29968e5b2470e2316397288c3672ccff87a"
       Expires:
-      - Thu, 14 May 2026 04:47:05 GMT
+      - Wed, 02 Sep 2026 08:37:49 GMT
       Source-Age:
       - '0'
       Strict-Transport-Security:
@@ -156,23 +162,25 @@ interactions:
       Via:
       - 1.1 varnish
       X-Cache:
-      - MISS
+      - HIT
       X-Cache-Hits:
-      - '0'
+      - '1'
       X-Content-Type-Options:
       - nosniff
       X-Fastly-Request-ID:
-      - e954566f681331245d0da5adbb1b53f1a909f8d1
+      - eacc23ad38c3ade4d6c42fd552d27e783e1703ca
       X-Frame-Options:
       - deny
       X-GitHub-Request-Id:
-      - EB5E:6C179:52DAB5:65FC19:6A05529D
+      - C08E:8E907:33186:3F71E:6A97D6BD
       X-Served-By:
       - cache-del-vibw2260034-DEL
       X-Timer:
-      - S1778733726.529631,VS0,VE326
+      - S1788337969.206817,VS0,VE322
       X-XSS-Protection:
       - 1; mode=block
+      x-github-edge-region:
+      - iad
     status:
       code: 200
       message: OK
