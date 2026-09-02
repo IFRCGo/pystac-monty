@@ -60,7 +60,6 @@ CEMS_DASHBOARD_API = "https://rapidmapping.emergency.copernicus.eu/backend/dashb
 CEMS_PORTAL_BASE = "https://rapidmapping.emergency.copernicus.eu"
 CEMS_AWS_VIEWER = "https://rapidmapping-viewer.s3.eu-west-1.amazonaws.com"
 GDACS_API_BASE = "https://www.gdacs.org/gdacsapi/api/events"
-PROCESSING_SCHEMA_URI = "https://stac-extensions.github.io/processing/v1.2.0/schema.json"
 
 # CEMS category (+ subCategory refinement) -> [UNDRR-2025, GLIDE, EM-DAT]
 CEMS_HAZARD_CODES: dict[str, list[str]] = {
@@ -1149,7 +1148,7 @@ class CEMSTransformer(MontyDataTransformer[CEMSDataSource]):
                 )
                 _apply_delivery_datetime(item, delivery_time)
 
-                item.stac_extensions = list(dict.fromkeys([SCHEMA_URI, PROCESSING_SCHEMA_URI]))
+                item.stac_extensions = [SCHEMA_URI]
                 item.assets = _product_assets(product)
 
                 item.add_link(

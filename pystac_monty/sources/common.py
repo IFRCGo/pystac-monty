@@ -1,20 +1,64 @@
 import abc
+import functools
 import json
 import re
 import tempfile
 import typing
 from dataclasses import dataclass, field
 from enum import Enum
-from typing import List, Literal, Optional, Tuple, Union
+from pathlib import Path
+from typing import Callable, Generator, List, Literal, Optional, Tuple, Union
 
 import requests
 from pydantic import BaseModel, ConfigDict, Field
 from pystac import Collection, Item, Link
 
+from pystac_monty.extension import __version__ as PYSTAC_MONTY_VERSION
 from pystac_monty.geocoding import MontyGeoCoder
 
 # Characters some STAC API deployments reject in item identifiers (GDACS / Montandon ETL learnings).
 _STAC_API_ITEM_ID_FORBIDDEN = re.compile(r"[:/?#\[\]@!$&\'()*+,;=]")
+
+# STAC processing extension (https://stac-extensions.github.io/processing) — stamped on every item
+# produced by a MontyDataTransformer so ``processing:version``/``processing:software`` always match
+# the installed pystac-monty release rather than a value hand-typed per source (see issue #208).
+PROCESSING_SCHEMA_BASE = "https://stac-extensions.github.io/processing/"
+PROCESSING_SCHEMA_URI = f"{PROCESSING_SCHEMA_BASE}v1.2.0/schema.json"
+
+# When the monty-stac-extension submodule is checked out alongside this package (as in this repo's
+# own checkout), read collection JSON from it directly instead of over the network -- avoids a
+# per-item network round trip to GitHub, which some networks block/blackhole outright.
+_LOCAL_MONTY_STAC_EXTENSION_EXAMPLES_DIR = Path(__file__).resolve().parents[2] / "monty-stac-extension" / "examples"
+PROCESSING_SOFTWARE_NAME = "pystac-monty"
+
+
+def stamp_processing_extension(item: Item) -> Item:
+    """Add the processing extension URI and ``processing:version``/``processing:software`` to *item*."""
+    extensions = list(item.stac_extensions or [])
+    existing_index = next((i for i, e in enumerate(extensions) if e.startswith(PROCESSING_SCHEMA_BASE)), None)
+    extensions = [e for e in extensions if not e.startswith(PROCESSING_SCHEMA_BASE)]
+    if existing_index is None:
+        extensions.append(PROCESSING_SCHEMA_URI)
+    else:
+        extensions.insert(existing_index, PROCESSING_SCHEMA_URI)
+    item.stac_extensions = extensions
+    item.properties.setdefault("processing:version", PYSTAC_MONTY_VERSION)
+    software = item.properties.setdefault("processing:software", {})
+    software[PROCESSING_SOFTWARE_NAME] = PYSTAC_MONTY_VERSION
+    return item
+
+
+def _stamp_processing_extension_on_yield(
+    func: Callable[..., Generator[Item, None, None]],
+) -> Callable[..., Generator[Item, None, None]]:
+    """Wrap a ``get_stac_items`` implementation so every yielded item is stamped automatically."""
+
+    @functools.wraps(func)
+    def wrapper(*args: typing.Any, **kwargs: typing.Any) -> Generator[Item, None, None]:
+        for item in func(*args, **kwargs):
+            yield stamp_processing_extension(item)
+
+    return wrapper
 
 
 def sanitize_stac_item_id(raw: str) -> str:
@@ -196,8 +240,18 @@ class MontyDataTransformer(typing.Generic[DataSource]):
     _hazard_collection_cache: Collection | None = None
     _impact_collection_cache: Collection | None = None
 
-    # FIXME: Get this from submodule
-    base_collection_url = "https://github.com/IFRCGo/monty-stac-extension/raw/refs/heads/main/examples"
+    base_collection_url = (
+        str(_LOCAL_MONTY_STAC_EXTENSION_EXAMPLES_DIR)
+        if _LOCAL_MONTY_STAC_EXTENSION_EXAMPLES_DIR.is_dir()
+        else "https://github.com/IFRCGo/monty-stac-extension/raw/refs/heads/main/examples"
+    )
+
+    def __init_subclass__(cls, **kwargs: typing.Any) -> None:
+        """Auto-stamp the processing extension on every subclass's ``get_stac_items``."""
+        super().__init_subclass__(**kwargs)
+        method = cls.__dict__.get("get_stac_items")
+        if method is not None:
+            cls.get_stac_items = _stamp_processing_extension_on_yield(method)
 
     # FIXME: we might have to get ids and urls manually
     def __init__(self, data_source: DataSource, geocoder: MontyGeoCoder):
