@@ -34,7 +34,11 @@ from pystac_monty.sources.cems import (
 from pystac_monty.sources.common import DataType, GenericDataSource, Memory
 from tests.extensions.test_monty import CustomValidator
 from tests.utils.test_hazard_taxonomy import assert_hazard_code_dict_valid, taxonomy_md_path
-from tests.utils.test_utils import validate_correlation_id
+from tests.utils.test_utils import (
+    assert_processing_extension_fields,
+    normalize_processing_version_fields,
+    validate_correlation_id,
+)
 
 RFC3339_UTC_PATTERN = re.compile(r"(\+00:00|Z)$")
 
@@ -188,6 +192,7 @@ class CEMSTest(unittest.TestCase):
         items = list(_memory_transformer().get_stac_items())
         for item in items:
             item.validate(validator=self.validator)
+            assert_processing_extension_fields(item)
 
         event, hazards, responses, impacts = _partition(items)
         self.assertIsNotNone(event)
@@ -596,8 +601,8 @@ class CEMSTest(unittest.TestCase):
                 self.assertTrue(generated_path.is_file(), item_id)
                 self.assertTrue(expected_path.is_file(), item_id)
                 self.assertEqual(
-                    json.loads(generated_path.read_text(encoding="utf-8")),
-                    json.loads(expected_path.read_text(encoding="utf-8")),
+                    normalize_processing_version_fields(json.loads(generated_path.read_text(encoding="utf-8"))),
+                    normalize_processing_version_fields(json.loads(expected_path.read_text(encoding="utf-8"))),
                     item_id,
                 )
 

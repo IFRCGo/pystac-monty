@@ -1,8 +1,12 @@
 import logging
 import re
+from copy import deepcopy
 from datetime import datetime
 
 import requests
+from pystac import Item
+
+from pystac_monty.sources.common import PROCESSING_SCHEMA_URI, PROCESSING_SOFTWARE_NAME
 
 logger = logging.getLogger(__name__)
 
@@ -46,3 +50,36 @@ def request_for_schema(url: str):
     """Validate if the schema exists"""
     resp = requests.get(url=url)
     assert resp.status_code == 200
+
+
+def assert_processing_extension_fields(item: Item) -> None:
+    """Assert *item* carries the automated ``processing:version``/``processing:software`` stamp."""
+    assert PROCESSING_SCHEMA_URI in (item.stac_extensions or []), f"{item.id} missing {PROCESSING_SCHEMA_URI}"
+    assert "processing:version" in item.properties, f"{item.id} missing processing:version"
+    software = item.properties.get("processing:software")
+    assert isinstance(software, dict) and PROCESSING_SOFTWARE_NAME in software, (
+        f"{item.id} missing processing:software[{PROCESSING_SOFTWARE_NAME}]"
+    )
+
+
+def normalize_processing_version_fields(item_doc: dict) -> dict:
+    """Return a copy of *item_doc* with its stamped ``processing:version``/``processing:software`` blanked out.
+
+    STAC Collection documents don't carry the processing stamp and are returned
+    as-is (deep-copied).
+    """
+    if item_doc.get("type") != "Feature":
+        return deepcopy(item_doc)
+
+    properties = item_doc.get("properties", {})
+    assert "processing:version" in properties, f"{item_doc.get('id')} missing processing:version"
+    software = properties.get("processing:software")
+    assert isinstance(software, dict) and PROCESSING_SOFTWARE_NAME in software, (
+        f"{item_doc.get('id')} missing processing:software[{PROCESSING_SOFTWARE_NAME}]"
+    )
+
+    normalized = deepcopy(item_doc)
+    normalized_properties = normalized["properties"]
+    normalized_properties["processing:version"] = "IGNORED"
+    normalized_properties["processing:software"][PROCESSING_SOFTWARE_NAME] = "IGNORED"
+    return normalized
