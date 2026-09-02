@@ -20,7 +20,7 @@ from pystac_monty.sources.ifrc_events import IFRC_HAZARD_CODES, IFRCEventDataSou
 from pystac_monty.sources.utils import save_json_data_into_tmp_file
 from tests.conftest import get_data_file
 from tests.extensions.test_monty import CustomValidator
-from tests.utils.test_utils import request_for_schema, validate_correlation_id
+from tests.utils.test_utils import assert_processing_extension_fields, request_for_schema, validate_correlation_id
 
 CURRENT_SCHEMA_URI = "https://ifrcgo.org/monty-stac-extension/v1.3.0/schema.json"
 CURRENT_SCHEMA_MAPURL = "https://raw.githubusercontent.com/IFRCGo/monty-stac-extension/refs/heads/main/json-schema/schema.json"
@@ -119,6 +119,7 @@ class IfrcEventsTest(TestCase):
 
             # Validate item against schema
             item.validate(validator=self.validator)
+            assert_processing_extension_fields(item)
 
             # Check item type
             monty_item_ext = MontyExtension.ext(item)
@@ -161,6 +162,7 @@ class IfrcEventsTest(TestCase):
 
             # Validate item against schema
             item.validate(validator=self.validator)
+            assert_processing_extension_fields(item)
 
             # Check item type
             monty_item_ext = MontyExtension.ext(item)
@@ -210,6 +212,7 @@ class IfrcEventsTest(TestCase):
 
             # Validate item against schema
             item.validate(validator=self.validator)
+            assert_processing_extension_fields(item)
 
             # Check item type
             monty_item_ext = MontyExtension.ext(item)
