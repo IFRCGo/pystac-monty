@@ -37,6 +37,9 @@ class MontyGeoCoder(ABC):
     def get_geometry_from_iso3(self, iso3: str, simplified: bool) -> Optional[Dict[str, Any]]:
         pass
 
+    def get_iso3_from_country_name(self, country_name: str) -> Optional[str]:
+        return None
+
 
 class TheirGeocoder(MontyGeoCoder):
     _base_url: str
@@ -82,6 +85,14 @@ class TheirGeocoder(MontyGeoCoder):
 
     def get_geometry_from_iso3(self, iso3: str, simplified: bool = False) -> Optional[Dict[str, Any]]:
         return self._request("/country/geometry", {"iso3": iso3, "simplified": simplified})
+
+    def get_iso3_from_country_name(self, country_name: str) -> Optional[str]:
+        response = self._request("/country/iso3", {"country_name": country_name})
+        return response["iso3"] if response else None
+
+    def get_iso3_from_iso2(self, iso2: str) -> Optional[str]:
+        response = self._request("/country/iso3", {"iso2": iso2})
+        return response["iso3"] if response else None
 
 
 class WorldAdministrativeBoundariesGeocoder(MontyGeoCoder):
@@ -201,6 +212,12 @@ class WorldAdministrativeBoundariesGeocoder(MontyGeoCoder):
 
     def get_iso3_from_point(self, point: Point) -> Optional[str]:
         return self.get_iso3_from_geometry(point.__geo_interface__)
+
+    def get_iso3_from_country_name(self, country_name: str) -> Optional[str]:
+        result = self.get_geometry_by_country_name(country_name)
+        if result and isinstance(result, dict):
+            return result.get("iso3")
+        return None
 
     def get_geometry_from_admin_units(self, admin_units: str, simplified: bool = False) -> Optional[Dict[str, Any]]:
         raise NotImplementedError("Method not implemented")

@@ -356,19 +356,10 @@ def _iso3_from_country_name(name: str, geocoder: MontyGeoCoder) -> str | None:
     key = _normalize_key(name)
     if not key:
         return None
-
     alias = CEMS_COUNTRY_ALIASES.get(key)
     if alias:
         return alias
-
-    try:
-        geom = geocoder.get_geometry_by_country_name(name, simplified=True)
-    except NotImplementedError:
-        return None
-    if geom and isinstance(geom.get("iso3"), str):
-        return _normalize_iso3(geom["iso3"])
-
-    return None
+    return _normalize_iso3(geocoder.get_iso3_from_country_name(name))
 
 
 def _resolve_world_admin_boundaries_fgb_path() -> Path:
