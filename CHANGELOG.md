@@ -1,5 +1,12 @@
 # Changelog
 
+## [0.2.1](https://github.com/IFRCGo/pystac-monty/compare/v0.2.0...v0.2.1) (2026-09-08)
+
+
+### Bug Fixes
+
+* **CEMS:** add country name mapping for geocoder mismatches ([33cea6e](https://github.com/IFRCGo/pystac-monty/commit/33cea6eb49d7d013f7b7b24f38f884fbf4a001e9))
+
 ## [0.2.0](https://github.com/IFRCGo/pystac-monty/compare/v0.1.1...v0.2.0) (2026-09-08)
 
 
