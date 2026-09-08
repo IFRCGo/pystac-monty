@@ -69,6 +69,8 @@ CEMS_HAZARD_CODES: dict[str, list[str]] = {
     "flood_coastal": ["MH0601", "FL", "nat-hyd-flo-coa"],
     "wildfire": ["EN0205", "WF", "nat-cli-wil-wil"],
     "storm_tropical": ["MH0306", "TC", "nat-met-sto-tro"],
+    "storm_convective": ["MH0103", "ST", "nat-met-sto-sev"],
+    "storm_extratropical": ["MH0307", "EC", "nat-met-sto-ext"],
     "earthquake": ["GH0101", "EQ", "nat-geo-ear-gro"],
     "earthquake_tsunami": ["MH0705", "TS", "nat-geo-ear-tsu"],
     "mass_movement": ["GH0300", "LS", "nat-geo-mmd-lan"],
@@ -76,15 +78,19 @@ CEMS_HAZARD_CODES: dict[str, list[str]] = {
     "volcanic_activity": ["GH0201", "VO", "nat-geo-vol-vol"],
     "industrial_accident": ["TL0301", "tec-ind-che-che"],
     "industrial_explosion": ["TL0304", "tec-ind-exp-exp"],
+    "transport_air": ["TL0401", "AC", "tec-tra-air-air"],
+    "transport_water": ["TL0403", "AC", "tec-tra-wat-wat"],
+    "transport_rail": ["TL0404", "AC", "tec-tra-rai-rai"],
+    "transport_road": ["TL0405", "AC", "tec-tra-roa-roa"],
+    "oil_spill": ["CH0203", "AC", "tec-ind-oil-oil"],
+    "other_snow": ["MH0405"],
     "humanitarian_crisis": ["CE"],
     "other": ["OT"],
 }
 
 MANUAL_REVIEW_CATEGORIES = {
-    "transport accident",
     "humanitarian crisis",
     "environmental degradation",
-    "other",
 }
 
 HAZARD_FOOTPRINT_CLASSES = {
@@ -178,6 +184,8 @@ HAZARD_KEY_TO_SLUG: dict[str, str] = {
     "wildfire": "wildfire",
     "storm": "storm",
     "storm_tropical": "storm",
+    "storm_convective": "storm",
+    "storm_extratropical": "storm",
     "earthquake": "earthquake",
     "earthquake_tsunami": "earthquake",
     "mass_movement": "landslide",
@@ -186,6 +194,12 @@ HAZARD_KEY_TO_SLUG: dict[str, str] = {
     "industrial_accident": "industrial",
     "industrial_explosion": "industrial",
     "transport_accident": "transport",
+    "transport_air": "transport",
+    "transport_water": "transport",
+    "transport_rail": "transport",
+    "transport_road": "transport",
+    "oil_spill": "oil-spill",
+    "other_snow": "snow",
     "humanitarian_crisis": "crisis",
     "other": "other",
 }
@@ -431,8 +445,85 @@ def _primary_country_code(geometry: dict[str, Any] | None, country_codes: list[s
     return country_codes
 
 
-def _hazard_keys_for_activation(category: str | None, sub_category: str | None) -> list[str]:
+_TROPICAL_NAME_RE = re.compile(r"hurricane|typhoon|tropical|\bTCs?\b", re.IGNORECASE)
+_EXTRATROPICAL_NAME_RE = re.compile(r"extra-?tropical", re.IGNORECASE)
+_MASS_GATHERING_RE = re.compile(r"\b(public event|festival|olympic)\b", re.IGNORECASE)
+
+TRANSPORT_MODE_TO_HAZARD_KEY: dict[str, str] = {
+    "air": "transport_air",
+    "water": "transport_water",
+    "rail": "transport_rail",
+    "road": "transport_road",
+}
+
+
+def _is_oil_or_fuel_spill(name: str | None, reason: str | None) -> bool:
+    text = f"{name or ''} {reason or ''}".lower()
+    return "spill" in text and ("oil" in text or "fuel" in text)
+
+
+def _resolve_storm_hazard_key(sub_category: str | None, gdacs_id: str | None, name: str | None, reason: str | None) -> list[str]:
+    sub_norm = _normalize_key(sub_category)
+    if SUBCATEGORY_TO_HAZARD_KEY.get(sub_norm) == "storm_tropical":
+        return ["storm_tropical"]
+    if gdacs_id and str(gdacs_id).upper().startswith("TC"):
+        return ["storm_tropical"]
+    text = f"{name or ''} {reason or ''}"
+    if _TROPICAL_NAME_RE.search(text) and not _EXTRATROPICAL_NAME_RE.search(text):
+        return ["storm_tropical"]
+    if sub_norm == "convective storm":
+        return ["storm_convective"]
+    if sub_norm == "extra-tropical storm":
+        return ["storm_extratropical"]
+    logger.warning("CEMS Storm activation has no resolvable signal (subCategory=%r); manual review", sub_category)
+    return []
+
+
+def _resolve_transport_accident_hazard_key(sub_category: str | None, name: str | None, reason: str | None) -> list[str]:
+    if _is_oil_or_fuel_spill(name, reason):
+        return ["oil_spill"]
+    mode_key = TRANSPORT_MODE_TO_HAZARD_KEY.get(_normalize_key(sub_category))
+    if mode_key:
+        return [mode_key]
+    logger.warning("CEMS Transport accident activation has no resolvable subCategory %r; manual review", sub_category)
+    return []
+
+
+def _resolve_other_hazard_key(name: str | None, reason: str | None) -> list[str]:
+    if _MASS_GATHERING_RE.search(name or ""):
+        logger.info("CEMS 'Other' activation %r excluded: planned mass-gathering event, not a disaster", name)
+        return []
+    if _is_oil_or_fuel_spill(name, reason):
+        return ["oil_spill"]
+    if "snow" in f"{name or ''} {reason or ''}".lower():
+        return ["other_snow"]
+    logger.warning("CEMS 'Other' activation has no resolvable name/reason signal; manual review")
+    return []
+
+
+def _activation_hazard_signal_kwargs(activation: dict[str, Any]) -> dict[str, Any]:
+    return {
+        "gdacs_id": activation.get("gdacsId"),
+        "name": activation.get("name"),
+        "reason": activation.get("reason"),
+    }
+
+
+def _hazard_keys_for_activation(
+    category: str | None,
+    sub_category: str | None,
+    *,
+    gdacs_id: str | None = None,
+    name: str | None = None,
+    reason: str | None = None,
+) -> list[str]:
     cat_key = _normalize_key(category)
+    if cat_key == "storm":
+        return _resolve_storm_hazard_key(sub_category, gdacs_id, name, reason)
+    if cat_key == "transport accident":
+        return _resolve_transport_accident_hazard_key(sub_category, name, reason)
+    if cat_key == "other":
+        return _resolve_other_hazard_key(name, reason)
     if cat_key in MANUAL_REVIEW_CATEGORIES:
         logger.warning("CEMS category %r requires manual review", category)
         return []
@@ -441,15 +532,7 @@ def _hazard_keys_for_activation(category: str | None, sub_category: str | None) 
         logger.warning("Unmapped CEMS category %r", category)
         return []
     sub_key = SUBCATEGORY_TO_HAZARD_KEY.get(_normalize_key(sub_category))
-    hazard_key = sub_key or base_key
-    if hazard_key == "storm":
-        logger.warning(
-            "CEMS category %r with subCategory %r requires manual review (no single UNDRR-ISC chapeau)",
-            category,
-            sub_category,
-        )
-        return []
-    return [hazard_key]
+    return [sub_key or base_key]
 
 
 def _hazard_codes_for_keys(keys: list[str], hazard_profiles: MontyHazardProfiles) -> list[str]:
@@ -903,7 +986,9 @@ class CEMSTransformer(MontyDataTransformer[CEMSDataSource]):
             logger.warning("Skipping CEMS activation without code")
             return None
 
-        hazard_keys = _hazard_keys_for_activation(activation.get("category"), activation.get("subCategory"))
+        hazard_keys = _hazard_keys_for_activation(
+            activation.get("category"), activation.get("subCategory"), **_activation_hazard_signal_kwargs(activation)
+        )
         if not hazard_keys:
             return None
 
@@ -1010,7 +1095,9 @@ class CEMSTransformer(MontyDataTransformer[CEMSDataSource]):
         return item
 
     def _hazard_keys_for_aoi(self, activation: dict[str, Any], aoi: dict[str, Any]) -> list[str]:
-        keys = _hazard_keys_for_activation(activation.get("category"), activation.get("subCategory"))
+        keys = _hazard_keys_for_activation(
+            activation.get("category"), activation.get("subCategory"), **_activation_hazard_signal_kwargs(activation)
+        )
         footprint_keys: list[str] = []
         for product in aoi.get("products") or []:
             if str(product.get("type", "")).upper() in {"GRA", "GRM"}:
@@ -1032,7 +1119,11 @@ class CEMSTransformer(MontyDataTransformer[CEMSDataSource]):
             return []
         dt = _parse_datetime(event_time)
         activation_countries = _country_codes(activation.get("countries") or [], self.geocoder)
-        category_keys = set(_hazard_keys_for_activation(activation.get("category"), activation.get("subCategory")))
+        category_keys = set(
+            _hazard_keys_for_activation(
+                activation.get("category"), activation.get("subCategory"), **_activation_hazard_signal_kwargs(activation)
+            )
+        )
         items: list[Item] = []
 
         for aoi in activation.get("aois") or []:
@@ -1109,7 +1200,10 @@ class CEMSTransformer(MontyDataTransformer[CEMSDataSource]):
             aoi_slug = _aoi_number_slug(aoi_number)
             hazard_keys = self._hazard_keys_for_aoi(activation, aoi)
             hazard_codes = self._canonical_codes_for_keys(
-                hazard_keys[:1] or _hazard_keys_for_activation(activation.get("category"), activation.get("subCategory"))
+                hazard_keys[:1]
+                or _hazard_keys_for_activation(
+                    activation.get("category"), activation.get("subCategory"), **_activation_hazard_signal_kwargs(activation)
+                )
             )
             latest_del = _latest_del_product(aoi.get("products") or [])
 
@@ -1219,7 +1313,9 @@ class CEMSTransformer(MontyDataTransformer[CEMSDataSource]):
                 correlation_id=event_monty.correlation_id,
                 country_codes=list(event_monty.country_codes or []),
                 hazard_codes=self._canonical_codes_for_keys(
-                    _hazard_keys_for_activation(activation.get("category"), activation.get("subCategory"))
+                    _hazard_keys_for_activation(
+                        activation.get("category"), activation.get("subCategory"), **_activation_hazard_signal_kwargs(activation)
+                    )
                 ),
                 type="eo-sr",
                 source_id=str(code),
@@ -1357,7 +1453,9 @@ class CEMSTransformer(MontyDataTransformer[CEMSDataSource]):
 
         event_monty = MontyExtension.ext(event_item)
         hazard_codes = self._canonical_codes_for_keys(
-            _hazard_keys_for_activation(activation.get("category"), activation.get("subCategory"))[:1]
+            _hazard_keys_for_activation(
+                activation.get("category"), activation.get("subCategory"), **_activation_hazard_signal_kwargs(activation)
+            )[:1]
         )
         geom = _wkt_to_geometry(activation.get("extent")) or event_item.geometry
         bbox = _bbox_from_geometry(geom) or event_item.bbox

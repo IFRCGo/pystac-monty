@@ -667,3 +667,59 @@ class CEMSTest(unittest.TestCase):
     def test_storm_with_tropical_subcategory_maps_to_storm_tropical(self) -> None:
         keys = _hazard_keys_for_activation("Storm", "Tropical cyclone, hurricane, typhoon")
         self.assertEqual(keys, ["storm_tropical"])
+
+    def test_storm_convective_subcategory_maps_to_storm_convective(self) -> None:
+        keys = _hazard_keys_for_activation("Storm", "Convective storm")
+        self.assertEqual(keys, ["storm_convective"])
+
+    def test_storm_extratropical_subcategory_maps_to_storm_extratropical(self) -> None:
+        keys = _hazard_keys_for_activation("Storm", "Extra-tropical storm")
+        self.assertEqual(keys, ["storm_extratropical"])
+
+    def test_storm_tropical_gdacs_id_overrides_extratropical_subcategory(self) -> None:
+        keys = _hazard_keys_for_activation("Storm", "Extra-tropical storm", gdacs_id="TC1001230")
+        self.assertEqual(keys, ["storm_tropical"])
+
+    def test_storm_tropical_name_overrides_extratropical_subcategory(self) -> None:
+        keys = _hazard_keys_for_activation("Storm", "Extra-tropical storm", name="Tropical Cyclone BELAL-24 in Réunion")
+        self.assertEqual(keys, ["storm_tropical"])
+
+    def test_storm_extratropical_name_does_not_trigger_tropical_signal(self) -> None:
+        keys = _hazard_keys_for_activation("Storm", "Extra-tropical storm", name="Windstorm in Lorraine")
+        self.assertEqual(keys, ["storm_extratropical"])
+
+    def test_transport_accident_maps_by_mode(self) -> None:
+        self.assertEqual(_hazard_keys_for_activation("Transport accident", "Air"), ["transport_air"])
+        self.assertEqual(_hazard_keys_for_activation("Transport accident", "Water"), ["transport_water"])
+        self.assertEqual(_hazard_keys_for_activation("Transport accident", "Rail"), ["transport_rail"])
+        self.assertEqual(_hazard_keys_for_activation("Transport accident", "Road"), ["transport_road"])
+
+    def test_transport_accident_oil_spill_overrides_mode(self) -> None:
+        keys = _hazard_keys_for_activation("Transport accident", "Air", reason="Cargo Ship Oil Spill in Aruba")
+        self.assertEqual(keys, ["oil_spill"])
+
+    def test_transport_accident_unresolved_subcategory_requires_manual_review(self) -> None:
+        self.assertEqual(_hazard_keys_for_activation("Transport accident", None), [])
+        self.assertEqual(_hazard_keys_for_activation("Transport accident", "Unknown mode"), [])
+
+    def test_other_mass_gathering_is_excluded(self) -> None:
+        self.assertEqual(_hazard_keys_for_activation("Other", None, name="Cologne Festival, Germany"), [])
+        self.assertEqual(_hazard_keys_for_activation("Other", None, name="Public event in Austria (Nova Rock)"), [])
+        self.assertEqual(_hazard_keys_for_activation("Other", None, name="Olympic Winter Games in Italy"), [])
+
+    def test_other_oil_spill_maps_to_oil_spill(self) -> None:
+        keys = _hazard_keys_for_activation(
+            "Other", None, reason="the MT Terra Nova, capsized in Manila Bay, possibly spilling fuel oil"
+        )
+        self.assertEqual(keys, ["oil_spill"])
+
+    def test_other_snow_maps_to_other_snow(self) -> None:
+        keys = _hazard_keys_for_activation("Other", None, reason="Heavy snowfall has paralysed movement and cut villages off")
+        self.assertEqual(keys, ["other_snow"])
+
+    def test_other_unresolved_requires_manual_review(self) -> None:
+        self.assertEqual(_hazard_keys_for_activation("Other", None), [])
+
+    def test_humanitarian_crisis_and_environmental_degradation_still_manual_review(self) -> None:
+        self.assertEqual(_hazard_keys_for_activation("Humanitarian crisis", None), [])
+        self.assertEqual(_hazard_keys_for_activation("Environmental degradation", None), [])
