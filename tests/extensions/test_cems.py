@@ -94,6 +94,16 @@ MINIMAL_ACTIVATION = {
                             "format": "cog",
                         }
                     ],
+                    "images": [
+                        {
+                            "uuid": "11111111-1111-1111-1111-111111111111",
+                            "sensorType": "sar",
+                            "sensorName": "ICEYE",
+                            "resolutionClass": "VHR2",
+                            "acquisitionTime": "2026-01-16T10:00:00",
+                            "fileName": "EMSR999_AOI01_DEL_PRODUCT_ICEYE_20260116_1000_ORTHO.tif",
+                        }
+                    ],
                     "version": {
                         "statusCode": "F",
                         "deliveryTime": "2026-01-16T12:00:00",
@@ -149,6 +159,8 @@ def _memory_transformer(data: dict | None = None) -> CEMSTransformer:
 def _partition(items):
     event, hazards, responses, impacts = None, [], [], []
     for item in items:
+        if not MontyExtension.has_extension(item):
+            continue  # acquisition items (analysis Decision #6) are not Monty domain objects
         monty = MontyExtension.ext(item)
         if monty.is_source_event():
             event = item
@@ -176,6 +188,8 @@ def _collection_for_item_id(item_id: str) -> str:
         return "cems-hazards"
     if item_id.startswith("cems-response-"):
         return "cems-response"
+    if item_id.startswith("cems-acquisition-"):
+        return "cems-acquisitions"
     return "cems-impacts"
 
 
@@ -237,13 +251,42 @@ class CEMSTest(unittest.TestCase):
         self.assertEqual(len(derived), 1)
         self.assertEqual(derived[0].extra_fields.get("roles"), ["response"])
 
+    def test_acquisition_item_built_from_product_images(self) -> None:
+        """Analysis Decision #6 / pystac-monty#166: product images[] -> acquisition item(s),
+        linked from the Response item via derived_from. Acquisition items are not Monty domain
+        objects, so they carry no monty: fields and are excluded from _partition's buckets."""
+        items = list(_memory_transformer().get_stac_items())
+        for item in items:
+            item.validate(validator=self.validator)
+
+        acquisitions = [item for item in items if "acquisition" in (item.properties.get("roles") or [])]
+        self.assertEqual(len(acquisitions), 1)
+        acquisition = acquisitions[0]
+        self.assertEqual(acquisition.id, "cems-acquisition-EMSR999-aoi01-del-0")
+        self.assertEqual(acquisition.collection_id, "cems-acquisitions")
+        self.assertEqual(acquisition.common_metadata.platform, "ICEYE")
+        self.assertFalse(MontyExtension.has_extension(acquisition))
+        self.assertIn("VHR2", acquisition.properties.get("description", ""))
+
+        del_response = next(item for item in items if item.id == "cems-response-EMSR999-aoi01-del")
+        acquisition_links = [
+            link
+            for link in del_response.links
+            if link.rel == "derived_from" and link.extra_fields.get("roles") == ["acquisition"]
+        ]
+        self.assertEqual(len(acquisition_links), 1)
+        self.assertEqual(
+            acquisition_links[0].get_href(),
+            f"{_TEST_EOAPI_URL}/collections/cems-acquisitions/items/{acquisition.id}",
+        )
+
     def test_delivery_datetime_normalized(self) -> None:
         data = deepcopy(MINIMAL_ACTIVATION)
         data["aois"][0]["products"][1]["version"]["deliveryTime"] = "2025-11-10T23:16:39.188570"
         responses = [
             item
             for item in _memory_transformer(data).get_stac_items()
-            if MontyExtension.ext(item).is_source_response() and item.id.endswith("-gra")
+            if MontyExtension.has_extension(item) and MontyExtension.ext(item).is_source_response() and item.id.endswith("-gra")
         ]
         gra = responses[0]
         exported_datetime = gra.properties.get(MONTY_SOURCE_DATETIME_PROPERTY) or gra.properties.get("datetime")
@@ -349,7 +392,11 @@ class CEMSTest(unittest.TestCase):
                 },
             }
         )
-        responses = [item for item in _memory_transformer(data).get_stac_items() if MontyExtension.ext(item).is_source_response()]
+        responses = [
+            item
+            for item in _memory_transformer(data).get_stac_items()
+            if MontyExtension.has_extension(item) and MontyExtension.ext(item).is_source_response()
+        ]
         monitoring = next(item for item in responses if item.id.endswith("-del-m1"))
         self.assertEqual(monitoring.properties["monty:response_detail"]["status"], "no-impact")
 
@@ -524,7 +571,11 @@ class CEMSTest(unittest.TestCase):
                 },
             ]
         )
-        responses = [item for item in _memory_transformer(data).get_stac_items() if MontyExtension.ext(item).is_source_response()]
+        responses = [
+            item
+            for item in _memory_transformer(data).get_stac_items()
+            if MontyExtension.has_extension(item) and MontyExtension.ext(item).is_source_response()
+        ]
         mon2 = next(item for item in responses if item.id.endswith("-del-m2"))
         prev_links = [link for link in mon2.links if link.rel == "prev"]
         self.assertEqual(len(prev_links), 1)
@@ -611,7 +662,7 @@ class CEMSTest(unittest.TestCase):
         if not (examples_dir / "cems-events" / "cems-events.json").is_file():
             self.skipTest("monty-stac-extension submodule not initialized")
 
-        for collection in ("cems-events", "cems-hazards", "cems-response", "cems-impacts"):
+        for collection in ("cems-events", "cems-hazards", "cems-response", "cems-impacts", "cems-acquisitions"):
             collection_path = examples_dir / collection / f"{collection}.json"
             collection_doc = json.loads(collection_path.read_text(encoding="utf-8"))
             item_hrefs = [link["href"] for link in collection_doc["links"] if link["rel"] == "item"]

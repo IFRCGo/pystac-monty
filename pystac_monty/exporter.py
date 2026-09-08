@@ -45,7 +45,7 @@ _WORLD_EXTENT = pystac.Extent(
     temporal=pystac.TemporalExtent(cast(list[list[Optional[datetime]]], [[None, None]])),
 )
 
-MontyRole = Literal["event", "hazard", "impact", "response"]
+MontyRole = Literal["event", "hazard", "impact", "response", "acquisition"]
 _DEFAULT_ROLE_TITLES: dict[MontyRole, tuple[str, str]] = {
     "event": ("{slug} source events", "Monty source event items"),
     "hazard": ("{slug} source hazards", "Monty source hazard items"),
