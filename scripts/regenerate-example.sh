@@ -27,7 +27,7 @@ from pystac_monty.sources.cems import default_cems_export_geocoder, regenerate_c
 regenerate_cems_examples(Path(sys.argv[1]), Path(sys.argv[2]), geocoder=default_cems_export_geocoder())
 PY
 
-for collection in cems-events cems-hazards cems-response cems-impacts; do
+for collection in cems-events cems-hazards cems-response cems-impacts cems-acquisitions; do
   rm -rf "${examples_dir}/${collection}"
   mkdir -p "${examples_dir}/${collection}"
   cp -R "${tmp_dir}/${collection}/." "${examples_dir}/${collection}/"
