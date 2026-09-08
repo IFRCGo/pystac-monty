@@ -227,6 +227,18 @@ _CEMS_PROVIDER = Provider(
     url="https://mapping.emergency.copernicus.eu/",
 )
 
+# The geocoding-service couldn't find the below countries from the source
+# so this mapping is needed to correctly get the geometries.
+COUNTRY_NAME_MAPPING = {
+    "Bosnia and Herzegovina": "Bosnia & Herzegovina",
+    "Czechia": "Czech Republic",
+    "Libya": "Libyan Arab Jamahiriya",
+    "Micronesia": "Micronesia (Federated States of)",
+    "Syria": "Syrian Arab Republic",
+    "United Kingdom": "U.K. of Great Britain and Northern Ireland",
+    "Viet Nam": "Vietnam",
+}
+
 
 def _normalize_key(value: str | None) -> str:
     return (value or "").strip().lower()
@@ -396,6 +408,7 @@ def _country_codes(countries: Iterable[dict[str, Any]], geocoder: MontyGeoCoder)
     codes: list[str] = []
     for country in countries:
         name = country.get("name")
+        name = COUNTRY_NAME_MAPPING.get(name, name)
         if not isinstance(name, str) or not name.strip():
             continue
         iso3 = _iso3_from_country_name(name, geocoder)
