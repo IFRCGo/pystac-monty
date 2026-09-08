@@ -1,5 +1,13 @@
 # Changelog
 
+## [0.2.0](https://github.com/IFRCGo/pystac-monty/compare/v0.1.1...v0.2.0) (2026-09-08)
+
+
+### Features
+
+* add the transformer versions to all the sources ([af27d3e](https://github.com/IFRCGo/pystac-monty/commit/af27d3e2597bd21a6608f01752e2a91fb7fcc41f))
+* **test-cases:** update the test cases for tranformer versions for all ([4c4501f](https://github.com/IFRCGo/pystac-monty/commit/4c4501fc93eb8bc22da98c36a824d77f62177e1b))
+
 ## [0.1.1](https://github.com/IFRCGo/pystac-monty/compare/v0.1.0...v0.1.1) (2026-09-01)
 
 
