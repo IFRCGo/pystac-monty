@@ -528,7 +528,7 @@ class CEMSTest(unittest.TestCase):
         mon2 = next(item for item in responses if item.id.endswith("-del-m2"))
         prev_links = [link for link in mon2.links if link.rel == "prev"]
         self.assertEqual(len(prev_links), 1)
-        self.assertTrue(prev_links[0].target.id.endswith("-del-m1"))
+        self.assertTrue(str(prev_links[0].target).endswith("-del-m1"))
 
     def test_fixture_emsm871_exports_roles(self) -> None:
         fixture = _cems_fixture_dir() / "EMSR871-flood-detail.json"
