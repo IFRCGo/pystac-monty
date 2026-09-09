@@ -43,7 +43,7 @@ from pystac_monty.extension import (
 )
 from pystac_monty.geocoding import MockGeocoder, MontyGeoCoder, WorldAdministrativeBoundariesGeocoder
 from pystac_monty.hazard_profiles import MontyHazardProfiles
-from pystac_monty.response import build_response_item, link_monitoring_update
+from pystac_monty.response import build_response_item
 from pystac_monty.sources.common import (
     DataType,
     GenericDataSource,
@@ -1298,7 +1298,13 @@ class CEMSTransformer(MontyDataTransformer[CEMSDataSource]):
                 if product.get("monitoring") and monitoring_number > 0:
                     prev_item = prev_by_key.get(monitoring_key)
                     if prev_item is not None:
-                        link_monitoring_update(item, prev_item)
+                        item.add_link(
+                            Link(
+                                rel="prev",
+                                target=self._relative_item_href("cems-response", prev_item.id),
+                                media_type="application/geo+json",
+                            )
+                        )
                 prev_by_key[monitoring_key] = item
 
                 item.set_collection(self.get_response_collection())
@@ -1427,7 +1433,13 @@ class CEMSTransformer(MontyDataTransformer[CEMSDataSource]):
                     prev_key = (aoi_number, slug)
                     prev_item = prev_by_key.get(prev_key)
                     if prev_item is not None:
-                        item.add_link(Link(rel="prev", target=prev_item, media_type="application/geo+json"))
+                        item.add_link(
+                            Link(
+                                rel="prev",
+                                target=self._relative_item_href("cems-impacts", prev_item.id),
+                                media_type="application/geo+json",
+                            )
+                        )
                     prev_by_key[prev_key] = item
 
                     item.set_collection(self.get_impact_collection())
