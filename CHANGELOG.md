@@ -1,5 +1,12 @@
 # Changelog
 
+## [0.2.2](https://github.com/IFRCGo/pystac-monty/compare/v0.2.1...v0.2.2) (2026-09-09)
+
+
+### Bug Fixes
+
+* **cems:** missing hazard rules. ([8b603af](https://github.com/IFRCGo/pystac-monty/commit/8b603af7062e150c5c35470e69b133d921fff739))
+
 ## [0.2.1](https://github.com/IFRCGo/pystac-monty/compare/v0.2.0...v0.2.1) (2026-09-08)
 
 
