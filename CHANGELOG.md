@@ -1,5 +1,12 @@
 # Changelog
 
+## [0.2.3](https://github.com/IFRCGo/pystac-monty/compare/v0.2.2...v0.2.3) (2026-09-10)
+
+
+### Bug Fixes
+
+* **cems:** fix cems stac href link ([ab1ba92](https://github.com/IFRCGo/pystac-monty/commit/ab1ba92935e99cd759f1b2d2e7389d270284d730))
+
 ## [0.2.2](https://github.com/IFRCGo/pystac-monty/compare/v0.2.1...v0.2.2) (2026-09-09)
 
 
