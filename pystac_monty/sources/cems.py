@@ -1311,10 +1311,11 @@ class CEMSTransformer(MontyDataTransformer[CEMSDataSource]):
                 items.append(item)
 
         if report_link := activation.get("reportLink"):
+            sr_geom = _wkt_to_geometry(activation.get("extent")) or event_item.geometry
             sr_item = build_response_item(
                 id=f"cems-response-{sanitize_stac_item_id(code)}-sr",
-                geometry=None,
-                bbox=None,
+                geometry=sr_geom,
+                bbox=_bbox_from_geometry(sr_geom) or event_item.bbox,
                 datetime=event_item.datetime,
                 correlation_id=event_monty.correlation_id,
                 country_codes=list(event_monty.country_codes or []),
