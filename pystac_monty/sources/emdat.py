@@ -502,7 +502,7 @@ class EMDATTransformer(MontyDataTransformer[EMDATDataSource]):
 
         **Important 2025 Updates:**
         - Earthquake: Consolidated to single code GH0101 (was GH0001-GH0005)
-        - Cyclone: Consolidated to single code MH0306 (was MH0030-MH0032)
+        - Cyclone: Consolidated to single code MH0309 (was MH0030-MH0032)
         - Tsunami: Reclassified from Geological to Meteorological (MH0705)
 
         Args:
@@ -516,8 +516,8 @@ class EMDATTransformer(MontyDataTransformer[EMDATDataSource]):
 
         mapping = {
             "nat-met-sto-sev": ["MH0103", "nat-met-sto-sev", "ST"],
-            "nat-met-sto-lig": ["MH0101", "nat-met-sto-lig", "ST"],
-            "nat-met-sto-sto": ["MH0101", "nat-met-sto-sto", "ST"],
+            "nat-met-sto-lig": ["MH0102", "nat-met-sto-lig", "ST"],
+            "nat-met-sto-sto": ["MH0103", "nat-met-sto-sto", "ST"],
             "nat-hyd-flo-coa": ["MH0601", "nat-hyd-flo-coa", "FL"],
             "nat-hyd-flo-fla": ["MH0603", "nat-hyd-flo-fla", "FF"],
             "nat-hyd-flo-riv": ["MH0604", "nat-hyd-flo-riv", "FL"],
