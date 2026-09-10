@@ -29,6 +29,12 @@ PROCESSING_SCHEMA_URI = f"{PROCESSING_SCHEMA_BASE}v1.2.0/schema.json"
 # own checkout), read collection JSON from it directly instead of over the network -- avoids a
 # per-item network round trip to GitHub, which some networks block/blackhole outright.
 _LOCAL_MONTY_STAC_EXTENSION_EXAMPLES_DIR = Path(__file__).resolve().parents[2] / "monty-stac-extension" / "examples"
+
+# Canonical, publicly-resolvable location of the same collection JSON -- used for the collection's
+# self href (and therefore the item's "collection" link) so STAC clients always see a real GitHub URL,
+# even when the JSON itself was read from the local submodule checkout above.
+_GITHUB_MONTY_STAC_EXTENSION_EXAMPLES_URL = "https://github.com/IFRCGo/monty-stac-extension/raw/refs/heads/main/examples"
+
 PROCESSING_SOFTWARE_NAME = "pystac-monty"
 
 
@@ -243,8 +249,11 @@ class MontyDataTransformer(typing.Generic[DataSource]):
     base_collection_url = (
         str(_LOCAL_MONTY_STAC_EXTENSION_EXAMPLES_DIR)
         if _LOCAL_MONTY_STAC_EXTENSION_EXAMPLES_DIR.is_dir()
-        else "https://github.com/IFRCGo/monty-stac-extension/raw/refs/heads/main/examples"
+        else _GITHUB_MONTY_STAC_EXTENSION_EXAMPLES_URL
     )
+    # Always the GitHub URL, regardless of where the JSON is actually read from -- this is what
+    # ends up as the collection's self href and thus the item's "collection" link.
+    github_collection_url = _GITHUB_MONTY_STAC_EXTENSION_EXAMPLES_URL
 
     def __init_subclass__(cls, **kwargs: typing.Any) -> None:
         """Auto-stamp the processing extension on every subclass's ``get_stac_items``."""
@@ -271,6 +280,18 @@ class MontyDataTransformer(typing.Generic[DataSource]):
             f"{MontyDataTransformer.base_collection_url}/{self.impacts_collection_id}/{self.impacts_collection_id}.json"
         )
 
+        # GitHub hrefs to stamp onto the collections' self links (and hence item "collection" links),
+        # independent of whether the JSON above was actually fetched from the local submodule or GitHub.
+        self.events_collection_github_url = (
+            f"{MontyDataTransformer.github_collection_url}/{self.events_collection_id}/{self.events_collection_id}.json"
+        )
+        self.hazards_collection_github_url = (
+            f"{MontyDataTransformer.github_collection_url}/{self.hazards_collection_id}/{self.hazards_collection_id}.json"
+        )
+        self.impacts_collection_github_url = (
+            f"{MontyDataTransformer.github_collection_url}/{self.impacts_collection_id}/{self.impacts_collection_id}.json"
+        )
+
         self.geocoder = geocoder
 
         self.transform_summary = TransformSummary()
@@ -286,8 +307,9 @@ class MontyDataTransformer(typing.Generic[DataSource]):
                 with open(self.events_collection_url) as f:
                     collection_dict = json.load(f)
             collection = Collection.from_dict(collection_dict)
-            # update self link with actual link
-            collection.set_self_href(self.events_collection_url)
+            # update self link with the canonical GitHub URL, even though the JSON above may have
+            # been read from the local submodule checkout
+            collection.set_self_href(self.events_collection_github_url)
             self._event_collection_cache = collection
         return self._event_collection_cache
 
@@ -302,8 +324,9 @@ class MontyDataTransformer(typing.Generic[DataSource]):
                 with open(self.hazards_collection_url) as f:
                     collection_dict = json.load(f)
             collection = Collection.from_dict(collection_dict)
-            # update self link with actual link
-            collection.set_self_href(self.hazards_collection_url)
+            # update self link with the canonical GitHub URL, even though the JSON above may have
+            # been read from the local submodule checkout
+            collection.set_self_href(self.hazards_collection_github_url)
             self._hazard_collection_cache = collection
         return self._hazard_collection_cache
 
@@ -318,8 +341,9 @@ class MontyDataTransformer(typing.Generic[DataSource]):
                 with open(self.impacts_collection_url) as f:
                     collection_dict = json.load(f)
             collection = Collection.from_dict(collection_dict)
-            # update self link with actual link
-            collection.set_self_href(self.impacts_collection_url)
+            # update self link with the canonical GitHub URL, even though the JSON above may have
+            # been read from the local submodule checkout
+            collection.set_self_href(self.impacts_collection_github_url)
             self._impact_collection_cache = collection
         return self._impact_collection_cache
 

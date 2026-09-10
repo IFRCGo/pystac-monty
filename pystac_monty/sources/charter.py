@@ -189,6 +189,9 @@ class CharterTransformer(MontyDataTransformer[CharterDataSource]):
         super().__init__(data_source, geocoder or MockGeocoder())
         self._response_collection_cache: Collection | None = None
         self.response_collection_url = f"{MontyDataTransformer.base_collection_url}/charter-response/charter-response.json"
+        self.response_collection_github_url = (
+            f"{MontyDataTransformer.github_collection_url}/charter-response/charter-response.json"
+        )
 
     def get_response_collection(self) -> Collection:
         """Collection for Charter response items (``charter-response``)."""
@@ -200,7 +203,7 @@ class CharterTransformer(MontyDataTransformer[CharterDataSource]):
                 with open(url, encoding="utf-8") as f:
                     collection_dict = json.load(f)
             collection = Collection.from_dict(collection_dict)
-            collection.set_self_href(url)
+            collection.set_self_href(self.response_collection_github_url)
             self._response_collection_cache = collection
         return self._response_collection_cache
 
