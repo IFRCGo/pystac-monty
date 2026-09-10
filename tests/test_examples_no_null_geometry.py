@@ -20,9 +20,7 @@ def test_examples_have_no_null_geometry() -> None:
     examples_dir = _examples_dir()
     example_paths = sorted(examples_dir.rglob("*.json"))
     if not example_paths:
-        raise AssertionError(
-            f"no example files found under {examples_dir}; is the monty-stac-extension submodule initialized?"
-        )
+        raise AssertionError(f"no example files found under {examples_dir}; is the monty-stac-extension submodule initialized?")
 
     offenders: list[str] = []
     for path in example_paths:
