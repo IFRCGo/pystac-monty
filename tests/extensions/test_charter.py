@@ -389,7 +389,7 @@ class CharterTest(unittest.TestCase):
 
         event_1019 = next(item for item in items if item.id == "charter-event-1019")
         event_response_hrefs = {link.get_href() for link in event_1019.links if link.extra_fields.get("roles") == ["response"]}
-        self.assertIn("../charter-response/charter-response-1019-1166-19.json", event_response_hrefs)
+        self.assertIn("../collections/charter-response/items/charter-response-1019-1166-19", event_response_hrefs)
 
     def test_charter_listing_counts_are_fixture_bounded(self) -> None:
         charter_dir = _charter_model_dir()
