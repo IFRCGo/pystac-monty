@@ -1,5 +1,16 @@
 # Changelog
 
+## [0.2.4](https://github.com/IFRCGo/pystac-monty/compare/v0.2.3...v0.2.4) (2026-09-11)
+
+
+### Bug Fixes
+
+* **cems:** handle null geometry in response item creation ([37cd704](https://github.com/IFRCGo/pystac-monty/commit/37cd704f4214b51e9984464566d183ce8c91534d))
+* **collections-href:** use the GitHub href for collection links in STAC items, regardless of how collections are fetched ([b2690ea](https://github.com/IFRCGo/pystac-monty/commit/b2690eaa8b676cf539b8bf9131c9a4f795b3f95e))
+* **emdat:** update the hazard code mappings ([503648b](https://github.com/IFRCGo/pystac-monty/commit/503648b4ba3cb604e6c5187610f0fa15ca15641b))
+* restore monty-stac-extension submodule pointer to current main ([11e7566](https://github.com/IFRCGo/pystac-monty/commit/11e756680344cd2b5752f19f73ade9ef497c8b3f))
+* simplify assertion error message formatting ([fe35ab9](https://github.com/IFRCGo/pystac-monty/commit/fe35ab9814edcd37068a1955310a3750b4e78b89))
+
 ## [0.2.3](https://github.com/IFRCGo/pystac-monty/compare/v0.2.2...v0.2.3) (2026-09-10)
 
 
