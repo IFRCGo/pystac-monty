@@ -389,7 +389,7 @@ class CharterTest(unittest.TestCase):
 
         event_1019 = next(item for item in items if item.id == "charter-event-1019")
         event_response_hrefs = {link.get_href() for link in event_1019.links if link.extra_fields.get("roles") == ["response"]}
-        self.assertIn("../charter-response/charter-response-1019-1166-19.json", event_response_hrefs)
+        self.assertIn("../collections/charter-response/items/charter-response-1019-1166-19", event_response_hrefs)
 
     def test_charter_listing_counts_are_fixture_bounded(self) -> None:
         charter_dir = _charter_model_dir()
@@ -558,6 +558,31 @@ class CharterTest(unittest.TestCase):
 
         self.assertEqual(response.id, "charter-response-222-phr1a-0907-00777")
         self.assertNotIn("producer", detail)
+
+    def test_calibrated_dataset_without_datetime_falls_back_to_event_datetime(self) -> None:
+        data = deepcopy(JSON_MOCK_DATA)
+        data["properties"]["disaster:call_ids"] = [222]
+        data["calibrated_datasets"] = [
+            {
+                "type": "Feature",
+                "id": "DS_PHR1A_202603021304008_FR1_PX_W044S22_0907_00777-calibrated",
+                "geometry": {"type": "Point", "coordinates": [-43.2, -21.5]},
+                "bbox": [-43.2, -21.5, -43.2, -21.5],
+                "properties": {
+                    "title": "Calibrated acquisition",
+                    "disaster:call_ids": [222],
+                    "disaster:type": ["flood"],
+                },
+                "assets": {},
+            }
+        ]
+
+        items = list(_memory_transformer(data).get_stac_items())
+        event, _ = _partition(items)
+        response = _responses(items)[0]
+
+        self.assertEqual(response.id, "charter-response-222-phr1a-0907-00777")
+        self.assertEqual(response.datetime, event.datetime)
 
     def test_vap_call_id_is_derived_from_source_identifier(self) -> None:
         data = _activation_with_vaps()
