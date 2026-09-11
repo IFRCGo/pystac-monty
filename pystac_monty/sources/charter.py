@@ -207,9 +207,9 @@ class CharterTransformer(MontyDataTransformer[CharterDataSource]):
             self._response_collection_cache = collection
         return self._response_collection_cache
 
-    @staticmethod
-    def _relative_item_href(collection_id: str, item_id: str) -> str:
-        return f"../{collection_id}/{item_id}.json"
+    def _relative_item_href(self, collection_id: str, item_id: str) -> str:
+        eoapi_url = self.data_source.eoapi_url or ".."
+        return f"{eoapi_url}/collections/{collection_id}/items/{item_id}"
 
     def _canonical_codes_for_types(self, disaster_types: List[str]) -> List[str]:
         """Canonical hazard code trios per disaster type, concatenated in type order."""
@@ -434,7 +434,7 @@ class CharterTransformer(MontyDataTransformer[CharterDataSource]):
                 area_props.get("description") or area_props.get("summary") or area_props.get("content", {}).get("value", "")
             )
             description = _description_to_markdown(raw_description)
-            radius, _priority, surface_area = self.parse_area_description(raw_description)
+            radius, _, surface_area = self.parse_area_description(raw_description)
 
             cpe_status = area_props.get("cpe:status", {})
             stage = cpe_status.get("stage", "notificationNew")
@@ -815,11 +815,16 @@ class CharterTransformer(MontyDataTransformer[CharterDataSource]):
             props["disaster:country"] = act_props.get("disaster:country")
             props["roles"] = ["response", "source"]
 
+            raw_datetime = props.get("datetime")
+            if raw_datetime is None:
+                logger.warning("Skipping calibrated dataset %s: missing datetime", source_id)
+                continue
+
             item = build_response_item(
                 id=f"charter-response-{matched_call_id}-{response_id}",
                 geometry=dataset_doc.get("geometry"),
                 bbox=self._stac_bbox(dataset_doc, dataset_doc.get("geometry")),
-                datetime=self._parse_datetime(props["datetime"]),
+                datetime=self._parse_datetime(raw_datetime),
                 correlation_id=event_monty.correlation_id,
                 country_codes=list(event_monty.country_codes or []),
                 hazard_codes=self._canonical_codes_for_types(props["disaster:types"]),
@@ -829,9 +834,9 @@ class CharterTransformer(MontyDataTransformer[CharterDataSource]):
                 sendai_targets=RESPONSE_TYPE_SENDAI["eo-dat"],
                 properties=props,
             )
-            if isinstance(props.get("datetime"), str):
-                item.properties["datetime"] = props["datetime"]
-                item.properties[MONTY_SOURCE_DATETIME_PROPERTY] = props["datetime"]
+            if isinstance(raw_datetime, str):
+                item.properties["datetime"] = raw_datetime
+                item.properties[MONTY_SOURCE_DATETIME_PROPERTY] = raw_datetime
             item.stac_extensions = self._response_stac_extensions(dataset_doc)
             item.assets = {key: Asset.from_dict(asset) for key, asset in dataset_doc.get("assets", {}).items()}
             self._add_response_item_links(
