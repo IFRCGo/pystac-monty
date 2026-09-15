@@ -64,6 +64,7 @@ def vcr_config():
 
 MINIMAL_ACTIVATION = {
     "code": "EMSR999",
+    "aws_bucket": "https://example.test",
     "name": "Test flood in Exampleland",
     "reason": "River flooding after heavy rainfall.",
     "category": "Flood",
@@ -90,8 +91,24 @@ MINIMAL_ACTIVATION = {
                     "downloadPath": "https://example.test/EMSR999/AOI01/DEL_PRODUCT.zip",
                     "layers": [
                         {
-                            "name": "EMSR999/AOI01/DEL_PRODUCT/example_cog.tif",
+                            "name": "EMSR999/AOI01/DEL_PRODUCT/EMSR999_AOI01_DEL_PRODUCT_ICEYE_20260116_1000_ORTHO_cog.tif",
                             "format": "cog",
+                        },
+                        {
+                            "name": "EMSR999/AOI01/DEL_PRODUCT/EMSR999_AOI01_DEL_PRODUCT_observedEventP_v1_VT",
+                            "format": "vt",
+                            "sld": "https://example.test/EMSR999/AOI01/DEL_PRODUCT/observedEventP_v1.sld",
+                            "json": "https://example.test/EMSR999/AOI01/DEL_PRODUCT/observedEventP_v1.json",
+                        },
+                    ],
+                    "images": [
+                        {
+                            "uuid": "11111111-1111-1111-1111-111111111111",
+                            "sensorType": "sar",
+                            "sensorName": "ICEYE",
+                            "resolutionClass": "VHR2",
+                            "acquisitionTime": "2026-01-16T10:00:00",
+                            "fileName": "EMSR999_AOI01_DEL_PRODUCT_ICEYE_20260116_1000_ORTHO.tif",
                         }
                     ],
                     "version": {
@@ -198,7 +215,7 @@ class CEMSTest(unittest.TestCase):
         self.assertIsNotNone(event)
         self.assertEqual(event.collection_id, "cems-events")
         self.assertEqual(len(hazards), 1)
-        self.assertEqual(len(responses), 3)  # DEL + GRA + situational report
+        self.assertEqual(len(responses), 4)  # DEL + GRA + eo-dat acquisition + situational report
         self.assertEqual(len(impacts), 1)
         self.assertEqual(len({hazard.id for hazard in hazards}), len(hazards))
 
@@ -237,6 +254,68 @@ class CEMSTest(unittest.TestCase):
         derived = [link for link in impact.links if link.rel == "derived_from"]
         self.assertEqual(len(derived), 1)
         self.assertEqual(derived[0].extra_fields.get("roles"), ["response"])
+
+    def test_acquisition_item_built_from_product_images(self) -> None:
+        """Analysis Decision #6 / pystac-monty#166: product images[] -> an ``eo-dat`` Response
+        item (the response taxonomy's Data Product code), linked from its sibling REF/FEP/DEL/GRA
+        item as a `related` Response (roles: ["response"]), not `derived_from` — the acquisition
+        is itself a Monty Response item, in the `response` domain like every other response type,
+        not a separate untyped path. The matching source-imagery COG (layers[]) becomes this
+        item's own `data` asset, and is also copied onto the sibling Response item as `basemap`
+        so that item alone is enough to render the raster under its own vector overlay."""
+        items = list(_memory_transformer().get_stac_items())
+        for item in items:
+            item.validate(validator=self.validator)
+
+        acquisitions = [item for item in items if "acquisition" in (item.properties.get("roles") or [])]
+        self.assertEqual(len(acquisitions), 1)
+        acquisition = acquisitions[0]
+        self.assertEqual(acquisition.id, "cems-response-EMSR999-aoi01-dat-11111111-1111-1111-1111-111111111111")
+        self.assertEqual(acquisition.collection_id, "cems-response")
+        self.assertEqual(acquisition.common_metadata.platform, "ICEYE")
+        self.assertTrue(MontyExtension.has_extension(acquisition))
+        monty = MontyExtension.ext(acquisition)
+        self.assertTrue(monty.is_source_response())
+        self.assertEqual(monty.response_detail.type, "eo-dat")
+        self.assertIn("VHR2", acquisition.properties.get("description", ""))
+        self.assertEqual(
+            acquisition.assets["data"].href,
+            "https://example.test/EMSR999/AOI01/DEL_PRODUCT/EMSR999_AOI01_DEL_PRODUCT_ICEYE_20260116_1000_ORTHO_cog.tif",
+        )
+
+        del_response = next(item for item in items if item.id == "cems-response-EMSR999-aoi01-del")
+        response_links = [
+            link for link in del_response.links if link.rel == "related" and link.extra_fields.get("roles") == ["response"]
+        ]
+        self.assertEqual(len(response_links), 1)
+        self.assertEqual(
+            response_links[0].get_href(),
+            f"{_TEST_EOAPI_URL}/collections/cems-response/items/{acquisition.id}",
+        )
+        reciprocal_links = [
+            link for link in acquisition.links if link.rel == "related" and link.extra_fields.get("roles") == ["response"]
+        ]
+        self.assertEqual(len(reciprocal_links), 1)
+        self.assertEqual(
+            reciprocal_links[0].get_href(),
+            f"{_TEST_EOAPI_URL}/collections/cems-response/items/{del_response.id}",
+        )
+
+        # The vt-labelled layer becomes a GeoJSON asset on the Response item itself — it's the
+        # product's own thematic output (not source imagery), and CEMS's "VT" json href is in
+        # fact a plain FeatureCollection, verified against the live CEMS AWS bucket.
+        self.assertIn("observedEventP", del_response.assets)
+        self.assertEqual(
+            del_response.assets["observedEventP"].href,
+            "https://example.test/EMSR999/AOI01/DEL_PRODUCT/observedEventP_v1.json",
+        )
+        self.assertEqual(del_response.assets["observedEventP"].media_type, "application/geo+json")
+        self.assertIn("observedEventP_style", del_response.assets)
+
+        # The matching base-image COG is attached to the Response item too (as "basemap"), so
+        # the item is self-sufficient to render — the raster under its own vector overlay —
+        # even though the acquisition item is where the imagery's own identity/metadata lives.
+        self.assertEqual(del_response.assets["basemap"].href, acquisition.assets["data"].href)
 
     def test_delivery_datetime_normalized(self) -> None:
         data = deepcopy(MINIMAL_ACTIVATION)
@@ -317,7 +396,7 @@ class CEMSTest(unittest.TestCase):
         _, hazards, responses, impacts = _partition(items)
         self.assertEqual(
             (len(hazards), len(responses), len(impacts)),
-            (57, 68, 153),  # 39 AOIs; 67 products + 1 situational report
+            (57, 137, 153),  # 39 AOIs; 67 products + 1 situational report + 69 eo-dat acquisitions
         )
 
         event = next(item for item in items if item.id == "cems-event-EMSR847")
@@ -540,7 +619,7 @@ class CEMSTest(unittest.TestCase):
         event, hazards, responses, impacts = _partition(items)
         self.assertIsNotNone(event)
         self.assertEqual(len(hazards), 6)
-        self.assertEqual(len(responses), 16)
+        self.assertEqual(len(responses), 31)
         self.assertEqual(len(impacts), 7)
         self.assertEqual(len({hazard.id for hazard in hazards}), len(hazards))
 
@@ -557,7 +636,7 @@ class CEMSTest(unittest.TestCase):
         self.assertIsNotNone(event)
         self.assertEqual(event.id, "cems-event-EMSR842")
         self.assertEqual(len(hazards), 2)
-        self.assertEqual(len(responses), 3)
+        self.assertEqual(len(responses), 5)
         self.assertEqual(len(impacts), 6)
         self.assertIn("EN0205", MontyExtension.ext(event).hazard_codes or [])
 
@@ -622,7 +701,12 @@ class CEMSTest(unittest.TestCase):
             )
             linked_files = sorted(Path(href).name for href in item_hrefs)
             self.assertEqual(linked_files, item_files, collection)
-            expected_count = 2 if collection == "cems-hazards" else 1
+            if collection == "cems-hazards":
+                expected_count = 2
+            elif collection == "cems-response":
+                expected_count = 2  # the eo-gra product plus its eo-dat acquisition item
+            else:
+                expected_count = 1
             self.assertEqual(len(item_files), expected_count, collection)
 
     def test_curated_event_related_links_are_bounded(self) -> None:
@@ -633,13 +717,14 @@ class CEMSTest(unittest.TestCase):
 
         event_doc = json.loads(event_path.read_text(encoding="utf-8"))
         related_links = [link for link in event_doc["links"] if link["rel"] == "related"]
-        self.assertLessEqual(len(related_links), 6)
+        self.assertLessEqual(len(related_links), 7)
         related_hrefs = [link["href"] for link in related_links]
         self.assertTrue(any("gdacs-events/" in href for href in related_hrefs))
         self.assertTrue(any("charter-events/" in href for href in related_hrefs))
         self.assertTrue(any("cems-hazard-EMSR847-aoi01-storm" in href for href in related_hrefs))
         self.assertTrue(any("cems-hazard-EMSR847-aoi01-landslide" in href for href in related_hrefs))
         self.assertTrue(any("cems-response-EMSR847-aoi01-gra" in href for href in related_hrefs))
+        self.assertTrue(any("cems-response-EMSR847-aoi01-dat-" in href for href in related_hrefs))
         self.assertTrue(any("cems-impact-EMSR847-aoi01-gra-population" in href for href in related_hrefs))
 
     def test_curated_response_datetime_is_valid(self) -> None:
