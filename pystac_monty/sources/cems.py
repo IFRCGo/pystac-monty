@@ -1145,18 +1145,31 @@ class CEMSTransformer(MontyDataTransformer[CEMSDataSource]):
             aoi_name = aoi.get("name") or f"AOI {aoi_number}"
             country_codes = _primary_country_code(primary_geom, activation_countries, self.geocoder)
 
+            # Several hazard_keys can resolve to the same STAC-id slug (e.g. the
+            # category-derived "flood_riverine" and a footprint-derived generic
+            # "flood" both map to slug "flood" via HAZARD_KEY_TO_SLUG) — that's the
+            # same physical hazard detected via signals of differing specificity,
+            # not two distinct hazards. Group by slug so each slug yields exactly
+            # one item and item_ids stay unique (see issue #237). The first key
+            # seen for a slug wins for geometry/label/codes purposes; it is always
+            # the category-derived key when the AOI has one, since footprint keys
+            # are appended after it in _hazard_keys_for_aoi.
+            keys_by_slug: dict[str, list[str]] = {}
             for hazard_key in hazard_keys:
+                keys_by_slug.setdefault(_hazard_slug_for_key(hazard_key), []).append(hazard_key)
+
+            for hazard_slug, keys_for_slug in keys_by_slug.items():
+                primary_key = keys_for_slug[0]
                 # Decision #4: a secondary hazard surfaced only from a GRA footprint
                 # class has no dedicated polygon — use the AOI extent, not the primary
                 # hazard's DEL delineation.
-                hazard_geom = primary_geom if hazard_key in category_keys else (aoi_geom or primary_geom)
+                hazard_geom = primary_geom if primary_key in category_keys else (aoi_geom or primary_geom)
                 bbox = _bbox_from_geometry(hazard_geom)
-                hazard_slug = _hazard_slug_for_key(hazard_key)
-                if hazard_key in category_keys:
+                if primary_key in category_keys:
                     hazard_label = str(activation.get("subCategory") or activation.get("category") or hazard_slug).strip().lower()
                 else:
                     hazard_label = hazard_slug
-                hazard_codes = self._canonical_codes_for_keys([hazard_key])
+                hazard_codes = self._canonical_codes_for_keys([primary_key])
                 item_id = f"cems-hazard-{sanitize_stac_item_id(code)}-{aoi_slug}-{hazard_slug}"
 
                 item = Item(
@@ -1175,7 +1188,8 @@ class CEMSTransformer(MontyDataTransformer[CEMSDataSource]):
                 monty.hazard_codes = hazard_codes
                 monty.correlation_id = event_corr_id
 
-                if hazard_detail := hazard_details.get(hazard_key):
+                hazard_detail = next((hazard_details[key] for key in keys_for_slug if key in hazard_details), None)
+                if hazard_detail:
                     monty.hazard_detail = hazard_detail
 
                 item.set_collection(self.get_hazard_collection())
