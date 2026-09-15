@@ -1,14 +1,12 @@
 """Tests for pystac.tests.extensions.monty"""
 
 import json
-import tempfile
 from datetime import datetime, timezone
 from os import makedirs
-from typing import List, Union
+from typing import List
 from unittest import TestCase
 
 import pytest
-import requests
 from parameterized import parameterized
 from pystac import Item
 
@@ -17,7 +15,6 @@ from pystac_monty.geocoding import MockGeocoder
 from pystac_monty.hazard_profiles import MontyHazardProfiles
 from pystac_monty.sources.common import DataType, File, GenericDataSource, Memory
 from pystac_monty.sources.ifrc_events import IFRC_HAZARD_CODES, IFRCEventDataSource, IFRCEventTransformer
-from pystac_monty.sources.utils import save_json_data_into_tmp_file
 from tests.conftest import get_data_file
 from tests.extensions.test_monty import CustomValidator
 from tests.utils.test_utils import assert_processing_extension_fields, request_for_schema, validate_correlation_id
@@ -25,54 +22,41 @@ from tests.utils.test_utils import assert_processing_extension_fields, request_f
 CURRENT_SCHEMA_URI = "https://ifrcgo.org/monty-stac-extension/v1.3.0/schema.json"
 CURRENT_SCHEMA_MAPURL = "https://raw.githubusercontent.com/IFRCGo/monty-stac-extension/refs/heads/main/json-schema/schema.json"
 
-
-def request_and_save_ifrc_tmp_file(url):
-    response = requests.get(url)
-    response.raise_for_status()  # Optional: raise error for bad responses
-    results = json.loads(response.content)["results"]
-    return save_json_data_into_tmp_file(results)
-
-
-nepal_earthquake_data = ("karnali_earthquake", "https://goadmin-stage.ifrc.org/api/v2/event/?dtype=2&appeal_type=1&id=6732")
-
-morocco_earthquake_data = ("morocco_earthquake", "https://goadmin-stage.ifrc.org/api/v2/event/?dtype=2&appeal_type=1&id=6646")
-
-nepal_earthquake_data_2 = (
-    "karnali_earthquake",
-    request_and_save_ifrc_tmp_file("https://goadmin-stage.ifrc.org/api/v2/event/?dtype=2&appeal_type=1&id=6732"),
-)
-
-morocco_earthquake_data_2 = (
-    "morocco_earthquake",
-    request_and_save_ifrc_tmp_file("https://goadmin-stage.ifrc.org/api/v2/event/?dtype=2&appeal_type=1&id=6646"),
-)
+# Local, checked-in snapshots of real IFRC GO events (see tests/data-files/ifrc_events/),
+# so these tests don't depend on the current contents of the live goadmin-stage.ifrc.org
+# database. That API previously backed these scenarios directly and broke when the
+# referenced staging records were deleted/reclassified upstream, with no code regression.
+karnali_earthquake_path = get_data_file("ifrc_events/karnali_earthquake.json")
+morocco_earthquake_path = get_data_file("ifrc_events/morocco_earthquake.json")
 
 
-def load_scenarios(
-    scenarios: Union[list[tuple[str, str]], tempfile._TemporaryFileWrapper],
-) -> List[IFRCEventTransformer]:
+def _load_results(path: str) -> list:
+    with open(path, encoding="utf-8") as f:
+        return json.load(f)
+
+
+# Memory-backed scenarios: event data passed in-process as a list of dicts.
+nepal_earthquake_data = ("karnali_earthquake", _load_results(karnali_earthquake_path))
+
+morocco_earthquake_data = ("morocco_earthquake", _load_results(morocco_earthquake_path))
+
+# File-backed scenarios: event data read from a JSON file on disk.
+nepal_earthquake_data_2 = ("karnali_earthquake", karnali_earthquake_path)
+
+morocco_earthquake_data_2 = ("morocco_earthquake", morocco_earthquake_path)
+
+
+def load_scenarios(scenarios: list[tuple[str, str]]) -> List[IFRCEventTransformer]:
     transformers: List[IFRCEventTransformer] = []
 
     for scenario in scenarios:
-        geocoder = MockGeocoder()
-        if isinstance(scenario[1], tempfile._TemporaryFileWrapper):
-            data_source = IFRCEventDataSource(
-                data=GenericDataSource(
-                    source_url="www.test.com",
-                    input_data=File(path=scenario[1].name, data_type=DataType.FILE),
-                )
-            )
+        if isinstance(scenario[1], str):
+            input_data = File(path=scenario[1], data_type=DataType.FILE)
         else:
-            response = requests.get(scenario[1])
-            data = json.loads(response.content)
-            geocoder = MockGeocoder()
-            data_source = IFRCEventDataSource(
-                data=GenericDataSource(
-                    source_url="www.test.com",
-                    input_data=Memory(content=data["results"], data_type=DataType.MEMORY),
-                )
-            )
-        transformer = IFRCEventTransformer(data_source, geocoder)
+            input_data = Memory(content=scenario[1], data_type=DataType.MEMORY)
+
+        data_source = IFRCEventDataSource(data=GenericDataSource(source_url="www.test.com", input_data=input_data))
+        transformer = IFRCEventTransformer(data_source, MockGeocoder())
         transformers.append(transformer)
 
     return transformers
