@@ -285,9 +285,7 @@ class CEMSTest(unittest.TestCase):
 
         del_response = next(item for item in items if item.id == "cems-response-EMSR999-aoi01-del")
         response_links = [
-            link
-            for link in del_response.links
-            if link.rel == "related" and link.extra_fields.get("roles") == ["response"]
+            link for link in del_response.links if link.rel == "related" and link.extra_fields.get("roles") == ["response"]
         ]
         self.assertEqual(len(response_links), 1)
         self.assertEqual(
@@ -295,9 +293,7 @@ class CEMSTest(unittest.TestCase):
             f"{_TEST_EOAPI_URL}/collections/cems-response/items/{acquisition.id}",
         )
         reciprocal_links = [
-            link
-            for link in acquisition.links
-            if link.rel == "related" and link.extra_fields.get("roles") == ["response"]
+            link for link in acquisition.links if link.rel == "related" and link.extra_fields.get("roles") == ["response"]
         ]
         self.assertEqual(len(reciprocal_links), 1)
         self.assertEqual(
