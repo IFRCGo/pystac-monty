@@ -17,9 +17,8 @@ from pathlib import Path
 from typing import Any, Generator, Iterable, Sequence
 
 import requests  # type: ignore[import-untyped]
-from pystac import Asset, CatalogType, Collection, Item, Link
+from pystac import Asset, Collection, Item, Link
 from pystac.provider import Provider, ProviderRole
-from pystac.summaries import Summaries
 from pystac.utils import datetime_to_str
 from shapely import wkt  # type: ignore[import-untyped]
 from shapely.geometry import mapping  # type: ignore[import-untyped]
@@ -29,9 +28,7 @@ from pystac_monty.exporter import (
     MONTY_STAC_EXAMPLES_BASE_URL,
     BatchExportConfig,
     export_collected_items,
-    extent_for_monty_static_collection,
     log_batch_role_counts,
-    save_static_monty_collection,
 )
 from pystac_monty.extension import (
     SCHEMA_URI,
@@ -110,6 +107,7 @@ AGGREGATE_STAT_CLASSES = {
 }
 
 RESPONSE_TYPE_SENDAI: dict[str, list[str]] = {
+    "eo-dat": ["D", "G"],
     "eo-ref": ["G"],
     "eo-fep": ["D", "G"],
     "eo-del": ["D", "G"],
@@ -299,7 +297,6 @@ _CEMS_CROSS_COLLECTION_PREFIXES = (
     "cems-hazards/",
     "cems-response/",
     "cems-impacts/",
-    "cems-acquisitions/",
 )
 _EXTERNAL_EXAMPLE_PREFIXES = ("gdacs-events/", "charter-events/")
 
@@ -931,14 +928,16 @@ def _build_acquisition_item(
     idx: int,
     product_geom: dict[str, Any] | None,
     dt: datetime.datetime | None,
-    eoapi_url: str | None,
+    correlation_id: str,
+    country_codes: list[str],
+    hazard_codes: list[str] | None,
 ) -> Item | None:
-    """Build a plain STAC item for one ``product.images[]`` entry (analysis Decision #6).
+    """Build the ``eo-dat`` Response item for one ``product.images[]`` entry (analysis Decision #6).
 
-    Acquisition items are not Monty domain objects — no ``monty:`` fields — they exist only to
-    carry source-imagery metadata off the Response item, per the CEMS analysis doc's layer-
-    separation rule (sat:/eo:/sar: live on the acquisition, never on the Response product itself).
-    ``CEMSProductImage`` only carries sensorType/sensorName/resolutionClass/acquisitionTime/
+    Acquisition items are Monty Response items (``response_detail.type = "eo-dat"``, the
+    taxonomy's Data Product code), the same pattern used for Charter acquisitions — this keeps
+    source imagery inside the object-domain taxonomy instead of a second, untyped path outside
+    it. ``CEMSProductImage`` only carries sensorType/sensorName/resolutionClass/acquisitionTime/
     fileName, none of which back a typed sat:/eo:/sar: field with real data, so no such extension
     is declared here; resolutionClass/fileName are kept as descriptive text pending a schema
     decision upstream. See https://github.com/IFRCGo/pystac-monty/issues/166.
@@ -967,21 +966,21 @@ def _build_acquisition_item(
     if description:
         properties["description"] = description
 
-    item = Item(
+    item = build_response_item(
         id=item_id,
         geometry=product_geom,
         bbox=_bbox_from_geometry(product_geom),
         datetime=item_dt,
+        correlation_id=correlation_id,
+        country_codes=country_codes,
+        hazard_codes=hazard_codes,
+        type="eo-dat",
+        source_id=str(code),
+        producer="Copernicus EMS",
+        sendai_targets=RESPONSE_TYPE_SENDAI.get("eo-dat"),
         properties=properties,
     )
-    item.collection_id = "cems-acquisitions"
-    item.add_link(
-        Link(
-            rel="collection",
-            target=f"{eoapi_url or '..'}/collections/cems-acquisitions",
-            media_type="application/json",
-        )
-    )
+    item.stac_extensions = [SCHEMA_URI]
     if sensor_name:
         item.common_metadata.platform = sensor_name
     return item
@@ -1280,14 +1279,12 @@ class CEMSTransformer(MontyDataTransformer[CEMSDataSource]):
         activation: dict[str, Any],
         event_item: Item,
         hazard_items: list[Item],
-    ) -> tuple[list[Item], list[Item]]:
-        """Return (response_items, acquisition_items) — see analysis Decision #6."""
+    ) -> list[Item]:
         code = str(activation.get("code") or "x")
         event_monty = MontyExtension.ext(event_item)
         event_href = self._relative_item_href("cems-events", event_item.id)
         activation_countries = _country_codes(activation.get("countries") or [], self.geocoder)
         items: list[Item] = []
-        acquisition_items: list[Item] = []
         prev_by_key: dict[tuple[int, str], Item] = {}
 
         for aoi in activation.get("aois") or []:
@@ -1383,9 +1380,10 @@ class CEMSTransformer(MontyDataTransformer[CEMSDataSource]):
                         title=f"CEMS {code} activation",
                     )
                 )
-                # Analysis Decision #6: linked acquisition items built from product images[],
-                # referenced via derived_from — kept off the Response item itself (imagery
-                # extensions live on the acquisition, never on the Response product).
+                # Analysis Decision #6: linked acquisition items (``eo-dat`` Response items)
+                # built from product images[], referenced via derived_from — kept off the
+                # Response item itself (imagery extensions live on the acquisition, never on
+                # the derived Response product).
                 for image_idx, image in enumerate(product.get("images") or []):
                     if not isinstance(image, dict):
                         continue
@@ -1397,15 +1395,18 @@ class CEMSTransformer(MontyDataTransformer[CEMSDataSource]):
                         idx=image_idx,
                         product_geom=product_geom,
                         dt=dt,
-                        eoapi_url=self.data_source.eoapi_url,
+                        correlation_id=event_monty.correlation_id,
+                        country_codes=country_codes,
+                        hazard_codes=hazard_codes,
                     )
                     if acquisition_item is None:
                         continue
-                    acquisition_items.append(acquisition_item)
+                    acquisition_item.set_collection(self.get_response_collection())
+                    items.append(acquisition_item)
                     item.add_link(
                         Link(
                             rel="derived_from",
-                            target=self._relative_item_href("cems-acquisitions", acquisition_item.id),
+                            target=self._relative_item_href("cems-response", acquisition_item.id),
                             media_type="application/geo+json",
                             extra_fields={"roles": ["acquisition"]},
                         )
@@ -1465,7 +1466,7 @@ class CEMSTransformer(MontyDataTransformer[CEMSDataSource]):
             sr_item.set_collection(self.get_response_collection())
             items.append(sr_item)
 
-        return items, acquisition_items
+        return items
 
     def make_impact_items(
         self,
@@ -1691,10 +1692,10 @@ class CEMSTransformer(MontyDataTransformer[CEMSDataSource]):
             if event_item:
                 event_monty = MontyExtension.ext(event_item)
                 hazard_items = self.make_hazard_items(activation, event_item, event_monty.correlation_id)
-                response_items, acquisition_items = self.make_response_items(activation, event_item, hazard_items)
+                response_items = self.make_response_items(activation, event_item, hazard_items)
                 impact_items = self.make_impact_items(activation, event_item, response_items)
                 self.add_cems_related_links(event_item, hazard_items, response_items, impact_items)
-                items = [event_item, *hazard_items, *response_items, *acquisition_items, *impact_items]
+                items = [event_item, *hazard_items, *response_items, *impact_items]
             else:
                 self.transform_summary.increment_failed_rows()
         except Exception:
@@ -1735,10 +1736,6 @@ _CEMS_BATCH = BatchExportConfig(
         "impact": (
             "Copernicus EMS RM Impacts",
             "Damage/exposure statistics from CEMS grading products as Monty Impact items.",
-        ),
-        "acquisition": (
-            "Copernicus EMS RM Acquisitions",
-            "Source imagery (sat:/eo:/sar:) from product images[], referenced by Response items via derived_from.",
         ),
     },
 )
@@ -1798,59 +1795,6 @@ def iter_cems_stac_items(
         yield from CEMSTransformer(source, resolved_geocoder).get_stac_items()
 
 
-def _split_cems_acquisitions(items: Sequence[Item]) -> tuple[list[Item], list[Item]]:
-    """Separate acquisition items (not a Monty domain-object role) from the rest.
-
-    ``export_collected_items``/``partition_monty_source_items`` only know about the four Monty
-    source roles and silently drop anything else, so acquisition items are pulled out up front and
-    exported through their own collection instead — see analysis Decision #6 / pystac-monty#166.
-    """
-    acquisitions: list[Item] = []
-    rest: list[Item] = []
-    for item in items:
-        if "acquisition" in (item.properties.get("roles") or []):
-            acquisitions.append(item)
-        else:
-            rest.append(item)
-    return rest, acquisitions
-
-
-def _export_cems_acquisitions(config: BatchExportConfig, acquisitions: list[Item], output_dir: Path) -> None:
-    """Write the ``cems-acquisitions`` collection directly, bypassing the Monty-flavored
-    collection builders in :mod:`pystac_monty.exporter`: those unconditionally declare the Monty
-    schema URI, which requires ``monty:country_codes``/``monty:hazard_codes`` summaries that a
-    plain, non-domain-object collection like this one has no data for (see analysis Decision #6 /
-    pystac-monty#166 — acquisition items intentionally carry no ``monty:`` fields).
-    """
-    if not acquisitions:
-        return
-    title, description = (config.titles or {}).get(
-        "acquisition", ("Copernicus EMS RM Acquisitions", "Source imagery referenced by Response items.")
-    )
-    collection = Collection(
-        id="cems-acquisitions",
-        title=title,
-        description=description,
-        license=config.license,
-        extent=extent_for_monty_static_collection(acquisitions),
-        stac_extensions=[],
-        providers=[config.provider],
-        summaries=Summaries(summaries={"roles": ["acquisition", "source"]}),
-        extra_fields={"roles": ["acquisition", "source"], "keywords": []},
-        catalog_type=CatalogType.RELATIVE_PUBLISHED,
-    )
-    save_static_monty_collection(
-        collection,
-        acquisitions,
-        output_dir / "cems-acquisitions",
-        preserve_transformer_item_links=config.preserve_transformer_item_links,
-        public_href_base=config.public_href_base,
-        license_url=config.license_url,
-        license_title=config.license_title,
-    )
-    logger.info("Created %d acquisitions", len(acquisitions))
-
-
 def convert_cems(
     input_path: Path,
     output_dir: Path,
@@ -1860,9 +1804,8 @@ def convert_cems(
 ) -> None:
     """Read CEMS activation detail JSON from *input_path* and export Monty STAC collections."""
     config = replace(_CEMS_BATCH, public_href_base=public_href_base)
-    items, acquisitions = _split_cems_acquisitions(list(iter_cems_stac_items(input_path, geocoder=geocoder)))
+    items = list(iter_cems_stac_items(input_path, geocoder=geocoder))
     log_batch_role_counts(*export_collected_items(config, items, output_dir))
-    _export_cems_acquisitions(config, acquisitions, output_dir)
 
 
 def export_curated_cems_examples(
@@ -1875,9 +1818,7 @@ def export_curated_cems_examples(
     """Export a curated CEMS example slice with collections matching on-disk item files."""
     curated = _prepare_curated_cems_items(items, frozenset(curated_ids))
     config = replace(_CEMS_BATCH, public_href_base=public_href_base)
-    non_acquisitions, acquisitions = _split_cems_acquisitions(curated)
-    log_batch_role_counts(*export_collected_items(config, non_acquisitions, output_dir))
-    _export_cems_acquisitions(config, acquisitions, output_dir)
+    log_batch_role_counts(*export_collected_items(config, curated, output_dir))
 
 
 def regenerate_cems_examples(
