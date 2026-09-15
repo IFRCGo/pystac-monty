@@ -289,7 +289,7 @@ CURATED_CEMS_EXAMPLE_IDS: tuple[str, ...] = (
     "cems-hazard-EMSR847-aoi01-landslide",
     "cems-response-EMSR847-aoi01-gra",
     "cems-impact-EMSR847-aoi01-gra-population",
-    "cems-acquisition-EMSR847-aoi01-gra-0",
+    "cems-response-EMSR847-aoi01-dat-d8deb932-f3c6-42f7-8f31-1dfa61acd40f",
 )
 
 _CEMS_CROSS_COLLECTION_PREFIXES = (
@@ -883,7 +883,32 @@ def _latest_del_product(products: list[dict[str, Any]]) -> dict[str, Any] | None
     return max(candidates, key=lambda product: int(product.get("monitoringNumber") or 0))
 
 
-def _product_assets(product: dict[str, Any]) -> dict[str, Asset]:
+def _layer_href(aws_bucket: str, layer_name: str) -> str:
+    return layer_name if layer_name.startswith("http") else f"{aws_bucket}/{layer_name}"
+
+
+def _vt_layer_theme(layer_name: str) -> str:
+    """Extract CEMS's own thematic label from a ``format: "vt"`` layer name, e.g.
+    '.../EMSR847_AOI01_GRA_PRODUCT_observedEventP_v1_VT' -> 'observedEventP'. Despite the "VT"
+    (vector-tile) naming, the ``json`` href it pairs with is a plain GeoJSON FeatureCollection,
+    not a tiled service — CEMS publishes no schema for this, so this is an empirical finding
+    (checked live: 5 files, 3 activations, 4 product types, point/line/polygon geometries — all
+    GeoJSON; the S3 origin's own Content-Type header is unhelpfully generic ``binary/octet-stream``
+    either way), not a documented guarantee."""
+    base = re.sub(r"_VT$", "", Path(layer_name).name, flags=re.IGNORECASE)
+    base = re.sub(r"_v\d+$", "", base, flags=re.IGNORECASE)
+    return base.rsplit("_PRODUCT_", 1)[-1] if "_PRODUCT_" in base else base
+
+
+def _product_assets(product: dict[str, Any], aws_bucket: str) -> dict[str, Asset]:
+    """Assets for the derived Response product itself: the delivered ZIP package, the base-image
+    COG(s) (so the item is self-sufficient to render — the raster basemap under its own vector
+    overlay), and any ``vt``-labelled thematic layers as GeoJSON (e.g. GRA's ``observedEventP``
+    damage/event polygons, REF's ``builtUpA``/``hydrographyL``/... baseline layers). The same COG
+    is *also*
+    attached to the acquisition item as its own ``data`` asset (see :func:`_matching_cog_layer` /
+    :func:`_build_acquisition_item`) — that's where the imagery's identity/metadata lives; this
+    copy is for rendering convenience."""
     assets: dict[str, Asset] = {}
     download_path = product.get("downloadPath")
     if isinstance(download_path, str) and download_path.strip():
@@ -894,29 +919,66 @@ def _product_assets(product: dict[str, Any]) -> dict[str, Asset]:
             title="Product package (vector + raster)",
             extra_fields={"type": "application/zip"},
         )
-    for idx, layer in enumerate(product.get("layers") or []):
-        if not isinstance(layer, dict):
-            continue
-        layer_format = _normalize_key(layer.get("format"))
+    images = [image for image in (product.get("images") or []) if isinstance(image, dict)]
+    cog_layers = [_matching_cog_layer(product, image) for image in images]
+    matched_cogs = [layer for layer in cog_layers if layer]
+    for idx, layer in enumerate(matched_cogs):
         layer_name = layer.get("name")
         if not isinstance(layer_name, str) or not layer_name.strip():
             continue
-        if layer_format == "cog":
-            href = f"{CEMS_AWS_VIEWER}/{layer_name}" if not layer_name.startswith("http") else layer_name
-            assets.setdefault(
-                "grading_cog" if str(product.get("type", "")).upper() in {"GRA", "GRM"} else f"layer_{idx}",
-                Asset(
-                    href=href,
-                    media_type="image/tiff; application=geotiff; profile=cloud-optimized",
-                    roles=["data", "visual"],
-                    title="Grading product (COG)" if str(product.get("type", "")).upper() in {"GRA", "GRM"} else layer_name,
-                    extra_fields={"type": "image/tiff; application=geotiff; profile=cloud-optimized"},
-                ),
+        key = "basemap" if len(matched_cogs) == 1 else f"basemap_{idx}"
+        assets[key] = Asset(
+            href=_layer_href(aws_bucket, layer_name),
+            media_type="image/tiff; application=geotiff; profile=cloud-optimized",
+            roles=["data", "visual"],
+            title="Source imagery (COG)",
+            extra_fields={"type": "image/tiff; application=geotiff; profile=cloud-optimized"},
+        )
+    for layer in product.get("layers") or []:
+        if not isinstance(layer, dict) or _normalize_key(layer.get("format")) != "vt":
+            continue
+        layer_name = layer.get("name")
+        if not isinstance(layer_name, str) or not layer_name.strip():
+            continue
+        theme = _vt_layer_theme(layer_name)
+        json_href = layer.get("json")
+        if isinstance(json_href, str) and json_href.strip():
+            assets[theme] = Asset(
+                href=json_href,
+                media_type="application/geo+json",
+                roles=["data"],
+                title=f"{theme} (vector layer)",
+                extra_fields={"type": "application/geo+json"},
+            )
+        sld_href = layer.get("sld")
+        if isinstance(sld_href, str) and sld_href.strip():
+            assets[f"{theme}_style"] = Asset(
+                href=sld_href,
+                media_type="application/vnd.ogc.sld+xml",
+                roles=["metadata"],
+                title=f"{theme} style (SLD)",
+                extra_fields={"type": "application/vnd.ogc.sld+xml"},
             )
     return assets
 
 
-STAC_ACQUISITION_ID_PREFIX = "cems-acquisition-"
+def _matching_cog_layer(product: dict[str, Any], image: dict[str, Any]) -> dict[str, Any] | None:
+    """Find the ``layers[]`` COG entry for one ``images[]`` entry — CEMS publishes the source
+    acquisition as a web-optimized COG under the same base filename plus a ``_cog`` suffix."""
+    file_name = image.get("fileName")
+    if not isinstance(file_name, str) or not file_name.strip():
+        return None
+    image_stem = Path(file_name).stem
+    for layer in product.get("layers") or []:
+        if not isinstance(layer, dict) or _normalize_key(layer.get("format")) != "cog":
+            continue
+        layer_name = layer.get("name")
+        if not isinstance(layer_name, str):
+            continue
+        layer_stem = Path(layer_name).stem
+        if layer_stem == image_stem or layer_stem == f"{image_stem}_cog":
+            return layer
+    return None
 
 
 def _build_acquisition_item(
@@ -931,6 +993,7 @@ def _build_acquisition_item(
     correlation_id: str,
     country_codes: list[str],
     hazard_codes: list[str] | None,
+    aws_bucket: str,
 ) -> Item | None:
     """Build the ``eo-dat`` Response item for one ``product.images[]`` entry (analysis Decision #6).
 
@@ -941,6 +1004,10 @@ def _build_acquisition_item(
     fileName, none of which back a typed sat:/eo:/sar: field with real data, so no such extension
     is declared here; resolutionClass/fileName are kept as descriptive text pending a schema
     decision upstream. See https://github.com/IFRCGo/pystac-monty/issues/166.
+
+    When CEMS also publishes a web-optimized COG of this acquisition (``layers[]``, matched by
+    filename via :func:`_matching_cog_layer`), it is attached as this item's ``data`` asset —
+    the actual image, not the derived Response product's assets.
     """
     sensor_type = _normalize_key(image.get("sensorType"))
     sensor_name = image.get("sensorName")
@@ -949,7 +1016,12 @@ def _build_acquisition_item(
     if not any((sensor_type, sensor_name, resolution_class, file_name)):
         return None
 
-    item_id = f"{STAC_ACQUISITION_ID_PREFIX}{sanitize_stac_item_id(code)}-{aoi_slug}-{_product_id_suffix(product)}-{idx}"
+    # `dat`, not the parent product's own type slug (e.g. `gra`) — this item's own
+    # `monty:response_detail.type` is `eo-dat`, not the type of the product it's linked from.
+    # CEMS's own `images[].uuid` disambiguates (stable across re-ingests, and safe across
+    # products in the same AOI that each carry an image); `idx` is only a defensive fallback.
+    image_key = sanitize_stac_item_id(str(image.get("uuid"))) if image.get("uuid") else f"img{idx}"
+    item_id = f"cems-response-{sanitize_stac_item_id(code)}-{aoi_slug}-dat-{image_key}"
     acquisition_time = image.get("acquisitionTime")
     item_dt = _parse_datetime(acquisition_time) if acquisition_time else dt
     if item_dt is None:
@@ -983,6 +1055,18 @@ def _build_acquisition_item(
     item.stac_extensions = [SCHEMA_URI]
     if sensor_name:
         item.common_metadata.platform = sensor_name
+
+    cog_layer = _matching_cog_layer(product, image)
+    if cog_layer and isinstance(cog_layer.get("name"), str):
+        item.assets = {
+            "data": Asset(
+                href=_layer_href(aws_bucket, cog_layer["name"]),
+                media_type="image/tiff; application=geotiff; profile=cloud-optimized",
+                roles=["data", "visual"],
+                title=title,
+                extra_fields={"type": "image/tiff; application=geotiff; profile=cloud-optimized"},
+            )
+        }
     return item
 
 
@@ -1284,6 +1368,7 @@ class CEMSTransformer(MontyDataTransformer[CEMSDataSource]):
         event_monty = MontyExtension.ext(event_item)
         event_href = self._relative_item_href("cems-events", event_item.id)
         activation_countries = _country_codes(activation.get("countries") or [], self.geocoder)
+        aws_bucket = str(activation.get("aws_bucket") or CEMS_AWS_VIEWER)
         items: list[Item] = []
         prev_by_key: dict[tuple[int, str], Item] = {}
 
@@ -1348,7 +1433,7 @@ class CEMSTransformer(MontyDataTransformer[CEMSDataSource]):
                 _apply_delivery_datetime(item, delivery_time)
 
                 item.stac_extensions = [SCHEMA_URI]
-                item.assets = _product_assets(product)
+                item.assets = _product_assets(product, aws_bucket)
 
                 item.add_link(
                     Link(rel="related", target=event_href, media_type="application/geo+json", extra_fields={"roles": ["event"]})
@@ -1380,10 +1465,11 @@ class CEMSTransformer(MontyDataTransformer[CEMSDataSource]):
                         title=f"CEMS {code} activation",
                     )
                 )
-                # Analysis Decision #6: linked acquisition items (``eo-dat`` Response items)
-                # built from product images[], referenced via derived_from — kept off the
-                # Response item itself (imagery extensions live on the acquisition, never on
-                # the derived Response product).
+                # Analysis Decision #6: sibling acquisition items (``eo-dat`` Response items)
+                # built from product images[], linked as `related` (roles: ["response"]) — not
+                # `derived_from`, since these are Response items, not upstream non-Response
+                # items (imagery extensions live on the acquisition, never on the derived
+                # Response product).
                 for image_idx, image in enumerate(product.get("images") or []):
                     if not isinstance(image, dict):
                         continue
@@ -1398,17 +1484,31 @@ class CEMSTransformer(MontyDataTransformer[CEMSDataSource]):
                         correlation_id=event_monty.correlation_id,
                         country_codes=country_codes,
                         hazard_codes=hazard_codes,
+                        aws_bucket=aws_bucket,
                     )
                     if acquisition_item is None:
                         continue
                     acquisition_item.set_collection(self.get_response_collection())
                     items.append(acquisition_item)
+                    # eo-dat acquisitions are sibling Response items, not upstream non-Response
+                    # items, so they link as `related` (roles: ["response"]) rather than
+                    # `derived_from` — per response-best-practices.md §2/§4.4/§6.
+                    acquisition_href = self._relative_item_href("cems-response", acquisition_item.id)
+                    response_href = self._relative_item_href("cems-response", item.id)
                     item.add_link(
                         Link(
-                            rel="derived_from",
-                            target=self._relative_item_href("cems-response", acquisition_item.id),
+                            rel="related",
+                            target=acquisition_href,
                             media_type="application/geo+json",
-                            extra_fields={"roles": ["acquisition"]},
+                            extra_fields={"roles": ["response"]},
+                        )
+                    )
+                    acquisition_item.add_link(
+                        Link(
+                            rel="related",
+                            target=response_href,
+                            media_type="application/geo+json",
+                            extra_fields={"roles": ["response"]},
                         )
                     )
 
