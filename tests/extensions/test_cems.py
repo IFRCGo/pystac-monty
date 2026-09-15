@@ -197,9 +197,10 @@ class CEMSTest(unittest.TestCase):
         event, hazards, responses, impacts = _partition(items)
         self.assertIsNotNone(event)
         self.assertEqual(event.collection_id, "cems-events")
-        self.assertEqual(len(hazards), 2)
+        self.assertEqual(len(hazards), 1)
         self.assertEqual(len(responses), 3)  # DEL + GRA + situational report
         self.assertEqual(len(impacts), 1)
+        self.assertEqual(len({hazard.id for hazard in hazards}), len(hazards))
 
         monty_event = MontyExtension.ext(event)
         self.assertEqual(monty_event.country_codes, ["ITA"])
@@ -538,9 +539,10 @@ class CEMSTest(unittest.TestCase):
         items = list(iter_cems_stac_items(fixture, geocoder=_shared_geocoder()))
         event, hazards, responses, impacts = _partition(items)
         self.assertIsNotNone(event)
-        self.assertEqual(len(hazards), 8)
+        self.assertEqual(len(hazards), 6)
         self.assertEqual(len(responses), 16)
         self.assertEqual(len(impacts), 7)
+        self.assertEqual(len({hazard.id for hazard in hazards}), len(hazards))
 
         monitoring_del = [item for item in responses if item.id.endswith("-del-m2")]
         self.assertTrue(monitoring_del)
