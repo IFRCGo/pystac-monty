@@ -8,7 +8,6 @@ import typing
 from dataclasses import dataclass
 from typing import Dict, Iterator, List, Optional
 
-import ijson
 import pytz
 from markdownify import markdownify as md
 from pystac import Asset, Item, Link
@@ -28,7 +27,7 @@ from pystac_monty.sources.common import (
     MontyDataSourceV3,
     MontyDataTransformer,
 )
-from pystac_monty.sources.utils import IDMCUtils, order_data_file
+from pystac_monty.sources.utils import IDMCUtils, iter_grouped_json_buckets, partition_json_array_by_key
 from pystac_monty.validators.idu import IDUSourceValidator
 
 logger = logging.getLogger(__name__)
@@ -38,21 +37,44 @@ logger = logging.getLogger(__name__)
 STAC_EVENT_ID_PREFIX = "idmc-idu-event-"
 STAC_IMPACT_ID_PREFIX = "idmc-idu-impact-"
 
+IDU_REQUIRED_FIELDS = ["latitude", "longitude", "event_id"]
+
+
+def _idu_event_id_key(item: dict) -> typing.Any:
+    return item.get("event_id")
+
+
+def _is_valid_disaster_idu(item: dict) -> bool:
+    displacement_type = item.get("displacement_type")
+    if displacement_type not in IDMCUtils.DisplacementType._value2member_map_:
+        logging.warning(f"Unknown displacement type: {displacement_type} found. Ignore the datapoint.")
+        return False
+    if IDMCUtils.DisplacementType(displacement_type) != IDMCUtils.DisplacementType.DISASTER_TYPE:
+        return False
+    missing_fields = [field for field in IDU_REQUIRED_FIELDS if field not in item]
+    if missing_fields:
+        logger.warning(f"Missing required fields {missing_fields} for the event id {item.get('id', '<None>')}.")
+        return False
+    return True
+
 
 @dataclass
 class IDUDataSource(MontyDataSourceV3):
     """IDU Data Source Version 2"""
 
     parsed_content: List[dict]
-    ordered_temp_file: Optional[str] = None
+    partitioned_files: Optional[List[str]] = None
 
     def __init__(self, data: GenericDataSource, eoapi_url: str | None = None):
         super().__init__(root=data, eoapi_url=eoapi_url)
 
         def handle_file_data():
             if os.path.isfile(self.input_data.path):
-                jq_filter = "sort_by(.event_id)"
-                self.ordered_temp_file = order_data_file(filepath=self.input_data.path, jq_filter=jq_filter)
+                self.partitioned_files = partition_json_array_by_key(
+                    filepath=self.input_data.path,
+                    ijson_prefix="item",
+                    key_fn=_idu_event_id_key,
+                )
 
         def handle_memory_data():
             self.parsed_content = json.loads(self.input_data.content)
@@ -66,9 +88,9 @@ class IDUDataSource(MontyDataSourceV3):
             case _:
                 typing.assert_never(input_data_type)
 
-    def get_ordered_tmp_file(self):
-        """Get the temp file object which has ordered data"""
-        return self.ordered_temp_file
+    def get_partitioned_files(self) -> List[str]:
+        """Get the on-disk NDJSON buckets holding data grouped by event_id"""
+        return self.partitioned_files
 
     def get_input_data_type(self) -> DataType:
         """Returns the input data type"""
@@ -240,43 +262,14 @@ class IDUTransformer(MontyDataTransformer[IDUDataSource]):
     def check_and_get_idu_data(self) -> Iterator[List[Dict]]:
         """Validate the source fields"""
 
-        required_fields = ["latitude", "longitude", "event_id"]
-
-        tmp_file = self.data_source.get_ordered_tmp_file()
         input_data_type = self.data_source.get_input_data_type()
         match input_data_type:
             case DataType.FILE:
-                with open(tmp_file.name, "rb") as f:
-                    items = ijson.items(f, "item")  # assumes top-level is a JSON array
-                    current_id = None
-                    group = []
-
-                    for item in items:
-                        if item["displacement_type"] not in IDMCUtils.DisplacementType._value2member_map_:
-                            logging.warning(
-                                f"Unknown displacement type: {item['displacement_type']} found. Ignore the datapoint."
-                            )
-                            continue
-                        # Get the Disaster type data only
-                        if IDMCUtils.DisplacementType(item["displacement_type"]) == IDMCUtils.DisplacementType.DISASTER_TYPE:
-                            missing_fields = [field for field in required_fields if field not in item]
-                            if missing_fields:
-                                logger.warning(
-                                    f"Missing required fields {missing_fields} for the event id {item.get('id', '<None>')}."
-                                )
-                                continue
-
-                            item_id = item["event_id"]
-                            if item_id != current_id:
-                                if group:
-                                    yield group
-                                group = [item]
-                                current_id = item_id
-                            else:
-                                group.append(item)
-
-                    if group:
-                        yield group
+                yield from iter_grouped_json_buckets(
+                    self.data_source.get_partitioned_files(),
+                    key_fn=_idu_event_id_key,
+                    filter_fn=_is_valid_disaster_idu,
+                )
             case DataType.MEMORY:
                 data_contents = self.data_source.get_memory_data()
                 data_contents.sort(key=lambda x: x.get("event_id", " "))
