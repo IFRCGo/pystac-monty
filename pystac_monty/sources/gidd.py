@@ -24,7 +24,12 @@ from pystac_monty.sources.common import (
     MontyDataSourceV3,
     MontyDataTransformer,
 )
-from pystac_monty.sources.utils import IDMCUtils, iter_grouped_json_buckets, partition_json_array_by_key
+from pystac_monty.sources.utils import (
+    IDMCUtils,
+    iter_grouped_json_buckets,
+    normalize_figure_category,
+    partition_json_array_by_key,
+)
 from pystac_monty.validators.gidd import GiddValidator
 
 logger = logging.getLogger(__name__)
@@ -247,7 +252,7 @@ class GIDDTransformer(MontyDataTransformer[GIDDDataSource]):
             if not startdate:
                 raise Exception("Start date is not defined")
 
-            impact_type = data_item.properties.Figure_category or "displaced"
+            impact_type = normalize_figure_category(data_item.properties.Figure_category) or "displaced"
 
             impact_item.id = (
                 impact_item.id.replace(STAC_EVENT_ID_PREFIX, STAC_IMPACT_ID_PREFIX)

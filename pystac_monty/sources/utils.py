@@ -30,6 +30,12 @@ def save_json_data_into_tmp_file(data: dict) -> tempfile._TemporaryFileWrapper:
     return tmpfile
 
 
+def normalize_figure_category(fig_category: str | None):
+    if fig_category:
+        return "-".join([w.lower().strip() for w in fig_category.split(" ")])
+    return None
+
+
 class IDMCUtils:
     """IDMC GIDD and IDU utils"""
 

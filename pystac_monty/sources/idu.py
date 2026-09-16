@@ -233,7 +233,7 @@ class IDUTransformer(MontyDataTransformer[IDUDataSource]):
             description = data_item.standard_popup_text
             impact_type = self._get_impact_type_from_desc(description=description)
 
-            impact_item.id = f"{impact_item.id.replace(STAC_EVENT_ID_PREFIX, STAC_IMPACT_ID_PREFIX)}{data_item.id}-{impact_type}"
+            impact_item.id = f"{impact_item.id.replace(STAC_EVENT_ID_PREFIX, STAC_IMPACT_ID_PREFIX)}-{data_item.id}-{impact_type}"
             impact_item.datetime = startdate
             impact_item.properties["start_datetime"] = startdate.isoformat()
             impact_item.properties["end_datetime"] = enddate.isoformat()
