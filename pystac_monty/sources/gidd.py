@@ -5,9 +5,8 @@ import os
 import typing
 from dataclasses import dataclass
 from datetime import datetime
-from typing import Dict, Generator, Iterator, List, Optional
+from typing import Any, Dict, Generator, Iterator, List, Optional
 
-import ijson
 import pytz
 from pystac import Asset, Item, Link
 
@@ -25,7 +24,7 @@ from pystac_monty.sources.common import (
     MontyDataSourceV3,
     MontyDataTransformer,
 )
-from pystac_monty.sources.utils import IDMCUtils, order_data_file
+from pystac_monty.sources.utils import IDMCUtils, iter_grouped_json_buckets, partition_json_array_by_key
 from pystac_monty.validators.gidd import GiddValidator
 
 logger = logging.getLogger(__name__)
@@ -34,20 +33,35 @@ STAC_EVENT_ID_PREFIX = "idmc-gidd-event-"
 STAC_IMPACT_ID_PREFIX = "idmc-gidd-impact-"
 
 
+def _gidd_event_id_key(item: dict) -> Any:
+    return item.get("properties", {}).get("Event ID", "")
+
+
+def _is_disaster_figure(item: dict) -> bool:
+    figure_type = item.get("properties", {}).get("Figure cause")
+    if figure_type not in IDMCUtils.DisplacementType._value2member_map_:
+        logger.warning("Invalid Figure cause. Skipping the event.")
+        return False
+    return IDMCUtils.DisplacementType(figure_type) == IDMCUtils.DisplacementType.DISASTER_TYPE
+
+
 @dataclass
 class GIDDDataSource(MontyDataSourceV3):
     """GIDD data source version 2"""
 
     parsed_content: List[dict]
-    ordered_temp_file: Optional[str] = None
+    partitioned_files: Optional[List[str]] = None
 
     def __init__(self, data: GenericDataSource, eoapi_url: str | None = None):
         super().__init__(root=data, eoapi_url=eoapi_url)
 
         def handle_file_data():
             if os.path.isfile(self.input_data.path):
-                jq_filter = '.features |= sort_by(.properties."Event ID")'
-                self.ordered_temp_file = order_data_file(filepath=self.input_data.path, jq_filter=jq_filter)
+                self.partitioned_files = partition_json_array_by_key(
+                    filepath=self.input_data.path,
+                    ijson_prefix="features.item",
+                    key_fn=_gidd_event_id_key,
+                )
 
         def handle_memory_data():
             self.parsed_content = json.loads(self.input_data.content)
@@ -61,9 +75,9 @@ class GIDDDataSource(MontyDataSourceV3):
             case _:
                 typing.assert_never(input_data_type)
 
-    def get_ordered_tmp_file(self):
-        """Get the temp file object which has ordered data"""
-        return self.ordered_temp_file
+    def get_partitioned_files(self) -> List[str]:
+        """Get the on-disk NDJSON buckets holding data grouped by Event ID"""
+        return self.partitioned_files
 
     def get_input_data_type(self) -> DataType:
         """Returns the input data type"""
@@ -287,37 +301,14 @@ class GIDDTransformer(MontyDataTransformer[GIDDDataSource]):
         Returns:
             List of validated GIDD data dictionaries
         """
-        tmp_file = self.data_source.get_ordered_tmp_file()
         input_data_type = self.data_source.get_input_data_type()
         match input_data_type:
             case DataType.FILE:
-                with open(tmp_file.name, "rb") as f:
-                    items = ijson.items(f, "features.item")
-                    current_id = None
-                    group = []
-
-                    for item in items:
-                        item_properties = item.get("properties", {})
-                        figure_type = item_properties.get("Figure cause")
-                        if figure_type not in IDMCUtils.DisplacementType._value2member_map_:
-                            logger.warning("Invalid Figure cause. Skipping the event.")
-                            continue
-
-                        if (
-                            IDMCUtils.DisplacementType(item_properties.get("Figure cause"))
-                            == IDMCUtils.DisplacementType.DISASTER_TYPE
-                        ):
-                            item_id = item_properties["Event ID"] if "Event ID" in item_properties else ""
-                            if item_id != current_id:
-                                if group:
-                                    yield group
-                                group = [item]
-                                current_id = item_id
-                            else:
-                                group.append(item)
-
-                    if group:
-                        yield group
+                yield from iter_grouped_json_buckets(
+                    self.data_source.get_partitioned_files(),
+                    key_fn=_gidd_event_id_key,
+                    filter_fn=_is_disaster_figure,
+                )
             case DataType.MEMORY:
                 data_contents = self.data_source.get_memory_data()
                 data_contents.sort(key=lambda x: x["properties"]["Event ID"])

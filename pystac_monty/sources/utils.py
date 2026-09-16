@@ -1,9 +1,14 @@
+import itertools
 import json
 import logging
+import math
+import os
 import re
-import subprocess
 import tempfile
 from enum import Enum
+from typing import Any, Callable, Iterable, Iterator, List, Optional
+
+import ijson
 
 from pystac_monty.extension import (
     MontyImpactExposureCategory,
@@ -95,16 +100,67 @@ class IDMCUtils:
         return hazard_mapping.get(hazard, [])
 
 
-def order_data_file(filepath: str, jq_filter: str):
-    """Order the data based on given filter"""
+def partition_json_array_by_key(
+    filepath: str,
+    ijson_prefix: str,
+    key_fn: Callable[[dict], Any],
+    target_bucket_bytes: int = 64 * 1024 * 1024,
+    min_buckets: int = 16,
+    max_buckets: int = 1024,
+) -> List[str]:
+    """Split a large top-level JSON array into on-disk NDJSON buckets, hashed by ``key_fn``.
+
+    Records that need to be grouped by key (e.g. all figures for one event) can then be
+    processed a bucket at a time instead of loading or sorting the whole array in memory.
+    A single ``jq sort_by(...)`` (or any full-array sort) needs several times the file's
+    size in RAM because it has to build the whole document as its in-memory tree before it
+    can sort anything -- that scales with total file size no matter how the result is
+    consumed afterwards. Bucketing bounds peak memory to one bucket's size instead, and
+    ijson parses the source file incrementally rather than loading it whole.
+    """
+    file_size = os.path.getsize(filepath)
+    num_buckets = min(max_buckets, max(min_buckets, math.ceil(file_size / target_bucket_bytes)))
+
+    buckets = [tempfile.NamedTemporaryFile(mode="w", delete=False, suffix=".ndjson") for _ in range(num_buckets)]
     try:
-        result = subprocess.run(["jq", jq_filter, filepath], capture_output=True, text=True, check=True)
-    except subprocess.CalledProcessError as e:
-        logger.error("Error running jq: %s", e.stderr)
-        raise
+        with open(filepath, "rb") as f:
+            # use_float avoids ijson's default Decimal, which json.dumps can't serialize below
+            for item in ijson.items(f, ijson_prefix, use_float=True):
+                bucket = buckets[hash(key_fn(item)) % num_buckets]
+                bucket.write(json.dumps(item))
+                bucket.write("\n")
+    finally:
+        for bucket in buckets:
+            bucket.close()
 
-    temp_file = tempfile.NamedTemporaryFile(delete=False)
-    temp_file.write(result.stdout.encode())
-    temp_file.close()
+    return [bucket.name for bucket in buckets]
 
-    return temp_file
+
+def iter_grouped_json_buckets(
+    bucket_paths: Iterable[str],
+    key_fn: Callable[[dict], Any],
+    filter_fn: Optional[Callable[[dict], bool]] = None,
+) -> Iterator[List[dict]]:
+    """Read back buckets written by :func:`partition_json_array_by_key`, grouping each
+    bucket's records by ``key_fn``. Each bucket is deleted once fully processed.
+
+    Grouping compares ``str(key_fn(item))`` rather than the raw key so a stray record
+    missing the key field (falling back to e.g. ``""``) can't blow up the sort by mixing
+    incomparable types with the rest -- record order across groups doesn't matter to
+    callers, only that every record sharing a key ends up in the same group.
+    """
+    for path in bucket_paths:
+        try:
+            with open(path) as f:
+                items = [json.loads(line) for line in f]
+            if filter_fn is not None:
+                items = [item for item in items if filter_fn(item)]
+
+            def sort_key(item: dict) -> str:
+                return str(key_fn(item))
+
+            items.sort(key=sort_key)
+            for _, group in itertools.groupby(items, key=sort_key):
+                yield list(group)
+        finally:
+            os.unlink(path)
