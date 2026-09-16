@@ -255,6 +255,46 @@ class USGSTest(unittest.TestCase):
         self.assertTrue(found_event)
         self.assertTrue(found_hazard)
 
+    def test_product_content_files_are_attached_as_assets(self) -> None:
+        """Useful USGS product files should survive validation and become STAC assets."""
+        data_source = USGSDataSource(
+            data=USGSDataSourceType(
+                source_url=tibetan_plateau_eq[1],
+                event_data=File(path=tibetan_plateau_eq[1], data_type=DataType.FILE),
+                loss_data=File(path=tibetan_plateau_eq[2], data_type=DataType.FILE),
+            )
+        )
+        items = USGSTransformer(data_source, geocoder).make_items()
+
+        event_item = next(item for item in items if MontyExtension.ext(item).is_source_event())
+        hazard_item = next(item for item in items if MontyExtension.ext(item).is_source_hazard())
+        impact_items = [item for item in items if MontyExtension.ext(item).is_source_impact()]
+
+        self.assertIn("moment_tensor_quakeml_xml", event_item.assets)
+        self.assertIn("shakemap_download_grid_xml", hazard_item.assets)
+        self.assertIn("shakemap_download_coverage_mmi_high_res_covjson", hazard_item.assets)
+        self.assertIn("dyfi_dyfi_geo_1km_geojson", hazard_item.assets)
+        self.assertIn("finite_fault_ffm_geojson", hazard_item.assets)
+        self.assertIn("ground_failure_godt_2008_model_tif", hazard_item.assets)
+        self.assertEqual(
+            hazard_item.assets["dyfi_dyfi_geo_1km_geojson"].media_type,
+            "application/geo+json",
+        )
+        self.assertEqual(
+            hazard_item.assets["shakemap_download_coverage_mmi_high_res_covjson"].media_type,
+            "application/prs.coverage+json",
+        )
+
+        for impact_item in impact_items:
+            self.assertIn("losspager_onepager_pdf", impact_item.assets)
+            self.assertIn("losspager_json_losses_json", impact_item.assets)
+            self.assertNotIn("losspager_event_log", impact_item.assets)
+            self.assertTrue(
+                impact_item.assets["losspager_onepager_pdf"].href.startswith(
+                    "https://earthquake.usgs.gov/realtime/product/losspager/"
+                )
+            )
+
     def test_event_hazard_impact_country_codes_are_consistent(self) -> None:
         """Regression test for https://github.com/IFRCGo/pystac-monty/issues/167
 
