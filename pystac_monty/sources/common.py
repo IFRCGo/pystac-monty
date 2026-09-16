@@ -280,71 +280,39 @@ class MontyDataTransformer(typing.Generic[DataSource]):
             f"{MontyDataTransformer.base_collection_url}/{self.impacts_collection_id}/{self.impacts_collection_id}.json"
         )
 
-        # GitHub hrefs to stamp onto the collections' self links (and hence item "collection" links),
-        # independent of whether the JSON above was actually fetched from the local submodule or GitHub.
-        self.events_collection_github_url = (
-            f"{MontyDataTransformer.github_collection_url}/{self.events_collection_id}/{self.events_collection_id}.json"
-        )
-        self.hazards_collection_github_url = (
-            f"{MontyDataTransformer.github_collection_url}/{self.hazards_collection_id}/{self.hazards_collection_id}.json"
-        )
-        self.impacts_collection_github_url = (
-            f"{MontyDataTransformer.github_collection_url}/{self.impacts_collection_id}/{self.impacts_collection_id}.json"
-        )
-
         self.geocoder = geocoder
 
         self.transform_summary = TransformSummary()
 
+    def _load_collection(self, io_url: str, collection_id: str) -> Collection:
+        """Load a collection and set its self link to the canonical GitHub URL."""
+        if io_url.startswith("http"):
+            response = requests.get(io_url, timeout=60)
+            collection_dict = json.loads(response.text)
+        else:
+            with open(io_url, encoding="utf-8") as handle:
+                collection_dict = json.load(handle)
+
+        collection = Collection.from_dict(collection_dict)
+        collection.set_self_href(f"{MontyDataTransformer.github_collection_url}/{collection_id}/{collection_id}.json")
+        return collection
+
     def get_event_collection(self) -> Collection:
         """Get event collection"""
         if self._event_collection_cache is None:
-            # Handle local file as well
-            if self.events_collection_url.startswith("http"):
-                response = requests.get(self.events_collection_url)
-                collection_dict = json.loads(response.text)
-            else:
-                with open(self.events_collection_url) as f:
-                    collection_dict = json.load(f)
-            collection = Collection.from_dict(collection_dict)
-            # update self link with the canonical GitHub URL, even though the JSON above may have
-            # been read from the local submodule checkout
-            collection.set_self_href(self.events_collection_github_url)
-            self._event_collection_cache = collection
+            self._event_collection_cache = self._load_collection(self.events_collection_url, self.events_collection_id)
         return self._event_collection_cache
 
     def get_hazard_collection(self) -> Collection:
         """Get hazard collection"""
         if self._hazard_collection_cache is None:
-            # Handle local file as well
-            if self.hazards_collection_url.startswith("http"):
-                response = requests.get(self.hazards_collection_url)
-                collection_dict = json.loads(response.text)
-            else:
-                with open(self.hazards_collection_url) as f:
-                    collection_dict = json.load(f)
-            collection = Collection.from_dict(collection_dict)
-            # update self link with the canonical GitHub URL, even though the JSON above may have
-            # been read from the local submodule checkout
-            collection.set_self_href(self.hazards_collection_github_url)
-            self._hazard_collection_cache = collection
+            self._hazard_collection_cache = self._load_collection(self.hazards_collection_url, self.hazards_collection_id)
         return self._hazard_collection_cache
 
     def get_impact_collection(self) -> Collection:
         """Get impact collection"""
         if self._impact_collection_cache is None:
-            # Handle local file as well
-            if self.impacts_collection_url.startswith("http"):
-                response = requests.get(self.impacts_collection_url)
-                collection_dict = json.loads(response.text)
-            else:
-                with open(self.impacts_collection_url) as f:
-                    collection_dict = json.load(f)
-            collection = Collection.from_dict(collection_dict)
-            # update self link with the canonical GitHub URL, even though the JSON above may have
-            # been read from the local submodule checkout
-            collection.set_self_href(self.impacts_collection_github_url)
-            self._impact_collection_cache = collection
+            self._impact_collection_cache = self._load_collection(self.impacts_collection_url, self.impacts_collection_id)
         return self._impact_collection_cache
 
     def add_related_links(

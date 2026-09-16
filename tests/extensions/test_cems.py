@@ -31,7 +31,7 @@ from pystac_monty.sources.cems import (
     regenerate_cems_examples,
     resolve_gdacs_current_episode,
 )
-from pystac_monty.sources.common import DataType, GenericDataSource, Memory
+from pystac_monty.sources.common import DataType, GenericDataSource, Memory, MontyDataTransformer
 from tests.extensions.test_monty import CustomValidator
 from tests.utils.test_hazard_taxonomy import assert_hazard_code_dict_valid, taxonomy_md_path
 from tests.utils.test_utils import (
@@ -204,6 +204,21 @@ class CEMSTest(unittest.TestCase):
     def setUp(self) -> None:
         super().setUp()
         self.validator = CustomValidator()
+
+    def test_collection_self_hrefs_use_canonical_github_urls(self) -> None:
+        transformer = _memory_transformer()
+        collections = {
+            "cems-events": transformer.get_event_collection(),
+            "cems-hazards": transformer.get_hazard_collection(),
+            "cems-impacts": transformer.get_impact_collection(),
+            "cems-response": transformer.get_response_collection(),
+        }
+
+        for collection_id, collection in collections.items():
+            self.assertEqual(
+                collection.get_self_href(),
+                f"{MontyDataTransformer.github_collection_url}/{collection_id}/{collection_id}.json",
+            )
 
     def test_transformer_with_mock_data(self) -> None:
         items = list(_memory_transformer().get_stac_items())

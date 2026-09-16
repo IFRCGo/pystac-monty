@@ -21,7 +21,6 @@ from pathlib import Path
 from typing import Any, Generator, List, Optional
 from urllib.parse import unquote
 
-import requests  # type: ignore[import-untyped]
 from markdownify import markdownify as md
 from pystac import Asset, Collection, Item, Link
 from pystac.provider import Provider, ProviderRole
@@ -188,23 +187,15 @@ class CharterTransformer(MontyDataTransformer[CharterDataSource]):
     def __init__(self, data_source: CharterDataSource, geocoder: MontyGeoCoder | None = None) -> None:
         super().__init__(data_source, geocoder or MockGeocoder())
         self._response_collection_cache: Collection | None = None
-        self.response_collection_url = f"{MontyDataTransformer.base_collection_url}/charter-response/charter-response.json"
-        self.response_collection_github_url = (
-            f"{MontyDataTransformer.github_collection_url}/charter-response/charter-response.json"
+        self.response_collection_id = "charter-response"
+        self.response_collection_url = (
+            f"{MontyDataTransformer.base_collection_url}/{self.response_collection_id}/{self.response_collection_id}.json"
         )
 
     def get_response_collection(self) -> Collection:
         """Collection for Charter response items (``charter-response``)."""
         if self._response_collection_cache is None:
-            url = self.response_collection_url
-            if url.startswith("http"):
-                collection_dict = json.loads(requests.get(url, timeout=60).text)
-            else:
-                with open(url, encoding="utf-8") as f:
-                    collection_dict = json.load(f)
-            collection = Collection.from_dict(collection_dict)
-            collection.set_self_href(self.response_collection_github_url)
-            self._response_collection_cache = collection
+            self._response_collection_cache = self._load_collection(self.response_collection_url, self.response_collection_id)
         return self._response_collection_cache
 
     @staticmethod
