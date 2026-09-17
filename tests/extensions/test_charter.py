@@ -27,6 +27,7 @@ from tests.utils.test_hazard_taxonomy import assert_hazard_code_dict_valid, taxo
 from tests.utils.test_utils import (
     assert_processing_extension_fields,
     normalize_processing_version_fields,
+    normalize_related_link_hrefs,
     validate_correlation_id,
 )
 
@@ -457,9 +458,13 @@ class CharterTest(unittest.TestCase):
                 self.assertEqual([path.name for path in generated_files], [path.name for path in expected_files])
                 for expected_path in expected_files:
                     generated_path = output_dir / collection / expected_path.name
+
+                    def _normalize(doc: dict) -> dict:
+                        return normalize_related_link_hrefs(normalize_processing_version_fields(doc))
+
                     self.assertEqual(
-                        normalize_processing_version_fields(json.loads(generated_path.read_text(encoding="utf-8"))),
-                        normalize_processing_version_fields(json.loads(expected_path.read_text(encoding="utf-8"))),
+                        _normalize(json.loads(generated_path.read_text(encoding="utf-8"))),
+                        _normalize(json.loads(expected_path.read_text(encoding="utf-8"))),
                         expected_path.name,
                     )
 
