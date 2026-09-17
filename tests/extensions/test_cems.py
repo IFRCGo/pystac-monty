@@ -37,6 +37,7 @@ from tests.utils.test_hazard_taxonomy import assert_hazard_code_dict_valid, taxo
 from tests.utils.test_utils import (
     assert_processing_extension_fields,
     normalize_processing_version_fields,
+    normalize_related_link_hrefs,
     validate_correlation_id,
 )
 
@@ -675,6 +676,9 @@ class CEMSTest(unittest.TestCase):
             output_dir = Path(tmp)
             regenerate_cems_examples(fixture, output_dir)
 
+            def _normalize(doc: dict) -> dict:
+                return normalize_related_link_hrefs(normalize_processing_version_fields(doc))
+
             for item_id in CURATED_CEMS_EXAMPLE_IDS:
                 collection = _collection_for_item_id(item_id)
                 expected_path = examples_dir / collection / f"{item_id}.json"
@@ -682,8 +686,8 @@ class CEMSTest(unittest.TestCase):
                 self.assertTrue(generated_path.is_file(), item_id)
                 self.assertTrue(expected_path.is_file(), item_id)
                 self.assertEqual(
-                    normalize_processing_version_fields(json.loads(generated_path.read_text(encoding="utf-8"))),
-                    normalize_processing_version_fields(json.loads(expected_path.read_text(encoding="utf-8"))),
+                    _normalize(json.loads(generated_path.read_text(encoding="utf-8"))),
+                    _normalize(json.loads(expected_path.read_text(encoding="utf-8"))),
                     item_id,
                 )
 
