@@ -1,5 +1,12 @@
 # Changelog
 
+## [0.2.6](https://github.com/IFRCGo/pystac-monty/compare/v0.2.5...v0.2.6) (2026-09-18)
+
+
+### Bug Fixes
+
+* **cems:** hazard mappings fixtures ([#249](https://github.com/IFRCGo/pystac-monty/issues/249)) ([6e15b5c](https://github.com/IFRCGo/pystac-monty/commit/6e15b5c955baf84469dbffb06b62169b049a5292))
+
 ## [0.2.5](https://github.com/IFRCGo/pystac-monty/compare/v0.2.4...v0.2.5) (2026-09-18)
 
 
