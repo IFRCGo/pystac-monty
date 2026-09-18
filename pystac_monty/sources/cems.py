@@ -64,8 +64,8 @@ GDACS_API_BASE = "https://www.gdacs.org/gdacsapi/api/events"
 # CEMS category (+ subCategory refinement) -> [UNDRR-2025, GLIDE, EM-DAT]
 CEMS_HAZARD_CODES: dict[str, list[str]] = {
     "flood": ["MH0600", "FL", "nat-hyd-flo-flo"],
-    "flood_riverine": ["MH0604", "FL", "nat-hyd-flo-flo"],
-    "flood_flash": ["MH0603", "FF", "nat-hyd-flo-flo"],
+    "flood_riverine": ["MH0604", "FL", "nat-hyd-flo-riv"],
+    "flood_flash": ["MH0603", "FF", "nat-hyd-flo-fla"],
     "flood_coastal": ["MH0601", "FL", "nat-hyd-flo-coa"],
     "wildfire": ["EN0205", "WF", "nat-cli-wil-wil"],
     "storm_tropical": ["MH0306", "TC", "nat-met-sto-tro"],
@@ -76,8 +76,8 @@ CEMS_HAZARD_CODES: dict[str, list[str]] = {
     "mass_movement": ["GH0300", "LS", "nat-geo-mmd-lan"],
     "mass_movement_avalanche": ["MH0801", "AV", "nat-geo-mmd-ava"],
     "volcanic_activity": ["GH0201", "VO", "nat-geo-vol-vol"],
-    "industrial_accident": ["TL0301", "tec-ind-che-che"],
-    "industrial_explosion": ["TL0304", "tec-ind-exp-exp"],
+    "industrial_accident": ["TL0301", "AC", "tec-ind-che-che"],
+    "industrial_explosion": ["TL0304", "AC", "tec-ind-exp-exp"],
     "transport_air": ["TL0401", "AC", "tec-tra-air-air"],
     "transport_water": ["TL0403", "AC", "tec-tra-wat-wat"],
     "transport_rail": ["TL0404", "AC", "tec-tra-rai-rai"],
