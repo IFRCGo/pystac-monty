@@ -989,6 +989,16 @@ def _matching_cog_layer(product: dict[str, Any], image: dict[str, Any]) -> dict[
 _ACQUISITION_FILENAME_PREFIX_RE = re.compile(r"^[A-Za-z0-9]+_AOI\d+_[A-Za-z]+_(?:PRODUCT|MONIT\d+)_", re.IGNORECASE)
 
 
+def _acquisition_filename_stem(image: dict[str, Any]) -> str | None:
+    """The image ``fileName`` stem with its product-context prefix stripped (see
+    :data:`_ACQUISITION_FILENAME_PREFIX_RE`), e.g. ``LEGION_20251107_1555_ORTHO`` — or ``None``
+    when the image carries no ``fileName``."""
+    file_name = image.get("fileName")
+    if not isinstance(file_name, str) or not file_name.strip():
+        return None
+    return _ACQUISITION_FILENAME_PREFIX_RE.sub("", Path(file_name).stem)
+
+
 def _acquisition_image_key(image: dict[str, Any], idx: int) -> str:
     """Key identifying one physical acquisition for de-duplication and item-id purposes.
 
@@ -996,17 +1006,27 @@ def _acquisition_image_key(image: dict[str, Any], idx: int) -> str:
     been observed reused across products that carry entirely different source images (different
     sensor, different date; see issue #242). The ``fileName`` encodes what actually distinguishes
     acquisitions (sensor + date + time, e.g. ``RADARSAT2_20230518_1655`` vs
-    ``COSMOSKYMED_20230517_1656``) and is preferred, with its product-context prefix stripped
-    (see :data:`_ACQUISITION_FILENAME_PREFIX_RE`); ``uuid``, then ``idx``, are defensive
-    fallbacks for when ``fileName`` is absent.
+    ``COSMOSKYMED_20230517_1656``) and is preferred, with its product-context prefix stripped;
+    ``uuid``, then ``idx``, are defensive fallbacks for when ``fileName`` is absent.
     """
-    file_name = image.get("fileName")
-    if isinstance(file_name, str) and file_name.strip():
-        stem = _ACQUISITION_FILENAME_PREFIX_RE.sub("", Path(file_name).stem)
+    stem = _acquisition_filename_stem(image)
+    if stem:
         return sanitize_stac_item_id(stem)
     if image.get("uuid"):
         return sanitize_stac_item_id(str(image["uuid"]))
     return f"img{idx}"
+
+
+def _acquisition_mission(image: dict[str, Any]) -> str | None:
+    """Mission/platform name parsed from the leading token of the (product-context-stripped)
+    ``fileName``, e.g. ``legion`` from ``EMSR847_AOI01_GRA_PRODUCT_LEGION_20251107_1555_ORTHO.tif``
+    — the same token that identifies the acquisition in :func:`_acquisition_image_key`, so it is
+    known reliable even when CEMS's own ``sensorName`` field is absent or differently formatted."""
+    stem = _acquisition_filename_stem(image)
+    if not stem:
+        return None
+    mission = stem.split("_", 1)[0].strip()
+    return mission.lower() or None
 
 
 def _build_acquisition_item(
@@ -1081,6 +1101,8 @@ def _build_acquisition_item(
     item.stac_extensions = [SCHEMA_URI]
     if sensor_name:
         item.common_metadata.platform = sensor_name
+    if mission := _acquisition_mission(image):
+        item.common_metadata.mission = mission
 
     cog_layer = _matching_cog_layer(product, image)
     if cog_layer and isinstance(cog_layer.get("name"), str):

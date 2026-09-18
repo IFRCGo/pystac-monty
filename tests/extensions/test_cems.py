@@ -274,6 +274,7 @@ class CEMSTest(unittest.TestCase):
         self.assertEqual(acquisition.id, "cems-response-EMSR999-aoi01-dat-ICEYE_20260116_1000_ORTHO")
         self.assertEqual(acquisition.collection_id, "cems-response")
         self.assertEqual(acquisition.common_metadata.platform, "ICEYE")
+        self.assertEqual(acquisition.common_metadata.mission, "iceye")
         self.assertTrue(MontyExtension.has_extension(acquisition))
         monty = MontyExtension.ext(acquisition)
         self.assertTrue(monty.is_source_response())
