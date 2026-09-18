@@ -271,7 +271,7 @@ class CEMSTest(unittest.TestCase):
         acquisitions = [item for item in items if "acquisition" in (item.properties.get("roles") or [])]
         self.assertEqual(len(acquisitions), 1)
         acquisition = acquisitions[0]
-        self.assertEqual(acquisition.id, "cems-response-EMSR999-aoi01-dat-11111111-1111-1111-1111-111111111111")
+        self.assertEqual(acquisition.id, "cems-response-EMSR999-aoi01-dat-ICEYE_20260116_1000_ORTHO")
         self.assertEqual(acquisition.collection_id, "cems-response")
         self.assertEqual(acquisition.common_metadata.platform, "ICEYE")
         self.assertTrue(MontyExtension.has_extension(acquisition))
@@ -317,6 +317,57 @@ class CEMSTest(unittest.TestCase):
         # the item is self-sufficient to render — the raster under its own vector overlay —
         # even though the acquisition item is where the imagery's own identity/metadata lives.
         self.assertEqual(del_response.assets["basemap"].href, acquisition.assets["data"].href)
+
+    def test_acquisition_item_deduplicated_across_products_in_same_aoi(self) -> None:
+        """pystac-monty#242: CEMS's ``images[].uuid`` can be reused across products that cite the
+        *same* physical acquisition (not just across unrelated ones) — the true-duplicate case
+        (e.g. EMSR659 aoi01) where two products' ``images[]`` entries share an identical
+        ``fileName``. Building the item id from ``fileName`` alone would still attempt two
+        ``Item``s with the same id in that case; the AOI-level de-dup pass must collapse them
+        into a single acquisition item that carries `related` links back to every citing product,
+        not just whichever product built last."""
+        data = deepcopy(MINIMAL_ACTIVATION)
+        shared_file_name = data["aois"][0]["products"][0]["images"][0]["fileName"]
+        data["aois"][0]["products"][1]["images"] = [
+            {
+                "uuid": "22222222-2222-2222-2222-222222222222",
+                "sensorType": "sar",
+                "sensorName": "ICEYE",
+                "resolutionClass": "VHR2",
+                "acquisitionTime": "2026-01-16T10:00:00",
+                "fileName": shared_file_name,
+            }
+        ]
+        items = list(_memory_transformer(data).get_stac_items())
+        for item in items:
+            item.validate(validator=self.validator)
+
+        acquisitions = [item for item in items if "acquisition" in (item.properties.get("roles") or [])]
+        self.assertEqual(len(acquisitions), 1)
+        acquisition = acquisitions[0]
+
+        del_response = next(item for item in items if item.id == "cems-response-EMSR999-aoi01-del")
+        gra_response = next(item for item in items if item.id == "cems-response-EMSR999-aoi01-gra")
+        for response in (del_response, gra_response):
+            response_links = [
+                link
+                for link in response.links
+                if link.rel == "related" and link.extra_fields.get("roles") == ["response"] and acquisition.id in link.get_href()
+            ]
+            self.assertEqual(len(response_links), 1, response.id)
+
+        reciprocal_targets = {
+            link.get_href()
+            for link in acquisition.links
+            if link.rel == "related" and link.extra_fields.get("roles") == ["response"]
+        }
+        self.assertEqual(
+            reciprocal_targets,
+            {
+                f"{_TEST_EOAPI_URL}/collections/cems-response/items/{del_response.id}",
+                f"{_TEST_EOAPI_URL}/collections/cems-response/items/{gra_response.id}",
+            },
+        )
 
     def test_delivery_datetime_normalized(self) -> None:
         data = deepcopy(MINIMAL_ACTIVATION)

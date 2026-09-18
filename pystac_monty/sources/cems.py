@@ -289,7 +289,7 @@ CURATED_CEMS_EXAMPLE_IDS: tuple[str, ...] = (
     "cems-hazard-EMSR847-aoi01-landslide",
     "cems-response-EMSR847-aoi01-gra",
     "cems-impact-EMSR847-aoi01-gra-population",
-    "cems-response-EMSR847-aoi01-dat-d8deb932-f3c6-42f7-8f31-1dfa61acd40f",
+    "cems-response-EMSR847-aoi01-dat-LEGION_20251107_1555_ORTHO",
 )
 
 _CEMS_CROSS_COLLECTION_PREFIXES = (
@@ -981,6 +981,34 @@ def _matching_cog_layer(product: dict[str, Any], image: dict[str, Any]) -> dict[
     return None
 
 
+# CEMS filenames follow `{code}_AOI{nn}_{TYPE}_{PRODUCT|MONIT{nn}}_{sensor}_{date}_{time}_...`,
+# e.g. `EMSR847_AOI01_GRA_PRODUCT_LEGION_20251107_1555_ORTHO`. The `{code}_AOI{nn}_{TYPE}_
+# {PRODUCT|MONIT{nn}}_` prefix identifies the *derived product* that cites the image, not the
+# physical acquisition itself (and `code`/AOI are already in the item id) — stripped so the
+# acquisition's identity doesn't couple to whichever product happened to reference it.
+_ACQUISITION_FILENAME_PREFIX_RE = re.compile(r"^[A-Za-z0-9]+_AOI\d+_[A-Za-z]+_(?:PRODUCT|MONIT\d+)_", re.IGNORECASE)
+
+
+def _acquisition_image_key(image: dict[str, Any], idx: int) -> str:
+    """Key identifying one physical acquisition for de-duplication and item-id purposes.
+
+    CEMS's own ``images[].uuid`` is not a stable identifier for a single acquisition — it has
+    been observed reused across products that carry entirely different source images (different
+    sensor, different date; see issue #242). The ``fileName`` encodes what actually distinguishes
+    acquisitions (sensor + date + time, e.g. ``RADARSAT2_20230518_1655`` vs
+    ``COSMOSKYMED_20230517_1656``) and is preferred, with its product-context prefix stripped
+    (see :data:`_ACQUISITION_FILENAME_PREFIX_RE`); ``uuid``, then ``idx``, are defensive
+    fallbacks for when ``fileName`` is absent.
+    """
+    file_name = image.get("fileName")
+    if isinstance(file_name, str) and file_name.strip():
+        stem = _ACQUISITION_FILENAME_PREFIX_RE.sub("", Path(file_name).stem)
+        return sanitize_stac_item_id(stem)
+    if image.get("uuid"):
+        return sanitize_stac_item_id(str(image["uuid"]))
+    return f"img{idx}"
+
+
 def _build_acquisition_item(
     image: dict[str, Any],
     *,
@@ -1018,9 +1046,7 @@ def _build_acquisition_item(
 
     # `dat`, not the parent product's own type slug (e.g. `gra`) — this item's own
     # `monty:response_detail.type` is `eo-dat`, not the type of the product it's linked from.
-    # CEMS's own `images[].uuid` disambiguates (stable across re-ingests, and safe across
-    # products in the same AOI that each carry an image); `idx` is only a defensive fallback.
-    image_key = sanitize_stac_item_id(str(image.get("uuid"))) if image.get("uuid") else f"img{idx}"
+    image_key = _acquisition_image_key(image, idx)
     item_id = f"cems-response-{sanitize_stac_item_id(code)}-{aoi_slug}-dat-{image_key}"
     acquisition_time = image.get("acquisitionTime")
     item_dt = _parse_datetime(acquisition_time) if acquisition_time else dt
@@ -1371,6 +1397,11 @@ class CEMSTransformer(MontyDataTransformer[CEMSDataSource]):
         aws_bucket = str(activation.get("aws_bucket") or CEMS_AWS_VIEWER)
         items: list[Item] = []
         prev_by_key: dict[tuple[int, str], Item] = {}
+        # Same key can recur across an AOI's products (the one genuinely-shared case, e.g.
+        # EMSR659 aoi01, where two products cite the identical source image) — de-dup so a
+        # single acquisition item is built and every citing product links to it, rather than
+        # emitting several Items with the same id (issue #242).
+        acquisition_items_by_key: dict[tuple[str, str], Item] = {}
 
         for aoi in activation.get("aois") or []:
             aoi_number = int(aoi.get("number") or 0)
@@ -1473,23 +1504,27 @@ class CEMSTransformer(MontyDataTransformer[CEMSDataSource]):
                 for image_idx, image in enumerate(product.get("images") or []):
                     if not isinstance(image, dict):
                         continue
-                    acquisition_item = _build_acquisition_item(
-                        image,
-                        code=code,
-                        aoi_slug=aoi_slug,
-                        product=product,
-                        idx=image_idx,
-                        product_geom=product_geom,
-                        dt=dt,
-                        correlation_id=event_monty.correlation_id,
-                        country_codes=country_codes,
-                        hazard_codes=hazard_codes,
-                        aws_bucket=aws_bucket,
-                    )
+                    dedup_key = (aoi_slug, _acquisition_image_key(image, image_idx))
+                    acquisition_item = acquisition_items_by_key.get(dedup_key)
                     if acquisition_item is None:
-                        continue
-                    acquisition_item.set_collection(self.get_response_collection())
-                    items.append(acquisition_item)
+                        acquisition_item = _build_acquisition_item(
+                            image,
+                            code=code,
+                            aoi_slug=aoi_slug,
+                            product=product,
+                            idx=image_idx,
+                            product_geom=product_geom,
+                            dt=dt,
+                            correlation_id=event_monty.correlation_id,
+                            country_codes=country_codes,
+                            hazard_codes=hazard_codes,
+                            aws_bucket=aws_bucket,
+                        )
+                        if acquisition_item is None:
+                            continue
+                        acquisition_item.set_collection(self.get_response_collection())
+                        items.append(acquisition_item)
+                        acquisition_items_by_key[dedup_key] = acquisition_item
                     # eo-dat acquisitions are sibling Response items, not upstream non-Response
                     # items, so they link as `related` (roles: ["response"]) rather than
                     # `derived_from` — per response-best-practices.md §2/§4.4/§6.
