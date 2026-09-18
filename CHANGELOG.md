@@ -1,5 +1,20 @@
 # Changelog
 
+## [0.2.5](https://github.com/IFRCGo/pystac-monty/compare/v0.2.4...v0.2.5) (2026-09-18)
+
+
+### Bug Fixes
+
+* **cems:** dedupe hazard item_ids that collapse to the same slug. ([#238](https://github.com/IFRCGo/pystac-monty/issues/238)) ([448e45f](https://github.com/IFRCGo/pystac-monty/commit/448e45facf3c708a3e36500700676052485eda8b))
+* **cems:** fix test case ([100c5c7](https://github.com/IFRCGo/pystac-monty/commit/100c5c7328a6402af336683588aada0e9160d9c9))
+* **cems:** images metadata. ([#219](https://github.com/IFRCGo/pystac-monty/issues/219)) ([8fe834c](https://github.com/IFRCGo/pystac-monty/commit/8fe834c241a12957682aa931379cc073a25cfc97))
+* **charter:** fix test case ([6149083](https://github.com/IFRCGo/pystac-monty/commit/61490833ae3469549be7c02b506a0172a79d734f))
+* **charter:** handle calibrated datasets with no datetime value ([60f3235](https://github.com/IFRCGo/pystac-monty/commit/60f323500079a8be51ef4e75ac045705f690235f))
+* **GIDD, IDU:** use partition files to handle transformations ([4f37749](https://github.com/IFRCGo/pystac-monty/commit/4f3774910aec4c9308587bc741f6dee9fdf23847))
+* **tests:** avoid ifrc db connection for unit tests. ([#239](https://github.com/IFRCGo/pystac-monty/issues/239)) ([4d5f5bf](https://github.com/IFRCGo/pystac-monty/commit/4d5f5bfd3f06ca4d49b3b07418430ba74e64e064))
+* update the hazard code mappings ([f723aad](https://github.com/IFRCGo/pystac-monty/commit/f723aadafd022a239cb88f7ed351362775caa996))
+* update the ids for IDU and GIDD ([d66aa5a](https://github.com/IFRCGo/pystac-monty/commit/d66aa5a918b64d8be5f456703af26b7f1c44bae0))
+
 ## [0.2.4](https://github.com/IFRCGo/pystac-monty/compare/v0.2.3...v0.2.4) (2026-09-11)
 
 
