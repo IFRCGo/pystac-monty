@@ -981,12 +981,14 @@ def _matching_cog_layer(product: dict[str, Any], image: dict[str, Any]) -> dict[
     return None
 
 
-# CEMS filenames follow `{code}_AOI{nn}_{TYPE}_{PRODUCT|MONIT{nn}}_{sensor}_{date}_{time}_...`,
-# e.g. `EMSR847_AOI01_GRA_PRODUCT_LEGION_20251107_1555_ORTHO`. The `{code}_AOI{nn}_{TYPE}_
-# {PRODUCT|MONIT{nn}}_` prefix identifies the *derived product* that cites the image, not the
-# physical acquisition itself (and `code`/AOI are already in the item id) — stripped so the
-# acquisition's identity doesn't couple to whichever product happened to reference it.
-_ACQUISITION_FILENAME_PREFIX_RE = re.compile(r"^[A-Za-z0-9]+_AOI\d+_[A-Za-z]+_(?:PRODUCT|MONIT\d+)_", re.IGNORECASE)
+# CEMS filenames follow `{code}_AOI{nn}_{TYPE}_[{PRODUCT|MONIT{nn}}_]{sensor}_{date}_{time}_...`
+# — the `PRODUCT`/`MONIT{nn}` segment is not always present (e.g.
+# `EMSR847_AOI08_DEL_SENTINEL1_20251029_1047_ORTHO`, no `PRODUCT`/`MONIT01` token), so it's
+# optional here. The `{code}_AOI{nn}_{TYPE}_[...]_` prefix identifies the *derived product* that
+# cites the image, not the physical acquisition itself (and `code`/AOI are already in the item
+# id) — stripped so the acquisition's identity doesn't couple to whichever product happened to
+# reference it.
+_ACQUISITION_FILENAME_PREFIX_RE = re.compile(r"^[A-Za-z0-9]+_AOI\d+_[A-Za-z]+_(?:(?:PRODUCT|MONIT\d+)_)?", re.IGNORECASE)
 
 
 def _acquisition_filename_stem(image: dict[str, Any]) -> str | None:
@@ -999,7 +1001,7 @@ def _acquisition_filename_stem(image: dict[str, Any]) -> str | None:
     return _ACQUISITION_FILENAME_PREFIX_RE.sub("", Path(file_name).stem)
 
 
-def _acquisition_image_key(image: dict[str, Any], idx: int) -> str:
+def _acquisition_image_key(image: dict[str, Any], idx: int, product: dict[str, Any]) -> str:
     """Key identifying one physical acquisition for de-duplication and item-id purposes.
 
     CEMS's own ``images[].uuid`` is not a stable identifier for a single acquisition — it has
@@ -1007,21 +1009,31 @@ def _acquisition_image_key(image: dict[str, Any], idx: int) -> str:
     sensor, different date; see issue #242). The ``fileName`` encodes what actually distinguishes
     acquisitions (sensor + date + time, e.g. ``RADARSAT2_20230518_1655`` vs
     ``COSMOSKYMED_20230517_1656``) and is preferred, with its product-context prefix stripped;
-    ``uuid``, then ``idx``, are defensive fallbacks for when ``fileName`` is absent.
+    ``uuid`` is a defensive fallback for when ``fileName`` is absent. When both are absent, the
+    key falls back to ``idx`` scoped by the citing product (:func:`_product_id_suffix`) — since
+    this key is now also used to de-dup acquisitions *across* an AOI's products, an unscoped
+    ``idx`` fallback would let unrelated images at the same position in two different products'
+    ``images[]`` collide and be wrongly merged into one acquisition item.
     """
     stem = _acquisition_filename_stem(image)
     if stem:
         return sanitize_stac_item_id(stem)
     if image.get("uuid"):
         return sanitize_stac_item_id(str(image["uuid"]))
-    return f"img{idx}"
+    return f"{_product_id_suffix(product)}-img{idx}"
 
 
 def _acquisition_mission(image: dict[str, Any]) -> str | None:
-    """Mission/platform name parsed from the leading token of the (product-context-stripped)
-    ``fileName``, e.g. ``legion`` from ``EMSR847_AOI01_GRA_PRODUCT_LEGION_20251107_1555_ORTHO.tif``
-    — the same token that identifies the acquisition in :func:`_acquisition_image_key`, so it is
-    known reliable even when CEMS's own ``sensorName`` field is absent or differently formatted."""
+    """Mission/platform name for the acquisition. CEMS's own ``sensorName`` (e.g. ``Sentinel-1``)
+    is preferred — it's a dedicated field, not inferred from ``fileName`` text, so it stays
+    correct even for filenames that omit the ``PRODUCT``/``MONIT{nn}`` segment
+    :data:`_ACQUISITION_FILENAME_PREFIX_RE` expects. The leading token of the (product-context-
+    stripped) ``fileName`` — e.g. ``legion`` from
+    ``EMSR847_AOI01_GRA_PRODUCT_LEGION_20251107_1555_ORTHO.tif`` — is only a fallback for when
+    ``sensorName`` is absent."""
+    sensor_name = image.get("sensorName")
+    if isinstance(sensor_name, str) and sensor_name.strip():
+        return sensor_name.strip().lower()
     stem = _acquisition_filename_stem(image)
     if not stem:
         return None
@@ -1066,7 +1078,7 @@ def _build_acquisition_item(
 
     # `dat`, not the parent product's own type slug (e.g. `gra`) — this item's own
     # `monty:response_detail.type` is `eo-dat`, not the type of the product it's linked from.
-    image_key = _acquisition_image_key(image, idx)
+    image_key = _acquisition_image_key(image, idx, product)
     item_id = f"cems-response-{sanitize_stac_item_id(code)}-{aoi_slug}-dat-{image_key}"
     acquisition_time = image.get("acquisitionTime")
     item_dt = _parse_datetime(acquisition_time) if acquisition_time else dt
@@ -1526,7 +1538,7 @@ class CEMSTransformer(MontyDataTransformer[CEMSDataSource]):
                 for image_idx, image in enumerate(product.get("images") or []):
                     if not isinstance(image, dict):
                         continue
-                    dedup_key = (aoi_slug, _acquisition_image_key(image, image_idx))
+                    dedup_key = (aoi_slug, _acquisition_image_key(image, image_idx, product))
                     acquisition_item = acquisition_items_by_key.get(dedup_key)
                     if acquisition_item is None:
                         acquisition_item = _build_acquisition_item(

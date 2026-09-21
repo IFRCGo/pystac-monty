@@ -319,6 +319,45 @@ class CEMSTest(unittest.TestCase):
         # even though the acquisition item is where the imagery's own identity/metadata lives.
         self.assertEqual(del_response.assets["basemap"].href, acquisition.assets["data"].href)
 
+    def test_acquisition_mission_prefers_sensor_name_over_filename(self) -> None:
+        """pystac-monty#251 (review comment): some real CEMS fileNames omit the ``PRODUCT``/
+        ``MONIT{nn}`` segment ``_ACQUISITION_FILENAME_PREFIX_RE`` expects (e.g. EMSR847 aoi08:
+        ``EMSR847_AOI08_DEL_SENTINEL1_20251029_1047_ORTHO.tif``, no ``PRODUCT``/``MONIT01``
+        token). Parsing the mission from the filename in that case used to leave the disaster
+        code (``emsr847``) as the "mission" instead of the sensor. CEMS's own ``sensorName`` is a
+        dedicated field and must be preferred; the filename-derived id key must still strip only
+        the code/AOI/type prefix, not fall back to the raw filename."""
+        data = deepcopy(MINIMAL_ACTIVATION)
+        image = data["aois"][0]["products"][0]["images"][0]
+        image["sensorName"] = "Sentinel-1"
+        image["fileName"] = "EMSR999_AOI01_DEL_SENTINEL1_20260116_1000_ORTHO.tif"
+
+        items = list(_memory_transformer(data).get_stac_items())
+        acquisition = next(item for item in items if "acquisition" in (item.properties.get("roles") or []))
+        self.assertEqual(acquisition.id, "cems-response-EMSR999-aoi01-dat-SENTINEL1_20260116_1000_ORTHO")
+        self.assertEqual(acquisition.common_metadata.mission, "sentinel-1")
+
+    def test_acquisition_items_without_filename_or_uuid_scoped_by_product(self) -> None:
+        """pystac-monty#251 (review comment): when an image has neither ``fileName`` nor
+        ``uuid``, the id key falls back to a positional index. Since acquisition de-dup now
+        happens across an AOI's products (not just within one product's own image list), an
+        unscoped ``idx`` fallback would let unrelated images at the same list position in two
+        different products collide and be wrongly merged into a single acquisition item."""
+        data = deepcopy(MINIMAL_ACTIVATION)
+        for product in data["aois"][0]["products"]:
+            product["images"] = [
+                {"sensorType": "sar", "sensorName": "Some Sensor", "resolutionClass": "VHR2"},
+            ]
+
+        items = list(_memory_transformer(data).get_stac_items())
+        acquisitions = [item for item in items if "acquisition" in (item.properties.get("roles") or [])]
+        self.assertEqual(len(acquisitions), 2)
+        self.assertEqual(len({item.id for item in acquisitions}), 2)
+        self.assertEqual(
+            {item.id for item in acquisitions},
+            {"cems-response-EMSR999-aoi01-dat-del-img0", "cems-response-EMSR999-aoi01-dat-gra-img0"},
+        )
+
     def test_acquisition_item_deduplicated_across_products_in_same_aoi(self) -> None:
         """pystac-monty#242: CEMS's ``images[].uuid`` can be reused across products that cite the
         *same* physical acquisition (not just across unrelated ones) — the true-duplicate case
