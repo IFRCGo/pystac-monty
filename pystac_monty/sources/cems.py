@@ -289,7 +289,7 @@ CURATED_CEMS_EXAMPLE_IDS: tuple[str, ...] = (
     "cems-hazard-EMSR847-aoi01-landslide",
     "cems-response-EMSR847-aoi01-gra",
     "cems-impact-EMSR847-aoi01-gra-population",
-    "cems-response-EMSR847-aoi01-dat-LEGION_20251107_1555_ORTHO",
+    "cems-response-EMSR847-aoi01-dat-legion_20251107_1555_ortho",
 )
 
 _CEMS_CROSS_COLLECTION_PREFIXES = (
@@ -1014,12 +1014,15 @@ def _acquisition_image_key(image: dict[str, Any], idx: int, product: dict[str, A
     this key is now also used to de-dup acquisitions *across* an AOI's products, an unscoped
     ``idx`` fallback would let unrelated images at the same position in two different products'
     ``images[]`` collide and be wrongly merged into one acquisition item.
+
+    Lowercased before :func:`sanitize_stac_item_id`, matching every other slug-like id part in
+    this module (only the activation ``code`` itself, e.g. ``EMSR847``, is kept as-is).
     """
     stem = _acquisition_filename_stem(image)
     if stem:
-        return sanitize_stac_item_id(stem)
+        return sanitize_stac_item_id(stem.lower())
     if image.get("uuid"):
-        return sanitize_stac_item_id(str(image["uuid"]))
+        return sanitize_stac_item_id(str(image["uuid"]).lower())
     return f"{_product_id_suffix(product)}-img{idx}"
 
 
