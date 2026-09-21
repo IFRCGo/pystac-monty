@@ -271,7 +271,7 @@ class CEMSTest(unittest.TestCase):
         acquisitions = [item for item in items if "acquisition" in (item.properties.get("roles") or [])]
         self.assertEqual(len(acquisitions), 1)
         acquisition = acquisitions[0]
-        self.assertEqual(acquisition.id, "cems-response-EMSR999-aoi01-dat-ICEYE_20260116_1000_ORTHO")
+        self.assertEqual(acquisition.id, "cems-response-EMSR999-aoi01-dat-iceye_20260116_1000_ortho")
         self.assertEqual(acquisition.collection_id, "cems-response")
         self.assertEqual(acquisition.common_metadata.platform, "ICEYE")
         self.assertEqual(acquisition.common_metadata.mission, "iceye")
@@ -334,7 +334,7 @@ class CEMSTest(unittest.TestCase):
 
         items = list(_memory_transformer(data).get_stac_items())
         acquisition = next(item for item in items if "acquisition" in (item.properties.get("roles") or []))
-        self.assertEqual(acquisition.id, "cems-response-EMSR999-aoi01-dat-SENTINEL1_20260116_1000_ORTHO")
+        self.assertEqual(acquisition.id, "cems-response-EMSR999-aoi01-dat-sentinel1_20260116_1000_ortho")
         self.assertEqual(acquisition.common_metadata.mission, "sentinel-1")
 
     def test_acquisition_items_without_filename_or_uuid_scoped_by_product(self) -> None:
