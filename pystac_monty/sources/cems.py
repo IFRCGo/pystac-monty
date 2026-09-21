@@ -1685,7 +1685,7 @@ class CEMSTransformer(MontyDataTransformer[CEMSDataSource]):
                     if impact_detail is None:
                         continue
                     thematic_key = _normalize_key(str(thematic_class))
-                    slug = IMPACT_THEMATIC_SLUG.get(thematic_key, sanitize_stac_item_id(str(thematic_class)))
+                    slug = IMPACT_THEMATIC_SLUG.get(thematic_key, sanitize_stac_item_id(thematic_key))
                     monitoring_suffix = ""
                     if product.get("monitoring") and int(product.get("monitoringNumber") or 0) > 0:
                         monitoring_suffix = f"-m{int(product['monitoringNumber'])}"
@@ -1770,7 +1770,7 @@ class CEMSTransformer(MontyDataTransformer[CEMSDataSource]):
         for slug, label, value, unit in entries:
             item_id = f"cems-impact-{sanitize_stac_item_id(code)}-{slug}"
             if item_id in used_ids and unit:
-                item_id = f"{item_id}-{sanitize_stac_item_id(unit)}"
+                item_id = f"{item_id}-{sanitize_stac_item_id(unit.lower())}"
             if item_id in used_ids:
                 continue
             used_ids.add(item_id)

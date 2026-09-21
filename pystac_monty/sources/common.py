@@ -16,8 +16,9 @@ from pystac import Collection, Item, Link
 from pystac_monty.extension import __version__ as PYSTAC_MONTY_VERSION
 from pystac_monty.geocoding import MontyGeoCoder
 
-# Characters some STAC API deployments reject in item identifiers (GDACS / Montandon ETL learnings).
-_STAC_API_ITEM_ID_FORBIDDEN = re.compile(r"[:/?#\[\]@!$&\'()*+,;=]")
+# Characters some STAC API deployments reject in item identifiers (GDACS / Montandon ETL learnings),
+# plus whitespace — ids built from free-text labels ("Maximum of all extents") must not carry spaces.
+_STAC_API_ITEM_ID_FORBIDDEN = re.compile(r"[\s:/?#\[\]@!$&\'()*+,;=]")
 
 # STAC processing extension (https://stac-extensions.github.io/processing) — stamped on every item
 # produced by a MontyDataTransformer so ``processing:version``/``processing:software`` always match
@@ -68,7 +69,12 @@ def _stamp_processing_extension_on_yield(
 
 
 def sanitize_stac_item_id(raw: str) -> str:
-    """Return *raw* with forbidden characters replaced by hyphens; collapse repeats and trim edges."""
+    """Return *raw* with forbidden characters and whitespace replaced by hyphens.
+
+    Repeated hyphens collapse and edges are trimmed. Case is preserved, so source codes such as
+    ``EMSR929`` stay recognisable; callers that build an id part from a free-text label lowercase
+    it themselves first.
+    """
     if not raw:
         return "x"
     s = _STAC_API_ITEM_ID_FORBIDDEN.sub("-", raw)
