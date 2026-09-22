@@ -1,5 +1,14 @@
 # Changelog
 
+## [0.2.6](https://github.com/IFRCGo/pystac-monty/compare/v0.2.5...v0.2.6) (2026-09-22)
+
+
+### Bug Fixes
+
+* **cems:** hazard mappings fixtures ([#249](https://github.com/IFRCGo/pystac-monty/issues/249)) ([6e15b5c](https://github.com/IFRCGo/pystac-monty/commit/6e15b5c955baf84469dbffb06b62169b049a5292))
+* **cems:** key acquisition item id off image fileName, dedup within an AOI ([#251](https://github.com/IFRCGo/pystac-monty/issues/251)) ([e298b27](https://github.com/IFRCGo/pystac-monty/commit/e298b276d3d347be54fcd1368833222337fe3c94))
+* **cems:** lowercase the acquisition item id ([#253](https://github.com/IFRCGo/pystac-monty/issues/253)) ([c8055d4](https://github.com/IFRCGo/pystac-monty/commit/c8055d4768ef6fa51b88b80489317a04f9265aea))
+
 ## [0.2.5](https://github.com/IFRCGo/pystac-monty/compare/v0.2.4...v0.2.5) (2026-09-18)
 
 
