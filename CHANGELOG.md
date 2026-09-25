@@ -1,5 +1,12 @@
 # Changelog
 
+## [0.2.7](https://github.com/IFRCGo/pystac-monty/compare/v0.2.6...v0.2.7) (2026-09-25)
+
+
+### Bug Fixes
+
+* **ifrc:** fix geometry for Kosovo ([e8ea9f7](https://github.com/IFRCGo/pystac-monty/commit/e8ea9f7df6acbba714ba2f031f10b7c30deee63a))
+
 ## [0.2.6](https://github.com/IFRCGo/pystac-monty/compare/v0.2.5...v0.2.6) (2026-09-22)
 
 
