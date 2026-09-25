@@ -3,6 +3,7 @@
 import json
 import logging
 import os
+import re
 import typing
 from dataclasses import dataclass
 from datetime import datetime
@@ -24,7 +25,7 @@ from pystac_monty.extension import (
 from pystac_monty.hazard_profiles import MontyHazardProfiles
 from pystac_monty.sources.common import GenericDataSource, MontyDataTransformer, USGSDataSourceType
 from pystac_monty.sources.gdacs import DataType, MontyDataSourceV3
-from pystac_monty.validators.usgs import AlertBin, AlertValidator, EmpiricalValidator, USGSValidator
+from pystac_monty.validators.usgs import AlertBin, AlertValidator, ContentDetail, EmpiricalValidator, Product, USGSValidator
 
 logger = logging.getLogger(__name__)
 
@@ -129,6 +130,80 @@ class USGSTransformer(MontyDataTransformer[USGSDataSource]):
     hazard_profiles = MontyHazardProfiles()
     source_name = "usgs"
     PAGER_ALERT_ECONOMIC_UNIT_SCALE = 1_000_000
+
+    _EVENT_PRODUCT_SUFFIXES = ("quakeml.xml",)
+    _SHAKEMAP_FILES = {
+        "download/grid.xml",
+        "download/info.json",
+        "download/intensity.jpg",
+        "download/intensity_overlay.png",
+        "download/raster.zip",
+        "download/rupture.json",
+        "download/shakemap.kmz",
+        "download/shape.zip",
+        "download/stationlist.json",
+        "download/uncertainty.xml",
+    }
+    _HAZARD_PRODUCT_SUFFIXES = {
+        "dyfi": (".geojson", ".json", ".kmz"),
+        "finite_fault": (".geojson", ".json", ".png", ".zip"),
+        "ground_failure": (".hdf5", ".json", ".kmz", ".png", ".tif", ".tiff"),
+    }
+    _LOSSPAGER_SUFFIXES = (".json", ".pdf", ".png", ".xml")
+    _MEDIA_TYPES = {
+        ".covjson": "application/prs.coverage+json",
+        ".geojson": "application/geo+json",
+        ".hdf5": "application/x-hdf5",
+        ".jpg": "image/jpeg",
+        ".jpeg": "image/jpeg",
+        ".json": "application/json",
+        ".kmz": "application/vnd.google-earth.kmz",
+        ".pdf": "application/pdf",
+        ".png": "image/png",
+        ".tif": "image/tiff",
+        ".tiff": "image/tiff",
+        ".xml": "application/xml",
+        ".zip": "application/zip",
+    }
+
+    @classmethod
+    def _media_type(cls, path: str, content: ContentDetail) -> str | None:
+        """Return a useful media type, correcting generic USGS values from the file suffix."""
+        suffix = os.path.splitext(path.lower())[1]
+        if content.content_type and content.content_type != "application/octet-stream":
+            return content.content_type
+        return cls._MEDIA_TYPES.get(suffix, content.content_type)
+
+    @staticmethod
+    def _asset_key(product_name: str, path: str) -> str:
+        """Build a stable STAC asset key from a USGS product and content path."""
+        normalized = re.sub(r"[^a-z0-9]+", "_", path.lower()).strip("_")
+        return f"{product_name}_{normalized}"
+
+    @classmethod
+    def _add_product_assets(
+        cls,
+        item: Item,
+        product_name: str,
+        products: typing.Sequence[Product] | None,
+        include: typing.Callable[[str], bool],
+    ) -> None:
+        """Attach selected files from the newest USGS product as STAC assets."""
+        if not products:
+            return
+
+        for path, content in products[0].contents.items():
+            if not path or not include(path):
+                continue
+            item.add_asset(
+                cls._asset_key(product_name, path),
+                Asset(
+                    href=content.url,
+                    media_type=cls._media_type(path, content),
+                    title=f"USGS {product_name.replace('_', ' ').title()} {os.path.basename(path)}",
+                    roles=["data"],
+                ),
+            )
 
     @staticmethod
     def iso2_to_iso3(iso2: str) -> str:
@@ -442,6 +517,7 @@ class USGSTransformer(MontyDataTransformer[USGSDataSource]):
                 impact_items = self.make_impact_items(
                     event_item=event_item,
                     hazard_item=hazard_item,
+                    data_item=validated_item,
                     losspager_items=losspager_validated_items,
                     alert_items=alert_validated_items,
                 )
@@ -542,6 +618,19 @@ class USGSTransformer(MontyDataTransformer[USGSDataSource]):
             ),
         )
 
+        products = item_data.properties.products
+        for product_name, product_items in (
+            ("moment_tensor", products.moment_tensor),
+            ("origin", products.origin),
+            ("phase_data", products.phase_data),
+        ):
+            self._add_product_assets(
+                item,
+                product_name,
+                product_items,
+                lambda path: path.lower().endswith(self._EVENT_PRODUCT_SUFFIXES),
+            )
+
         return item
 
     def make_hazard_event_item(self, event_item: Item, data_item: USGSValidator) -> Item:
@@ -600,7 +689,7 @@ class USGSTransformer(MontyDataTransformer[USGSDataSource]):
         # Add shakemap assets
         # download/pin-thumbnail.png
         if shakemap:
-            pin_thumbnail = shakemap.contents.download_pin_thumbnail
+            pin_thumbnail = shakemap.contents.get("download/pin-thumbnail.png")
             if pin_thumbnail:
                 shakemap_assets: dict[str, typing.Any] = {
                     "intensity_map": {
@@ -616,12 +705,40 @@ class USGSTransformer(MontyDataTransformer[USGSDataSource]):
             for key, asset_info in shakemap_assets.items():
                 hazard_item.add_asset(key, Asset(**asset_info))
 
+            self._add_product_assets(
+                hazard_item,
+                "shakemap",
+                shakemaps,
+                lambda path: (
+                    path in self._SHAKEMAP_FILES or path.startswith("download/cont_") or path.startswith("download/coverage_")
+                ),
+            )
+
+        products = data_item.properties.products
+        for product_name, product_items in (
+            ("dyfi", products.dyfi),
+            ("finite_fault", products.finite_fault),
+            ("ground_failure", products.ground_failure),
+        ):
+            suffixes = self._HAZARD_PRODUCT_SUFFIXES[product_name]
+
+            def has_supported_suffix(path: str) -> bool:
+                return path.lower().endswith(suffixes)
+
+            self._add_product_assets(
+                hazard_item,
+                product_name,
+                product_items,
+                has_supported_suffix,
+            )
+
         return hazard_item
 
     def make_impact_items(
         self,
         event_item: Item,
         hazard_item: Item,
+        data_item: USGSValidator,
         losspager_items: typing.List[EmpiricalValidator],
         alert_items: typing.List[AlertValidator],
     ) -> typing.List[Item]:
@@ -687,6 +804,14 @@ class USGSTransformer(MontyDataTransformer[USGSDataSource]):
                     event_item=event_item,
                 )
                 impact_items.append(alert_economic_item)
+
+        for impact_item in impact_items:
+            self._add_product_assets(
+                impact_item,
+                "losspager",
+                data_item.properties.products.losspager,
+                lambda path: os.path.basename(path).lower() != "contents.xml" and path.lower().endswith(self._LOSSPAGER_SUFFIXES),
+            )
         return impact_items
 
     def _calculate_value_from_bins(self, bin_data: typing.List[AlertBin]) -> int:
@@ -768,30 +893,5 @@ class USGSTransformer(MontyDataTransformer[USGSDataSource]):
             geom = shape(geom["geometry"]).intersection(shape(hazard_item.geometry))
         impact_item.geometry = mapping(geom)
         impact_item.bbox = geom.bounds
-
-        # Add PAGER assets
-        pager_assets: dict[str, typing.Any] = {
-            "pager_onepager": {
-                "href": f"{self.data_source.get_source_url()}/onepager.pdf",
-                "media_type": "application/pdf",
-                "title": "PAGER One-Pager Report",
-                "roles": ["data"],
-            },
-            "pager_exposure": {
-                "href": f"{self.data_source.get_source_url()}/json/exposures.json",
-                "media_type": "application/json",
-                "title": "PAGER Exposure Data",
-                "roles": ["data"],
-            },
-            "pager_alert": {
-                "href": f"{self.data_source.get_source_url()}/alert{impact_type}.pdf",
-                "media_type": "application/pdf",
-                "title": f"PAGER {impact_type.title()} Alert",
-                "roles": ["data"],
-            },
-        }
-
-        for key, asset_info in pager_assets.items():
-            impact_item.add_asset(key, Asset(**asset_info))
 
         return impact_item

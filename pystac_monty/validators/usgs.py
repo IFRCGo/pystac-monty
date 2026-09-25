@@ -12,12 +12,13 @@ class BaseModelWithExtra(BaseModel):
     model_config = ConfigDict(extra="ignore")
 
 
-class ContentDetail(BaseModel):
+class ContentDetail(BaseModelWithExtra):
     url: str
+    content_type: Optional[str] = Field(default=None, alias="contentType")
 
 
-class ContentItem(BaseModel):
-    download_pin_thumbnail: Optional[ContentDetail] = Field(default=None, alias="download/pin-thumbnail.png")
+class Product(BaseModelWithExtra):
+    contents: dict[str, ContentDetail] = Field(default_factory=dict)
 
 
 class ShakemapProperties(BaseModel):
@@ -28,13 +29,19 @@ class ShakemapProperties(BaseModel):
     minimum_longitude: float = Field(alias="minimum-longitude")
 
 
-class Shakemap(BaseModel):
+class Shakemap(Product):
     properties: ShakemapProperties
-    contents: ContentItem
 
 
 class Products(BaseModelWithExtra):
     shakemap: list[Shakemap] | None = None
+    dyfi: list[Product] | None = None
+    losspager: list[Product] | None = None
+    ground_failure: list[Product] | None = Field(default=None, alias="ground-failure")
+    finite_fault: list[Product] | None = Field(default=None, alias="finite-fault")
+    moment_tensor: list[Product] | None = Field(default=None, alias="moment-tensor")
+    origin: list[Product] | None = None
+    phase_data: list[Product] | None = Field(default=None, alias="phase-data")
 
 
 class BaseProperties(BaseModel):
