@@ -1164,21 +1164,15 @@ class CEMSTransformer(MontyDataTransformer[CEMSDataSource]):
     def __init__(self, data_source: CEMSDataSource, geocoder: MontyGeoCoder | None = None) -> None:
         super().__init__(data_source, geocoder or MockGeocoder())
         self._response_collection_cache: Collection | None = None
-        self.response_collection_url = f"{MontyDataTransformer.base_collection_url}/cems-response/cems-response.json"
-        self.response_collection_github_url = f"{MontyDataTransformer.github_collection_url}/cems-response/cems-response.json"
+        self.response_collection_id = "cems-response"
+        self.response_collection_url = (
+            f"{MontyDataTransformer.base_collection_url}/{self.response_collection_id}/{self.response_collection_id}.json"
+        )
         self._gdacs_episode_cache: dict[str, int | None] = {}
 
     def get_response_collection(self) -> Collection:
         if self._response_collection_cache is None:
-            url = self.response_collection_url
-            if url.startswith("http"):
-                collection_dict = json.loads(requests.get(url, timeout=60).text)
-            else:
-                with open(url, encoding="utf-8") as handle:
-                    collection_dict = json.load(handle)
-            collection = Collection.from_dict(collection_dict)
-            collection.set_self_href(self.response_collection_github_url)
-            self._response_collection_cache = collection
+            self._response_collection_cache = self._load_collection(self.response_collection_url, self.response_collection_id)
         return self._response_collection_cache
 
     def _relative_item_href(self, collection_id: str, item_id: str) -> str:
