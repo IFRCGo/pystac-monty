@@ -27,6 +27,13 @@ logger = logging.getLogger(__name__)
 STAC_EVENT_ID_PREFIX = "ifrcevent-event-"
 STAC_IMPACT_ID_PREFIX = "ifrcevent-impact-"
 
+# Countries (iso3 or name) missing from the geocoder, mapped to the one whose geometry is used instead.
+# Only the geometry lookup is substituted; the item's country codes keep the original value.
+GEOMETRY_COUNTRY_FALLBACK: Dict[str, str] = {
+    "XKX": "SRB",  # Kosovo -> Serbia
+    "Kosovo": "SRB",
+}
+
 # IFRC DREF disaster type (dtype.name) -> [UNDRR-ISC 2025, EM-DAT, GLIDE] hazard codes.
 # Source of truth: monty-stac-extension docs/model/sources/IFRC-DREF/README.md
 # ("Hazard Type Mapping"). "Fire" and "Cyclone" are defaults refined by name-based
@@ -222,6 +229,7 @@ class IFRCEventTransformer(MontyDataTransformer[IFRCEventDataSource]):
         """Generate the geometrical polygon or multipolygon of a country or countries involved in the event."""
         polygon_geometries = []
         for iso3_or_country in affected_iso3_or_countries:
+            iso3_or_country = GEOMETRY_COUNTRY_FALLBACK.get(iso3_or_country, iso3_or_country)
             geom_data = self.geocoder.get_geometry_from_iso3(iso3_or_country, simplified=True)
             if not geom_data:
                 geom_data = self.geocoder.get_geometry_by_country_name(iso3_or_country, simplified=True)
