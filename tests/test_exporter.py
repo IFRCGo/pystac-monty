@@ -16,6 +16,7 @@ from pystac_monty.exporter import (
     BatchExportConfig,
     MontyCollectionSpec,
     build_empty_static_source_collection,
+    dedupe_items_by_id,
     export_collected_items,
     export_monty_collection,
     extent_for_monty_static_collection,
@@ -66,6 +67,43 @@ def test_partition_monty_source_items() -> None:
     assert [item.id for item in hazards] == ["hazard-1"]
     assert [item.id for item in impacts] == ["impact-1"]
     assert [item.id for item in responses] == ["response-1"]
+
+
+def test_dedupe_items_by_id_keeps_first_occurrence() -> None:
+    first = _source_item("event-1", "event")
+    second = _source_item("event-1", "event")
+    second.properties["title"] = "should be dropped"
+    other = _source_item("event-2", "event")
+
+    deduped = dedupe_items_by_id([first, second, other])
+
+    assert [item.id for item in deduped] == ["event-1", "event-2"]
+    assert deduped[0] is first
+
+
+def test_dedupe_items_by_id_logs_dropped_ids(caplog: pytest.LogCaptureFixture) -> None:
+    items = [_source_item("event-1", "event"), _source_item("event-1", "event")]
+    with caplog.at_level("WARNING"):
+        dedupe_items_by_id(items)
+    assert "event-1" in caplog.text
+
+
+def test_export_collected_items_dedupes_duplicate_ids(tmp_path: Path) -> None:
+    items = [
+        _source_item("event-1", "event"),
+        _source_item("event-1", "event"),
+        _source_item("response-1", "response"),
+        _source_item("response-1", "response"),
+    ]
+    config = BatchExportConfig(source_slug="demo", provider=_PROVIDER)
+
+    counts = export_collected_items(config, items, tmp_path)
+
+    assert counts == (1, 0, 0, 1)
+    events_doc = json.loads((tmp_path / "demo-events" / "demo-events.json").read_text(encoding="utf-8"))
+    assert [link["href"] for link in events_doc["links"] if link["rel"] == "item"] == ["./event-1.json"]
+    response_doc = json.loads((tmp_path / "demo-response" / "demo-response.json").read_text(encoding="utf-8"))
+    assert [link["href"] for link in response_doc["links"] if link["rel"] == "item"] == ["./response-1.json"]
 
 
 def test_extent_for_empty_collection_uses_world_extent() -> None:
