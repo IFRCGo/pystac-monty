@@ -20,7 +20,14 @@ from pystac_monty.sources.charter import (
     convert_charter_activations,
     iter_charter_stac_items,
 )
-from pystac_monty.sources.common import DataType, File, GenericDataSource, Memory, sanitize_stac_item_id
+from pystac_monty.sources.common import (
+    DataType,
+    File,
+    GenericDataSource,
+    Memory,
+    MontyDataTransformer,
+    sanitize_stac_item_id,
+)
 from pystac_monty.sources.utils import save_json_data_into_tmp_file
 from tests.extensions.test_monty import CustomValidator
 from tests.utils.test_hazard_taxonomy import assert_hazard_code_dict_valid, taxonomy_md_path
@@ -207,6 +214,20 @@ class CharterTest(unittest.TestCase):
     def setUp(self) -> None:
         super().setUp()
         self.validator = CustomValidator()
+
+    def test_collection_self_hrefs_use_canonical_github_urls(self) -> None:
+        transformer = _memory_transformer()
+        collections = {
+            "charter-events": transformer.get_event_collection(),
+            "charter-hazards": transformer.get_hazard_collection(),
+            "charter-response": transformer.get_response_collection(),
+        }
+
+        for collection_id, collection in collections.items():
+            self.assertEqual(
+                collection.get_self_href(),
+                f"{MontyDataTransformer.github_collection_url}/{collection_id}/{collection_id}.json",
+            )
 
     @pytest.mark.vcr()
     def test_transformer_with_mock_data(self) -> None:
