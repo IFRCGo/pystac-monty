@@ -285,10 +285,12 @@ class USGSTest(unittest.TestCase):
             "application/prs.coverage+json",
         )
 
+        self.assertTrue(impact_items)
         for impact_item in impact_items:
             self.assertIn("losspager_onepager_pdf", impact_item.assets)
             self.assertIn("losspager_json_losses_json", impact_item.assets)
             self.assertNotIn("losspager_event_log", impact_item.assets)
+            self.assertNotIn("losspager_contents_xml", impact_item.assets)
             self.assertTrue(
                 impact_item.assets["losspager_onepager_pdf"].href.startswith(
                     "https://earthquake.usgs.gov/realtime/product/losspager/"

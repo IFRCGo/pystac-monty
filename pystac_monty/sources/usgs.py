@@ -810,7 +810,7 @@ class USGSTransformer(MontyDataTransformer[USGSDataSource]):
                 impact_item,
                 "losspager",
                 data_item.properties.products.losspager,
-                lambda path: path.lower().endswith(self._LOSSPAGER_SUFFIXES),
+                lambda path: os.path.basename(path).lower() != "contents.xml" and path.lower().endswith(self._LOSSPAGER_SUFFIXES),
             )
         return impact_items
 
