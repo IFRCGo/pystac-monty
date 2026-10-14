@@ -462,9 +462,13 @@ class GDACSTransformer(MontyDataTransformer[GDACSDataSource]):
             match hazard_type:
                 case HazardType.TC:
                     for impact_data in episode_impact_data.channel.item:
-                        impact_item = self.make_impact_item_from_tc(
-                            impact_data=impact_data, episode_event_data=episode_event_data
-                        )
+                        try:
+                            impact_item = self.make_impact_item_from_tc(
+                                impact_data=impact_data, episode_event_data=episode_event_data
+                            )
+                        except Exception:
+                            logger.warning("Failed to process the GDACS TC impact item %s", impact_data.id, exc_info=True)
+                            continue
                         if impact_item:
                             impact_items.append(impact_item)
                 case HazardType.WF:
@@ -538,7 +542,7 @@ class GDACSTransformer(MontyDataTransformer[GDACSDataSource]):
             return None
         item.geometry = mapping(geo_point)
         item.bbox = bbox
-        item.common_metadata.description = impact_data.name
+        item.common_metadata.description = impact_data.name or impact_data.title or None
         item.properties["forecasted"] = impact_data.actual == "False"
         item.properties["advisory_number"] = impact_data.advisory_number
         try:
