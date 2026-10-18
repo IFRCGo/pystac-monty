@@ -209,7 +209,7 @@ class GIDDTest(unittest.TestCase):
             "WF",
         ]
         assert IDMCUtils.hazard_codes_mapping(("geophysical", "geophysical", "volcanic activity", "volcanic activity")) == [
-            "GH0205",
+            "GH0201",
             "nat-geo-vol-vol",
             "VO",
         ]
