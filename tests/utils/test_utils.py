@@ -83,3 +83,27 @@ def normalize_processing_version_fields(item_doc: dict) -> dict:
     normalized_properties["processing:version"] = "IGNORED"
     normalized_properties["processing:software"][PROCESSING_SOFTWARE_NAME] = "IGNORED"
     return normalized
+
+
+_ITEM_REF_RELS = {"related", "derived_from"}
+
+
+def normalize_related_link_hrefs(item_doc: dict) -> dict:
+    """Return a copy of *item_doc* with inter-item link hrefs reduced to just the item ID.
+
+    Allows eoapi-style hrefs (``../collections/col/items/id``) and plain-file hrefs
+    (``../col/id.json``) to compare equal when they reference the same item.
+    Applies to ``related`` and ``derived_from`` link relations.
+    """
+    if item_doc.get("type") != "Feature":
+        return deepcopy(item_doc)
+
+    normalized = deepcopy(item_doc)
+    for link in normalized.get("links", []):
+        if link.get("rel") in _ITEM_REF_RELS:
+            href = link.get("href", "")
+            item_id = href.rstrip("/").split("/")[-1]
+            if item_id.endswith(".json"):
+                item_id = item_id[:-5]
+            link["href"] = item_id
+    return normalized
