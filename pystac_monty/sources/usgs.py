@@ -444,6 +444,7 @@ class USGSTransformer(MontyDataTransformer[USGSDataSource]):
                     hazard_item=hazard_item,
                     losspager_items=losspager_validated_items,
                     alert_items=alert_validated_items,
+                    pager_urls=self._get_pager_urls(validated_item),
                 )
 
                 all_items = [event_item, hazard_item] + impact_items
@@ -618,12 +619,21 @@ class USGSTransformer(MontyDataTransformer[USGSDataSource]):
 
         return hazard_item
 
+    @staticmethod
+    def _get_pager_urls(data_item: USGSValidator) -> dict[str, str]:
+        """Map PAGER product file names (e.g. 'onepager.pdf') to their URLs."""
+        losspagers = data_item.properties.products.losspager or []
+        if not losspagers:
+            return {}
+        return {name: content.url for name, content in losspagers[0].contents.items()}
+
     def make_impact_items(
         self,
         event_item: Item,
         hazard_item: Item,
         losspager_items: typing.List[EmpiricalValidator],
         alert_items: typing.List[AlertValidator],
+        pager_urls: dict[str, str],
     ) -> typing.List[Item]:
         """Create impact items (PAGER) from USGS data."""
         if not losspager_items and not alert_items:
@@ -646,6 +656,7 @@ class USGSTransformer(MontyDataTransformer[USGSDataSource]):
                         country.country_code,
                         hazard_item,
                         event_item,
+                        pager_urls,
                     )
                     impact_items.append(fatalities_item)
 
@@ -663,6 +674,7 @@ class USGSTransformer(MontyDataTransformer[USGSDataSource]):
                         country.country_code,
                         hazard_item,
                         event_item,
+                        pager_urls,
                     )
                     impact_items.append(economic_item)
 
@@ -675,6 +687,8 @@ class USGSTransformer(MontyDataTransformer[USGSDataSource]):
                     value=self._calculate_value_from_bins(alert_data.fatality.bins),
                     unit="people",
                     event_item=event_item,
+                    pager_urls=pager_urls,
+                    alert_file="alertfatal.pdf",
                 )
                 impact_items.append(alert_ppl_item)
             if alert_data.economic:
@@ -685,6 +699,8 @@ class USGSTransformer(MontyDataTransformer[USGSDataSource]):
                     value=self._calculate_value_from_bins(alert_data.economic.bins) * self.PAGER_ALERT_ECONOMIC_UNIT_SCALE,
                     unit="usd",
                     event_item=event_item,
+                    pager_urls=pager_urls,
+                    alert_file="alertecon.pdf",
                 )
                 impact_items.append(alert_economic_item)
         return impact_items
@@ -706,12 +722,14 @@ class USGSTransformer(MontyDataTransformer[USGSDataSource]):
         value: float,
         unit: str,
         event_item: Item,
+        pager_urls: dict[str, str],
+        alert_file: str,
     ) -> Item:
         impact_item = event_item.clone()
         monty = MontyExtension.ext(impact_item)
 
         impact_item.id = (
-            f"{impact_item.id.replace(STAC_EVENT_ID_PREFIX, STAC_IMPACT_ID_PREFIX)}-{impact_type}-{monty.country_codes[0]}"
+            f"{impact_item.id.replace(STAC_EVENT_ID_PREFIX, STAC_IMPACT_ID_PREFIX)}-{impact_type}-alert-{monty.country_codes[0]}"
         )
         impact_item.set_collection(self.get_impact_collection())
 
@@ -721,6 +739,7 @@ class USGSTransformer(MontyDataTransformer[USGSDataSource]):
         monty.impact_detail = ImpactDetail(
             category=category, type=imp_type, value=value, unit=unit, estimate_type=MontyEstimateType.MODELLED
         )
+        self._add_pager_assets(impact_item, pager_urls, alert_file, impact_type)
         return impact_item
 
     def _create_impact_item_from_losses(
@@ -733,6 +752,7 @@ class USGSTransformer(MontyDataTransformer[USGSDataSource]):
         iso2: str,
         hazard_item: Item,
         event_item: Item,
+        pager_urls: dict[str, str],
     ) -> Item:
         """Helper method to create impact items from PAGER losses data."""
 
@@ -769,22 +789,29 @@ class USGSTransformer(MontyDataTransformer[USGSDataSource]):
         impact_item.geometry = mapping(geom)
         impact_item.bbox = geom.bounds
 
-        # Add PAGER assets
+        alert_file = "alertfatal.pdf" if impact_type == "fatalities" else "alertecon.pdf"
+        self._add_pager_assets(impact_item, pager_urls, alert_file, impact_type)
+
+        return impact_item
+
+    @staticmethod
+    def _add_pager_assets(impact_item: Item, pager_urls: dict[str, str], alert_file: str, impact_type: str) -> None:
+        """Attach PAGER report assets whose files exist in the losspager product."""
         pager_assets: dict[str, typing.Any] = {
             "pager_onepager": {
-                "href": f"{self.data_source.get_source_url()}/onepager.pdf",
+                "file": "onepager.pdf",
                 "media_type": "application/pdf",
                 "title": "PAGER One-Pager Report",
                 "roles": ["data"],
             },
             "pager_exposure": {
-                "href": f"{self.data_source.get_source_url()}/json/exposures.json",
+                "file": "json/exposures.json",
                 "media_type": "application/json",
                 "title": "PAGER Exposure Data",
                 "roles": ["data"],
             },
             "pager_alert": {
-                "href": f"{self.data_source.get_source_url()}/alert{impact_type}.pdf",
+                "file": alert_file,
                 "media_type": "application/pdf",
                 "title": f"PAGER {impact_type.title()} Alert",
                 "roles": ["data"],
@@ -792,6 +819,7 @@ class USGSTransformer(MontyDataTransformer[USGSDataSource]):
         }
 
         for key, asset_info in pager_assets.items():
-            impact_item.add_asset(key, Asset(**asset_info))
-
-        return impact_item
+            href = pager_urls.get(asset_info.pop("file"))
+            if not href:
+                continue
+            impact_item.add_asset(key, Asset(href=href, **asset_info))
