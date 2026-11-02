@@ -394,6 +394,9 @@ class EMDATTransformer(MontyDataTransformer[EMDATDataSource]):
             start_dt = datetime(start_year, start_month, start_day)
             if end_year:
                 end_dt = datetime(end_year, end_month, end_day)
+                # Missing month/day are filled with 1, so re-check the order after the fill-up
+                if start_dt > end_dt:
+                    raise ValueError(f"Start date {start_dt.date()} cannot be later than end date {end_dt.date()}.")
                 return pytz.utc.localize(start_dt), pytz.utc.localize(end_dt)
 
             return pytz.utc.localize(start_dt), None
