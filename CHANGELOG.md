@@ -1,5 +1,12 @@
 # Changelog
 
+## [0.2.9](https://github.com/IFRCGo/pystac-monty/compare/v0.2.8...v0.2.9) (2026-11-02)
+
+
+### Bug Fixes
+
+* **emdat:** handle when start date is later than end date ([2e31c9c](https://github.com/IFRCGo/pystac-monty/commit/2e31c9c4e43243c6adcf8b5542f92829ba79c4d5))
+
 ## [0.2.8](https://github.com/IFRCGo/pystac-monty/compare/v0.2.7...v0.2.8) (2026-10-28)
 
 
