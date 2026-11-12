@@ -195,7 +195,8 @@ class IDUTransformer(MontyDataTransformer[IDUDataSource]):
         monty = MontyExtension.ext(item)
         monty.src_event_id = str(data_item.event_id)
         monty.episode_number = episode_number
-        monty.country_codes = [data_item.iso3]
+        # All countries of the event. The first record's country stays first: the correlation id uses it.
+        monty.country_codes = list(dict.fromkeys(item.iso3 for item in data_items))
         monty.hazard_codes = IDMCUtils.hazard_codes_mapping(hazard=hazard_tuple)
         monty.hazard_codes = self.hazard_profiles.get_canonical_hazard_codes(item=item)
 
@@ -235,12 +236,28 @@ class IDUTransformer(MontyDataTransformer[IDUDataSource]):
 
             impact_item.id = f"{impact_item.id.replace(STAC_EVENT_ID_PREFIX, STAC_IMPACT_ID_PREFIX)}-{data_item.id}-{impact_type}"
             impact_item.datetime = startdate
+            # The impact item starts as a copy of the event item, which comes from the first record of
+            # the event. Set the fields that belong to this record.
+            latitude = float(data_item.latitude or 0.0)
+            longitude = float(data_item.longitude or 0.0)
+            impact_item.geometry = mapping(Point(longitude, latitude))
+            impact_item.bbox = [longitude, latitude, longitude, latitude]
+            impact_item.properties["description"] = md(data_item.standard_popup_text)
+            impact_item.properties["location"] = data_item.locations_name
+            impact_item.properties["sources"] = data_item.sources
+            impact_item.assets.pop("report", None)
+            if data_item.source_url:
+                impact_item.add_asset("report", Asset(href=data_item.source_url, media_type="application/pdf", title="Report"))
             impact_item.properties["start_datetime"] = startdate.isoformat()
             impact_item.properties["end_datetime"] = enddate.isoformat()
             impact_item.properties["roles"] = ["source", "impact"]
             impact_item.set_collection(self.get_impact_collection())
 
             monty = MontyExtension.ext(impact_item)
+            monty.country_codes = [data_item.iso3]
+            if monty.hazard_codes:
+                hazard_keywords = self.hazard_profiles.get_keywords(monty.hazard_codes)
+                impact_item.properties["keywords"] = list(set(hazard_keywords + monty.country_codes))
             monty.impact_detail = self.get_impact_details(idu_src_item=data_item, impact_type=impact_type)
 
             items.append(impact_item)

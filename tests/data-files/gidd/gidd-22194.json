@@ -65,5 +65,70 @@
       ],
       "Displacement occurred": "Displacement without preventive evacuations reported"
     }
+  },
+  {
+    "type": "Feature",
+    "geometry": {
+      "type": "MultiPoint",
+      "coordinates": [
+        [
+          38.27644,
+          37.764
+        ]
+      ]
+    },
+    "properties": {
+      "ID": 136080,
+      "ISO3": "TUR",
+      "Country": "Türkiye",
+      "Geographical region": "Europe and Central Asia",
+      "Figure cause": "Disaster",
+      "Year": 2023,
+      "Figure category": "IDPs",
+      "Figure unit": "Person",
+      "Reported figures": 132168,
+      "Total figures": 132168,
+      "Hazard category": "Geophysical",
+      "Hazard sub category": "Geophysical",
+      "Hazard type": "Earthquake",
+      "Hazard sub type": "Earthquake",
+      "Stock date": "2023-10-16",
+      "Stock date accuracy": "Month",
+      "Stock reporting date": "2023-12-31",
+      "Publishers": [
+        "IOM DTM"
+      ],
+      "Sources": [
+        "IOM DTM"
+      ],
+      "Sources type": [
+        "United Nations"
+      ],
+      "Event ID": 22194,
+      "Event name": "Syria, Türkiye: Earthquake - 06/02/2023",
+      "Event cause": "Disaster",
+      "Event main trigger": "Earthquake",
+      "Event start date": "2023-02-02",
+      "Event end date": "2023-02-06",
+      "Event start date accuracy": "Week",
+      "Event end date accuracy": "Week",
+      "Is housing destruction": "No",
+      "Event codes (Code:Type)": [
+        [
+          "EQ-2023-000015-TUR",
+          "Glide Number"
+        ]
+      ],
+      "Locations name": [
+        "Adiyaman, Adıyaman merkez, Adıyaman, Southeastern Anatolia Region, Turkey"
+      ],
+      "Locations accuracy": [
+        "County/City/town/Village/Woreda (ADM3)"
+      ],
+      "Locations type": [
+        "Origin"
+      ],
+      "Displacement occurred": "Displacement without preventive evacuations reported"
+    }
   }
 ]
