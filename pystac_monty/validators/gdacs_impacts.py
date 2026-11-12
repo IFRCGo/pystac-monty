@@ -19,12 +19,17 @@ class TCImpactItem(BaseModelWithExtra):
 
     id: str
     title: str
-    point: str
+    point: str | None = None
     name: str
     storm_id: str
     advisory_number: str
     actual: str
-    pop: str
+    # `pop` is not a total and its definition is not published: it is not mapped.
+    pop: str | None = None
+    # Population exposure bands, as defined by the GDACS tropical cyclone model.
+    pop39: str | None = None
+    pop74: str | None = None
+    popstormsurge: str | None = None
     latitude: str
     longitude: str
     advisory_datetime: str
