@@ -1,0 +1,69 @@
+[
+  {
+    "type": "Feature",
+    "geometry": {
+      "type": "MultiPoint",
+      "coordinates": [
+        [
+          37.411121,
+          36.15263
+        ]
+      ]
+    },
+    "properties": {
+      "ID": 107479,
+      "ISO3": "SYR",
+      "Country": "Syria",
+      "Geographical region": "Middle East and North Africa",
+      "Figure cause": "Disaster",
+      "Year": 2023,
+      "Figure category": "Internal Displacements",
+      "Figure unit": "Household",
+      "Reported figures": 38649,
+      "Household size": 5.0,
+      "Total figures": 193245,
+      "Hazard category": "Geophysical",
+      "Hazard sub category": "Geophysical",
+      "Hazard type": "Earthquake",
+      "Hazard sub type": "Earthquake",
+      "Start date": "2023-02-06",
+      "Start date accuracy": "Day",
+      "End date": "2023-03-09",
+      "End date accuracy": "Day",
+      "Publishers": [
+        "Office for the Coordination of Humanitarian Affairs (OCHA)"
+      ],
+      "Sources": [
+        "Office for the Coordination of Humanitarian Affairs (OCHA)"
+      ],
+      "Sources type": [
+        "United Nations"
+      ],
+      "Event ID": 22194,
+      "Event name": "Syria, Türkiye: Earthquake - 06/02/2023",
+      "Event cause": "Disaster",
+      "Event main trigger": "Earthquake",
+      "Event start date": "2023-02-02",
+      "Event end date": "2023-02-06",
+      "Event start date accuracy": "Week",
+      "Event end date accuracy": "Week",
+      "Is housing destruction": "No",
+      "Event codes (Code:Type)": [
+        [
+          "EQ-2023-000015-SYR",
+          "Glide Number"
+        ]
+      ],
+      "Locations name": [
+        "Aleppo, Syria"
+      ],
+      "Locations accuracy": [
+        "State/Region/Province (ADM1)"
+      ],
+      "Locations type": [
+        "Destination"
+      ],
+      "Displacement occurred": "Displacement without preventive evacuations reported"
+    }
+  }
+]

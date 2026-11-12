@@ -37,6 +37,11 @@ logger = logging.getLogger(__name__)
 STAC_EVENT_ID_PREFIX = "idmc-gidd-event-"
 STAC_IMPACT_ID_PREFIX = "idmc-gidd-impact-"
 
+# IDMCUtils.mappings is keyed on the raw IDMC labels ("Internal Displacements", "Deaths", ...).
+# The GIDD impact type is the normalised label ("internal-displacements", "deaths", ...), so the
+# lookup must use normalised keys too. Otherwise every figure category falls back to the default.
+GIDD_IMPACT_MAPPINGS = {normalize_figure_category(key): value for key, value in IDMCUtils.mappings.items()}
+
 
 def _gidd_event_id_key(item: dict) -> Any:
     return item.get("properties", {}).get("Event ID", "")
@@ -256,6 +261,7 @@ class GIDDTransformer(MontyDataTransformer[GIDDDataSource]):
 
             impact_item.id = (
                 impact_item.id.replace(STAC_EVENT_ID_PREFIX, STAC_IMPACT_ID_PREFIX)
+                + "-"
                 + str(data_item.properties.ID)
                 + "-"
                 + impact_type
@@ -288,7 +294,7 @@ class GIDDTransformer(MontyDataTransformer[GIDDDataSource]):
 
     def get_impact_details(self, data_item: GiddValidator, impact_type: str) -> ImpactDetail:
         """Returns the impact details related to displacement"""
-        category, category_type = IDMCUtils.mappings.get(
+        category, category_type = GIDD_IMPACT_MAPPINGS.get(
             impact_type, (MontyImpactExposureCategory.ALL_PEOPLE, MontyImpactType.INTERNALLY_DISPLACED_PERSONS)
         )
         return ImpactDetail(
