@@ -1,5 +1,13 @@
 # Changelog
 
+## [0.2.8](https://github.com/IFRCGo/pystac-monty/compare/v0.2.7...v0.2.8) (2026-10-28)
+
+
+### Bug Fixes
+
+* **gdacs:** use try-except per impact item; use fallback for description field ([7b9bdf9](https://github.com/IFRCGo/pystac-monty/commit/7b9bdf98f99c6cccf0f8f2b799dbaba51e87bdc4))
+* **usgs:** handle assets url; update tests ([07711ea](https://github.com/IFRCGo/pystac-monty/commit/07711ea83fc4e41e0c79342f12ea2dc52a8a9b7a))
+
 ## [0.2.7](https://github.com/IFRCGo/pystac-monty/compare/v0.2.6...v0.2.7) (2026-09-25)
 
 
