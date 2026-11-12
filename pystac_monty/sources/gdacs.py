@@ -11,7 +11,7 @@ from typing import Dict, List, Tuple, Union
 import pytz
 from markdownify import markdownify as md
 from pystac import Asset, Item, Link
-from shapely import simplify, to_geojson
+from shapely import simplify, to_geojson, wkt
 from shapely.geometry import Point, mapping, shape
 
 from pystac_monty.extension import (
@@ -43,6 +43,16 @@ GDACS_EVENT_ENDDATETIME_PROPERTY = "todate"
 STAC_EVENT_ID_PREFIX = "gdacs-event-"
 STAC_HAZARD_ID_PREFIX = "gdacs-hazard-"
 STAC_IMPACT_ID_PREFIX = "gdacs-impact-"
+
+# Population exposure bands of the GDACS tropical cyclone timeline:
+# (timeline field, id suffix, description, title fragment).
+# The bands are nested (pop74 is part of pop39): they must not be added together.
+TC_EXPOSURE_BANDS: Tuple[Tuple[str, str, str, str], ...] = (
+    ("pop39", "pop39", "Population in the wind field of 39 kt or more", "population in 39 kt wind field"),
+    ("pop74", "pop74", "Population in the wind field of 74 kt or more", "population in 74 kt wind field"),
+    ("popstormsurge", "surge", "Population in the storm surge zone", "population in storm surge zone"),
+)
+WF_POPAFFECTED_DESCRIPTION = "Population in the burnt area"
 
 
 logger = logging.getLogger(__name__)
@@ -169,6 +179,7 @@ class GDACSTransformer(MontyDataTransformer[GDACSDataSource]):
                             episode_event_data=(validated_episode_data, episode_data_url),
                             episode_impact_data=validated_impact_data,
                             hazard_type=episode_data[2].hazard_type if episode_data[2] else None,
+                            impact_source_url=episode_data[2].data.source_url if episode_data[2] else None,
                         )
 
                     all_items = [episode_event_item, episode_hazard_item] + episode_impact_items
@@ -238,6 +249,7 @@ class GDACSTransformer(MontyDataTransformer[GDACSDataSource]):
                             episode_event_data=(validated_episode_data, episode_data_url),
                             episode_impact_data=validated_impact_data,
                             hazard_type=episode_data[2].hazard_type if episode_data[2] else None,
+                            impact_source_url=episode_data[2].data.source_url if episode_data[2] else None,
                         )
 
                     all_items = [episode_event_item, episode_hazard_item] + episode_impact_items
@@ -443,6 +455,7 @@ class GDACSTransformer(MontyDataTransformer[GDACSDataSource]):
         episode_event_data: Tuple[GdacsEventDataValidator, str],
         episode_impact_data: GdacsImpactDataValidatorTC | GdacsImpactDataValidatorWF | None,
         hazard_type: HazardType,
+        impact_source_url: str | None = None,
     ) -> list[Item]:
         impact_items = []
 
@@ -463,53 +476,79 @@ class GDACSTransformer(MontyDataTransformer[GDACSDataSource]):
                 case HazardType.TC:
                     for impact_data in episode_impact_data.channel.item:
                         try:
-                            impact_item = self.make_impact_item_from_tc(
-                                impact_data=impact_data, episode_event_data=episode_event_data
+                            impact_items.extend(
+                                self.make_impact_items_from_tc(
+                                    impact_data=impact_data,
+                                    episode_event_data=episode_event_data,
+                                    impact_source_url=impact_source_url,
+                                )
                             )
                         except Exception:
                             logger.warning("Failed to process the GDACS TC impact item %s", impact_data.id, exc_info=True)
-                            continue
-                        if impact_item:
-                            impact_items.append(impact_item)
                 case HazardType.WF:
-                    pop_affected = next(
-                        (
-                            s.value
-                            for datum_group in episode_impact_data.datums
-                            for datum in datum_group.datum
-                            if datum.datasource == "POP"
-                            for s in datum.scalars.scalar
-                            if s.name == "POPAFFECTED"
-                        ),
-                        None,
-                    )
+                    pop_affected = self.get_wf_scalar(episode_impact_data, datasource="POP", name="POPAFFECTED")
                     if pop_affected:
                         impact_item = self.make_impact_item_from_wf(
                             impact_value=pop_affected,
-                            episode_id=episode_impact_data.episodeid,
+                            burnt_area_wkt=self.get_wf_scalar(episode_impact_data, datasource="INPUT PARAMETERS", name="Shape"),
                             episode_event_data=episode_event_data,
                         )
                         if impact_item:
                             impact_items.append(impact_item)
         return impact_items
 
+    @staticmethod
+    def get_wf_scalar(impact_data: GdacsImpactDataValidatorWF, datasource: str, name: str) -> str | None:
+        """Return the first scalar `name` of the datum `datasource` in a WF getimpact document"""
+        return next(
+            (
+                s.value
+                for datum_group in impact_data.datums
+                for datum in datum_group.datum
+                if datum.datasource == datasource
+                for s in datum.scalars.scalar
+                if s.name == name
+            ),
+            None,
+        )
+
     def make_impact_item_from_wf(
-        self, impact_value: str, episode_id: str, episode_event_data: Tuple[GdacsEventDataValidator, str]
+        self,
+        impact_value: str,
+        burnt_area_wkt: str | None,
+        episode_event_data: Tuple[GdacsEventDataValidator, str],
     ) -> Item | None:
-        """Create impact item for WildFire"""
+        """Create impact item for WildFire
+
+        The `getimpact` document has no identifier of its own: the item is keyed on
+        the event and the episode, `gdacs-impact-{eventid}-{episodeid}-popaffected`.
+        """
         item = self.make_source_event_item(*episode_event_data)
-        ## TODO add more to make the item id unique
-        item.id = phrase_to_dashed(item.id.replace(STAC_EVENT_ID_PREFIX, STAC_IMPACT_ID_PREFIX) + episode_id)
+        item.id = item.id.replace(STAC_EVENT_ID_PREFIX, STAC_IMPACT_ID_PREFIX) + "-popaffected"
+
+        # Use the burnt area when GDACS supplies it. Else keep the event geometry.
+        if burnt_area_wkt:
+            try:
+                burnt_area = wkt.loads(burnt_area_wkt)
+            except Exception:
+                logger.warning("Failed to parse the GDACS WF burnt area of %s", item.id, exc_info=True)
+            else:
+                if not burnt_area.is_empty:
+                    item.geometry = mapping(burnt_area)
+                    item.bbox = list(burnt_area.bounds)
+
         item.set_collection(self.get_impact_collection())
         item.properties["roles"] = ["source", "impact"]
 
         monty = MontyExtension.ext(item)
+        # GDACS models this figure (see modelname, modelrun and modelstatus): it is an exposure estimate.
         monty.impact_detail = ImpactDetail(
             category=MontyImpactExposureCategory.ALL_PEOPLE,
             type=MontyImpactType.POTENTIALLY_AFFECTED,
             value=int(impact_value),
-            unit="GDACS WF",
-            estimate_type=MontyEstimateType.PRIMARY,
+            unit="count",
+            estimate_type=MontyEstimateType.MODELLED,
+            description=WF_POPAFFECTED_DESCRIPTION,
         )
         return item
 
@@ -522,49 +561,72 @@ class GDACSTransformer(MontyDataTransformer[GDACSDataSource]):
         bbox = pt.bounds
         return pt, list(bbox)
 
-    def make_impact_item_from_tc(
-        self, impact_data: TCImpactItem, episode_event_data: Tuple[GdacsEventDataValidator, str]
-    ) -> Item | None:
-        """Create impact item for Tropical Cyclone (TC)"""
-        item = self.make_source_event_item(*episode_event_data)
-        item.id = phrase_to_dashed(
-            item.id.replace(STAC_EVENT_ID_PREFIX, STAC_IMPACT_ID_PREFIX)
-            + "-"
-            + impact_data.id
-            + "-"
-            + impact_data.advisory_number
-        )
-        if impact_data:
-            geo_point, bbox = self.generate_geo_info(coord_str=impact_data.coordinates)
-        else:
-            geo_point, bbox = None, None
-        if not geo_point:
-            return None
-        item.geometry = mapping(geo_point)
-        item.bbox = bbox
-        item.common_metadata.description = impact_data.name or impact_data.title or None
-        item.properties["forecasted"] = impact_data.actual == "False"
-        item.properties["advisory_number"] = impact_data.advisory_number
-        try:
-            item.datetime = item.common_metadata.created = item.common_metadata.start_datetime = (
-                item.common_metadata.end_datetime
-            ) = pytz.utc.localize(datetime.datetime.strptime(impact_data.advisory_datetime, "%d %b %Y %H:%M"))
-        except Exception:
-            item.datetime = item.common_metadata.created = item.common_metadata.start_datetime = (
-                item.common_metadata.end_datetime
-            ) = None
-        item.set_collection(self.get_impact_collection())
-        item.properties["roles"] = ["source", "impact"]
+    def make_impact_items_from_tc(
+        self,
+        impact_data: TCImpactItem,
+        episode_event_data: Tuple[GdacsEventDataValidator, str],
+        impact_source_url: str | None = None,
+    ) -> list[Item]:
+        """Create impact items for one Tropical Cyclone (TC) timeline entry
 
-        monty = MontyExtension.ext(item)
-        monty.impact_detail = ImpactDetail(
-            category=MontyImpactExposureCategory.ALL_PEOPLE,
-            type=MontyImpactType.POTENTIALLY_AFFECTED if item.properties["forecasted"] else MontyImpactType.TOTAL_AFFECTED,
-            value=int(impact_data.pop),
-            unit="GDACS TC",
-            estimate_type=MontyEstimateType.PRIMARY,
-        )
-        return item
+        One item is created for each non-zero exposure band (`pop39`, `pop74`,
+        `popstormsurge`). The `pop` field is not mapped: it is not a total.
+
+        The item id is `gdacs-impact-{eventid}-{timeline id}-{band}`. The episode is
+        not part of the id, because each episode repeats every earlier timeline entry
+        with the same `id`.
+        """
+        geo_point, bbox = self.generate_geo_info(coord_str=impact_data.coordinates)
+        if not geo_point:
+            return []
+
+        try:
+            advisory_datetime = pytz.utc.localize(datetime.datetime.strptime(impact_data.advisory_datetime, "%d %b %Y %H:%M"))
+        except Exception:
+            advisory_datetime = None
+
+        event_id = str(episode_event_data[0].properties.eventid)
+        storm_name = impact_data.name or impact_data.title
+
+        items = []
+        for field, band, band_description, band_title in TC_EXPOSURE_BANDS:
+            band_value = int(float(getattr(impact_data, field) or 0))
+            if band_value <= 0:
+                continue
+
+            item = self.make_source_event_item(*episode_event_data)
+            item.id = phrase_to_dashed(STAC_IMPACT_ID_PREFIX + event_id + "-" + impact_data.id + "-" + band)
+            item.geometry = mapping(geo_point)
+            item.bbox = bbox
+            item.common_metadata.title = f"{storm_name} advisory {impact_data.advisory_number}, {band_title}"
+            item.common_metadata.description = band_description
+            # Temporary forecast flag, until the Monty model defines one (monty-stac-extension#110).
+            item.properties["forecasted"] = impact_data.actual == "False"
+            item.properties["advisory_number"] = impact_data.advisory_number
+            item.datetime = item.common_metadata.created = item.common_metadata.start_datetime = (
+                item.common_metadata.end_datetime
+            ) = advisory_datetime
+            item.set_collection(self.get_impact_collection())
+            item.properties["roles"] = ["source", "impact"]
+
+            # The source of the figure is the timeline of this episode, not the event payload.
+            if impact_source_url:
+                item.remove_links("via")
+                item.add_link(Link("via", impact_source_url, "application/json", "GDACS Tropical Cyclone Timeline"))
+
+            monty = MontyExtension.ext(item)
+            # GDACS models the exposure in the same way for observed and forecast track positions:
+            # the figure is always a modelled exposure estimate, never an affected-persons count.
+            monty.impact_detail = ImpactDetail(
+                category=MontyImpactExposureCategory.ALL_PEOPLE,
+                type=MontyImpactType.POTENTIALLY_AFFECTED,
+                value=band_value,
+                unit="count",
+                estimate_type=MontyEstimateType.MODELLED,
+                description=band_description,
+            )
+            items.append(item)
+        return items
 
     def make_impact_item_from_sendai_entry(
         self, idx: int, episode_event_data: Tuple[GdacsEventDataValidator, str], sendai_data: Sendai
