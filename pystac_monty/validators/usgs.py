@@ -33,8 +33,13 @@ class Shakemap(BaseModel):
     contents: ContentItem
 
 
+class LossPager(BaseModel):
+    contents: dict[str, ContentDetail] = {}
+
+
 class Products(BaseModelWithExtra):
     shakemap: list[Shakemap] | None = None
+    losspager: list[LossPager] | None = None
 
 
 class BaseProperties(BaseModel):
