@@ -1275,7 +1275,7 @@ class CEMSTransformer(MontyDataTransformer[CEMSDataSource]):
                 item.add_link(
                     Link(
                         rel="related",
-                        target=self._relative_item_href("gdacs-events", f"{event_id}-{episode}"),
+                        target=self._relative_item_href("gdacs-events", f"gdacs-event-{event_id}-{episode}"),
                         media_type="application/geo+json",
                         title=f"GDACS {gdacs_id} (episode {episode})",
                         extra_fields={"roles": ["event"]},
