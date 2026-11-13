@@ -24,6 +24,7 @@ from pystac_monty.extension import (
 from pystac_monty.hazard_profiles import MontyHazardProfiles
 from pystac_monty.sources.common import GenericDataSource, MontyDataTransformer, USGSDataSourceType
 from pystac_monty.sources.gdacs import DataType, MontyDataSourceV3
+from pystac_monty.sources.utils import unique_in_order
 from pystac_monty.validators.usgs import AlertBin, AlertValidator, EmpiricalValidator, USGSValidator
 
 logger = logging.getLogger(__name__)
@@ -522,7 +523,7 @@ class USGSTransformer(MontyDataTransformer[USGSDataSource]):
         monty.country_codes = country_codes
 
         hazard_keywords = self.hazard_profiles.get_keywords(monty.hazard_codes)
-        item.properties["keywords"] = list(set(hazard_keywords + country_codes))
+        item.properties["keywords"] = unique_in_order(hazard_keywords + country_codes)
 
         # Compute correlation ID
         monty.compute_and_set_correlation_id(hazard_profiles=self.hazard_profiles)
