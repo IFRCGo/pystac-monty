@@ -301,7 +301,7 @@ class GIDDTransformer(MontyDataTransformer[GIDDDataSource]):
             monty.country_codes = [data_item.properties.ISO3]
             if monty.hazard_codes:
                 hazard_keywords = self.hazard_profiles.get_keywords(monty.hazard_codes)
-                impact_item.properties["keywords"] = list(set(hazard_keywords + monty.country_codes))
+                impact_item.properties["keywords"] = list(dict.fromkeys(hazard_keywords + monty.country_codes))
             monty.impact_detail = self.get_impact_details(data_item=data_item, impact_type=impact_type)
             items.append(impact_item)
 
