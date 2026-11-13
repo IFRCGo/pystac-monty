@@ -29,6 +29,7 @@ from pystac_monty.sources.common import (
     MontyDataTransformer,
     PDCDataSourceType,
 )
+from pystac_monty.sources.utils import unique_in_order
 from pystac_monty.validators.pdc import AdminData, ExposureDetailValidator, HazardEventValidator
 
 logger = logging.getLogger(__name__)
@@ -228,7 +229,8 @@ class PDCTransformer(MontyDataTransformer):
         monty = MontyExtension.ext(item)
         monty.src_event_id = str(pdc_hazard_data.hazard_ID)
         monty.episode_number = self.episode_number
-        monty.country_codes = list(set(all_iso3))
+        # Source order, without duplicates: monty:corr_id uses country_codes[0].
+        monty.country_codes = unique_in_order(all_iso3)
 
         monty.hazard_codes = self._map_pdc_to_hazard_codes(hazard=pdc_hazard_data.type_ID)
         monty.hazard_codes = self.hazard_profiles.get_canonical_hazard_codes(item=item)
@@ -236,7 +238,7 @@ class PDCTransformer(MontyDataTransformer):
         # Generate keywords for discoverability
         hazard_keywords = self.hazard_profiles.get_keywords(monty.hazard_codes)
         country_keywords = [obj.admin0 for obj in pdc_exposure_data.totalByCountry] if pdc_exposure_data.totalByCountry else []
-        item.properties["keywords"] = list(set(hazard_keywords + country_keywords))
+        item.properties["keywords"] = unique_in_order(hazard_keywords + country_keywords)
 
         # TODO: Deal with correlation id if country_codes is a empty list
         if monty.country_codes:

@@ -19,6 +19,7 @@ from pystac_monty.sources.common import (
     MontyDataSourceV3,
     MontyDataTransformer,
 )
+from pystac_monty.sources.utils import unique_in_order
 from pystac_monty.validators.desinventar import (
     STAC_EVENT_ID_PREFIX,
     STAC_HAZARD_ID_PREFIX,
@@ -843,7 +844,7 @@ class DesinventarTransformer(MontyDataTransformer[DesinventarDataSource]):
         monty.country_codes = [row.iso3.upper()]
 
         hazard_keywords = self.hazard_profiles.get_keywords(monty.hazard_codes)
-        item.properties["keywords"] = list(set(hazard_keywords + monty.country_codes))
+        item.properties["keywords"] = unique_in_order(hazard_keywords + monty.country_codes)
 
         monty.compute_and_set_correlation_id(hazard_profiles=self.hazard_profiles)
 
