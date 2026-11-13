@@ -756,7 +756,7 @@ class CEMSTest(unittest.TestCase):
         with _with_test_eoapi_url():
             event = next(item for item in iter_cems_stac_items(fixture) if MontyExtension.ext(item).is_source_event())
         related_hrefs = [link.get_href() or "" for link in event.links if link.rel == "related"]
-        self.assertTrue(any("gdacs-events/items/1001230-" in href for href in related_hrefs))
+        self.assertTrue(any("gdacs-events/items/gdacs-event-1001230-" in href for href in related_hrefs))
         self.assertTrue(any("charter-events/items/charter-event-996" in href for href in related_hrefs))
         self.assertTrue(any(link.rel == "via" for link in event.links))
 
