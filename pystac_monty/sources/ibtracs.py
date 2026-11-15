@@ -23,6 +23,7 @@ from pystac_monty.sources.common import (
     MontyDataSourceV3,
     MontyDataTransformer,
 )
+from pystac_monty.sources.utils import unique_in_order
 from pystac_monty.validators.ibtracs import IBTracsdataValidator
 
 logger = logging.getLogger(__name__)
@@ -331,7 +332,7 @@ class IBTrACSTransformer(MontyDataTransformer[IBTrACSDataSource]):
         monty_ext.country_codes = countries or ["XYZ"]  # Default for international waters
 
         hazard_keywords = self.hazard_profiles.get_keywords(monty_ext.hazard_codes)
-        item.properties["keywords"] = list(set(hazard_keywords + countries))
+        item.properties["keywords"] = unique_in_order(hazard_keywords + countries)
         monty_ext.src_event_id = storm_id
         monty_ext.episode_number = 1
         monty_ext.compute_and_set_correlation_id(hazard_profiles=self.hazard_profiles)

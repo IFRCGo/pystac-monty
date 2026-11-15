@@ -29,6 +29,7 @@ from pystac_monty.sources.common import (
     MontyDataSourceV3,
     MontyDataTransformer,
 )
+from pystac_monty.sources.utils import unique_in_order
 from pystac_monty.validators.em_dat import EmdatDataValidator
 
 logger = logging.getLogger(__name__)
@@ -287,7 +288,7 @@ class EMDATTransformer(MontyDataTransformer[EMDATDataSource]):
         # Generate keywords for discoverability
         hazard_keywords = self.hazard_profiles.get_keywords(monty.hazard_codes)
         country_keywords = [row.country] if row.country else []
-        item.properties["keywords"] = list(set(hazard_keywords + country_keywords))
+        item.properties["keywords"] = unique_in_order(hazard_keywords + country_keywords)
 
         monty.compute_and_set_correlation_id()
 

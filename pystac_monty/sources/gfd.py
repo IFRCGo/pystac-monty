@@ -25,6 +25,7 @@ from pystac_monty.sources.common import (
     MontyDataSourceV3,
     MontyDataTransformer,
 )
+from pystac_monty.sources.utils import unique_in_order
 from pystac_monty.validators.gfd import GFDSourceValidator
 
 logger = logging.getLogger(__name__)
@@ -164,7 +165,7 @@ class GFDTransformer(MontyDataTransformer[GFDDataSource]):
         monty.hazard_codes = self.hazard_profiles.get_canonical_hazard_codes(item=item)
 
         hazard_keywords = self.hazard_profiles.get_keywords(monty.hazard_codes)
-        item.properties["keywords"] = list(set(hazard_keywords + monty.country_codes))
+        item.properties["keywords"] = unique_in_order(hazard_keywords + monty.country_codes)
 
         monty.compute_and_set_correlation_id(hazard_profiles=self.hazard_profiles)
 
