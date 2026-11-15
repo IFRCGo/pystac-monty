@@ -30,7 +30,7 @@ from pystac_monty.sources.common import (
     MontyDataSourceV3,
     MontyDataTransformer,
 )
-from pystac_monty.sources.utils import phrase_to_dashed
+from pystac_monty.sources.utils import phrase_to_dashed, unique_in_order
 from pystac_monty.validators.gdacs_events import GdacsEventDataValidator, Sendai
 from pystac_monty.validators.gdacs_geometry import GdacsGeometryDataValidator
 from pystac_monty.validators.gdacs_impacts import GdacsImpactDataValidatorTC, GdacsImpactDataValidatorWF, TCImpactItem
@@ -339,11 +339,10 @@ class GDACSTransformer(MontyDataTransformer[GDACSDataSource]):
         monty.hazard_codes = self.get_hazard_codes(data.properties.eventtype)
         monty.hazard_codes = self.hazard_profiles.get_canonical_hazard_codes(item=item)
 
-        cc = set([data.properties.iso3.strip()])
-        if hasattr(data.properties, "affectedcountries"):
-            cc.update([c.iso3.strip() for c in data.properties.affectedcountries])
-        cc = list(cc)
-        cc = list(filter(None, cc))
+        # The main country first, then the affected countries in source order.
+        # monty:corr_id uses country_codes[0], so this order must not change between runs.
+        affected = [c.iso3 for c in data.properties.affectedcountries] if hasattr(data.properties, "affectedcountries") else []
+        cc = unique_in_order([data.properties.iso3, *affected])
         if cc:
             monty.country_codes = cc
         else:
@@ -351,7 +350,7 @@ class GDACSTransformer(MontyDataTransformer[GDACSDataSource]):
 
         hazard_keywords = self.hazard_profiles.get_keywords(monty.hazard_codes)
 
-        item.properties["keywords"] = list(set(hazard_keywords + list(cc)))
+        item.properties["keywords"] = unique_in_order(hazard_keywords + list(cc))
 
         monty.compute_and_set_correlation_id(hazard_profiles=self.hazard_profiles)
 

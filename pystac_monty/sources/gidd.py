@@ -29,6 +29,7 @@ from pystac_monty.sources.utils import (
     iter_grouped_json_buckets,
     normalize_figure_category,
     partition_json_array_by_key,
+    unique_in_order,
 )
 from pystac_monty.validators.gidd import GiddValidator
 
@@ -213,7 +214,7 @@ class GIDDTransformer(MontyDataTransformer[GIDDDataSource]):
 
         if monty.hazard_codes:
             hazard_keywords = self.hazard_profiles.get_keywords(monty.hazard_codes)
-            item.properties["keywords"] = list(set(hazard_keywords + monty.country_codes))
+            item.properties["keywords"] = unique_in_order(hazard_keywords + monty.country_codes)
 
         monty.compute_and_set_correlation_id(hazard_profiles=self.hazard_profiles)
 

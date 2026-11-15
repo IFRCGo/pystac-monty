@@ -18,6 +18,27 @@ from pystac_monty.extension import (
 logger = logging.getLogger(__name__)
 
 
+def unique_in_order(values: Iterable[Any]) -> List[Any]:
+    """Remove empty values and duplicates, and keep the first occurrence in input order.
+
+    Use this instead of ``list(set(...))`` for values that go into an item. A set has no
+    fixed order (string hashing changes with each Python process), so ``list(set(...))``
+    gives a different order from one run to the next. ``monty:corr_id`` uses
+    ``monty:country_codes[0]``, so an unstable order gives an unstable correlation id.
+    """
+    seen: set[Any] = set()
+    result: List[Any] = []
+    for value in values:
+        if value is None:
+            continue
+        if isinstance(value, str):
+            value = value.strip()
+        if value != "" and value not in seen:
+            seen.add(value)
+            result.append(value)
+    return result
+
+
 def phrase_to_dashed(phrase: str) -> str:
     return re.sub(r"[^\w]+", "-", phrase).strip("-").lower()
 
