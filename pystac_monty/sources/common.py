@@ -257,7 +257,13 @@ DataSource = typing.TypeVar("DataSource")
 @dataclass
 class MontyDataTransformer(typing.Generic[DataSource]):
     # FIXME: Add a validation in subclass so that source_name is always defined
+    # The id of the source in monty-stac-extension (`docs/model/sources/sources.yml`).
     source_name: str
+    # The source analysis that this transformer implements: a path in
+    # monty-stac-extension. A change to what the transformer writes must go with a
+    # change to this document (see CONTRIBUTING.md). `tests/test_source_docs.py`
+    # checks the path against `sources.yml`.
+    source_doc: str
 
     _event_collection_cache: Collection | None = None
     _hazard_collection_cache: Collection | None = None

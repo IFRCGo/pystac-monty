@@ -104,6 +104,7 @@ class GIDDTransformer(MontyDataTransformer[GIDDDataSource]):
 
     hazard_profiles = MontyHazardProfiles()
     source_name = "idmc-gidd"
+    source_doc = "docs/model/sources/IDMC/README.md"
 
     def get_stac_items(self) -> Generator[Item, None, None]:
         """Creates the STAC Items"""

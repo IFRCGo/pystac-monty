@@ -1160,6 +1160,7 @@ class CEMSTransformer(MontyDataTransformer[CEMSDataSource]):
 
     hazard_profiles = MontyHazardProfiles()
     source_name = "cems"
+    source_doc = "docs/model/sources/CEMS/README.md"
 
     def __init__(self, data_source: CEMSDataSource, geocoder: MontyGeoCoder | None = None) -> None:
         super().__init__(data_source, geocoder or MockGeocoder())

@@ -110,6 +110,7 @@ class USGSTransformer(MontyDataTransformer[USGSDataSource]):
 
     hazard_profiles = MontyHazardProfiles()
     source_name = "usgs"
+    source_doc = "docs/model/sources/USGS/README.md"
 
     @staticmethod
     def iso2_to_iso3(iso2: str) -> str:

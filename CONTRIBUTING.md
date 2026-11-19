@@ -57,6 +57,17 @@ For a source without a recipe, change the examples by hand, or add a recipe: it 
 
 Each of these finds a change after you made it. The steps above make sure that the doc and the examples change in the same PR as the code.
 
+## The transformer and its source doc
+
+Each transformer names its source analysis, and the source analysis names its transformer:
+
+- In a transformer class, `source_name` is the `id` of the source in monty-stac-extension (`docs/model/sources/sources.yml`), and `source_doc` is the path of its source doc in that repository.
+- In `sources.yml`, `doc` is the source doc and `etl` is the URL of the transformer file here.
+
+`tests/test_source_docs.py` checks that the two sides agree. It fails for a transformer with no source analysis, and for an entry of `sources.yml` whose `etl` names a file that does not exist.
+
+A new source starts with a source analysis in monty-stac-extension (use its "New source" issue form). Add the transformer here after that, with `source_name` and `source_doc`, and set `etl` in `sources.yml`.
+
 ## Report a mapping decision
 
 If you find something about a source while you work on its transformer (an undocumented value, a code that is wrong, a field that is always empty), write it in the source doc in monty-stac-extension, not only in a commit message or a code comment. The source doc is the place where the next person looks.

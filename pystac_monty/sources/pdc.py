@@ -141,6 +141,7 @@ class PDCTransformer(MontyDataTransformer):
 
     hazard_profiles = MontyHazardProfiles()
     source_name = "pdc"
+    source_doc = "docs/model/sources/PDC/README.md"
 
     def __init__(self, pdc_data_src: PDCDataSource, geocoder: MontyGeoCoder):
         super().__init__(pdc_data_src, geocoder)
