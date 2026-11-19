@@ -10,7 +10,7 @@ from pathlib import Path
 from typing import Callable, Generator, List, Literal, Optional, Tuple, Union
 
 import requests
-from pydantic import BaseModel, ConfigDict, Field
+from pydantic import BaseModel, ConfigDict, Field, field_validator
 from pystac import Collection, Item, Link
 
 from pystac_monty.extension import __version__ as PYSTAC_MONTY_VERSION
@@ -171,9 +171,20 @@ class PDCDataSourceType(BaseModel):
     source_url: str
     uuid: str
     hazard_data: Union[File, Memory]
-    # NOTE: Exposure detail is optional, only event and hazard items are created without it
-    exposure_detail_data: Optional[Union[File, Memory]] = None
+    # NOTE: Exposure detail is optional, only event and hazard items are created without it.
+    # Multiple exposure details (snapshots) of the same hazard can be passed at once:
+    # event and hazard items are created once and impact items are created for each snapshot.
+    exposure_detail_data: List[Union[File, Memory]] = Field(default_factory=list)
     geojson_path: str
+
+    @field_validator("exposure_detail_data", mode="before")
+    @classmethod
+    def normalize_exposure_detail_data(cls, value):
+        if value is None:
+            return []
+        if isinstance(value, (list, tuple)):
+            return list(value)
+        return [value]
 
 
 class CharterDataSourceType(BaseModel):
