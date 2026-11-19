@@ -333,6 +333,27 @@ def _collection_spec(
     )
 
 
+def _use_static_hrefs_for_item_links(blocks: Sequence[tuple[MontyRole, list[Item], str]]) -> None:
+    """Point each link between two items of the batch at the file of its target.
+
+    A transformer can link two items with the :class:`~pystac.Item` object as the
+    target (see :meth:`~pystac_monty.sources.common.MontyDataTransformer.add_related_links`).
+    PySTAC then takes the href from the self link of the target. The static writer
+    removes that link, so the href became ``null`` or an absolute path that depends
+    on the working directory. The href is now relative to the folder of the item:
+    ``../{collection_id}/{item_id}.json``.
+
+    A link with a string target is not changed.
+    """
+    collection_ids = {id(item): collection_id for _, role_items, collection_id in blocks for item in role_items}
+    for _, role_items, _ in blocks:
+        for item in role_items:
+            for link in item.links:
+                target = link.target
+                if isinstance(target, Item) and id(target) in collection_ids:
+                    link.target = f"../{collection_ids[id(target)]}/{target.id}.json"
+
+
 def export_collected_items(
     config: BatchExportConfig,
     items: Sequence[Item],
@@ -347,6 +368,7 @@ def export_collected_items(
         ("impact", impacts, f"{config.source_slug}-impacts"),
         ("response", responses, f"{config.source_slug}-response"),
     ]
+    _use_static_hrefs_for_item_links(blocks)
     wrote_response = False
     for role, role_items, collection_id in blocks:
         if not role_items:
