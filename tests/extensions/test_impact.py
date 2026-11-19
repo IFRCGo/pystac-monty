@@ -102,6 +102,7 @@ class BuildImpactFromResponseTest(unittest.TestCase):
         derived_links = [link for link in impact_item.links if link.rel == "derived_from"]
         self.assertEqual(len(derived_links), 1)
         self.assertIs(derived_links[0].target, response_item)
+        self.assertEqual(derived_links[0].media_type, "application/geo+json")
         self.assertEqual(derived_links[0].extra_fields["roles"], ["response"])
 
     def test_adds_related_link_to_response(self) -> None:
@@ -110,6 +111,7 @@ class BuildImpactFromResponseTest(unittest.TestCase):
 
         related_links = [link for link in response_item.links if link.rel == "related"]
         self.assertEqual(len(related_links), 1)
+        self.assertEqual(related_links[0].media_type, "application/geo+json")
         self.assertIs(related_links[0].target, impact_item)
         self.assertEqual(related_links[0].extra_fields["roles"], ["impact"])
 
@@ -140,6 +142,7 @@ class BuildImpactFromResponseTest(unittest.TestCase):
         link_derived_from_response(impact_item, response_item)
 
         self.assertEqual([link.rel for link in impact_item.links if link.rel != "self"], ["derived_from"])
+        self.assertEqual([link.media_type for link in impact_item.links if link.rel == "derived_from"], ["application/geo+json"])
 
     def test_id_defaults_from_response_source_id_category_and_type(self) -> None:
         """Matches the item naming as in examples/_response-impact-pairing examples."""
