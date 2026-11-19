@@ -3,11 +3,10 @@ import json
 import logging
 import mimetypes
 import os
-import re
 import typing
 from dataclasses import dataclass
 from enum import Enum
-from typing import Dict, List, Tuple, Union
+from typing import Callable, Dict, List, NamedTuple, Tuple, Union
 
 import pytz
 from markdownify import markdownify as md
@@ -31,6 +30,7 @@ from pystac_monty.sources.common import (
     MontyDataSourceV3,
     MontyDataTransformer,
 )
+from pystac_monty.sources.glide import GLIDE_NUMBER_PATTERN, glide_event_item_id
 from pystac_monty.sources.utils import phrase_to_dashed, unique_in_order
 from pystac_monty.validators.gdacs_events import GdacsEventDataValidator, Sendai
 from pystac_monty.validators.gdacs_geometry import GdacsGeometryDataValidator
@@ -55,17 +55,32 @@ TC_EXPOSURE_BANDS: Tuple[Tuple[str, str, str, str], ...] = (
 )
 WF_POPAFFECTED_DESCRIPTION = "Population in the burnt area"
 
-# GDACS `glide` field, e.g. "TC-2026-000199-IND"
-GLIDE_NUMBER_PATTERN = re.compile(r"^[A-Z]{2}-\d{4}-\d{6}-[A-Z]{3}$")
 GLIDE_COLLECTION_ID = "glide-events"
-GLIDE_EVENT_ID_PREFIX = "glide-event-"
 
-# GDACS `source` values whose `sourceid` is the item id of a Monty collection.
+
+class GdacsSourceCollection(NamedTuple):
+    """The Monty collection that holds the events of a GDACS `source`."""
+
+    collection_id: str
+    # Builds the item id in `collection_id` from the GDACS `sourceid`.
+    # Each source has its own rule, so the rule is part of the mapping.
+    item_id: Callable[[str], str]
+    label: str
+
+
+# GDACS `source` values whose `sourceid` identifies an item of a Monty collection.
 # NEIC is the USGS National Earthquake Information Center: its `sourceid` is the
 # USGS event id (e.g. "us7000txz3"). Other GDACS sources (GLOFAS, GWIS, JTWC,
 # NOAA, RSMC, GDO, the VAACs) have no Monty collection, so they get no link.
-GDACS_SOURCE_COLLECTIONS: Dict[str, Tuple[str, str, str]] = {
-    "NEIC": ("usgs-events", "usgs-event-", "USGS event"),
+# `item_id` must give the id that the transformer of the collection writes
+# (`pystac_monty.sources.usgs` for NEIC; that module imports this one, so the
+# prefix cannot be imported here; `test_gdacs_cross_references.py` compares them).
+GDACS_SOURCE_COLLECTIONS: Dict[str, GdacsSourceCollection] = {
+    "NEIC": GdacsSourceCollection(
+        collection_id="usgs-events",
+        item_id=lambda source_id: f"usgs-event-{source_id}",
+        label="USGS event",
+    ),
 }
 
 
@@ -426,7 +441,7 @@ class GDACSTransformer(MontyDataTransformer[GDACSDataSource]):
                 item.add_link(
                     Link(
                         rel="related",
-                        target=self._item_href(GLIDE_COLLECTION_ID, f"{GLIDE_EVENT_ID_PREFIX}{glide}"),
+                        target=self._item_href(GLIDE_COLLECTION_ID, glide_event_item_id(glide)),
                         media_type="application/geo+json",
                         title=f"GLIDE {glide}",
                         extra_fields={"roles": ["event"]},
@@ -438,13 +453,13 @@ class GDACSTransformer(MontyDataTransformer[GDACSDataSource]):
         source = (data.properties.source or "").strip().upper()
         source_id = (data.properties.sourceid or "").strip()
         if source in GDACS_SOURCE_COLLECTIONS and source_id:
-            collection_id, id_prefix, label = GDACS_SOURCE_COLLECTIONS[source]
+            target = GDACS_SOURCE_COLLECTIONS[source]
             item.add_link(
                 Link(
                     rel="related",
-                    target=self._item_href(collection_id, f"{id_prefix}{source_id}"),
+                    target=self._item_href(target.collection_id, target.item_id(source_id)),
                     media_type="application/geo+json",
-                    title=f"{label} {source_id}",
+                    title=f"{target.label} {source_id}",
                     extra_fields={"roles": ["event"]},
                 )
             )

@@ -9,7 +9,9 @@ from types import SimpleNamespace
 import pytest
 from pystac import Item
 
-from pystac_monty.sources.gdacs import GDACSTransformer
+from pystac_monty.sources import glide as glide_source
+from pystac_monty.sources import usgs as usgs_source
+from pystac_monty.sources.gdacs import GDACS_SOURCE_COLLECTIONS, GDACSTransformer
 from pystac_monty.validators.gdacs_events import GdacsEventDataValidator
 
 GDACS_FIXTURES = Path(__file__).resolve().parent.parent / "data-files" / "gdacs"
@@ -60,3 +62,22 @@ def test_empty_or_malformed_glide_gets_no_link(glide: str) -> None:
 def test_glide_is_normalised() -> None:
     links = _related(_event(glide=" tc-2026-000199-ind ", source="JTWC", sourceid=""))
     assert [href for href, _, _ in links] == [f"{EOAPI}/collections/glide-events/items/glide-event-TC-2026-000199-IND"]
+
+
+def test_glide_without_country_links_to_glide_event() -> None:
+    """GLIDE writes `---` when a record has no country (174 of 9145 records, November 2026)."""
+    links = _related(_event(glide="TC-2008-000105----", source="JTWC", sourceid=""))
+    assert [href for href, _, _ in links] == [f"{EOAPI}/collections/glide-events/items/glide-event-TC-2008-000105----"]
+
+
+def test_glide_link_id_is_the_id_of_the_glide_transformer() -> None:
+    """The link must reach the item that `GlideTransformer` writes for the same GLIDE record."""
+    record = SimpleNamespace(event="FL", number="2024-000199", geocode="ESP")
+    glide = glide_source.glide_number(record.event, record.number, record.geocode)
+    links = _related(_event(glide=glide, source="GLOFAS", sourceid=""))
+    assert [href.rsplit("/", 1)[-1] for href, _, _ in links] == [f"{glide_source.STAC_EVENT_ID_PREFIX}FL-2024-000199-ESP"]
+    assert glide_source.glide_event_item_id(glide) == "glide-event-FL-2024-000199-ESP"
+
+
+def test_neic_item_id_is_the_id_of_the_usgs_transformer() -> None:
+    assert GDACS_SOURCE_COLLECTIONS["NEIC"].item_id("us7000txz3") == f"{usgs_source.STAC_EVENT_ID_PREFIX}us7000txz3"
