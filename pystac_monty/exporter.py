@@ -98,6 +98,36 @@ def summaries_for_monty_static_collection(
     return summaries
 
 
+def dedupe_items_by_id(items: Sequence[Item]) -> list[Item]:
+    """Drop items whose ``id`` repeats, keeping the first occurrence.
+
+    A transformer's own item ids are only guaranteed unique *within one call* to
+    :meth:`~pystac_monty.sources.common.MontyDataTransformer.get_stac_items` (see e.g.
+    CEMS #238/#251). Nothing here guards against a source record — an activation, a
+    call — being handed to the transformer twice by whatever assembled *items* (a
+    duplicate entry in an upstream listing, a retried batch, two overlapping fetches).
+    That duplication is invisible per-transformer but fatal at export: two ``Item``s
+    with the same id silently become one on write, and again on ingest into eoAPI
+    (see #256). Catch it here, once, for every batch source.
+    """
+    seen: set[str] = set()
+    deduped: list[Item] = []
+    dropped: list[str] = []
+    for item in items:
+        if item.id in seen:
+            dropped.append(item.id)
+            continue
+        seen.add(item.id)
+        deduped.append(item)
+    if dropped:
+        logger.warning(
+            "Dropped %d item(s) with a duplicate id before export (kept the first of each): %s",
+            len(dropped),
+            sorted(set(dropped)),
+        )
+    return deduped
+
+
 def partition_monty_source_items(
     items: Sequence[Item],
 ) -> tuple[list[Item], list[Item], list[Item], list[Item]]:
@@ -339,7 +369,7 @@ def export_collected_items(
     output_root: Path,
 ) -> tuple[int, int, int, int]:
     """Partition *items* by Monty role and write ``{source_slug}-events|hazards|impacts|response`` folders."""
-    events, hazards, impacts, responses = partition_monty_source_items(items)
+    events, hazards, impacts, responses = partition_monty_source_items(dedupe_items_by_id(items))
     titles = _role_titles(config.source_slug, config.titles)
     blocks: list[tuple[MontyRole, list[Item], str]] = [
         ("event", events, f"{config.source_slug}-events"),
