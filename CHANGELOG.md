@@ -1,5 +1,17 @@
 # Changelog
 
+## [0.2.9](https://github.com/IFRCGo/pystac-monty/compare/v0.2.8...v0.2.9) (2026-11-20)
+
+
+### Bug Fixes
+
+* **emdat:** handle when start date is later than end date ([2e31c9c](https://github.com/IFRCGo/pystac-monty/commit/2e31c9c4e43243c6adcf8b5542f92829ba79c4d5))
+* **gdacs,pdc:** keep the source order of country codes so monty:corr_id is stable ([#273](https://github.com/IFRCGo/pystac-monty/issues/273)) ([5f7a8be](https://github.com/IFRCGo/pystac-monty/commit/5f7a8be9cf0bb32ee448daae92bb85775fd65e3d))
+* **idmc:** GIDD impact id and type, impact items describe their own record ([#268](https://github.com/IFRCGo/pystac-monty/issues/268)) ([b0b0ff4](https://github.com/IFRCGo/pystac-monty/commit/b0b0ff4655ea5fd32160904a555dc90a818eba86))
+* **pdc:** create event, hazard items despite no exposure information ([#274](https://github.com/IFRCGo/pystac-monty/issues/274)) ([1c4092e](https://github.com/IFRCGo/pystac-monty/commit/1c4092ed130f529f3c7fc1dba8fc117c7c28759a))
+* **pdc:** process collection exposure data per hazard; not to use tim… ([#276](https://github.com/IFRCGo/pystac-monty/issues/276)) ([a781fc9](https://github.com/IFRCGo/pystac-monty/commit/a781fc97dc4075fe2302ef808d65ab58e8c22b7e))
+* **usgs:** remove alert related stuffs and do not create alert items ([#287](https://github.com/IFRCGo/pystac-monty/issues/287)) ([b831436](https://github.com/IFRCGo/pystac-monty/commit/b831436a02deedbee6effaf5a3d1a1d76ddd3000))
+
 ## [0.2.8](https://github.com/IFRCGo/pystac-monty/compare/v0.2.7...v0.2.8) (2026-10-28)
 
 
