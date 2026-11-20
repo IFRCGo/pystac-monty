@@ -8,7 +8,7 @@ from typing import Any, Generator, List, Optional, Union
 
 import pytz
 from markdownify import markdownify as md
-from pydantic import BaseModel
+from pydantic import BaseModel, ValidationError
 from pystac import Asset, Item
 from shapely.geometry import Point, mapping
 
@@ -66,10 +66,10 @@ class PDCDataSource(MontyDataSourceV3):
     source_url: str
     uuid: str
     hazard_file_path: str
-    exposure_detail_file_path: str
+    exposure_detail_file_path: str | None = None
     geojson_path: str
     hazard_data: Union[str, dict]
-    exposure_detail_data: Union[str, dict]
+    exposure_detail_data: Union[str, dict, None] = None
 
     def __init__(self, data: PDCDataSourceType, eoapi_url: str | None = None):
         super().__init__(root=data, eoapi_url=eoapi_url)
@@ -83,6 +83,8 @@ class PDCDataSource(MontyDataSourceV3):
             else:
                 raise ValueError("File path does not exist")
 
+            if data.exposure_detail_data is None:
+                return
             if os.path.isfile(data.exposure_detail_data.path):
                 self.exposure_detail_file_path = data.exposure_detail_data.path
             else:
@@ -105,7 +107,9 @@ class PDCDataSource(MontyDataSourceV3):
                 self.hazard_data = json.loads(f.read())
         return self.hazard_data
 
-    def get_exposure_detail_data(self) -> typing.Union[dict, str]:
+    def get_exposure_detail_data(self) -> typing.Union[dict, str, None]:
+        if self.root.exposure_detail_data is None:
+            return None
         if self.root.exposure_detail_data.data_type == DataType.FILE:
             with open(self.exposure_detail_file_path, "r", encoding="utf-8") as f:
                 self.exposure_detail_data = json.loads(f.read())
@@ -160,7 +164,13 @@ class PDCTransformer(MontyDataTransformer):
             self.transform_summary.increment_rows()
             try:
                 pdc_hazard_data = HazardEventValidator(**hazard_item)
-                exposure_detail = ExposureDetailValidator(**pdc_exposure_data)
+                exposure_detail = None
+                if pdc_exposure_data:
+                    try:
+                        exposure_detail = ExposureDetailValidator(**pdc_exposure_data)
+                    except ValidationError:
+                        # NOTE: Still create the event and hazard items without the exposure detail
+                        logger.warning("Invalid PDC exposure detail data, skipping impact items", exc_info=True)
 
                 if event_item := self.make_source_event_item(pdc_hazard_data, exposure_detail):
                     hazard_item = self.make_hazard_item(event_item, pdc_hazard_data)
@@ -182,7 +192,7 @@ class PDCTransformer(MontyDataTransformer):
         else:
             logger.warning("No Hazard items found")
 
-    def make_source_event_item(self, pdc_hazard_data: HazardEventValidator, pdc_exposure_data: ExposureDetailValidator):
+    def make_source_event_item(self, pdc_hazard_data: HazardEventValidator, pdc_exposure_data: ExposureDetailValidator | None):
         """Create an Event Item"""
 
         latitude = float(pdc_hazard_data.latitude)
@@ -202,8 +212,12 @@ class PDCTransformer(MontyDataTransformer):
         if enddate:
             enddate = pytz.utc.localize(datetime.fromtimestamp(enddate / 1_000))
 
+        item_id = f"{STAC_EVENT_ID_PREFIX}{self.hazard_data['uuid']}-{self.hazard_data['hazard_ID']}"
+        if pdc_exposure_data:
+            item_id = f"{item_id}-{int(float(pdc_exposure_data.timestamp))}"
+
         item = Item(
-            id=f"{STAC_EVENT_ID_PREFIX}{self.hazard_data['uuid']}-{self.hazard_data['hazard_ID']}-{int(float(pdc_exposure_data.timestamp))}",
+            id=item_id,
             geometry=geometry,
             bbox=bbox,
             datetime=startdate,
@@ -220,10 +234,11 @@ class PDCTransformer(MontyDataTransformer):
         item.properties["roles"] = ["source", "event"]
 
         all_iso3 = []
-        if pdc_exposure_data.totalByCountry:
+        if pdc_exposure_data and pdc_exposure_data.totalByCountry:
             all_iso3.extend([admin.country for admin in pdc_exposure_data.totalByCountry if admin.country])
         if not all_iso3:
-            return None
+            # NOTE: Without exposure data (or countries in it), get the country from the hazard location
+            all_iso3.append(self.geocoder.get_iso3_from_point(point) or "UNK")
 
         MontyExtension.add_to(item)
         monty = MontyExtension.ext(item)
@@ -237,7 +252,11 @@ class PDCTransformer(MontyDataTransformer):
 
         # Generate keywords for discoverability
         hazard_keywords = self.hazard_profiles.get_keywords(monty.hazard_codes)
-        country_keywords = [obj.admin0 for obj in pdc_exposure_data.totalByCountry] if pdc_exposure_data.totalByCountry else []
+        country_keywords = (
+            [obj.admin0 for obj in pdc_exposure_data.totalByCountry]
+            if pdc_exposure_data and pdc_exposure_data.totalByCountry
+            else []
+        )
         item.properties["keywords"] = unique_in_order(hazard_keywords + country_keywords)
 
         # TODO: Deal with correlation id if country_codes is a empty list
@@ -344,7 +363,7 @@ class PDCTransformer(MontyDataTransformer):
                 return None
         return data
 
-    def make_impact_items(self, event_item: Item, exposure_detail: ExposureDetailValidator) -> List[Item]:
+    def make_impact_items(self, event_item: Item, exposure_detail: ExposureDetailValidator | None) -> List[Item]:
         """Create Impact Items"""
         impact_fields = {
             ("population", "total0_4", "value"): (MontyImpactExposureCategory.CHILDREN_0_4, MontyImpactType.TOTAL_AFFECTED),
@@ -375,6 +394,10 @@ class PDCTransformer(MontyDataTransformer):
             if not exposure_detail:
                 continue
             for admin_item in exposure_detail.totalByAdmin:
+                value = self.get_nested_data(admin_item, field_key)
+                if value is None:
+                    # NOTE: Skip only this impact item when the value is not available
+                    continue
                 impact_item = event_item.clone()
                 impact_item.id = f"{impact_item.id.replace(STAC_EVENT_ID_PREFIX, STAC_IMPACT_ID_PREFIX)}-{self.episode_number}-{'-'.join(field_key[:-1])}-{admin_item.country}"  # noqa
                 impact_item.set_collection(self.get_impact_collection())
@@ -383,7 +406,6 @@ class PDCTransformer(MontyDataTransformer):
                 monty.country_codes = [admin_item.country]  # type: ignore
                 # Impact Detail
                 category, impact_type = field_values
-                value = self.get_nested_data(admin_item, field_key)
                 monty.impact_detail = self.get_impact_detail(category, impact_type, value)
                 impact_items.append(impact_item)
         return impact_items
