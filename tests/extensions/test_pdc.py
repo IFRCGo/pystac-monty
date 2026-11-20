@@ -2,6 +2,7 @@ import json
 import unittest
 from os import makedirs
 from typing import List
+from unittest.mock import patch
 
 import pytest
 from parameterized import parameterized
@@ -214,3 +215,112 @@ class PDCTest(unittest.TestCase):
         # Should contain all codes
         assert len(monty.hazard_codes) >= 2
         assert monty.hazard_codes[0] in ["GH0300", "GH0101", "Peru"]  # 2025 codes
+
+
+def test_transformer_without_exposure_detail():
+    """Event and hazard items are created when the exposure detail is not available"""
+    pdc_data_source = PDCDataSource(
+        data=PDCDataSourceType(
+            source_url=scenario[0],
+            uuid=scenario[1]["uuid"],
+            hazard_data=File(path=scenario[1]["hazards_file_path"], data_type=DataType.FILE),
+            exposure_detail_data=None,
+            geojson_path=scenario[1]["geojson_file_path"],
+        )
+    )
+    geocoder = MockGeocoder()
+    transformer = PDCTransformer(pdc_data_source, geocoder)
+
+    with patch.object(geocoder, "get_iso3_from_point", return_value="PER"):
+        items = transformer.make_items()
+
+    roles = sorted(item.properties["roles"][1] for item in items)
+    assert roles == ["event", "hazard"]
+    event_item = next(item for item in items if MontyExtension.ext(item).is_source_event())
+    # NOTE: Exposure timestamp is not part of the id without exposure detail
+    assert event_item.id == f"pdc-event-{scenario[1]['uuid']}-{transformer.hazard_data['hazard_ID']}"
+    assert MontyExtension.ext(event_item).country_codes == ["PER"]
+
+
+def test_transformer_without_exposure_detail_unknown_country():
+    """Country falls back to UNK when the geocoder cannot resolve the hazard location"""
+    pdc_data_source = PDCDataSource(
+        data=PDCDataSourceType(
+            source_url=scenario[0],
+            uuid=scenario[1]["uuid"],
+            hazard_data=File(path=scenario[1]["hazards_file_path"], data_type=DataType.FILE),
+            exposure_detail_data=None,
+            geojson_path=scenario[1]["geojson_file_path"],
+        )
+    )
+    geocoder = MockGeocoder()
+    transformer = PDCTransformer(pdc_data_source, geocoder)
+
+    with patch.object(geocoder, "get_iso3_from_point", return_value=None):
+        items = transformer.make_items()
+
+    event_item = next(item for item in items if MontyExtension.ext(item).is_source_event())
+    assert MontyExtension.ext(event_item).country_codes == ["UNK"]
+
+
+def _transformer_with_exposure(tmp_path, exposure: dict) -> PDCTransformer:
+    exposure_path = tmp_path / "exposure_detail.json"
+    exposure_path.write_text(json.dumps(exposure))
+    pdc_data_source = PDCDataSource(
+        data=PDCDataSourceType(
+            source_url=scenario[0],
+            uuid=scenario[1]["uuid"],
+            hazard_data=File(path=scenario[1]["hazards_file_path"], data_type=DataType.FILE),
+            exposure_detail_data=File(path=str(exposure_path), data_type=DataType.FILE),
+            geojson_path=scenario[1]["geojson_file_path"],
+        )
+    )
+    return PDCTransformer(pdc_data_source, MockGeocoder())
+
+
+def _load_exposure() -> dict:
+    with open(scenario[1]["exposure_detail_file_path"]) as f:
+        return json.load(f)
+
+
+def test_transformer_skips_only_impacts_with_null_value(tmp_path):
+    """Null values in the exposure detail skip only the related impact items"""
+    exposure = _load_exposure()
+    null_value = {"valueFormatted": None, "valueFormattedNoTrunc": None, "valueRounded": None, "value": None}
+    exposure["totalByAdmin"][0]["population"]["households"] = null_value
+    exposure["totalByCountry"][0]["population"]["households"] = null_value
+
+    items = _transformer_with_exposure(tmp_path, exposure).make_items()
+
+    roles = [item.properties["roles"][1] for item in items]
+    assert roles.count("event") == 1
+    assert roles.count("hazard") == 1
+    impact_ids = [item.id for item in items if item.properties["roles"][1] == "impact"]
+    assert impact_ids
+    assert not [i for i in impact_ids if "-population-households-" in i]
+    assert [i for i in impact_ids if "-population-total-" in i]
+
+
+def test_transformer_invalid_exposure_still_creates_event_and_hazard(tmp_path):
+    """Event and hazard items are created even if the exposure detail is invalid"""
+    exposure = _load_exposure()
+    exposure["totalByAdmin"] = "invalid"
+
+    items = _transformer_with_exposure(tmp_path, exposure).make_items()
+
+    assert sorted(item.properties["roles"][1] for item in items) == ["event", "hazard"]
+
+
+def test_transformer_exposure_without_countries_uses_geocoder(tmp_path):
+    """Country falls back to the hazard location when the exposure detail has no countries"""
+    exposure = _load_exposure()
+    exposure["totalByCountry"] = []
+    exposure["totalByAdmin"] = []
+
+    transformer = _transformer_with_exposure(tmp_path, exposure)
+    with patch.object(transformer.geocoder, "get_iso3_from_point", return_value=None):
+        items = transformer.make_items()
+
+    assert sorted(item.properties["roles"][1] for item in items) == ["event", "hazard"]
+    event_item = next(item for item in items if MontyExtension.ext(item).is_source_event())
+    assert MontyExtension.ext(event_item).country_codes == ["UNK"]

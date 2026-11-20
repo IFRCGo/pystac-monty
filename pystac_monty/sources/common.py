@@ -171,7 +171,8 @@ class PDCDataSourceType(BaseModel):
     source_url: str
     uuid: str
     hazard_data: Union[File, Memory]
-    exposure_detail_data: Union[File, Memory]
+    # NOTE: Exposure detail is optional, only event and hazard items are created without it
+    exposure_detail_data: Optional[Union[File, Memory]] = None
     geojson_path: str
 
 
