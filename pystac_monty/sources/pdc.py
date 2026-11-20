@@ -1,14 +1,16 @@
 import json
 import logging
 import os
+import re
 import typing
+import unicodedata
 from datetime import datetime
 from enum import Enum
 from typing import Any, Generator, List, Optional, Union
 
 import pytz
 from markdownify import markdownify as md
-from pydantic import BaseModel
+from pydantic import BaseModel, ValidationError
 from pystac import Asset, Item
 from shapely.geometry import Point, mapping
 
@@ -66,16 +68,18 @@ class PDCDataSource(MontyDataSourceV3):
     source_url: str
     uuid: str
     hazard_file_path: str
-    exposure_detail_file_path: str
+    exposure_detail_file_paths: List[str]
     geojson_path: str
     hazard_data: Union[str, dict]
-    exposure_detail_data: Union[str, dict]
+    exposure_detail_data: List[dict]
 
     def __init__(self, data: PDCDataSourceType, eoapi_url: str | None = None):
         super().__init__(root=data, eoapi_url=eoapi_url)
         self.source_url = data.source_url
         self.uuid = data.uuid
         self.geojson_path = data.geojson_path
+        self.exposure_detail_file_paths = []
+        self.exposure_detail_data = []
 
         def handle_file_data():
             if os.path.isfile(data.hazard_data.path):
@@ -83,10 +87,13 @@ class PDCDataSource(MontyDataSourceV3):
             else:
                 raise ValueError("File path does not exist")
 
-            if os.path.isfile(data.exposure_detail_data.path):
-                self.exposure_detail_file_path = data.exposure_detail_data.path
-            else:
-                raise ValueError("File path does not exist")
+            for exposure_detail_data in data.exposure_detail_data:
+                if exposure_detail_data.data_type != DataType.FILE:
+                    continue
+                if os.path.isfile(exposure_detail_data.path):
+                    self.exposure_detail_file_paths.append(exposure_detail_data.path)
+                else:
+                    raise ValueError("File path does not exist")
 
         def handle_memory_data(): ...
 
@@ -105,10 +112,18 @@ class PDCDataSource(MontyDataSourceV3):
                 self.hazard_data = json.loads(f.read())
         return self.hazard_data
 
-    def get_exposure_detail_data(self) -> typing.Union[dict, str]:
-        if self.root.exposure_detail_data.data_type == DataType.FILE:
-            with open(self.exposure_detail_file_path, "r", encoding="utf-8") as f:
-                self.exposure_detail_data = json.loads(f.read())
+    def get_exposure_detail_data(self) -> List[dict]:
+        """Get all the exposure details (snapshots) of the hazard"""
+        # NOTE: Each exposure detail has its own data type (independent of the hazard data)
+        exposure_detail_data = []
+        for exposure_detail in self.root.exposure_detail_data:
+            if exposure_detail.data_type == DataType.FILE:
+                with open(exposure_detail.path, "r", encoding="utf-8") as f:
+                    exposure_detail_data.append(json.loads(f.read()))
+            else:
+                content = exposure_detail.content
+                exposure_detail_data.append(json.loads(content) if isinstance(content, (str, bytes)) else content)
+        self.exposure_detail_data = exposure_detail_data
         return self.exposure_detail_data
 
     def get_input_data_type(self) -> DataType:
@@ -131,7 +146,7 @@ class PDCTransformer(MontyDataTransformer):
         super().__init__(pdc_data_src, geocoder)
         self.uuid = pdc_data_src.uuid
         self.hazards_data = pdc_data_src.get_hazard_data()
-        self.exposure_detail = pdc_data_src.get_exposure_detail_data()
+        self.exposure_details = pdc_data_src.get_exposure_detail_data()
         self.geojson_path = pdc_data_src.geojson_path
 
         # NOTE Setting 1 to the episode_number as it is missing in the source data.
@@ -152,7 +167,6 @@ class PDCTransformer(MontyDataTransformer):
     def get_stac_items(self) -> Generator[Item, None, None]:
         """Creates the STAC Items"""
 
-        pdc_exposure_data = self.exposure_detail
         self.transform_summary.mark_as_started()
 
         hazard_item = self._get_hazard_data()
@@ -160,11 +174,16 @@ class PDCTransformer(MontyDataTransformer):
             self.transform_summary.increment_rows()
             try:
                 pdc_hazard_data = HazardEventValidator(**hazard_item)
-                exposure_detail = ExposureDetailValidator(**pdc_exposure_data)
+                exposure_details = self._get_valid_exposure_details()
 
-                if event_item := self.make_source_event_item(pdc_hazard_data, exposure_detail):
+                # NOTE: Event and hazard items are created once for all the exposure details (snapshots)
+                if event_item := self.make_source_event_item(pdc_hazard_data, exposure_details):
                     hazard_item = self.make_hazard_item(event_item, pdc_hazard_data)
-                    impact_items = self.make_impact_items(event_item, exposure_detail)
+                    impact_items = [
+                        impact_item
+                        for exposure_detail in exposure_details
+                        for impact_item in self.make_impact_items(event_item, exposure_detail)
+                    ]
 
                     all_items = [event_item, hazard_item] + impact_items
                     self.set_item_hrefs(items=all_items, eoapi_url=self.data_source.eoapi_url)
@@ -182,8 +201,44 @@ class PDCTransformer(MontyDataTransformer):
         else:
             logger.warning("No Hazard items found")
 
-    def make_source_event_item(self, pdc_hazard_data: HazardEventValidator, pdc_exposure_data: ExposureDetailValidator):
-        """Create an Event Item"""
+    def _get_valid_exposure_details(self) -> List[ExposureDetailValidator]:
+        """
+        Validate the exposure details, earliest snapshot first.
+        Invalid exposure details are skipped; the event and hazard items are still created.
+
+        NOTE: Earliest first keeps monty:country_codes[0] (and so monty:corr_id) stable:
+        a new snapshot can only append countries at the end.
+        """
+        exposure_details = []
+        for exposure_detail_data in self.exposure_details:
+            try:
+                exposure_details.append(ExposureDetailValidator(**exposure_detail_data))
+            except ValidationError:
+                logger.warning("Invalid PDC exposure detail data, skipping impact items", exc_info=True)
+        # NOTE: Sort by datetime (not the raw value) as the timestamp can be in milliseconds or seconds.
+        # Sorting is stable, so snapshots with the same timestamp keep the input order.
+        exposure_details = sorted(exposure_details, key=lambda e: self.get_exposure_datetime(e.timestamp))
+
+        # NOTE: Snapshots with the same timestamp would create the same impact ids; keep the last one
+        unique_exposure_details = {}
+        for exposure_detail in exposure_details:
+            timestamp_ms = self.get_exposure_timestamp_ms(exposure_detail.timestamp)
+            if timestamp_ms in unique_exposure_details:
+                logger.warning("Duplicate PDC exposure detail timestamp %s, keeping the last one", timestamp_ms)
+            unique_exposure_details[timestamp_ms] = exposure_detail
+        return list(unique_exposure_details.values())
+
+    def make_source_event_item(
+        self,
+        pdc_hazard_data: HazardEventValidator,
+        pdc_exposure_details: List[ExposureDetailValidator] | None = None,
+    ):
+        """
+        Create an Event Item
+
+        NOTE: Countries are collected from all the exposure details (earliest snapshot first)
+        """
+        pdc_exposure_details = pdc_exposure_details or []
 
         latitude = float(pdc_hazard_data.latitude)
         longitude = float(pdc_hazard_data.longitude)
@@ -202,8 +257,12 @@ class PDCTransformer(MontyDataTransformer):
         if enddate:
             enddate = pytz.utc.localize(datetime.fromtimestamp(enddate / 1_000))
 
+        # NOTE: Exposure timestamp is intentionally not part of the event (and hazard) id,
+        # so the same PDC hazard maps to the same item regardless of exposure availability.
+        item_id = f"{STAC_EVENT_ID_PREFIX}{self.hazard_data['uuid']}-{self.hazard_data['hazard_ID']}"
+
         item = Item(
-            id=f"{STAC_EVENT_ID_PREFIX}{self.hazard_data['uuid']}-{self.hazard_data['hazard_ID']}-{int(float(pdc_exposure_data.timestamp))}",
+            id=item_id,
             geometry=geometry,
             bbox=bbox,
             datetime=startdate,
@@ -220,10 +279,11 @@ class PDCTransformer(MontyDataTransformer):
         item.properties["roles"] = ["source", "event"]
 
         all_iso3 = []
-        if pdc_exposure_data.totalByCountry:
+        for pdc_exposure_data in pdc_exposure_details:
             all_iso3.extend([admin.country for admin in pdc_exposure_data.totalByCountry if admin.country])
         if not all_iso3:
-            return None
+            # NOTE: Without exposure data (or countries in it), get the country from the hazard location
+            all_iso3.append(self.geocoder.get_iso3_from_point(point) or "UNK")
 
         MontyExtension.add_to(item)
         monty = MontyExtension.ext(item)
@@ -237,7 +297,7 @@ class PDCTransformer(MontyDataTransformer):
 
         # Generate keywords for discoverability
         hazard_keywords = self.hazard_profiles.get_keywords(monty.hazard_codes)
-        country_keywords = [obj.admin0 for obj in pdc_exposure_data.totalByCountry] if pdc_exposure_data.totalByCountry else []
+        country_keywords = [obj.admin0 for pdc_exposure_data in pdc_exposure_details for obj in pdc_exposure_data.totalByCountry]
         item.properties["keywords"] = unique_in_order(hazard_keywords + country_keywords)
 
         # TODO: Deal with correlation id if country_codes is a empty list
@@ -344,7 +404,7 @@ class PDCTransformer(MontyDataTransformer):
                 return None
         return data
 
-    def make_impact_items(self, event_item: Item, exposure_detail: ExposureDetailValidator) -> List[Item]:
+    def make_impact_items(self, event_item: Item, exposure_detail: ExposureDetailValidator | None) -> List[Item]:
         """Create Impact Items"""
         impact_fields = {
             ("population", "total0_4", "value"): (MontyImpactExposureCategory.CHILDREN_0_4, MontyImpactType.TOTAL_AFFECTED),
@@ -371,22 +431,85 @@ class PDCTransformer(MontyDataTransformer):
             return None
 
         impact_items = []
+        if not exposure_detail:
+            return impact_items
+        impact_id_prefix = (
+            f"{event_item.id.replace(STAC_EVENT_ID_PREFIX, STAC_IMPACT_ID_PREFIX)}"
+            f"-{self.get_exposure_timestamp_ms(exposure_detail.timestamp)}-{self.episode_number}"
+        )
+        impact_datetime = self.get_exposure_datetime(exposure_detail.timestamp)
+        admin_id_parts = self.get_admin_id_parts(exposure_detail.totalByAdmin)
         for field_key, field_values in impact_fields.items():
-            if not exposure_detail:
-                continue
-            for admin_item in exposure_detail.totalByAdmin:
+            for admin_item, admin_id_part in zip(exposure_detail.totalByAdmin, admin_id_parts):
+                value = self.get_nested_data(admin_item, field_key)
+                if value is None:
+                    # NOTE: Skip only this impact item when the value is not available
+                    continue
                 impact_item = event_item.clone()
-                impact_item.id = f"{impact_item.id.replace(STAC_EVENT_ID_PREFIX, STAC_IMPACT_ID_PREFIX)}-{self.episode_number}-{'-'.join(field_key[:-1])}-{admin_item.country}"  # noqa
+                impact_item.id = f"{impact_id_prefix}-{'-'.join(field_key[:-1])}-{admin_id_part}"
                 impact_item.set_collection(self.get_impact_collection())
                 impact_item.properties["roles"] = ["source", "impact"]
+                # NOTE: Impact is a snapshot of the exposure; start/end datetime are kept from the event
+                impact_item.datetime = impact_datetime
                 monty = MontyExtension.ext(impact_item)
                 monty.country_codes = [admin_item.country]  # type: ignore
                 # Impact Detail
                 category, impact_type = field_values
-                value = self.get_nested_data(admin_item, field_key)
                 monty.impact_detail = self.get_impact_detail(category, impact_type, value)
                 impact_items.append(impact_item)
         return impact_items
+
+    @staticmethod
+    def get_exposure_timestamp_ms(timestamp: float) -> int:
+        """Exposure snapshot timestamp (milliseconds or seconds since epoch) to milliseconds since epoch"""
+        # NOTE: PDC sends milliseconds; values below 1e11 (year 5138 in seconds) are treated as seconds
+        timestamp = float(timestamp)
+        milliseconds = timestamp if timestamp >= 1e11 else timestamp * 1_000
+        return int(round(milliseconds))
+
+    @classmethod
+    def get_exposure_datetime(cls, timestamp: float) -> datetime:
+        """Exposure snapshot timestamp (milliseconds or seconds since epoch) to UTC datetime"""
+        return datetime.fromtimestamp(cls.get_exposure_timestamp_ms(timestamp) / 1_000, tz=pytz.utc)
+
+    @staticmethod
+    def get_admin_id_part(admin_item: AdminData) -> str:
+        """Id part of an admin row: country, and admin1/admin2 when available (unique per totalByAdmin row)"""
+        parts = [admin_item.country]
+        for admin in (admin_item.admin1, admin_item.admin2):
+            if admin and (admin_part := PDCTransformer.get_ascii_id_part(admin)):
+                parts.append(admin_part)
+        return "-".join(parts)
+
+    @staticmethod
+    def get_ascii_id_part(name: str) -> str:
+        """Lowercase ASCII id part of a name (eg: "San Martín" -> "san-martin"); empty if nothing is left"""
+        ascii_name = unicodedata.normalize("NFKD", name).encode("ascii", "ignore").decode("ascii")
+        return re.sub(r"[^a-z0-9_.]+", "-", ascii_name.lower()).strip("-")
+
+    @classmethod
+    def get_admin_id_parts(cls, admin_items: List[AdminData]) -> List[str]:
+        """
+        Id part of each totalByAdmin row.
+
+        The last part is 0 for a row without collision, and the row index for a row with the same
+        country/admin1/admin2 as a previous row (eg: same country without admin1/admin2).
+        """
+        id_parts: List[str] = []
+        seen = set()
+        for index, admin_item in enumerate(admin_items):
+            id_part = cls.get_admin_id_part(admin_item)
+            if id_part in seen:
+                logger.warning(
+                    "PDC totalByAdmin rows with the same country/admin1/admin2 (%s); using row index %s in the impact id",
+                    id_part,
+                    index,
+                )
+                id_parts.append(f"{id_part}-{index}")
+            else:
+                seen.add(id_part)
+                id_parts.append(f"{id_part}-0")
+        return id_parts
 
     def get_impact_detail(self, category: MontyImpactExposureCategory, impact_type: MontyImpactType, value: float):
         """Create an Impact detail object"""
