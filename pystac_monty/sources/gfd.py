@@ -86,6 +86,7 @@ class GFDTransformer(MontyDataTransformer[GFDDataSource]):
 
     hazard_profiles = MontyHazardProfiles()
     source_name = "gfd"
+    source_doc = "docs/model/sources/GFD/README.md"
 
     # FIXME: This is deprecated
     def make_items(self) -> List[Item]:

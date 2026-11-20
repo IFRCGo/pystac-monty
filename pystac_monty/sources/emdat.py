@@ -147,6 +147,7 @@ class EMDATTransformer(MontyDataTransformer[EMDATDataSource]):
 
     hazard_profiles = MontyHazardProfiles()
     source_name = "emdat"
+    source_doc = "docs/model/sources/EM-DAT/README.md"
 
     # FIXME: This is deprecated
     def make_items(self) -> list[Item]:

@@ -1,0 +1,69 @@
+name: Transformer output change
+description: Propose a change to what a transformer writes (an item id, a field, a code, a link, the number of items).
+title: "<source>: <summary>"
+labels: ["enhancement"]
+body:
+  - type: markdown
+    attributes:
+      value: |
+        A transformer is the code form of its source analysis in
+        [monty-stac-extension](https://github.com/IFRCGo/monty-stac-extension/tree/main/docs/model/sources).
+        A change to the output needs a change to the source doc and to the examples in
+        that repository. [CONTRIBUTING.md](https://github.com/IFRCGo/pystac-monty/blob/main/CONTRIBUTING.md)
+        gives the steps.
+
+        If the change is a decision about the model (a new field, a new code), open the issue in
+        [monty-stac-extension](https://github.com/IFRCGo/monty-stac-extension/issues/new/choose) first.
+  - type: dropdown
+    id: source
+    attributes:
+      label: Source
+      options:
+        - CEMS
+        - Charter
+        - DesInventar
+        - EM-DAT
+        - GDACS
+        - GFD
+        - GLIDE
+        - IBTrACS
+        - IDMC GIDD
+        - IDMC IDU
+        - IFRC events
+        - PDC
+        - USGS
+        - A new source
+    validations:
+      required: true
+  - type: textarea
+    id: change
+    attributes:
+      label: Proposed change
+      description: What the transformer writes now, and what it must write.
+    validations:
+      required: true
+  - type: textarea
+    id: reason
+    attributes:
+      label: Reason
+      description: The problem that this solves. Give a source record as evidence if you can.
+    validations:
+      required: true
+  - type: dropdown
+    id: direction
+    attributes:
+      label: Which side is correct today?
+      options:
+        - The source doc is correct, and the transformer does not follow it
+        - The transformer is correct, and the source doc is out of date
+        - Neither describes this case
+        - I do not know
+    validations:
+      required: true
+  - type: input
+    id: extension
+    attributes:
+      label: Issue or PR in monty-stac-extension
+      description: For example IFRCGo/monty-stac-extension#123. Leave empty if there is none.
+    validations:
+      required: false

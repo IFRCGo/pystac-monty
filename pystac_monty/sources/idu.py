@@ -106,6 +106,7 @@ class IDUTransformer(MontyDataTransformer[IDUDataSource]):
 
     hazard_profiles = MontyHazardProfiles()
     source_name = "idmc-idu"
+    source_doc = "docs/model/sources/IDU/README.md"
 
     def get_stac_items(self) -> typing.Generator[Item, None, None]:
         """Creates the STAC Items"""
