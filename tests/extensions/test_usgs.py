@@ -297,35 +297,22 @@ class USGSTest(unittest.TestCase):
         for impact_item in impact_items:
             self.assertEqual(MontyExtension.ext(impact_item).country_codes, ["VEN"])
 
-    def test_alert_derived_impact_items_have_correct_roles_and_country(self) -> None:
-        """Regression test for alerts"""
+    def test_no_impact_items_without_losses(self) -> None:
+        """PAGER alerts.json is not mapped (issue #200): without losses.json, no impact items are created"""
         data_source = USGSDataSource(
             data=USGSDataSourceType(
                 source_url=venezuela_eq[1],
                 event_data=File(path=venezuela_eq[1], data_type=DataType.FILE),
-                alerts_data=File(path="./tests/data/usgs/venezuela_alerts.json", data_type=DataType.FILE),
             )
         )
         transformer = USGSTransformer(data_source, geocoder)
 
-        impact_items = []
-        for item in transformer.get_stac_items():
+        items = list(transformer.get_stac_items())
+        self.assertTrue(items)
+        for item in items:
             item.validate(validator=self.validator)
-            assert_processing_extension_fields(item)
-            monty_item_ext = MontyExtension.ext(item)
-            if monty_item_ext.is_source_impact():
-                impact_items.append(item)
-
-        # One alert-derived impact item each for fatality and economic estimates
-        self.assertEqual(len(impact_items), 2)
-
-        for impact_item in impact_items:
-            self.assertEqual(impact_item.properties["roles"], ["source", "impact"])
-            self.assertNotIn("event", impact_item.properties["roles"])
-
-            country_codes = MontyExtension.ext(impact_item).country_codes
-            self.assertEqual(country_codes, ["VEN"])
-            self.assertNotIn("UNK", impact_item.id)
+            self.assertFalse(MontyExtension.ext(item).is_source_impact())
+            self.assertNotIn("-alert-", item.id)
 
     @parameterized.expand(load_scenarios(scenarios))
     def test_pager_asset_urls(self, transformer: USGSTransformer) -> None:
@@ -336,31 +323,6 @@ class USGSTest(unittest.TestCase):
 
         for impact_item in impact_items:
             alert_file = "alertfatal.pdf" if "-fatalities-" in impact_item.id else "alertecon.pdf"
-            self.assertEqual(impact_item.assets["pager_onepager"].href, f"{base}/onepager.pdf")
-            self.assertEqual(impact_item.assets["pager_exposure"].href, f"{base}/json/exposures.json")
-            self.assertEqual(impact_item.assets["pager_alert"].href, f"{base}/{alert_file}")
-
-    def test_alert_derived_impact_items_have_pager_assets_and_unique_ids(self) -> None:
-        """Alert-derived impact items carry PAGER assets and do not collide with losses-derived ids"""
-        base = "https://earthquake.usgs.gov/realtime/product/losspager/us6000pi9w/us/1736298524449"
-        data_source = USGSDataSource(
-            data=USGSDataSourceType(
-                source_url=tibetan_plateau_eq[1],
-                event_data=File(path=tibetan_plateau_eq[1], data_type=DataType.FILE),
-                loss_data=File(path=tibetan_plateau_eq[2], data_type=DataType.FILE),
-                alerts_data=File(path="./tests/data/usgs/venezuela_alerts.json", data_type=DataType.FILE),
-            )
-        )
-        transformer = USGSTransformer(data_source, geocoder)
-        impact_items = [item for item in transformer.get_stac_items() if MontyExtension.ext(item).is_source_impact()]
-
-        impact_ids = [item.id for item in impact_items]
-        self.assertEqual(len(impact_ids), len(set(impact_ids)))
-
-        alert_items = [item for item in impact_items if "-alert-" in item.id]
-        self.assertEqual(len(alert_items), 2)
-        for impact_item in alert_items:
-            alert_file = "alertecon.pdf" if "-economic-" in impact_item.id else "alertfatal.pdf"
             self.assertEqual(impact_item.assets["pager_onepager"].href, f"{base}/onepager.pdf")
             self.assertEqual(impact_item.assets["pager_exposure"].href, f"{base}/json/exposures.json")
             self.assertEqual(impact_item.assets["pager_alert"].href, f"{base}/{alert_file}")
