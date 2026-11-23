@@ -40,6 +40,18 @@ STAC_IMPACT_ID_PREFIX = "idmc-idu-impact-"
 IDU_REQUIRED_FIELDS = ["latitude", "longitude", "event_id"]
 
 
+# IDU ``role`` value of a figure from a second source, which IDMC uses to check the
+# recommended figure of the same event. It is not an additional number of people.
+IDU_ROLE_TRIANGULATION = "triangulation"
+
+
+def _estimate_type_from_role(role: str | None) -> MontyEstimateType:
+    """``Triangulation`` is a secondary estimate. All other values, and no value, are primary."""
+    if role and role.strip().lower() == IDU_ROLE_TRIANGULATION:
+        return MontyEstimateType.SECONDARY
+    return MontyEstimateType.PRIMARY
+
+
 def _idu_event_id_key(item: dict) -> typing.Any:
     return item.get("event_id")
 
@@ -274,7 +286,7 @@ class IDUTransformer(MontyDataTransformer[IDUDataSource]):
             type=category_type,
             value=idu_src_item.figure,
             unit="count",
-            estimate_type=MontyEstimateType.PRIMARY,
+            estimate_type=_estimate_type_from_role(idu_src_item.role),
         )
 
     def check_and_get_idu_data(self) -> Iterator[List[Dict]]:
