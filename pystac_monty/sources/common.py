@@ -10,7 +10,7 @@ from pathlib import Path
 from typing import Callable, Generator, List, Literal, Optional, Tuple, Union
 
 import requests
-from pydantic import BaseModel, ConfigDict, Field
+from pydantic import BaseModel, ConfigDict, Field, field_validator
 from pystac import Collection, Item, Link
 
 from pystac_monty.extension import __version__ as PYSTAC_MONTY_VERSION
@@ -157,7 +157,6 @@ class USGSDataSourceType(BaseModel):
     source_url: str
     event_data: Union[File, Memory]
     loss_data: Union[File, Memory, None] = None
-    alerts_data: Union[File, Memory, None] = None
 
 
 class DesinventarDataSourceType(BaseModel):
@@ -171,9 +170,20 @@ class PDCDataSourceType(BaseModel):
     source_url: str
     uuid: str
     hazard_data: Union[File, Memory]
-    # NOTE: Exposure detail is optional, only event and hazard items are created without it
-    exposure_detail_data: Optional[Union[File, Memory]] = None
+    # NOTE: Exposure detail is optional, only event and hazard items are created without it.
+    # Multiple exposure details (snapshots) of the same hazard can be passed at once:
+    # event and hazard items are created once and impact items are created for each snapshot.
+    exposure_detail_data: List[Union[File, Memory]] = Field(default_factory=list)
     geojson_path: str
+
+    @field_validator("exposure_detail_data", mode="before")
+    @classmethod
+    def normalize_exposure_detail_data(cls, value):
+        if value is None:
+            return []
+        if isinstance(value, (list, tuple)):
+            return list(value)
+        return [value]
 
 
 class CharterDataSourceType(BaseModel):
@@ -247,7 +257,13 @@ DataSource = typing.TypeVar("DataSource")
 @dataclass
 class MontyDataTransformer(typing.Generic[DataSource]):
     # FIXME: Add a validation in subclass so that source_name is always defined
+    # The id of the source in monty-stac-extension (`docs/model/sources/sources.yml`).
     source_name: str
+    # The source analysis that this transformer implements: a path in
+    # monty-stac-extension. A change to what the transformer writes must go with a
+    # change to this document (see CONTRIBUTING.md). `tests/test_source_docs.py`
+    # checks the path against `sources.yml`.
+    source_doc: str
 
     _event_collection_cache: Collection | None = None
     _hazard_collection_cache: Collection | None = None

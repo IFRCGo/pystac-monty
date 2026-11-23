@@ -155,6 +155,7 @@ class GDACSTransformer(MontyDataTransformer[GDACSDataSource]):
 
     hazard_profiles = MontyHazardProfiles()
     source_name = "gdacs"
+    source_doc = "docs/model/sources/GDACS/README.md"
 
     def get_stac_items(self) -> typing.Generator[Item, None, None]:
         data_type = self.data_source.get_input_data_type()

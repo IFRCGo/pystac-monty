@@ -774,6 +774,8 @@ class DesinventarTransformer(MontyDataTransformer[DesinventarDataSource]):
 
     source_name = "desinventar"
 
+    source_doc = "docs/model/sources/DesInventar/README.md"
+
     data_source: DesinventarDataSource
     hazard_profiles = MontyHazardProfiles()
     geo_data_mapping: Dict[str, GeoDataEntry] = {}

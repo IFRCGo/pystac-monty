@@ -115,6 +115,7 @@ class IFRCEventDataSource(MontyDataSourceV3):
 class IFRCEventTransformer(MontyDataTransformer[IFRCEventDataSource]):
     hazard_profiles = MontyHazardProfiles()
     source_name = "ifrcevent"
+    source_doc = "docs/model/sources/IFRC-DREF/README.md"
 
     # FIXME: This is not used anymore
     def make_items(self):

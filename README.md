@@ -107,7 +107,7 @@ uv run pytest -v -s
 
 ## Contributing
 
-Contributions are welcome! Please open an issue or submit a pull request.
+Contributions are welcome! Please open an issue or submit a pull request. See [CONTRIBUTING.md](CONTRIBUTING.md) for the steps, in particular when a transformer change must also update [monty-stac-extension](https://github.com/IFRCGo/monty-stac-extension).
 
 ## License
 

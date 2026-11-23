@@ -178,6 +178,7 @@ class GlideTransformer(MontyDataTransformer[GlideDataSource]):
 
     hazard_profiles = MontyHazardProfiles()
     source_name = "glide"
+    source_doc = "docs/model/sources/GLIDE/README.md"
 
     # FIXME: This is deprecated
     def make_items(self) -> list[Item]:
