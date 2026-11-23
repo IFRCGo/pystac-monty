@@ -42,6 +42,8 @@ class IDUSourceValidator(BaseModelWithExtra):
     sources: str
     source_url: str
     locations_name: str
+    # "Recommended figure" or "Triangulation". Optional: an old export can be without it.
+    role: str | None = None
 
     @field_validator("latitude")
     @classmethod
