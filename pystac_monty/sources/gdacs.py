@@ -6,7 +6,7 @@ import os
 import typing
 from dataclasses import dataclass
 from enum import Enum
-from typing import Dict, List, Tuple, Union
+from typing import Callable, Dict, List, NamedTuple, Tuple, Union
 
 import pytz
 from markdownify import markdownify as md
@@ -30,6 +30,7 @@ from pystac_monty.sources.common import (
     MontyDataSourceV3,
     MontyDataTransformer,
 )
+from pystac_monty.sources.glide import GLIDE_NUMBER_PATTERN, glide_event_item_id
 from pystac_monty.sources.utils import phrase_to_dashed, unique_in_order
 from pystac_monty.validators.gdacs_events import GdacsEventDataValidator, Sendai
 from pystac_monty.validators.gdacs_geometry import GdacsGeometryDataValidator
@@ -53,6 +54,34 @@ TC_EXPOSURE_BANDS: Tuple[Tuple[str, str, str, str], ...] = (
     ("popstormsurge", "surge", "Population in the storm surge zone", "population in storm surge zone"),
 )
 WF_POPAFFECTED_DESCRIPTION = "Population in the burnt area"
+
+GLIDE_COLLECTION_ID = "glide-events"
+
+
+class GdacsSourceCollection(NamedTuple):
+    """The Monty collection that holds the events of a GDACS `source`."""
+
+    collection_id: str
+    # Builds the item id in `collection_id` from the GDACS `sourceid`.
+    # Each source has its own rule, so the rule is part of the mapping.
+    item_id: Callable[[str], str]
+    label: str
+
+
+# GDACS `source` values whose `sourceid` identifies an item of a Monty collection.
+# NEIC is the USGS National Earthquake Information Center: its `sourceid` is the
+# USGS event id (e.g. "us7000txz3"). Other GDACS sources (GLOFAS, GWIS, JTWC,
+# NOAA, RSMC, GDO, the VAACs) have no Monty collection, so they get no link.
+# `item_id` must give the id that the transformer of the collection writes
+# (`pystac_monty.sources.usgs` for NEIC; that module imports this one, so the
+# prefix cannot be imported here; `test_gdacs_cross_references.py` compares them).
+GDACS_SOURCE_COLLECTIONS: Dict[str, GdacsSourceCollection] = {
+    "NEIC": GdacsSourceCollection(
+        collection_id="usgs-events",
+        item_id=lambda source_id: f"usgs-event-{source_id}",
+        label="USGS event",
+    ),
+}
 
 
 logger = logging.getLogger(__name__)
@@ -149,6 +178,7 @@ class GDACSTransformer(MontyDataTransformer[GDACSDataSource]):
                     validated_episode_data = GdacsEventDataValidator(**episode_data[0].data.input_data.content)
                     episode_data_url = episode_data[0].data.source_url
                     episode_event_item = self.make_source_event_item(data=validated_episode_data, source_url=episode_data_url)
+                    self.add_cross_reference_links(item=episode_event_item, data=validated_episode_data)
 
                     if GDACSDataSourceType.GEOMETRY.value == episode_data[1].type:
                         validated_geometry_data = GdacsGeometryDataValidator(**episode_data[1].data.input_data.content)
@@ -214,6 +244,7 @@ class GDACSTransformer(MontyDataTransformer[GDACSDataSource]):
                     validated_episode_data = GdacsEventDataValidator(**episode_file_data)
                     episode_data_url = episode_data[0].data.source_url
                     episode_event_item = self.make_source_event_item(data=validated_episode_data, source_url=episode_data_url)
+                    self.add_cross_reference_links(item=episode_event_item, data=validated_episode_data)
 
                     if GDACSDataSourceType.GEOMETRY.value == episode_data[1].type:
                         geometry_data_file = episode_data[1].data.input_data.path
@@ -393,6 +424,46 @@ class GDACSTransformer(MontyDataTransformer[GDACSDataSource]):
         item.add_link(Link("via", source_url, "application/json", "GDACS Event Data"))
 
         return item
+
+    def _item_href(self, collection_id: str, item_id: str) -> str:
+        eoapi_url = self.data_source.eoapi_url or ".."
+        return f"{eoapi_url}/collections/{collection_id}/items/{item_id}"
+
+    def add_cross_reference_links(self, item: Item, data: GdacsEventDataValidator) -> None:
+        """Add `related` links to the events that GDACS names in `glide` and `source`/`sourceid`.
+
+        These are the provider's own cross-references, so no matching is involved.
+        The target item may not exist in the catalog (for example a quake that the
+        USGS ETL did not ingest). The link is still written: it records what GDACS says.
+        """
+        glide = (data.properties.glide or "").strip().upper()
+        if glide:
+            if GLIDE_NUMBER_PATTERN.match(glide):
+                item.add_link(
+                    Link(
+                        rel="related",
+                        target=self._item_href(GLIDE_COLLECTION_ID, glide_event_item_id(glide)),
+                        media_type="application/geo+json",
+                        title=f"GLIDE {glide}",
+                        extra_fields={"roles": ["event"]},
+                    )
+                )
+            else:
+                logger.warning("GDACS %s: glide %r is not a GLIDE number, no link written", item.id, glide)
+
+        source = (data.properties.source or "").strip().upper()
+        source_id = (data.properties.sourceid or "").strip()
+        if source in GDACS_SOURCE_COLLECTIONS and source_id:
+            target = GDACS_SOURCE_COLLECTIONS[source]
+            item.add_link(
+                Link(
+                    rel="related",
+                    target=self._item_href(target.collection_id, target.item_id(source_id)),
+                    media_type="application/geo+json",
+                    title=f"{target.label} {source_id}",
+                    extra_fields={"roles": ["event"]},
+                )
+            )
 
     def make_hazard_event_item(
         self,

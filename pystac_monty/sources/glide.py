@@ -29,6 +29,25 @@ logger = logging.getLogger(__name__)
 STAC_EVENT_ID_PREFIX = "glide-event-"
 STAC_HAZARD_ID_PREFIX = "glide-hazard-"
 
+# A GLIDE number with its country part, e.g. "TC-2026-000199-IND".
+# The country part is "---" when GLIDE has no country for the record.
+GLIDE_NUMBER_PATTERN = re.compile(r"^[A-Z]{2}-\d{4}-\d{6}-([A-Z]{3}|---)$")
+
+
+def glide_number(event: str, number: str, geocode: str) -> str:
+    """Return the GLIDE number of a GLIDE record, e.g. `TC-2026-000199-IND`."""
+    return f"{event}-{number}-{geocode}"
+
+
+def glide_event_item_id(glide: str) -> str:
+    """Return the id of the GLIDE event item for a GLIDE number.
+
+    This is the only place that builds the id. Other transformers that link to a
+    GLIDE event (for example GDACS) must use it, so that the link reaches the item.
+    """
+    return f"{STAC_EVENT_ID_PREFIX}{glide}"
+
+
 AC_TAG_PATTERN = re.compile(r"\(([A-Za-z]+)(?::\s*([A-Za-z][A-Za-z \-]*))?\)\s*$")
 
 AC_TAG_HAZARD_CODES: dict[str, list[str]] = {
@@ -322,7 +341,7 @@ class GlideTransformer(MontyDataTransformer[GlideDataSource]):
 
     def make_source_event_items(self, data: GlideSetValidator) -> Item | None:
         """Create source event items"""
-        glide_id = STAC_EVENT_ID_PREFIX + data.event + "-" + data.number + "-" + data.geocode
+        glide_id = glide_event_item_id(glide_number(data.event, data.number, data.geocode))
         latitude = data.latitude
         longitude = data.longitude
         event_date = {
