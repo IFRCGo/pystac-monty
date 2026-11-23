@@ -160,6 +160,60 @@ def convert_gfd(input_path: Path, output_dir: Path) -> None:
     )
 
 
+# The public endpoints of the two IDMC products. The transformers write this URL in
+# the `via` link and in the `source` asset, so a file URI would make the output
+# depend on the place of the input file.
+GIDD_SOURCE_URL = "https://helix-tools-api.idmcdb.org/external-api/gidd/disaggregations/disaggregation-geojson/"
+IDU_SOURCE_URL = "https://helix-tools-api.idmcdb.org/external-api/idus/all/"
+_IDMC_PROVIDER = Provider(
+    name="Internal Displacement Monitoring Centre (IDMC)",
+    roles=[ProviderRole.PRODUCER],
+    url="https://www.internal-displacement.org/",
+)
+
+
+def iter_gidd_stac_items(input_path: Path) -> list[Item]:
+    from pystac_monty.sources.gidd import GIDDDataSource, GIDDTransformer
+
+    data_source = GIDDDataSource(data=file_generic_data_source(input_path, source_url=GIDD_SOURCE_URL))
+    return collect_transformer_items(GIDDTransformer(data_source, default_batch_geocoder()))
+
+
+def convert_gidd(input_path: Path, output_dir: Path) -> None:
+    """Export IDMC GIDD data. *input_path*: GIDD disaggregation GeoJSON file (a ``FeatureCollection``).
+
+    An event that the transformer cannot map (for example ``Mixed disasters``, which
+    has no hazard code) is skipped with a warning; the other events are exported.
+    """
+    export_transformer_items(
+        items=iter_gidd_stac_items(input_path),
+        source_slug="idmc-gidd",
+        provider=_IDMC_PROVIDER,
+        output_dir=output_dir,
+    )
+
+
+def iter_idu_stac_items(input_path: Path) -> list[Item]:
+    from pystac_monty.sources.idu import IDUDataSource, IDUTransformer
+
+    data_source = IDUDataSource(data=file_generic_data_source(input_path, source_url=IDU_SOURCE_URL))
+    return collect_transformer_items(IDUTransformer(data_source, default_batch_geocoder()))
+
+
+def convert_idu(input_path: Path, output_dir: Path) -> None:
+    """Export IDMC IDU data. *input_path*: JSON array of IDU records (the ``idus/all`` API response).
+
+    An event that the transformer cannot map (for example ``Mixed disasters``, which
+    has no hazard code) is skipped with a warning; the other events are exported.
+    """
+    export_transformer_items(
+        items=iter_idu_stac_items(input_path),
+        source_slug="idmc-idu",
+        provider=_IDMC_PROVIDER,
+        output_dir=output_dir,
+    )
+
+
 def iter_gdacs_stac_items(input_path: Path) -> list[Item]:
     from pystac_monty.sources.gdacs import GDACSTransformer
 
@@ -199,6 +253,8 @@ BATCH_EXPORTS: dict[str, BatchExportFn] = {
     "gdacs": convert_gdacs,
     "charter": convert_charter,
     "cems": convert_cems,
+    "idmc-gidd": convert_gidd,
+    "idmc-idu": convert_idu,
 }
 
 
