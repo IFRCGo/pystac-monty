@@ -261,7 +261,7 @@ def test_partition_ignores_items_without_source_role() -> None:
 def test_export_published_example_layout(tmp_path: Path) -> None:
     """Published examples: absolute self/collection hrefs, keywords outside summaries."""
     item = _source_item("event-1", "event")
-    item.add_link(pystac.Link(rel="related", target="../demo-hazards/hazard-1.json"))
+    item.add_link(pystac.Link(rel="related", target="../demo-hazards/hazard-1.json", media_type="application/geo+json"))
     collection_id = "demo-events"
     export_monty_collection(
         MontyCollectionSpec(
@@ -295,7 +295,7 @@ def test_export_published_example_layout(tmp_path: Path) -> None:
 
 def test_export_without_preserve_transformer_links(tmp_path: Path) -> None:
     item = _source_item("event-1", "event")
-    item.add_link(pystac.Link(rel="related", target="./event-2.json"))
+    item.add_link(pystac.Link(rel="related", target="./event-2.json", media_type="application/geo+json"))
     export_monty_collection(
         MontyCollectionSpec(
             out_dir=tmp_path / "demo-events",

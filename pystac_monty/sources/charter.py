@@ -183,6 +183,7 @@ class CharterTransformer(MontyDataTransformer[CharterDataSource]):
 
     hazard_profiles = MontyHazardProfiles()
     source_name = "charter"
+    source_doc = "docs/model/sources/Charter/README.md"
 
     def __init__(self, data_source: CharterDataSource, geocoder: MontyGeoCoder | None = None) -> None:
         super().__init__(data_source, geocoder or MockGeocoder())

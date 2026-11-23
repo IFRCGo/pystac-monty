@@ -8,10 +8,11 @@ class BaseModelWithExtra(BaseModel):
 
 
 class ValueDetails(BaseModelWithExtra):
-    valueFormatted: str
-    valueFormattedNoTrunc: str
-    valueRounded: float
-    value: float
+    # NOTE: PDC sends null values when data is not available (e.g. households for some countries)
+    valueFormatted: Optional[str] = None
+    valueFormattedNoTrunc: Optional[str] = None
+    valueRounded: Optional[float] = None
+    value: Optional[float] = None
 
 
 class Capital(BaseModelWithExtra):

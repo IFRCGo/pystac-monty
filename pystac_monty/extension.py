@@ -48,6 +48,7 @@ IMPDET_TYPE_PROP = "type"
 IMPDET_VALUE_PROP = "value"
 IMPDET_UNIT_PROP = "unit"
 IMPDET_ESTIMATE_TYPE_PROP = "estimate_type"
+IMPDET_DESCRIPTION_PROP = "description"
 
 # Response Detail properties
 RESPDET_TYPE_PROP = "type"
@@ -578,6 +579,7 @@ class ImpactDetail(ABC):
         value: float,
         unit: str | None = None,
         estimate_type: MontyEstimateType | None = None,
+        description: str | None = None,
     ) -> None:
         self.properties = {}
         self.category = category
@@ -587,6 +589,8 @@ class ImpactDetail(ABC):
             self.unit = unit
         if estimate_type:
             self.estimate_type = estimate_type
+        if description:
+            self.description = description
 
     @property
     def category(self) -> str:
@@ -645,6 +649,15 @@ class ImpactDetail(ABC):
     def estimate_type(self, v: MontyEstimateType) -> None:
         self.properties[IMPDET_ESTIMATE_TYPE_PROP] = v
 
+    @property
+    def description(self) -> str | None:
+        """A description of the impact figure."""
+        return get_opt(self.properties.get(IMPDET_DESCRIPTION_PROP))
+
+    @description.setter
+    def description(self, v: str) -> None:
+        self.properties[IMPDET_DESCRIPTION_PROP] = v
+
     def to_dict(self) -> dict[str, Any]:
         return self.properties
 
@@ -662,8 +675,9 @@ class ImpactDetail(ABC):
         unit = d.get(IMPDET_UNIT_PROP)
         estimate_type_str = d.get(IMPDET_ESTIMATE_TYPE_PROP)
         estimate_type = MontyEstimateType(estimate_type_str) if estimate_type_str else None
+        description = d.get(IMPDET_DESCRIPTION_PROP)
 
-        return ImpactDetail(category, impact_type, value, unit, estimate_type)
+        return ImpactDetail(category, impact_type, value, unit, estimate_type, description)
 
 
 class MontyExtension(

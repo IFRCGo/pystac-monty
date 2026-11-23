@@ -1,0 +1,54 @@
+name: Bug report
+description: A transformer or the extension code writes a wrong item, fails on valid input, or does not agree with its source doc.
+title: "bug: <summary>"
+labels: ["bug"]
+body:
+  - type: markdown
+    attributes:
+      value: |
+        Thanks for the report. The source docs in
+        [monty-stac-extension](https://github.com/IFRCGo/monty-stac-extension/tree/main/docs/model/sources)
+        are the specification of each transformer. If the transformer and the
+        source doc do not agree, say which one you think is correct.
+  - type: dropdown
+    id: source
+    attributes:
+      label: Source
+      options:
+        - CEMS
+        - Charter
+        - DesInventar
+        - EM-DAT
+        - GDACS
+        - GFD
+        - GLIDE
+        - IBTrACS
+        - IDMC GIDD
+        - IDMC IDU
+        - IFRC events
+        - PDC
+        - USGS
+        - Not a source (extension classes, exporter, CLI, other)
+    validations:
+      required: true
+  - type: textarea
+    id: what
+    attributes:
+      label: What is wrong
+      description: The item id and the field, with the value that you get and the value that you expect.
+    validations:
+      required: true
+  - type: textarea
+    id: reproduce
+    attributes:
+      label: How to reproduce
+      description: The source record or the URL of the source data, and the pystac-monty version or commit.
+    validations:
+      required: false
+  - type: input
+    id: doc
+    attributes:
+      label: Source doc
+      description: The section of the source doc in monty-stac-extension that describes this mapping, if there is one.
+    validations:
+      required: false

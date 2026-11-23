@@ -57,7 +57,7 @@ class Properties(BaseModelWithExtra):
     Locations_name: List[str] = Field(..., alias="Locations name")
     Locations_accuracy: List[str] = Field(..., alias="Locations accuracy")
     Locations_type: List[str] = Field(..., alias="Locations type")
-    Displacement_occurred: Optional[str] = None
+    Displacement_occurred: Optional[str] = Field(default=None, alias="Displacement occurred")
 
     @field_validator("Figure_cause")
     def check_figure_cause(cls, value: str) -> str | None:

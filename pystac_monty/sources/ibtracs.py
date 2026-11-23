@@ -111,6 +111,7 @@ class IBTrACSTransformer(MontyDataTransformer[IBTrACSDataSource]):
 
     hazard_profiles = MontyHazardProfiles()
     source_name = "ibtracs"
+    source_doc = "docs/model/sources/IBTrACS/README.md"
 
     @staticmethod
     def _get_wind_and_pressure(row: IBTracsdataValidator, pressure_default: float = 0) -> typing.Tuple[float, float]:
