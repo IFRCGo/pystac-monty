@@ -7,7 +7,9 @@ Islands, Spain), in two different places, from monty-stac-extension docs/model/s
 import json
 from pathlib import Path
 
-from pystac_monty.extension import MontyExtension
+import pytest
+
+from pystac_monty.extension import MontyEstimateType, MontyExtension
 from pystac_monty.geocoding import MockGeocoder
 from pystac_monty.sources.common import DataType, GenericDataSource, Memory
 from pystac_monty.sources.idu import IDUDataSource, IDUTransformer
@@ -16,8 +18,8 @@ FIXTURE = Path(__file__).resolve().parents[1] / "data-files" / "idu" / "idu-2645
 SOURCE_URL = "https://helix-tools-api.idmcdb.org/external-api/idus/last-180-days/"
 
 
-def _items():
-    records = json.loads(FIXTURE.read_text())
+def _items(records=None):
+    records = records if records is not None else json.loads(FIXTURE.read_text())
     data_source = IDUDataSource(
         data=GenericDataSource(
             source_url=SOURCE_URL,
@@ -45,3 +47,28 @@ def test_impact_items_use_their_own_record():
     assert MontyExtension.ext(item).correlation_id == MontyExtension.ext(event).correlation_id
     # The event item still comes from the first record.
     assert event.geometry["coordinates"] == (records[0]["longitude"], records[0]["latitude"])
+
+
+@pytest.mark.parametrize(
+    ("role", "expected"),
+    [
+        ("Recommended figure", MontyEstimateType.PRIMARY),
+        ("Triangulation", MontyEstimateType.SECONDARY),
+        (" triangulation ", MontyEstimateType.SECONDARY),
+        (None, MontyEstimateType.PRIMARY),
+    ],
+)
+def test_estimate_type_comes_from_role(role, expected):
+    """A triangulation figure checks the recommended figure, so it is a secondary estimate."""
+    records = json.loads(FIXTURE.read_text())
+    assert records[0]["role"] == "Recommended figure"
+    if role is None:
+        del records[1]["role"]
+    else:
+        records[1]["role"] = role
+
+    _, _, impacts = _items(records)
+
+    by_record = {r["id"]: next(i for i in impacts.values() if f"-{r['id']}-" in i.id) for r in records}
+    assert MontyExtension.ext(by_record[records[0]["id"]]).impact_detail.estimate_type == MontyEstimateType.PRIMARY
+    assert MontyExtension.ext(by_record[records[1]["id"]]).impact_detail.estimate_type == expected
