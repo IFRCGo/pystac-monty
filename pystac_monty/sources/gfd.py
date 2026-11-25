@@ -138,8 +138,8 @@ class GFDTransformer(MontyDataTransformer[GFDDataSource]):
         # Episode number not in the source, so, set it to 1
         episode_number = 1
 
-        startdate = pytz.utc.localize(datetime.fromtimestamp(properties.system_time_start / 1000))
-        enddate = pytz.utc.localize(datetime.fromtimestamp(properties.system_time_end / 1000))
+        startdate = datetime.fromtimestamp(properties.system_time_start / 1000, tz=pytz.utc)
+        enddate = datetime.fromtimestamp(properties.system_time_end / 1000, tz=pytz.utc)
 
         item = Item(
             id=f"{STAC_EVENT_ID_PREFIX}{properties.id}",
