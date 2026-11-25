@@ -350,9 +350,24 @@ class GlideTransformer(MontyDataTransformer[GlideDataSource]):
             "day": data.day,
         }  # abs is used to ignore negative sign
 
-        point = Point(longitude, latitude)
-        geometry = mapping(point)
-        bbox = [longitude, latitude, longitude, latitude]
+        # GLIDE writes latitude 0.0 and longitude 0.0 when a record has no location.
+        # `shape_type` is not a usable signal: it is 0 on most records that have
+        # real coordinates.
+        point = None if (latitude == 0 and longitude == 0) else Point(longitude, latitude)
+        if point is not None:
+            geometry = mapping(point)
+            bbox = [longitude, latitude, longitude, latitude]
+        else:
+            # Fallback: the geometry of the country in `geocode`. It is the best
+            # known extent of the event, not its location.
+            geom_data = None
+            if self.geocoder and data.geocode != "---":
+                geom_data = self.geocoder.get_geometry_from_iso3(data.geocode, simplified=True)
+            if not geom_data:
+                logger.warning(f"GLIDE record {glide_id} has no coordinates and no country geometry. Skipping.")
+                return None
+            geometry = geom_data["geometry"]
+            bbox = list(geom_data["bbox"])
 
         item = Item(
             id=glide_id,
@@ -386,7 +401,9 @@ class GlideTransformer(MontyDataTransformer[GlideDataSource]):
         # Fallback when the iso3 is not available in property `geocode`
         country_code = []
         if data.geocode == "---":
-            country_code = [self.geocoder.get_iso3_from_point(point)] if self.geocoder else []
+            # `point` is always set here: a record with no coordinates and no
+            # country code was skipped above.
+            country_code = [self.geocoder.get_iso3_from_point(point)] if self.geocoder and point else []
         else:
             country_code = [data.geocode]
         monty.country_codes = country_code
