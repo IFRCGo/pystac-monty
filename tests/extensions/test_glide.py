@@ -361,3 +361,51 @@ class GlideTest(unittest.TestCase):
 
         monty = MontyExtension.ext(item)
         assert monty.country_codes == ["ESP"]
+
+    def test_geometry_is_point_when_coordinates_exist(self):
+        transformer = self._make_transformer()
+        row = self._make_glideset_row(latitude=40.0, longitude=-3.0)
+
+        item = transformer.make_source_event_items(row)
+
+        assert item.geometry == {"type": "Point", "coordinates": (-3.0, 40.0)}
+        assert item.bbox == [-3.0, 40.0, -3.0, 40.0]
+
+    def test_geometry_is_point_when_only_one_coordinate_is_zero(self):
+        transformer = self._make_transformer()
+        # TC-2018-000037-FJI has latitude -17.2 and longitude 0.0
+        row = self._make_glideset_row(latitude=-17.2, longitude=0.0)
+
+        item = transformer.make_source_event_items(row)
+
+        assert item.geometry["type"] == "Point"
+
+    def test_geometry_falls_back_to_country_when_coordinates_are_zero(self):
+        transformer = self._make_transformer()
+        # FF-2026-000127-CHN (docid 23874) has latitude 0.0 and longitude 0.0
+        row = self._make_glideset_row(latitude=0.0, longitude=0.0, geocode="ESP")
+
+        item = transformer.make_source_event_items(row)
+
+        expected = MockGeocoder().get_geometry_from_iso3("ESP")
+        assert item.geometry == expected["geometry"]
+        assert item.bbox == expected["bbox"]
+        assert MontyExtension.ext(item).country_codes == ["ESP"]
+
+        # The hazard item is a clone of the event item and has the same geometry
+        hazard_item = transformer.make_hazard_event_items(item)
+        assert hazard_item.geometry == expected["geometry"]
+        assert hazard_item.bbox == expected["bbox"]
+
+    def test_item_is_skipped_when_coordinates_are_zero_and_geocode_is_dash(self):
+        transformer = self._make_transformer()
+        row = self._make_glideset_row(latitude=0.0, longitude=0.0, geocode="---")
+
+        assert transformer.make_source_event_items(row) is None
+
+    def test_item_is_skipped_when_coordinates_are_zero_and_country_is_unknown(self):
+        transformer = self._make_transformer()
+        # The MockGeocoder has no geometry for this code
+        row = self._make_glideset_row(latitude=0.0, longitude=0.0, geocode="XXX")
+
+        assert transformer.make_source_event_items(row) is None

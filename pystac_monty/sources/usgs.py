@@ -25,7 +25,7 @@ from pystac_monty.hazard_profiles import MontyHazardProfiles
 from pystac_monty.sources.common import GenericDataSource, MontyDataTransformer, USGSDataSourceType
 from pystac_monty.sources.gdacs import DataType, MontyDataSourceV3
 from pystac_monty.sources.utils import unique_in_order
-from pystac_monty.validators.usgs import EmpiricalValidator, USGSValidator
+from pystac_monty.validators.usgs import ContentDetail, EmpiricalValidator, USGSValidator
 
 logger = logging.getLogger(__name__)
 
@@ -111,6 +111,32 @@ class USGSTransformer(MontyDataTransformer[USGSDataSource]):
     hazard_profiles = MontyHazardProfiles()
     source_name = "usgs"
     source_doc = "docs/model/sources/USGS/README.md"
+
+    # Asset key -> (file in products.shakemap.contents, media type, title, roles).
+    # The keys and the files are the ones in the "ShakeMap Assets" table of the source doc.
+    _SHAKEMAP_ASSETS: dict[str, tuple[str, str, str, list[str]]] = {
+        "intensity_map": ("download/intensity.jpg", "image/jpeg", "Intensity Map", ["overview"]),
+        "intensity_overlay": ("download/intensity_overlay.png", "image/png", "Intensity Overlay", ["overview"]),
+        "pga_map": ("download/pga.jpg", "image/jpeg", "Peak Ground Acceleration Map", ["overview"]),
+        "pgv_map": ("download/pgv.jpg", "image/jpeg", "Peak Ground Velocity Map", ["overview"]),
+        "mmi_contours": ("download/cont_mi.json", "application/geo+json", "MMI Contours", ["data"]),
+        "grid": ("download/grid.xml", "application/xml", "Ground Motion Grid", ["data"]),
+        "uncertainty": ("download/uncertainty.xml", "application/xml", "Uncertainty Grid", ["data"]),
+        "stations": ("download/stationlist.json", "application/json", "Station List", ["data"]),
+        "rupture": ("download/rupture.json", "application/json", "Fault Rupture", ["data"]),
+    }
+
+    @classmethod
+    def _add_shakemap_assets(cls, hazard_item: Item, contents: dict[str, ContentDetail]) -> None:
+        """Attach the documented ShakeMap assets whose files exist in the shakemap product."""
+        for key, (file, media_type, title, roles) in cls._SHAKEMAP_ASSETS.items():
+            content = contents.get(file)
+            if content is None and key == "intensity_map":
+                # Some ShakeMap products have only the thumbnail of the intensity map.
+                content, media_type = contents.get("download/pin-thumbnail.png"), "image/png"
+            if content is None:
+                continue
+            hazard_item.add_asset(key, Asset(href=content.url, media_type=media_type, title=title, roles=list(roles)))
 
     @staticmethod
     def iso2_to_iso3(iso2: str) -> str:
@@ -570,24 +596,8 @@ class USGSTransformer(MontyDataTransformer[USGSDataSource]):
             estimate_type=MontyEstimateType.PRIMARY,
         )
 
-        # Add shakemap assets
-        # download/pin-thumbnail.png
         if shakemap:
-            pin_thumbnail = shakemap.contents.download_pin_thumbnail
-            if pin_thumbnail:
-                shakemap_assets: dict[str, typing.Any] = {
-                    "intensity_map": {
-                        "href": pin_thumbnail.url,
-                        "media_type": "image/png",
-                        "title": "Intensity Map",
-                        "roles": ["overview"],
-                    }
-                }
-            else:
-                shakemap_assets = {}
-
-            for key, asset_info in shakemap_assets.items():
-                hazard_item.add_asset(key, Asset(**asset_info))
+            self._add_shakemap_assets(hazard_item, shakemap.contents)
 
         return hazard_item
 
