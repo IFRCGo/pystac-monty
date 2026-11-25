@@ -29,6 +29,7 @@ from pystac_monty.sources.utils import (
     iter_grouped_json_buckets,
     normalize_figure_category,
     partition_json_array_by_key,
+    unique_in_order,
 )
 from pystac_monty.validators.gidd import GiddValidator
 
@@ -36,6 +37,11 @@ logger = logging.getLogger(__name__)
 
 STAC_EVENT_ID_PREFIX = "idmc-gidd-event-"
 STAC_IMPACT_ID_PREFIX = "idmc-gidd-impact-"
+
+# IDMCUtils.mappings is keyed on the raw IDMC labels ("Internal Displacements", "Deaths", ...).
+# The GIDD impact type is the normalised label ("internal-displacements", "deaths", ...), so the
+# lookup must use normalised keys too. Otherwise every figure category falls back to the default.
+GIDD_IMPACT_MAPPINGS = {normalize_figure_category(key): value for key, value in IDMCUtils.mappings.items()}
 
 
 def _gidd_event_id_key(item: dict) -> Any:
@@ -98,6 +104,7 @@ class GIDDTransformer(MontyDataTransformer[GIDDDataSource]):
 
     hazard_profiles = MontyHazardProfiles()
     source_name = "idmc-gidd"
+    source_doc = "docs/model/sources/IDMC/README.md"
 
     def get_stac_items(self) -> Generator[Item, None, None]:
         """Creates the STAC Items"""
@@ -199,7 +206,8 @@ class GIDDTransformer(MontyDataTransformer[GIDDDataSource]):
         monty = MontyExtension.ext(item)
         monty.src_event_id = str(data_item.properties.Event_ID)
         monty.episode_number = episode_number
-        monty.country_codes = [data_item.properties.ISO3]
+        # All countries of the event. The first record's country stays first: the correlation id uses it.
+        monty.country_codes = list(dict.fromkeys(item.properties.ISO3 for item in data_items))
 
         if IDMCUtils.DisplacementType(data_item.properties.Figure_cause) == IDMCUtils.DisplacementType.DISASTER_TYPE:
             hazard_tuple = (
@@ -213,7 +221,7 @@ class GIDDTransformer(MontyDataTransformer[GIDDDataSource]):
 
         if monty.hazard_codes:
             hazard_keywords = self.hazard_profiles.get_keywords(monty.hazard_codes)
-            item.properties["keywords"] = list(set(hazard_keywords + monty.country_codes))
+            item.properties["keywords"] = unique_in_order(hazard_keywords + monty.country_codes)
 
         monty.compute_and_set_correlation_id(hazard_profiles=self.hazard_profiles)
 
@@ -256,14 +264,19 @@ class GIDDTransformer(MontyDataTransformer[GIDDDataSource]):
 
             impact_item.id = (
                 impact_item.id.replace(STAC_EVENT_ID_PREFIX, STAC_IMPACT_ID_PREFIX)
+                + "-"
                 + str(data_item.properties.ID)
                 + "-"
                 + impact_type
             )
 
             impact_item.datetime = startdate
+            # The impact item starts as a copy of the event item, which comes from the first record of
+            # the event. Set the fields that belong to this record.
+            impact_item.geometry = dict(data_item.geometry)
+            impact_item.bbox = self.make_bbox(data_item.geometry.coordinates)
             impact_item.properties["title"] = (
-                f"{data_item.properties.Figure_category}-{data_item.properties.Figure_unit}-{data_item.properties.Figure_unit}-{data_item.properties.Event_name}"
+                f"{data_item.properties.Figure_category}-{data_item.properties.Figure_unit}-{data_item.properties.Event_name}"
             )
             impact_item.properties.update(
                 {
@@ -275,12 +288,22 @@ class GIDDTransformer(MontyDataTransformer[GIDDDataSource]):
                     "figure_cause": data_item.properties.Figure_cause,
                     "geographical_region": data_item.properties.Geographical_region,
                     "country": data_item.properties.Country,
+                    "location": data_item.properties.Locations_name,
+                    "location_accuracy": data_item.properties.Locations_accuracy,
+                    "location_type": data_item.properties.Locations_type,
+                    "displacement_occured": data_item.properties.Displacement_occurred,
+                    "sources": data_item.properties.Sources,
+                    "publishers": data_item.properties.Publishers,
                     "roles": ["source", "impact"],
                 }
             )
 
             impact_item.set_collection(self.get_impact_collection())
             monty = MontyExtension.ext(impact_item)
+            monty.country_codes = [data_item.properties.ISO3]
+            if monty.hazard_codes:
+                hazard_keywords = self.hazard_profiles.get_keywords(monty.hazard_codes)
+                impact_item.properties["keywords"] = list(dict.fromkeys(hazard_keywords + monty.country_codes))
             monty.impact_detail = self.get_impact_details(data_item=data_item, impact_type=impact_type)
             items.append(impact_item)
 
@@ -288,7 +311,7 @@ class GIDDTransformer(MontyDataTransformer[GIDDDataSource]):
 
     def get_impact_details(self, data_item: GiddValidator, impact_type: str) -> ImpactDetail:
         """Returns the impact details related to displacement"""
-        category, category_type = IDMCUtils.mappings.get(
+        category, category_type = GIDD_IMPACT_MAPPINGS.get(
             impact_type, (MontyImpactExposureCategory.ALL_PEOPLE, MontyImpactType.INTERNALLY_DISPLACED_PERSONS)
         )
         return ImpactDetail(

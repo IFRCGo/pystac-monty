@@ -18,6 +18,27 @@ from pystac_monty.extension import (
 logger = logging.getLogger(__name__)
 
 
+def unique_in_order(values: Iterable[Any]) -> List[Any]:
+    """Remove empty values and duplicates, and keep the first occurrence in input order.
+
+    Use this instead of ``list(set(...))`` for values that go into an item. A set has no
+    fixed order (string hashing changes with each Python process), so ``list(set(...))``
+    gives a different order from one run to the next. ``monty:corr_id`` uses
+    ``monty:country_codes[0]``, so an unstable order gives an unstable correlation id.
+    """
+    seen: set[Any] = set()
+    result: List[Any] = []
+    for value in values:
+        if value is None:
+            continue
+        if isinstance(value, str):
+            value = value.strip()
+        if value != "" and value not in seen:
+            seen.add(value)
+            result.append(value)
+    return result
+
+
 def phrase_to_dashed(phrase: str) -> str:
     return re.sub(r"[^\w]+", "-", phrase).strip("-").lower()
 
@@ -80,11 +101,11 @@ class IDMCUtils:
             ("weather related", "climatological", "drought", "drought"): ["MH0401", "nat-cli-dro-dro", "DR"],
             ("weather related", "climatological", "erosion", "erosion"): ["GH0403", "nat-geo-env-soi", "OT"],
             ("weather related", "climatological", "salinisation", "salinization"): ["EN0303", "nat-geo-env-slr", "OT"],
-            ("weather related", "climatological", "sea level rise", "sea level rise"): ["EN0303", "nat-geo-env-slr", "OT"],
+            ("weather related", "climatological", "sea level rise", "sea level rise"): ["EN0402", "nat-geo-env-slr", "OT"],
             ("weather related", "climatological", "wildfire", "wildfire"): ["EN0205", "nat-cli-wil-wil", "WF"],
             ("weather related", "hydrological", "flood", "dam release flood"): ["TL0205", "tec-mis-col-col", "FL"],
             ("weather related", "hydrological", "flood", "flood"): ["MH0600", "nat-hyd-flo-flo", "FL"],
-            ("weather related", "hydrological", "mass movement", "avalanche"): ["MH0801", "nat-geo-mmd-ava", "AV"],
+            ("weather related", "hydrological", "mass movement", "avalanche"): ["MH0801", "nat-hyd-mmw-ava", "AV"],
             ("weather related", "hydrological", "mass movement", "landslide/wet mass movement"): [
                 "GH0304",
                 "nat-hyd-mmw-lan",

@@ -3,7 +3,6 @@
 import json
 import logging
 import os
-import re
 import typing
 from dataclasses import dataclass
 from datetime import datetime
@@ -25,7 +24,8 @@ from pystac_monty.extension import (
 from pystac_monty.hazard_profiles import MontyHazardProfiles
 from pystac_monty.sources.common import GenericDataSource, MontyDataTransformer, USGSDataSourceType
 from pystac_monty.sources.gdacs import DataType, MontyDataSourceV3
-from pystac_monty.validators.usgs import AlertBin, AlertValidator, ContentDetail, EmpiricalValidator, Product, USGSValidator
+from pystac_monty.sources.utils import unique_in_order
+from pystac_monty.validators.usgs import ContentDetail, EmpiricalValidator, USGSValidator
 
 logger = logging.getLogger(__name__)
 
@@ -49,11 +49,6 @@ class USGSLossData(BaseModel):
     data: GenericDataSource
 
 
-class USGSAlertData(BaseModel):
-    type: str
-    data: GenericDataSource
-
-
 @dataclass
 class USGSDataSource(MontyDataSourceV3):
     type: USGSSourceType
@@ -63,8 +58,6 @@ class USGSDataSource(MontyDataSourceV3):
     event: USGSEvent
     loss_data_file_path: str
     loss_data: USGSLossData
-    alerts_data_file_path: str
-    alerts_data: USGSAlertData
 
     def __init__(self, data: USGSDataSourceType, eoapi_url: str | None = None):
         super().__init__(root=data, eoapi_url=eoapi_url)
@@ -78,9 +71,6 @@ class USGSDataSource(MontyDataSourceV3):
 
             if data.loss_data and os.path.isfile(data.loss_data.path):
                 self.loss_data_file_path = data.loss_data.path
-
-            if data.alerts_data and os.path.isfile(data.alerts_data.path):
-                self.alerts_data_file_path = data.alerts_data.path
 
         def handle_memory_data(): ...
 
@@ -108,15 +98,6 @@ class USGSDataSource(MontyDataSourceV3):
                 return self.loss_data
         return self.loss_data
 
-    def get_alerts_data(self) -> typing.Union[dict, str, None]:
-        if not self.root.alerts_data:
-            return []
-        if self.root.alerts_data and self.root.alerts_data.data_type == DataType.FILE:
-            with open(self.alerts_data_file_path, "r", encoding="utf-8") as f:
-                self.alerts_data = json.loads(f.read())
-                return self.alerts_data
-        return self.alerts_data
-
     def get_input_data_type(self) -> DataType:
         return self.root.event_data.data_type
 
@@ -129,80 +110,33 @@ class USGSTransformer(MontyDataTransformer[USGSDataSource]):
 
     hazard_profiles = MontyHazardProfiles()
     source_name = "usgs"
-    PAGER_ALERT_ECONOMIC_UNIT_SCALE = 1_000_000
+    source_doc = "docs/model/sources/USGS/README.md"
 
-    _EVENT_PRODUCT_SUFFIXES = ("quakeml.xml",)
-    _SHAKEMAP_FILES = {
-        "download/grid.xml",
-        "download/info.json",
-        "download/intensity.jpg",
-        "download/intensity_overlay.png",
-        "download/raster.zip",
-        "download/rupture.json",
-        "download/shakemap.kmz",
-        "download/shape.zip",
-        "download/stationlist.json",
-        "download/uncertainty.xml",
-    }
-    _HAZARD_PRODUCT_SUFFIXES = {
-        "dyfi": (".geojson", ".json", ".kmz"),
-        "finite_fault": (".geojson", ".json", ".png", ".zip"),
-        "ground_failure": (".hdf5", ".json", ".kmz", ".png", ".tif", ".tiff"),
-    }
-    _MEDIA_TYPES = {
-        ".covjson": "application/prs.coverage+json",
-        ".geojson": "application/geo+json",
-        ".hdf5": "application/x-hdf5",
-        ".jpg": "image/jpeg",
-        ".jpeg": "image/jpeg",
-        ".json": "application/json",
-        ".kmz": "application/vnd.google-earth.kmz",
-        ".pdf": "application/pdf",
-        ".png": "image/png",
-        ".tif": "image/tiff",
-        ".tiff": "image/tiff",
-        ".xml": "application/xml",
-        ".zip": "application/zip",
+    # Asset key -> (file in products.shakemap.contents, media type, title, roles).
+    # The keys and the files are the ones in the "ShakeMap Assets" table of the source doc.
+    _SHAKEMAP_ASSETS: dict[str, tuple[str, str, str, list[str]]] = {
+        "intensity_map": ("download/intensity.jpg", "image/jpeg", "Intensity Map", ["overview"]),
+        "intensity_overlay": ("download/intensity_overlay.png", "image/png", "Intensity Overlay", ["overview"]),
+        "pga_map": ("download/pga.jpg", "image/jpeg", "Peak Ground Acceleration Map", ["overview"]),
+        "pgv_map": ("download/pgv.jpg", "image/jpeg", "Peak Ground Velocity Map", ["overview"]),
+        "mmi_contours": ("download/cont_mi.json", "application/geo+json", "MMI Contours", ["data"]),
+        "grid": ("download/grid.xml", "application/xml", "Ground Motion Grid", ["data"]),
+        "uncertainty": ("download/uncertainty.xml", "application/xml", "Uncertainty Grid", ["data"]),
+        "stations": ("download/stationlist.json", "application/json", "Station List", ["data"]),
+        "rupture": ("download/rupture.json", "application/json", "Fault Rupture", ["data"]),
     }
 
     @classmethod
-    def _media_type(cls, path: str, content: ContentDetail) -> str | None:
-        """Return a useful media type, correcting generic USGS values from the file suffix."""
-        suffix = os.path.splitext(path.lower())[1]
-        if content.content_type and content.content_type != "application/octet-stream":
-            return content.content_type
-        return cls._MEDIA_TYPES.get(suffix, content.content_type)
-
-    @staticmethod
-    def _asset_key(product_name: str, path: str) -> str:
-        """Build a stable STAC asset key from a USGS product and content path."""
-        normalized = re.sub(r"[^a-z0-9]+", "_", path.lower()).strip("_")
-        return f"{product_name}_{normalized}"
-
-    @classmethod
-    def _add_product_assets(
-        cls,
-        item: Item,
-        product_name: str,
-        products: typing.Sequence[Product] | None,
-        include: typing.Callable[[str], bool],
-    ) -> None:
-        """Attach selected files from the newest USGS product as STAC assets."""
-        if not products:
-            return
-
-        for path, content in products[0].contents.items():
-            if not path or not include(path):
+    def _add_shakemap_assets(cls, hazard_item: Item, contents: dict[str, ContentDetail]) -> None:
+        """Attach the documented ShakeMap assets whose files exist in the shakemap product."""
+        for key, (file, media_type, title, roles) in cls._SHAKEMAP_ASSETS.items():
+            content = contents.get(file)
+            if content is None and key == "intensity_map":
+                # Some ShakeMap products have only the thumbnail of the intensity map.
+                content, media_type = contents.get("download/pin-thumbnail.png"), "image/png"
+            if content is None:
                 continue
-            item.add_asset(
-                cls._asset_key(product_name, path),
-                Asset(
-                    href=content.url,
-                    media_type=cls._media_type(path, content),
-                    title=f"USGS {product_name.replace('_', ' ').title()} {os.path.basename(path)}",
-                    roles=["data"],
-                ),
-            )
+            hazard_item.add_asset(key, Asset(href=content.url, media_type=media_type, title=title, roles=list(roles)))
 
     @staticmethod
     def iso2_to_iso3(iso2: str) -> str:
@@ -487,7 +421,6 @@ class USGSTransformer(MontyDataTransformer[USGSDataSource]):
 
         item_data = self.data_source.get_event_data()
         losspager_data = self.data_source.get_loss_data()
-        alert_data = self.data_source.get_alerts_data()
 
         # Note that only one datapoint is sent
         self.transform_summary.increment_rows(1)
@@ -500,16 +433,8 @@ class USGSTransformer(MontyDataTransformer[USGSDataSource]):
                     validated_losspager_data.append(obj)
                 return validated_losspager_data
 
-            def get_validated_alert_data(items: list) -> typing.List[AlertValidator]:
-                validated_alert_data: list[AlertValidator] = []
-                for item in items:
-                    obj = AlertValidator(**item)
-                    validated_alert_data.append(obj)
-                return validated_alert_data
-
             validated_item = USGSValidator(**item_data)
             losspager_validated_items = get_validated_data(losspager_data)
-            alert_validated_items = get_validated_alert_data(alert_data)
 
             if event_item := self.make_source_event_item(item_data=validated_item, losspager_items=losspager_validated_items):
                 hazard_item = self.make_hazard_event_item(event_item=event_item, data_item=validated_item)
@@ -517,7 +442,6 @@ class USGSTransformer(MontyDataTransformer[USGSDataSource]):
                     event_item=event_item,
                     hazard_item=hazard_item,
                     losspager_items=losspager_validated_items,
-                    alert_items=alert_validated_items,
                     pager_urls=self._get_pager_urls(validated_item),
                 )
 
@@ -596,7 +520,7 @@ class USGSTransformer(MontyDataTransformer[USGSDataSource]):
         monty.country_codes = country_codes
 
         hazard_keywords = self.hazard_profiles.get_keywords(monty.hazard_codes)
-        item.properties["keywords"] = list(set(hazard_keywords + country_codes))
+        item.properties["keywords"] = unique_in_order(hazard_keywords + country_codes)
 
         # Compute correlation ID
         monty.compute_and_set_correlation_id(hazard_profiles=self.hazard_profiles)
@@ -616,19 +540,6 @@ class USGSTransformer(MontyDataTransformer[USGSDataSource]):
                 roles=["source"],
             ),
         )
-
-        products = item_data.properties.products
-        for product_name, product_items in (
-            ("moment_tensor", products.moment_tensor),
-            ("origin", products.origin),
-            ("phase_data", products.phase_data),
-        ):
-            self._add_product_assets(
-                item,
-                product_name,
-                product_items,
-                lambda path: path.lower().endswith(self._EVENT_PRODUCT_SUFFIXES),
-            )
 
         return item
 
@@ -685,51 +596,8 @@ class USGSTransformer(MontyDataTransformer[USGSDataSource]):
             estimate_type=MontyEstimateType.PRIMARY,
         )
 
-        # Add shakemap assets
-        # download/pin-thumbnail.png
         if shakemap:
-            pin_thumbnail = shakemap.contents.get("download/pin-thumbnail.png")
-            if pin_thumbnail:
-                shakemap_assets: dict[str, typing.Any] = {
-                    "intensity_map": {
-                        "href": pin_thumbnail.url,
-                        "media_type": "image/png",
-                        "title": "Intensity Map",
-                        "roles": ["overview"],
-                    }
-                }
-            else:
-                shakemap_assets = {}
-
-            for key, asset_info in shakemap_assets.items():
-                hazard_item.add_asset(key, Asset(**asset_info))
-
-            self._add_product_assets(
-                hazard_item,
-                "shakemap",
-                shakemaps,
-                lambda path: (
-                    path in self._SHAKEMAP_FILES or path.startswith("download/cont_") or path.startswith("download/coverage_")
-                ),
-            )
-
-        products = data_item.properties.products
-        for product_name, product_items in (
-            ("dyfi", products.dyfi),
-            ("finite_fault", products.finite_fault),
-            ("ground_failure", products.ground_failure),
-        ):
-            suffixes = self._HAZARD_PRODUCT_SUFFIXES[product_name]
-
-            def has_supported_suffix(path: str) -> bool:
-                return path.lower().endswith(suffixes)
-
-            self._add_product_assets(
-                hazard_item,
-                product_name,
-                product_items,
-                has_supported_suffix,
-            )
+            self._add_shakemap_assets(hazard_item, shakemap.contents)
 
         return hazard_item
 
@@ -746,11 +614,10 @@ class USGSTransformer(MontyDataTransformer[USGSDataSource]):
         event_item: Item,
         hazard_item: Item,
         losspager_items: typing.List[EmpiricalValidator],
-        alert_items: typing.List[AlertValidator],
         pager_urls: dict[str, str],
     ) -> typing.List[Item]:
         """Create impact items (PAGER) from USGS data."""
-        if not losspager_items and not alert_items:
+        if not losspager_items:
             return []
 
         impact_items = []
@@ -792,69 +659,7 @@ class USGSTransformer(MontyDataTransformer[USGSDataSource]):
                     )
                     impact_items.append(economic_item)
 
-        for alert_data in alert_items:
-            if alert_data.fatality:
-                alert_ppl_item = self._create_impact_item_from_alerts(
-                    impact_type=alert_data.fatality.type or "fatality",
-                    category=MontyImpactExposureCategory.ALL_PEOPLE,
-                    imp_type=MontyImpactType.POTENTIALLY_AFFECTED,
-                    value=self._calculate_value_from_bins(alert_data.fatality.bins),
-                    unit="people",
-                    event_item=event_item,
-                    pager_urls=pager_urls,
-                    alert_file="alertfatal.pdf",
-                )
-                impact_items.append(alert_ppl_item)
-            if alert_data.economic:
-                alert_economic_item = self._create_impact_item_from_alerts(
-                    impact_type=alert_data.economic.type or "economic",
-                    category=MontyImpactExposureCategory.GLOBAL_CURRENCY,
-                    imp_type=MontyImpactType.POTENTIALLY_AFFECTED,
-                    value=self._calculate_value_from_bins(alert_data.economic.bins) * self.PAGER_ALERT_ECONOMIC_UNIT_SCALE,
-                    unit="usd",
-                    event_item=event_item,
-                    pager_urls=pager_urls,
-                    alert_file="alertecon.pdf",
-                )
-                impact_items.append(alert_economic_item)
         return impact_items
-
-    def _calculate_value_from_bins(self, bin_data: typing.List[AlertBin]) -> int:
-        if not bin_data:
-            return 0
-        try:
-            total = sum([(float(data.min) + float(data.max)) / 2 * data.probability for data in bin_data])
-            return int(total)
-        except Exception:
-            return 0
-
-    def _create_impact_item_from_alerts(
-        self,
-        impact_type: str,
-        category: MontyImpactExposureCategory,
-        imp_type: MontyImpactType,
-        value: float,
-        unit: str,
-        event_item: Item,
-        pager_urls: dict[str, str],
-        alert_file: str,
-    ) -> Item:
-        impact_item = event_item.clone()
-        monty = MontyExtension.ext(impact_item)
-
-        impact_item.id = (
-            f"{impact_item.id.replace(STAC_EVENT_ID_PREFIX, STAC_IMPACT_ID_PREFIX)}-{impact_type}-alert-{monty.country_codes[0]}"
-        )
-        impact_item.set_collection(self.get_impact_collection())
-
-        impact_item.properties["forecasted"] = True
-        impact_item.properties["roles"] = ["source", "impact"]
-
-        monty.impact_detail = ImpactDetail(
-            category=category, type=imp_type, value=value, unit=unit, estimate_type=MontyEstimateType.MODELLED
-        )
-        self._add_pager_assets(impact_item, pager_urls, alert_file, impact_type)
-        return impact_item
 
     def _create_impact_item_from_losses(
         self,

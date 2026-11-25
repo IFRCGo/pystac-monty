@@ -501,3 +501,135 @@ class GDACSTest(unittest.TestCase):
         self.assertIsNotNone(source_event_item)
         self.assertIsNotNone(source_hazard_item)
         self.assertTrue(len(source_impact_items) >= 0)
+
+
+# Cyclone NOUL-26, episodes 9 and 13: the reference case of the GDACS impact mapping
+# (monty-stac-extension docs/model/sources/GDACS, "Tropical cyclone advisory timeline").
+NOUL_26_EPISODES = (9, 13)
+
+
+def noul_26_timeline_url(episode: int) -> str:
+    return f"https://www.gdacs.org/gdacsapi/api/export/gettimeline?episode={episode}"
+
+
+def make_noul_26_transformer() -> GDACSTransformer:
+    def episode_source(data_type: GDACSDataSourceType, name: str, url: str) -> GdacsEpisodes:
+        return GdacsEpisodes(
+            type=data_type,
+            data=GenericDataSource(source_url=url, input_data=Memory(content=fixture_memory(name), data_type=DataType.MEMORY)),
+            hazard_type="TC",
+        )
+
+    episodes = [
+        (
+            episode_source(GDACSDataSourceType.EVENT, f"tc-1001294-ep{ep}-event.json", "https://www.test.com"),
+            episode_source(GDACSDataSourceType.GEOMETRY, f"tc-1001294-ep{ep}-geometry.json", "https://www.test.com"),
+            episode_source(GDACSDataSourceType.IMPACT, f"tc-1001294-ep{ep}-timeline.json", noul_26_timeline_url(ep)),
+        )
+        for ep in NOUL_26_EPISODES
+    ]
+    data_source = GDACSDataSource(
+        data=GdacsDataSourceType(
+            source_url="https://www.test.com",
+            event_data=Memory(content=fixture_memory("tc-1001294-ep13-event.json"), data_type=DataType.MEMORY),
+            episodes=episodes,
+        )
+    )
+    return GDACSTransformer(data_source, MockGeocoder())
+
+
+class GDACSImpactMappingTest(unittest.TestCase):
+    """GDACS `impacts[]` items follow the documented mapping (pystac-monty#188)."""
+
+    def setUp(self) -> None:
+        super().setUp()
+        self.validator = CustomValidator()
+
+    def get_impact_items_by_episode(self, transformer: GDACSTransformer) -> dict[int, dict[str, typing.Any]]:
+        items_by_episode: dict[int, dict[str, typing.Any]] = {ep: {} for ep in NOUL_26_EPISODES}
+        for item in transformer.get_stac_items():
+            item.validate(validator=self.validator)
+            monty = MontyExtension.ext(item)
+            if monty.is_source_impact():
+                self.assertNotIn(item.id, items_by_episode[monty.episode_number])
+                items_by_episode[monty.episode_number][item.id] = item
+        return items_by_episode
+
+    @pytest.mark.vcr()
+    def test_tc_impact_items(self) -> None:
+        request_for_schema(url=CURRENT_SCHEMA_URI)
+        items_by_episode = self.get_impact_items_by_episode(make_noul_26_transformer())
+
+        for episode, items in items_by_episode.items():
+            self.assertTrue(items)
+            for item_id, item in items.items():
+                # The episode is not part of the id: gdacs-impact-{eventid}-{timeline id}-{band}
+                self.assertRegex(item_id, r"^gdacs-impact-1001294-\d+-(pop39|pop74|surge)$")
+                detail = MontyExtension.ext(item).impact_detail
+                self.assertEqual(detail.category, "people")
+                self.assertEqual(detail.type, "potentially_affected")
+                self.assertEqual(detail.estimate_type, "modelled")
+                self.assertEqual(detail.unit, "count")
+                self.assertGreater(detail.value, 0)
+                self.assertTrue(detail.description)
+                self.assertIn("forecasted", item.properties)
+                self.assertIn("advisory_number", item.properties)
+                self.assertEqual(item.geometry["type"], "Point")
+                self.assertEqual([link.href for link in item.get_links("via")], [noul_26_timeline_url(episode)])
+
+        ep9, ep13 = items_by_episode[9], items_by_episode[13]
+
+        # Advisory 9 (observed): `pop` is 0, but 75 million people are in the 39 kt wind field.
+        self.assertEqual(MontyExtension.ext(ep13["gdacs-impact-1001294-271236-pop39"]).impact_detail.value, 75490475)
+        self.assertEqual(MontyExtension.ext(ep13["gdacs-impact-1001294-271236-pop74"]).impact_detail.value, 614941)
+        self.assertFalse(ep13["gdacs-impact-1001294-271236-pop39"].properties["forecasted"])
+        self.assertEqual(
+            ep13["gdacs-impact-1001294-271236-pop39"].properties["title"],
+            "NOUL-26 advisory 9, population in 39 kt wind field",
+        )
+
+        # Last forecast entry of episode 13: every band is 0, so no item (its `pop` of 19.8 million is not mapped).
+        self.assertFalse([item_id for item_id in ep13 if "-271403-" in item_id])
+        # No storm surge exposure in this storm: no surge item.
+        self.assertFalse([item_id for item_id in ep13 if item_id.endswith("-surge")])
+
+        # Observed entries repeat in each episode: they collapse onto the same ids.
+        observed_ep9 = {item_id for item_id, item in ep9.items() if not item.properties["forecasted"]}
+        self.assertTrue(observed_ep9)
+        self.assertTrue(observed_ep9 <= set(ep13))
+        # Superseded forecasts of episode 9 keep their own ids.
+        forecast_ep9 = {item_id for item_id, item in ep9.items() if item.properties["forecasted"]}
+        self.assertTrue(forecast_ep9)
+        self.assertFalse(forecast_ep9 & set(ep13))
+
+    @parameterized.expand(load_scenarios(zip([venezuela_wildfire_1], ["WF"])), skip_on_empty=True)
+    @pytest.mark.vcr()
+    def test_wf_impact_item(self, transformer: GDACSTransformer) -> None:
+        request_for_schema(url=CURRENT_SCHEMA_URI)
+
+        impact_items = []
+        event_item = None
+        for item in transformer.get_stac_items():
+            item.validate(validator=self.validator)
+            monty = MontyExtension.ext(item)
+            if monty.is_source_impact():
+                impact_items.append(item)
+            elif monty.is_source_event():
+                event_item = item
+
+        self.assertEqual(len(impact_items), 1)
+        item = impact_items[0]
+        monty = MontyExtension.ext(item)
+        self.assertEqual(item.id, f"gdacs-impact-{monty.src_event_id}-{monty.episode_number}-popaffected")
+
+        # The geometry is the burnt area of the `getimpact` document, not the event footprint.
+        self.assertEqual(item.geometry["type"], "MultiPolygon")
+        self.assertNotEqual(item.geometry, event_item.geometry)
+
+        detail = monty.impact_detail
+        self.assertEqual(detail.category, "people")
+        self.assertEqual(detail.type, "potentially_affected")
+        self.assertEqual(detail.estimate_type, "modelled")
+        self.assertEqual(detail.unit, "count")
+        self.assertEqual(detail.value, 11070)
+        self.assertEqual(detail.description, "Population in the burnt area")

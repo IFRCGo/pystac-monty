@@ -1,0 +1,9 @@
+# Keep the blank issue for work that the forms do not cover.
+blank_issues_enabled: true
+contact_links:
+  - name: Model, taxonomy or JSON Schema change
+    url: https://github.com/IFRCGo/monty-stac-extension/issues/new/choose
+    about: The Monty model, the taxonomy and the schema are in monty-stac-extension. Open the issue there.
+  - name: New source
+    url: https://github.com/IFRCGo/monty-stac-extension/issues/new?template=new-source.yml
+    about: A new source starts with a source analysis in monty-stac-extension. The transformer comes after it.
