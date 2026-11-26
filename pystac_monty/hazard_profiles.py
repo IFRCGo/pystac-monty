@@ -102,6 +102,12 @@ class MontyHazardProfiles(HazardProfiles):
         - Cluster labels (e.g., "Water-related", "Seismic")
         - Family labels (e.g., "Meteorological & Hydrological", "Geological")
 
+        Generic codes (e.g. GLIDE ``AC`` or EM-DAT ``nat-hyd-flo-flo``) can map to
+        several profile rows. For such codes, a keyword is only added when every
+        matching row agrees on it, so a generic code never contributes the label
+        of an arbitrary specific hazard. The specific labels come from the more
+        specific codes in the list (e.g. the UNDRR 2025 code).
+
         Args:
             hazard_codes: List of hazard codes (UNDRR 2025/2020, GLIDE, or EM-DAT)
 
@@ -112,12 +118,12 @@ class MontyHazardProfiles(HazardProfiles):
             return []
 
         profiles = self.get_profiles()
+        keyword_columns = [
+            col for col in (self.LABEL_COLUMN, self.CLUSTER_LABEL_COLUMN, self.FAMILY_LABEL_COLUMN) if col in profiles.columns
+        ]
         keywords = set()
 
         for code in hazard_codes:
-            # Try to find the code in the profiles using all available columns
-            row = None
-
             # Priority order: UNDRR 2025, UNDRR 2020, EM-DAT, GLIDE
             for col in [
                 self.UNDRR_2025_KEY_COLUMN,
@@ -125,24 +131,17 @@ class MontyHazardProfiles(HazardProfiles):
                 self.EMDAT_KEY_COLUMN,
                 self.GLIDE_CODE_COLUMN,
             ]:
-                if col in profiles.columns:
-                    matching_rows = profiles[profiles[col] == code]
-                    if not matching_rows.empty:
-                        row = matching_rows.iloc[0]
-                        break
-
-            if row is not None:
-                # Add label (hazard name)
-                if self.LABEL_COLUMN in row and pd.notna(row[self.LABEL_COLUMN]):
-                    keywords.add(row[self.LABEL_COLUMN])
-
-                # Add cluster label
-                if self.CLUSTER_LABEL_COLUMN in row and pd.notna(row[self.CLUSTER_LABEL_COLUMN]):
-                    keywords.add(row[self.CLUSTER_LABEL_COLUMN])
-
-                # Add family label
-                if self.FAMILY_LABEL_COLUMN in row and pd.notna(row[self.FAMILY_LABEL_COLUMN]):
-                    keywords.add(row[self.FAMILY_LABEL_COLUMN])
+                if col not in profiles.columns:
+                    continue
+                matching_rows = profiles[profiles[col] == code]
+                if matching_rows.empty:
+                    continue
+                for keyword_col in keyword_columns:
+                    values = matching_rows[keyword_col].dropna().unique()
+                    # Only keep the keyword when all matching rows agree on it
+                    if len(values) == 1 and matching_rows[keyword_col].notna().all():
+                        keywords.add(values[0])
+                break
 
         return sorted(list(keywords))
 

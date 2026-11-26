@@ -309,3 +309,36 @@ def test_get_canonical_hazard_codes_wildfire() -> None:
     assert len(canonical) >= 2
     assert canonical[0] == "EN0205"  # UNDRR 2025 Wildfires
     assert "WF" in canonical  # GLIDE
+
+
+def test_get_keywords_generic_glide_code_does_not_pick_arbitrary_hazard() -> None:
+    """GLIDE AC maps to many technological hazards; it must not add one of their labels (issue #286)."""
+    hazard_profiles = MontyHazardProfiles()
+    keywords = hazard_profiles.get_keywords(["TL0405", "AC", "tec-tra-roa-roa"])
+
+    assert "Road Traffic Accident" in keywords
+    assert "Transportation Accidents" in keywords
+    assert "Technological" in keywords
+    for wrong in ["Radioactive Waste", "Radiation", "Benzene & Hydrocarbons", "Chemical"]:
+        assert wrong not in keywords
+
+
+def test_get_keywords_generic_code_alone_adds_no_conflicting_keywords() -> None:
+    hazard_profiles = MontyHazardProfiles()
+    # AC rows span both the Chemical and Technological families, so nothing is shared
+    assert hazard_profiles.get_keywords(["AC"]) == []
+
+
+def test_get_keywords_ambiguous_emdat_code_skips_specific_label() -> None:
+    hazard_profiles = MontyHazardProfiles()
+    profiles = hazard_profiles.get_profiles()
+    labels = set(profiles[profiles["emdat_key"] == "nat-hyd-flo-flo"]["label"].dropna())
+    assert len(labels) > 1
+
+    keywords = hazard_profiles.get_keywords(["nat-hyd-flo-flo"])
+    assert not labels & set(keywords)
+
+
+def test_get_keywords_specific_code() -> None:
+    hazard_profiles = MontyHazardProfiles()
+    assert hazard_profiles.get_keywords(["TL0601"]) == sorted(["Radioactive Waste", "Radiation", "Technological"])
