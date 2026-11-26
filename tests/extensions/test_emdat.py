@@ -572,7 +572,7 @@ def _event_item_for(**overrides):
 
 def test_title_is_the_event_name_when_emdat_gives_one() -> None:
     item = _event_item_for(name="Hurricane 'Milton'")
-    assert item.properties["title"] == "Hurricane 'Milton'"
+    assert item.properties["title"] == "Hurricane 'Milton' of February 2025"
 
 
 def test_impact_title_starts_with_the_event_name() -> None:
@@ -586,18 +586,18 @@ def test_impact_title_starts_with_the_event_name() -> None:
     items = EMDATTransformer(data_source, MockGeocoder()).make_items()
     impact_titles = [item.properties["title"] for item in items if MontyExtension.ext(item).is_source_impact()]
     assert impact_titles
-    assert impact_titles == ["Hurricane 'Milton' - Total deaths"]
+    assert impact_titles == ["Hurricane 'Milton' of February 2025 - Total deaths"]
 
 
 def test_title_is_generated_when_emdat_gives_no_name() -> None:
-    assert _event_item_for(name=None).properties["title"] == "Air in United States of America, February 2025"
-    assert _event_item_for(name="  ").properties["title"] == "Air in United States of America, February 2025"
-    assert _event_item_for(name=None, start_month=None).properties["title"] == "Air in United States of America, 2025"
+    assert _event_item_for(name=None).properties["title"] == "Air in United States of America of February 2025"
+    assert _event_item_for(name="  ").properties["title"] == "Air in United States of America of February 2025"
+    assert _event_item_for(name=None, start_month=None).properties["title"] == "Air in United States of America of 2025"
 
 
 def test_generated_title_uses_the_type_when_there_is_no_subtype() -> None:
     item = _event_item_for(name=None, type="Flood", subtype=None)
-    assert item.properties["title"] == "Flood in United States of America, February 2025"
+    assert item.properties["title"] == "Flood in United States of America of February 2025"
 
 
 def test_description_shows_the_subtype_only_when_it_differs_from_the_type() -> None:
@@ -662,11 +662,11 @@ def test_impact_items_have_a_readable_title_and_the_impact_keywords() -> None:
     impacts = {item.id: item for item in items if MontyExtension.ext(item).is_source_impact()}
 
     deaths = impacts["emdat-impact-2025-0101-USA-total_deaths"]
-    assert deaths.properties["title"] == "Air in United States of America, February 2025 - Total deaths"
+    assert deaths.properties["title"] == "Air in United States of America of February 2025 - Total deaths"
     assert deaths.properties["keywords"] == event.properties["keywords"] + ["Death", "People (All Demographics)"]
 
     damage = impacts["emdat-impact-2025-0101-USA-total_dam"]
-    assert damage.properties["title"] == "Air in United States of America, February 2025 - Total damage"
+    assert damage.properties["title"] == "Air in United States of America of February 2025 - Total damage"
     assert damage.properties["keywords"] == event.properties["keywords"] + [
         "Loss (Cost)",
         "Global/Regional Currency (e.g. USD)",

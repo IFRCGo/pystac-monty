@@ -444,22 +444,25 @@ class EMDATTransformer(MontyDataTransformer[EMDATDataSource]):
         )
 
     def _create_title_from_row(self, row: EmdatDataValidator) -> Optional[str]:
-        """Give the EM-DAT Event Name, or a generated title when EM-DAT gives no name.
+        """Give the title of the event: the EM-DAT Event Name, or a generated text, then the date.
 
-        Most EM-DAT records have no Event Name. The generated title is the disaster
-        subtype (or the type when there is no subtype), the country, and the month
-        and year of the start: "Flood (General) in Spain, October 2024".
+        Most EM-DAT records have no Event Name. The generated text is the disaster
+        subtype (or the type when there is no subtype) and the country. The title
+        ends with the month and year of the start, in the same form as the
+        description: "Flood (General) in Spain of October 2024",
+        "Hurricane 'Milton' of October 2024".
         """
         name = row.name.strip() if isinstance(row.name, str) else ""
-        if name:
-            return name
-
         hazard = row.subtype or row.type
-        if not hazard:
+        if name:
+            title = name
+        elif hazard:
+            title = f"{hazard} in {row.country}" if row.country else hazard
+        else:
             return "N/A"
-        title = f"{hazard} in {row.country}" if row.country else hazard
+
         date = self._create_month_year_text(row)
-        return f"{title}, {date}" if date else title
+        return f"{title} of {date}" if date else title
 
     @staticmethod
     def _create_month_year_text(row: EmdatDataValidator) -> Optional[str]:
