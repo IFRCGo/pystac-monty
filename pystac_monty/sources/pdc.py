@@ -20,7 +20,9 @@ from pystac_monty.extension import (
     MontyEstimateType,
     MontyExtension,
     MontyImpactExposureCategory,
+    MontyImpactExposureCatgoryLabel,
     MontyImpactType,
+    MontyImpactTypeLabel,
 )
 from pystac_monty.geocoding import MontyGeoCoder
 from pystac_monty.hazard_profiles import MontyHazardProfiles
@@ -40,6 +42,32 @@ logger = logging.getLogger(__name__)
 STAC_EVENT_ID_PREFIX = "pdc-event-"
 STAC_HAZARD_ID_PREFIX = "pdc-hazard-"
 STAC_IMPACT_ID_PREFIX = "pdc-impact-"
+
+# The text of each impact field in the title of its impact item.
+PDC_IMPACT_FIELD_LABELS = {
+    ("population", "total0_4"): "Population aged 0 to 4",
+    ("population", "total5_9"): "Population aged 5 to 9",
+    ("population", "total10_14"): "Population aged 10 to 14",
+    ("population", "total15_19"): "Population aged 15 to 19",
+    ("population", "total20_24"): "Population aged 20 to 24",
+    ("population", "total25_29"): "Population aged 25 to 29",
+    ("population", "total30_34"): "Population aged 30 to 34",
+    ("population", "total35_39"): "Population aged 35 to 39",
+    ("population", "total40_44"): "Population aged 40 to 44",
+    ("population", "total45_49"): "Population aged 45 to 49",
+    ("population", "total50_54"): "Population aged 50 to 54",
+    ("population", "total55_59"): "Population aged 55 to 59",
+    ("population", "total60_64"): "Population aged 60 to 64",
+    ("population", "total65_Plus"): "Population aged 65 and over",
+    ("population", "total"): "Total population",
+    ("population", "households"): "Households",
+    ("capital", "total"): "Total capital",
+    ("capital", "school"): "School capital",
+    ("capital", "hospital"): "Hospital capital",
+}
+
+IMPACT_TYPE_LABELS = MontyImpactTypeLabel()
+IMPACT_CATEGORY_LABELS = MontyImpactExposureCatgoryLabel()
 
 # PDC hazard types for which HIPs 2025 has no code at the granularity that PDC states.
 # A hazard item must have one UNDRR-ISC 2025 code, so no item is made for these types.
@@ -472,6 +500,15 @@ class PDCTransformer(MontyDataTransformer):
                 # Impact Detail
                 category, impact_type = field_values
                 monty.impact_detail = self.get_impact_detail(category, impact_type, value)
+                # Title: the event title, the impact field and the place of the row
+                field_label = PDC_IMPACT_FIELD_LABELS[field_key[:-1]]
+                place = ", ".join(part for part in (admin_item.admin2, admin_item.admin1, admin_item.country) if part)
+                impact_item.properties["title"] = f"{event_item.properties['title']} - {field_label} ({place})"
+                # Keywords: those of the event, then the labels of the impact type and of the exposure category
+                impact_item.properties["keywords"] = unique_in_order(
+                    event_item.properties.get("keywords", [])
+                    + [IMPACT_TYPE_LABELS[impact_type], IMPACT_CATEGORY_LABELS[category]]
+                )
                 impact_items.append(impact_item)
         return impact_items
 

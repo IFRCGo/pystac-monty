@@ -629,3 +629,40 @@ def test_pdc_data_source_type_accepts_single_exposure_detail():
     )
     assert len(data.exposure_detail_data) == 1
     assert PDCDataSourceType(**{**data.model_dump(), "exposure_detail_data": None}).exposure_detail_data == []
+
+
+def test_impact_items_have_a_readable_title_and_the_impact_keywords():
+    """The title names the impact field and the place; the keywords name the impact type and category"""
+    pdc_data_source = PDCDataSource(
+        data=PDCDataSourceType(
+            source_url=scenario[0],
+            uuid=scenario[1]["uuid"],
+            hazard_data=File(path=scenario[1]["hazards_file_path"], data_type=DataType.FILE),
+            exposure_detail_data=File(path=scenario[1]["exposure_detail_file_path"], data_type=DataType.FILE),
+            geojson_path=scenario[1]["geojson_file_path"],
+        )
+    )
+    items = PDCTransformer(pdc_data_source, MockGeocoder()).make_items()
+    event_item = next(item for item in items if MontyExtension.ext(item).is_source_event())
+    impacts = {item.id.split("-1-", 1)[-1]: item for item in items if MontyExtension.ext(item).is_source_impact()}
+    event_title = event_item.properties["title"]
+    event_keywords = event_item.properties["keywords"]
+
+    capital = impacts["capital-total-PER-0"]
+    assert capital.properties["title"] == f"{event_title} - Total capital (PER)"
+    assert capital.properties["keywords"] == event_keywords + ["Loss (Cost)", "Global/Regional Currency (e.g. USD)"]
+
+    population = impacts["population-total-PER-0"]
+    assert population.properties["title"] == f"{event_title} - Total population (PER)"
+    assert population.properties["keywords"] == event_keywords + ["Total Affected", "People (All Demographics)"]
+
+    children = impacts["population-total0_4-PER-0"]
+    assert children.properties["title"] == f"{event_title} - Population aged 0 to 4 (PER)"
+
+    # Each impact item of the snapshot has its own title
+    titles = [item.properties["title"] for item in impacts.values()]
+    assert len(titles) == len(set(titles)) == 19
+    # The event and hazard items do not change
+    hazard_item = next(item for item in items if MontyExtension.ext(item).is_source_hazard())
+    assert hazard_item.properties["title"] == event_title
+    assert hazard_item.properties["keywords"] == event_keywords
