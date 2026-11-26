@@ -38,6 +38,9 @@ STAC_EVENT_ID_PREFIX = "emdat-event-"
 STAC_HAZARD_ID_PREFIX = "emdat-hazard-"
 STAC_IMPACT_ID_PREFIX = "emdat-impact-"
 
+# Impact fields that EM-DAT gives in thousands of US dollars ("Total Damage ('000 US$)").
+EMDAT_THOUSAND_USD_FIELDS = {"total_dam"}
+
 
 @dataclass
 class EMDATDataSource(MontyDataSourceV3):
@@ -327,10 +330,12 @@ class EMDATTransformer(MontyDataTransformer[EMDATDataSource]):
         impact_fields = {
             "total_deaths": (MontyImpactExposureCategory.ALL_PEOPLE, MontyImpactType.DEATH),
             "no_injured": (MontyImpactExposureCategory.ALL_PEOPLE, MontyImpactType.INJURED),
-            "no_affected": (MontyImpactExposureCategory.ALL_PEOPLE, MontyImpactType.TOTAL_AFFECTED),
+            # NOTE: EM-DAT "No. Affected" is the people who need immediate assistance. "Total Affected"
+            # is the sum of "No. Injured", "No. Affected" and "No. Homeless".
+            "no_affected": (MontyImpactExposureCategory.ALL_PEOPLE, MontyImpactType.DIRECTLY_AFFECTED),
             "no_homeless": (MontyImpactExposureCategory.ALL_PEOPLE, MontyImpactType.TOTAL_DISPLACED_PERSONS),
             "total_affected": (MontyImpactExposureCategory.ALL_PEOPLE, MontyImpactType.TOTAL_AFFECTED),
-            "total_dam": (MontyImpactExposureCategory.TOTAL_AFFECTED, MontyImpactType.LOSS_COST),
+            "total_dam": (MontyImpactExposureCategory.GLOBAL_CURRENCY, MontyImpactType.LOSS_COST),
         }
 
         for field, (category, impact_type) in impact_fields.items():
@@ -370,11 +375,17 @@ class EMDATTransformer(MontyDataTransformer[EMDATDataSource]):
             if not value:
                 return None
 
+            unit = "count"
+            if field in EMDAT_THOUSAND_USD_FIELDS:
+                # NOTE: EM-DAT gives these columns in thousands of US dollars
+                value = float(value) * 1000
+                unit = "USD"
+
             monty.impact_detail = ImpactDetail(
                 category=category,
                 type=impact_type,
                 value=value,
-                unit="USD" if "Damages" in field else "count",
+                unit=unit,
                 estimate_type=MontyEstimateType.PRIMARY,
             )
 

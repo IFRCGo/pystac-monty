@@ -608,3 +608,41 @@ def test_description_shows_the_subtype_only_when_it_differs_from_the_type() -> N
 
     missing = _event_item_for(type="Flood", subtype=None).properties["description"]
     assert missing == "Flood in Alaska, United States of America of February 2025"
+
+
+def _impact_details_for(**overrides) -> dict[str, dict]:
+    """Transform the first mock record with *overrides* and give the impact detail of each impact field."""
+    row = {**json_mock_data["data"]["public_emdat"]["data"][0], **overrides}
+    data_source = EMDATDataSource(
+        data=GenericDataSource(
+            source_url="https://public.emdat.be/",
+            input_data=Memory(content={"data": {"public_emdat": {"data": [row]}}}, data_type=DataType.MEMORY),
+        )
+    )
+    items = EMDATTransformer(data_source, MockGeocoder()).make_items()
+    return {
+        item.id.rsplit("-", 1)[-1]: item.properties["monty:impact_detail"]
+        for item in items
+        if MontyExtension.ext(item).is_source_impact()
+    }
+
+
+def test_total_damage_is_in_us_dollars() -> None:
+    """EM-DAT gives Total Damage in thousands of US dollars."""
+    detail = _impact_details_for(total_dam=11000000)["total_dam"]
+    assert detail["value"] == 11_000_000_000
+    assert detail["unit"] == "USD"
+    assert detail["category"] == "global_currency"
+    assert detail["type"] == "cost"
+
+
+def test_people_impacts_keep_the_count_unit() -> None:
+    details = _impact_details_for(total_deaths=10, no_affected=300, total_affected=450)
+    assert details["total_deaths"]["value"] == 10
+    assert all(details[field]["unit"] == "count" for field in ("total_deaths", "no_affected", "total_affected"))
+
+
+def test_no_affected_and_total_affected_have_different_types() -> None:
+    details = _impact_details_for(no_affected=300, total_affected=450)
+    assert details["no_affected"]["type"] == "affected_direct"
+    assert details["total_affected"]["type"] == "affected_total"
