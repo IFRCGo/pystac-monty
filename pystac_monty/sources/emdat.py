@@ -18,7 +18,9 @@ from pystac_monty.extension import (
     MontyEstimateType,
     MontyExtension,
     MontyImpactExposureCategory,
+    MontyImpactExposureCatgoryLabel,
     MontyImpactType,
+    MontyImpactTypeLabel,
 )
 from pystac_monty.hazard_profiles import MontyHazardProfiles
 from pystac_monty.sources.common import (
@@ -40,6 +42,19 @@ STAC_IMPACT_ID_PREFIX = "emdat-impact-"
 
 # Impact fields that EM-DAT gives in thousands of US dollars ("Total Damage ('000 US$)").
 EMDAT_THOUSAND_USD_FIELDS = {"total_dam"}
+
+# The text of each impact field in the title of its impact item.
+EMDAT_IMPACT_FIELD_LABELS = {
+    "total_deaths": "Total deaths",
+    "no_injured": "Injured",
+    "no_affected": "Affected",
+    "no_homeless": "Homeless",
+    "total_affected": "Total affected",
+    "total_dam": "Total damage",
+}
+
+IMPACT_TYPE_LABELS = MontyImpactTypeLabel()
+IMPACT_CATEGORY_LABELS = MontyImpactExposureCatgoryLabel()
 
 
 @dataclass
@@ -363,8 +378,11 @@ class EMDATTransformer(MontyDataTransformer[EMDATDataSource]):
                 return None
 
             impact_item = base_item.clone()
-            # add in title
-            impact_item.properties["title"] = f"{base_item.properties['title']} - {field}"
+            impact_item.properties["title"] = f"{base_item.properties['title']} - {EMDAT_IMPACT_FIELD_LABELS[field]}"
+            # The keywords of the event, then the labels of the impact type and of the exposure category
+            impact_item.properties["keywords"] = unique_in_order(
+                base_item.properties.get("keywords", []) + [IMPACT_TYPE_LABELS[impact_type], IMPACT_CATEGORY_LABELS[category]]
+            )
             impact_item.id = f"{STAC_IMPACT_ID_PREFIX}{row.disno}-{field.lower().replace(' ', '-')}"
             impact_item.set_collection(self.get_impact_collection())
             impact_item.properties["roles"] = ["source", "impact"]
@@ -429,7 +447,8 @@ class EMDATTransformer(MontyDataTransformer[EMDATDataSource]):
         """Give the EM-DAT Event Name, or a generated title when EM-DAT gives no name.
 
         Most EM-DAT records have no Event Name. The generated title is the disaster
-        subtype (or the type when there is no subtype) and the country.
+        subtype (or the type when there is no subtype), the country, and the month
+        and year of the start: "Flood (General) in Spain, October 2024".
         """
         name = row.name.strip() if isinstance(row.name, str) else ""
         if name:
@@ -438,7 +457,22 @@ class EMDATTransformer(MontyDataTransformer[EMDATDataSource]):
         hazard = row.subtype or row.type
         if not hazard:
             return "N/A"
-        return f"{hazard} in {row.country}" if row.country else hazard
+        title = f"{hazard} in {row.country}" if row.country else hazard
+        date = self._create_month_year_text(row)
+        return f"{title}, {date}" if date else title
+
+    @staticmethod
+    def _create_month_year_text(row: EmdatDataValidator) -> Optional[str]:
+        """Give the start of the disaster as text: 'October 2024', or '2024' when EM-DAT gives no month."""
+        if not row.start_year:
+            return None
+        year = str(int(row.start_year))
+        if row.start_month:
+            try:
+                return f"{datetime(2000, int(row.start_month), 1).strftime('%B')} {year}"
+            except ValueError:
+                pass
+        return year
 
     def _create_description_from_row(self, row: EmdatDataValidator) -> str:
         """Create a description from row data"""

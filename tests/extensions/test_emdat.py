@@ -586,17 +586,18 @@ def test_impact_title_starts_with_the_event_name() -> None:
     items = EMDATTransformer(data_source, MockGeocoder()).make_items()
     impact_titles = [item.properties["title"] for item in items if MontyExtension.ext(item).is_source_impact()]
     assert impact_titles
-    assert all(title.startswith("Hurricane 'Milton' - ") for title in impact_titles)
+    assert impact_titles == ["Hurricane 'Milton' - Total deaths"]
 
 
 def test_title_is_generated_when_emdat_gives_no_name() -> None:
-    assert _event_item_for(name=None).properties["title"] == "Air in United States of America"
-    assert _event_item_for(name="  ").properties["title"] == "Air in United States of America"
+    assert _event_item_for(name=None).properties["title"] == "Air in United States of America, February 2025"
+    assert _event_item_for(name="  ").properties["title"] == "Air in United States of America, February 2025"
+    assert _event_item_for(name=None, start_month=None).properties["title"] == "Air in United States of America, 2025"
 
 
 def test_generated_title_uses_the_type_when_there_is_no_subtype() -> None:
     item = _event_item_for(name=None, type="Flood", subtype=None)
-    assert item.properties["title"] == "Flood in United States of America"
+    assert item.properties["title"] == "Flood in United States of America, February 2025"
 
 
 def test_description_shows_the_subtype_only_when_it_differs_from_the_type() -> None:
@@ -646,3 +647,30 @@ def test_no_affected_and_total_affected_have_different_types() -> None:
     details = _impact_details_for(no_affected=300, total_affected=450)
     assert details["no_affected"]["type"] == "affected_direct"
     assert details["total_affected"]["type"] == "affected_total"
+
+
+def test_impact_items_have_a_readable_title_and_the_impact_keywords() -> None:
+    row = {**json_mock_data["data"]["public_emdat"]["data"][0], "total_deaths": 10, "total_dam": 5000}
+    data_source = EMDATDataSource(
+        data=GenericDataSource(
+            source_url="https://public.emdat.be/",
+            input_data=Memory(content={"data": {"public_emdat": {"data": [row]}}}, data_type=DataType.MEMORY),
+        )
+    )
+    items = EMDATTransformer(data_source, MockGeocoder()).make_items()
+    event = next(item for item in items if MontyExtension.ext(item).is_source_event())
+    impacts = {item.id: item for item in items if MontyExtension.ext(item).is_source_impact()}
+
+    deaths = impacts["emdat-impact-2025-0101-USA-total_deaths"]
+    assert deaths.properties["title"] == "Air in United States of America, February 2025 - Total deaths"
+    assert deaths.properties["keywords"] == event.properties["keywords"] + ["Death", "People (All Demographics)"]
+
+    damage = impacts["emdat-impact-2025-0101-USA-total_dam"]
+    assert damage.properties["title"] == "Air in United States of America, February 2025 - Total damage"
+    assert damage.properties["keywords"] == event.properties["keywords"] + [
+        "Loss (Cost)",
+        "Global/Regional Currency (e.g. USD)",
+    ]
+
+    hazard = next(item for item in items if MontyExtension.ext(item).is_source_hazard())
+    assert hazard.properties["keywords"] == event.properties["keywords"]
