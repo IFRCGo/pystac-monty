@@ -19,9 +19,7 @@ UNDRR_CODE_LITERAL = re.compile(r"""["']([A-Z]{2}\d{4})["']""")
 # Codes that are not in HIPs 2025 but are still in a source mapping.
 # Each entry needs a decision on the correct 2025 code. Do not add entries:
 # fix the mapping instead.
-KNOWN_INVALID_CODES = {
-    "pdc.py": {"MH0700", "OT0000", "SO0203", "TL0000", "TL0200"},
-}
+KNOWN_INVALID_CODES: dict[str, set[str]] = {}
 
 
 def _undrr_code_literals(path: Path) -> set[str]:

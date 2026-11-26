@@ -12,7 +12,7 @@ from pystac_monty.extension import MontyExtension
 from pystac_monty.geocoding import MockGeocoder
 from pystac_monty.hazard_profiles import MontyHazardProfiles
 from pystac_monty.sources.common import DataType, File, Memory, PDCDataSourceType
-from pystac_monty.sources.pdc import PDCDataSource, PDCTransformer
+from pystac_monty.sources.pdc import PDC_TYPES_WITHOUT_UNDRR_2025_CODE, PDCDataSource, PDCTransformer
 from tests.conftest import get_data_file
 from tests.extensions.test_monty import CustomValidator
 from tests.utils.test_utils import assert_processing_extension_fields, request_for_schema, validate_correlation_id
@@ -161,14 +161,15 @@ class PDCTest(unittest.TestCase):
 
     @parameterized.expand(load_scenarios(scenarios))
     def test_pdc_tech_social_hazard_codes_2025(self, transformer: PDCTransformer):
-        # Test technological/social hazards
-        assert transformer._map_pdc_to_hazard_codes("CYBER") == ["TL0601", "OT"]
-        assert transformer._map_pdc_to_hazard_codes("TERRORISM") == ["SO0203", "soc-soc-vio-vio", "OT"]
-        assert transformer._map_pdc_to_hazard_codes("CIVILUNREST") == ["SO0202", "soc-soc-vio-vio", "OT"]
+        # Each triplet is one row of the crosswalk; these rows have no EM-DAT key
+        assert transformer._map_pdc_to_hazard_codes("CIVILUNREST") == ["SO0103", "CE"]
+        assert transformer._map_pdc_to_hazard_codes("POLITICALCONFLICT") == ["SO0103", "CE"]
+        assert transformer._map_pdc_to_hazard_codes("TERRORISM") == ["SO0301", "OT"]
+        assert transformer._map_pdc_to_hazard_codes("ACTIVESHOOTER") == ["SO0301", "OT"]
 
     @parameterized.expand(load_scenarios(scenarios))
     def test_all_pdc_hazard_types_mapped(self, transformer: PDCTransformer):
-        # All PDC types from documentation
+        valid_2025_codes = set(transformer.hazard_profiles.get_profiles()["undrr_2025_key"])
         pdc_types = [
             "AVALANCHE",
             "BIOMEDICAL",
@@ -176,9 +177,8 @@ class PDCTest(unittest.TestCase):
             "EARTHQUAKE",
             "EXTREMETEMPERATURE",
             "FLOOD",
-            "HIGHSURF",
+            "HIGHWIND",
             "LANDSLIDE",
-            "MARINE",
             "SEVEREWEATHER",
             "STORM",
             "TORNADO",
@@ -187,24 +187,33 @@ class PDCTest(unittest.TestCase):
             "VOLCANO",
             "WILDFIRE",
             "WINTERSTORM",
-            "ACCIDENT",
             "ACTIVESHOOTER",
             "CIVILUNREST",
-            "COMBAT",
-            "CYBER",
-            "MANMADE",
-            "OCCURRENCE",
             "POLITICALCONFLICT",
             "TERRORISM",
-            "WEAPONS",
         ]
 
         for hazard_type in pdc_types:
             codes = transformer._map_pdc_to_hazard_codes(hazard_type)
             assert codes is not None, f"No mapping for {hazard_type}"
             assert len(codes) >= 2, f"Insufficient codes for {hazard_type}"
-            # First code should be 2025 format
-            assert codes[0].startswith(("MH", "GH", "BI", "EN", "TL", "SO", "OT"))
+            assert codes[0] in valid_2025_codes, f"{hazard_type}: {codes[0]} is not a UNDRR-ISC 2025 code"
+
+    @parameterized.expand(load_scenarios(scenarios))
+    def test_pdc_types_without_2025_code_give_no_codes(self, transformer: PDCTransformer):
+        """HIPs 2025 has no code at the granularity of these types (issue #296)."""
+        assert set(PDC_TYPES_WITHOUT_UNDRR_2025_CODE) == {
+            "ACCIDENT",
+            "COMBAT",
+            "CYBER",
+            "HIGHSURF",
+            "MANMADE",
+            "MARINE",
+            "OCCURRENCE",
+            "WEAPONS",
+        }
+        for hazard_type in PDC_TYPES_WITHOUT_UNDRR_2025_CODE:
+            assert transformer._map_pdc_to_hazard_codes(hazard_type) is None
 
     @parameterized.expand(load_scenarios(scenarios))
     def test_pdc_event_uses_all_codes(self, transformer: PDCTransformer):
@@ -241,6 +250,32 @@ def test_transformer_without_exposure_detail():
     # NOTE: Exposure timestamp is not part of the id without exposure detail
     assert event_item.id == f"pdc-event-{scenario[1]['uuid']}-{transformer.hazard_data['hazard_ID']}"
     assert MontyExtension.ext(event_item).country_codes == ["PER"]
+
+
+def test_transformer_makes_no_item_for_type_without_2025_code():
+    """A PDC type with no UNDRR-ISC 2025 code gives no item and one failed row (issue #296)"""
+    pdc_data_source = PDCDataSource(
+        data=PDCDataSourceType(
+            source_url=scenario[0],
+            uuid=scenario[1]["uuid"],
+            hazard_data=File(path=scenario[1]["hazards_file_path"], data_type=DataType.FILE),
+            exposure_detail_data=None,
+            geojson_path=scenario[1]["geojson_file_path"],
+        )
+    )
+    geocoder = MockGeocoder()
+    transformer = PDCTransformer(pdc_data_source, geocoder)
+    hazard_data = {**transformer._get_hazard_data(), "type_ID": "HIGHSURF"}
+
+    with (
+        patch.object(transformer, "_get_hazard_data", return_value=hazard_data),
+        patch.object(geocoder, "get_iso3_from_point", return_value="PER"),
+    ):
+        items = transformer.make_items()
+
+    assert items == []
+    assert transformer.transform_summary.total_rows == 1
+    assert transformer.transform_summary.failed_rows == 1
 
 
 def test_transformer_without_exposure_detail_unknown_country():

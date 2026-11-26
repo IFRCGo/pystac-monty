@@ -41,6 +41,20 @@ STAC_EVENT_ID_PREFIX = "pdc-event-"
 STAC_HAZARD_ID_PREFIX = "pdc-hazard-"
 STAC_IMPACT_ID_PREFIX = "pdc-impact-"
 
+# PDC hazard types for which HIPs 2025 has no code at the granularity that PDC states.
+# A hazard item must have one UNDRR-ISC 2025 code, so no item is made for these types.
+# A specific code would add precision that PDC does not give.
+PDC_TYPES_WITHOUT_UNDRR_2025_CODE = {
+    "ACCIDENT": "general accident; the Technological family has no general code",
+    "COMBAT": "the type does not say if the conflict is international (SO0101) or not (SO0102)",
+    "CYBER": "the Cyberhazards cluster has no general code",
+    "HIGHSURF": "HIPs 2025 has no code for wave action",
+    "MANMADE": "general man-made hazard; the Technological family has no general code",
+    "MARINE": "the Marine-related cluster has no general code",
+    "OCCURRENCE": "the type has no hazard meaning",
+    "WEAPONS": "the type does not say which weapon or which use",
+}
+
 
 class PDCHazard(BaseModel):
     type: str
@@ -293,7 +307,11 @@ class PDCTransformer(MontyDataTransformer):
         # Source order, without duplicates: monty:corr_id uses country_codes[0].
         monty.country_codes = unique_in_order(all_iso3)
 
-        monty.hazard_codes = self._map_pdc_to_hazard_codes(hazard=pdc_hazard_data.type_ID)
+        hazard_codes = self._map_pdc_to_hazard_codes(hazard=pdc_hazard_data.type_ID)
+        if not hazard_codes:
+            # NOTE: The caller counts the hazard as a failed row.
+            return None
+        monty.hazard_codes = hazard_codes
         monty.hazard_codes = self.hazard_profiles.get_canonical_hazard_codes(item=item)
 
         # Generate keywords for discoverability
@@ -317,6 +335,8 @@ class PDCTransformer(MontyDataTransformer):
         Map PDC hazard types to standard classification codes.
         Returns codes in order: [UNDRR-ISC 2025, EM-DAT, GLIDE]
 
+        A type in PDC_TYPES_WITHOUT_UNDRR_2025_CODE gives None, and no item is made for it.
+
         The UNDRR-ISC 2025 code is the reference classification for the Monty extension.
         All three codes are included for maximum interoperability.
 
@@ -334,9 +354,7 @@ class PDCTransformer(MontyDataTransformer):
             "EARTHQUAKE": ["GH0101", "nat-geo-ear-gro", "EQ"],
             "EXTREMETEMPERATURE": ["MH0501", "nat-met-ext-hea", "HT"],  # Default to heat, may need logic for cold
             "FLOOD": ["MH0600", "nat-hyd-flo-flo", "FL"],
-            "HIGHSURF": ["MH0702", "nat-hyd-wav-wav", "OT"],
             "LANDSLIDE": ["GH0300", "nat-geo-mmd-lan", "LS"],
-            "MARINE": ["MH0700", "nat-hyd-wav-wav", "OT"],
             "SEVEREWEATHER": ["MH0103", "nat-met-sto-sto", "ST"],
             "STORM": ["MH0103", "nat-met-sto-sto", "ST"],
             "TORNADO": ["MH0305", "nat-met-sto-tor", "TO"],
@@ -349,29 +367,26 @@ class PDCTransformer(MontyDataTransformer):
         }
 
         # Geopolitical & Technological Hazards
+        # The triplet is one row of the crosswalk. These rows have no EM-DAT key.
         tech_social_hazards = {
-            "ACCIDENT": ["TL0200", "tec-mis-col-col", "AC"],
-            "ACTIVESHOOTER": ["SO0201", "soc-soc-vio-vio", "OT"],
-            "CIVILUNREST": ["SO0202", "soc-soc-vio-vio", "OT"],
-            "COMBAT": ["SO0201", "soc-soc-vio-vio", "OT"],
-            "CYBER": ["TL0601", "", "OT"],  # No EM-DAT equivalent
-            "MANMADE": ["TL0000", "tec-tec-tec-tec", "OT"],
-            "OCCURRENCE": ["OT0000", "", "OT"],  # No EM-DAT equivalent
-            "POLITICALCONFLICT": ["SO0201", "soc-soc-vio-vio", "OT"],
-            "TERRORISM": ["SO0203", "soc-soc-vio-vio", "OT"],
-            "WEAPONS": ["SO0201", "soc-soc-vio-vio", "OT"],
+            "ACTIVESHOOTER": ["SO0301", "OT"],  # Violence
+            "CIVILUNREST": ["SO0103", "CE"],  # Civil Unrest
+            "POLITICALCONFLICT": ["SO0103", "CE"],  # Civil Unrest (nearest code)
+            "TERRORISM": ["SO0301", "OT"],  # Violence
         }
 
         # Combine all mappings
         hazard_mapping = {**natural_hazards, **tech_social_hazards}
 
+        if hazard in PDC_TYPES_WITHOUT_UNDRR_2025_CODE:
+            logger.warning(f"PDC hazard type '{hazard}' has no UNDRR-ISC 2025 code. No item is made.")
+            return None
+
         if hazard not in hazard_mapping:
             logger.warning(f"PDC hazard type '{hazard}' not found in UNDRR-ISC 2025 mapping.")
             return None
 
-        codes = hazard_mapping.get(hazard)
-        # Filter out empty strings (for codes without EM-DAT equivalents)
-        return [code for code in codes if code] if codes else None
+        return hazard_mapping[hazard]
 
     def make_hazard_item(self, event_item: Item, hazard_data: HazardEventValidator) -> Item:
         """Create Hazard Item"""
