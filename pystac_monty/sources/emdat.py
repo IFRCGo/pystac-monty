@@ -415,46 +415,19 @@ class EMDATTransformer(MontyDataTransformer[EMDATDataSource]):
         )
 
     def _create_title_from_row(self, row: EmdatDataValidator) -> Optional[str]:
-        """Create a descriptive title from row data when Event Name is missing"""
-        if not row.name:
-            return f"{row.subtype} in {row.country}" if row.subtype else "N/A"
+        """Give the EM-DAT Event Name, or a generated title when EM-DAT gives no name.
 
-        components = []
+        Most EM-DAT records have no Event Name. The generated title is the disaster
+        subtype (or the type when there is no subtype) and the country.
+        """
+        name = row.name.strip() if isinstance(row.name, str) else ""
+        if name:
+            return name
 
-        # Add disaster type
-        if row.type:
-            components.append(row.type)
-            if row.subtype and row.type != row.subtype:
-                components.append(f"({row.subtype})")
-
-        # Add location info
-        locations = []
-        if row.country:
-            locations.append(row.country)
-        if locations:
-            components.append("in")
-            components.append(", ".join(locations))
-
-        # Add date
-        date_str = None
-        if row.start_year:
-            date_components = []
-            # Add month if available
-            if row.start_year:
-                try:
-                    month_name = datetime(2000, row.start_month or 1, 1).strftime("%B")
-                    date_components.append(month_name)
-                except ValueError:
-                    pass
-            # Add year
-            date_components.append(str(row.start_year))
-            if date_components:
-                date_str = " ".join(date_components)
-
-        if date_str:
-            components.extend(["of", date_str])
-
-        return " ".join(components) if components else None
+        hazard = row.subtype or row.type
+        if not hazard:
+            return "N/A"
+        return f"{hazard} in {row.country}" if row.country else hazard
 
     def _create_description_from_row(self, row: EmdatDataValidator) -> str:
         """Create a description from row data"""
@@ -463,7 +436,7 @@ class EMDATTransformer(MontyDataTransformer[EMDATDataSource]):
         # Add disaster type
         if row.type:
             components.append(row.type)
-            if not row.subtype and row.type != row.subtype:
+            if row.subtype and row.type != row.subtype:
                 components.append(f"({row.subtype})")
 
         # Add location info

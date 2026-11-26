@@ -554,3 +554,57 @@ class TestEmdatHazardCodeMappingDrift(unittest.TestCase):
         ]
         hazard_codes = {key: self.transformer.map_emdat_to_hazard_codes(key) for key in classification_keys}
         assert_hazard_code_dict_valid(hazard_codes, label="EMDAT_HAZARD_CODES")
+
+
+def _event_item_for(**overrides):
+    """Transform the first mock record with *overrides* and give its event item."""
+    row = {**json_mock_data["data"]["public_emdat"]["data"][0], **overrides}
+    data = {"data": {"public_emdat": {"data": [row]}}}
+    data_source = EMDATDataSource(
+        data=GenericDataSource(
+            source_url="https://public.emdat.be/",
+            input_data=Memory(content=data, data_type=DataType.MEMORY),
+        )
+    )
+    items = EMDATTransformer(data_source, MockGeocoder()).make_items()
+    return next(item for item in items if MontyExtension.ext(item).is_source_event())
+
+
+def test_title_is_the_event_name_when_emdat_gives_one() -> None:
+    item = _event_item_for(name="Hurricane 'Milton'")
+    assert item.properties["title"] == "Hurricane 'Milton'"
+
+
+def test_impact_title_starts_with_the_event_name() -> None:
+    row = {**json_mock_data["data"]["public_emdat"]["data"][0], "name": "Hurricane 'Milton'"}
+    data_source = EMDATDataSource(
+        data=GenericDataSource(
+            source_url="https://public.emdat.be/",
+            input_data=Memory(content={"data": {"public_emdat": {"data": [row]}}}, data_type=DataType.MEMORY),
+        )
+    )
+    items = EMDATTransformer(data_source, MockGeocoder()).make_items()
+    impact_titles = [item.properties["title"] for item in items if MontyExtension.ext(item).is_source_impact()]
+    assert impact_titles
+    assert all(title.startswith("Hurricane 'Milton' - ") for title in impact_titles)
+
+
+def test_title_is_generated_when_emdat_gives_no_name() -> None:
+    assert _event_item_for(name=None).properties["title"] == "Air in United States of America"
+    assert _event_item_for(name="  ").properties["title"] == "Air in United States of America"
+
+
+def test_generated_title_uses_the_type_when_there_is_no_subtype() -> None:
+    item = _event_item_for(name=None, type="Flood", subtype=None)
+    assert item.properties["title"] == "Flood in United States of America"
+
+
+def test_description_shows_the_subtype_only_when_it_differs_from_the_type() -> None:
+    same = _event_item_for(type="Air", subtype="Air").properties["description"]
+    assert same == "Air in Alaska, United States of America of February 2025"
+
+    different = _event_item_for(type="Flood", subtype="Flash flood").properties["description"]
+    assert different == "Flood (Flash flood) in Alaska, United States of America of February 2025"
+
+    missing = _event_item_for(type="Flood", subtype=None).properties["description"]
+    assert missing == "Flood in Alaska, United States of America of February 2025"
