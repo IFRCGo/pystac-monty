@@ -27,6 +27,7 @@ from pystac_monty.sources.common import (
     GdacsEpisodes,
     GenericDataSource,
     MontyDataTransformer,
+    PDCDataSourceType,
 )
 
 
@@ -231,6 +232,65 @@ def convert_gdacs(input_path: Path, output_dir: Path) -> None:
     )
 
 
+def load_pdc_data_source_from_bundle(bundle_path: Path) -> Any:
+    """Load a :class:`~pystac_monty.sources.pdc.PDCDataSource` from a bundle JSON file.
+
+    One PDC hazard needs several files: the hazard list, zero or more exposure detail
+    snapshots, and the hazard geometry. *bundle_path* is a serialized
+    :class:`~pystac_monty.sources.common.PDCDataSourceType`::
+
+        {
+          "source_url": "https://...",
+          "uuid": "<hazard uuid>",
+          "hazard_data": {"path": "hazard_data.json"},
+          "exposure_detail_data": [{"path": "exposure_detail.json"}],
+          "geojson_path": "https://.../get_mags?hazard_id=<hazard id>"
+        }
+
+    Relative paths are resolved against the bundle directory. ``exposure_detail_data``
+    is optional. ``geojson_path`` is the href of the ``Maps`` asset: a URL is kept as
+    it is, so that the output does not depend on the place of the bundle. Bundle assembly
+    belongs in ``montandon-etl``; this loader only wires files into the transformer.
+    """
+    from pystac_monty.sources.pdc import PDCDataSource
+
+    base_dir = bundle_path.parent
+    raw = json.loads(bundle_path.read_text(encoding="utf-8"))
+
+    # The transformer does not read this file: it writes the value as the href of the `Maps` asset.
+    geojson_path: str = raw["geojson_path"]
+
+    def file_input(entry: dict[str, Any]) -> File:
+        return File(path=_resolve_file_path(entry["path"], base_dir), data_type=DataType.FILE)
+
+    return PDCDataSource(
+        data=PDCDataSourceType(
+            source_url=raw["source_url"],
+            uuid=raw["uuid"],
+            hazard_data=file_input(raw["hazard_data"]),
+            exposure_detail_data=[file_input(entry) for entry in raw.get("exposure_detail_data", [])],
+            geojson_path=geojson_path if "://" in geojson_path else _resolve_file_path(geojson_path, base_dir),
+        )
+    )
+
+
+def iter_pdc_stac_items(input_path: Path) -> list[Item]:
+    from pystac_monty.sources.pdc import PDCTransformer
+
+    data_source = load_pdc_data_source_from_bundle(input_path)
+    return collect_transformer_items(PDCTransformer(data_source, default_batch_geocoder()))
+
+
+def convert_pdc(input_path: Path, output_dir: Path) -> None:
+    """Export PDC data. *input_path*: ``PDCDataSourceType`` bundle JSON with relative file paths."""
+    export_transformer_items(
+        items=iter_pdc_stac_items(input_path),
+        source_slug="pdc",
+        provider=Provider(name="Pacific Disaster Center (PDC)", roles=[ProviderRole.PRODUCER], url="https://www.pdc.org/"),
+        output_dir=output_dir,
+    )
+
+
 def convert_charter(input_path: Path, output_dir: Path) -> None:
     """Export Charter data. *input_path*: directory of activation, area, and response sidecar JSON files."""
     from pystac_monty.sources.charter import convert_charter_activations
@@ -255,6 +315,7 @@ BATCH_EXPORTS: dict[str, BatchExportFn] = {
     "cems": convert_cems,
     "idmc-gidd": convert_gidd,
     "idmc-idu": convert_idu,
+    "pdc": convert_pdc,
 }
 
 

@@ -21,7 +21,7 @@ def test_convert_glide_writes_role_collections(tmp_path: Path) -> None:
 def test_cli_lists_registered_sources() -> None:
     from pystac_monty.sources.batch_export import BATCH_EXPORTS
 
-    assert {"glide", "gfd", "gdacs", "charter", "cems", "idmc-gidd", "idmc-idu"}.issubset(BATCH_EXPORTS)
+    assert {"glide", "gfd", "gdacs", "charter", "cems", "idmc-gidd", "idmc-idu", "pdc"}.issubset(BATCH_EXPORTS)
 
 
 def test_convert_gdacs_writes_role_collections(tmp_path: Path) -> None:
@@ -81,6 +81,55 @@ def test_convert_gidd_writes_events_and_impacts(tmp_path: Path) -> None:
     assert events["idmc-gidd-event-22194"]["assets"]["source"]["href"] == GIDD_SOURCE_URL
     assert _assert_related_links_resolve(output_dir / "idmc-gidd-events") == 2
     assert _assert_related_links_resolve(output_dir / "idmc-gidd-impacts") == 2
+
+
+def _write_pdc_bundle(tmp_path: Path, geojson_path: str, with_exposure: bool = True) -> Path:
+    data_dir = Path(__file__).resolve().parent / "data" / "pdc"
+    bundle = {
+        "source_url": "https://sentry.pdc.org/hp_srv/services/hazards/t/json/get_active_hazards",
+        "uuid": "f2762e72-5169-487e-a3fa-30e21fc55893",
+        "hazard_data": {"path": str(data_dir / "hazard_data.json")},
+        "exposure_detail_data": [{"path": str(data_dir / "exposure_detail.json")}] if with_exposure else [],
+        "geojson_path": geojson_path,
+    }
+    bundle_path = tmp_path / "pdc-bundle.json"
+    bundle_path.write_text(json.dumps(bundle), encoding="utf-8")
+    return bundle_path
+
+
+def test_convert_pdc_writes_events_hazards_and_impacts(tmp_path: Path) -> None:
+    from pystac_monty.sources.batch_export import run_batch
+
+    maps_url = "https://sentry.pdc.org/hp_srv/services/mags/1/json/get_mags?hazard_id=313159"
+    output_dir = tmp_path / "out"
+
+    run_batch("pdc", _write_pdc_bundle(tmp_path, maps_url), output_dir)
+
+    event_id = "pdc-event-f2762e72-5169-487e-a3fa-30e21fc55893-313159"
+    events = _items(output_dir / "pdc-events")
+    hazards = _items(output_dir / "pdc-hazards")
+    impacts = _items(output_dir / "pdc-impacts")
+    assert set(events) == {event_id}
+    assert set(hazards) == {"pdc-hazard-f2762e72-5169-487e-a3fa-30e21fc55893-313159"}
+    assert len(impacts) == 19
+    # A URL in the bundle is the href of the Maps asset: the output does not depend on the place of the bundle.
+    assert events[event_id]["assets"]["Maps"]["href"] == maps_url
+    assert _assert_related_links_resolve(output_dir / "pdc-events") == 20
+    assert _assert_related_links_resolve(output_dir / "pdc-impacts") > 0
+
+
+def test_convert_pdc_without_exposure_detail(tmp_path: Path) -> None:
+    from pystac_monty.sources.batch_export import run_batch
+
+    output_dir = tmp_path / "out"
+    run_batch("pdc", _write_pdc_bundle(tmp_path, "hazard_geo.geojson", with_exposure=False), output_dir)
+
+    events = _items(output_dir / "pdc-events")
+    assert len(events) == 1
+    assert len(_items(output_dir / "pdc-hazards")) == 1
+    # A relative path is resolved against the bundle directory.
+    event = next(iter(events.values()))
+    assert event["assets"]["Maps"]["href"] == str((tmp_path / "hazard_geo.geojson").resolve())
 
 
 def test_convert_idu_writes_events_and_impacts(tmp_path: Path) -> None:
