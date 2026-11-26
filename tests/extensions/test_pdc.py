@@ -654,7 +654,7 @@ def test_impact_items_have_a_readable_title_and_the_impact_keywords():
 
     population = impacts["population-total-PER-0"]
     assert population.properties["title"] == f"{event_title} - Total population (PER)"
-    assert population.properties["keywords"] == event_keywords + ["Total Affected", "People (All Demographics)"]
+    assert population.properties["keywords"] == event_keywords + ["Potentially Affected", "People (All Demographics)"]
 
     children = impacts["population-total0_4-PER-0"]
     assert children.properties["title"] == f"{event_title} - Population aged 0 to 4 (PER)"
@@ -666,3 +666,29 @@ def test_impact_items_have_a_readable_title_and_the_impact_keywords():
     hazard_item = next(item for item in items if MontyExtension.ext(item).is_source_hazard())
     assert hazard_item.properties["title"] == event_title
     assert hazard_item.properties["keywords"] == event_keywords
+
+
+def test_impact_items_are_modelled_exposure_not_observed_impact():
+    """PDC gives the exposure of a hazard area from a model, not an observed impact"""
+    pdc_data_source = PDCDataSource(
+        data=PDCDataSourceType(
+            source_url=scenario[0],
+            uuid=scenario[1]["uuid"],
+            hazard_data=File(path=scenario[1]["hazards_file_path"], data_type=DataType.FILE),
+            exposure_detail_data=File(path=scenario[1]["exposure_detail_file_path"], data_type=DataType.FILE),
+            geojson_path=scenario[1]["geojson_file_path"],
+        )
+    )
+    items = PDCTransformer(pdc_data_source, MockGeocoder()).make_items()
+    details = {
+        item.id.split("-1-", 1)[-1]: item.properties["monty:impact_detail"]
+        for item in items
+        if MontyExtension.ext(item).is_source_impact()
+    }
+
+    assert len(details) == 19
+    assert all(detail["estimate_type"] == "modelled" for detail in details.values())
+    assert details["population-total-PER-0"]["type"] == "potentially_affected"
+    assert details["capital-school-PER-0"]["type"] == "potentially_affected"
+    # The capital in the area stays a cost, with the modelled estimate type
+    assert details["capital-total-PER-0"]["type"] == "cost"
