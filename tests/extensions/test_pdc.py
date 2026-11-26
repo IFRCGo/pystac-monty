@@ -692,3 +692,19 @@ def test_impact_items_are_modelled_exposure_not_observed_impact():
     assert details["capital-school-PER-0"]["type"] == "potentially_affected"
     # The capital in the area stays a cost, with the modelled estimate type
     assert details["capital-total-PER-0"]["type"] == "cost"
+
+
+def test_items_do_not_copy_the_pdc_category_id():
+    """`category_id` was an undeclared copy of the PDC field `category_ID` in all the items"""
+    pdc_data_source = PDCDataSource(
+        data=PDCDataSourceType(
+            source_url=scenario[0],
+            uuid=scenario[1]["uuid"],
+            hazard_data=File(path=scenario[1]["hazards_file_path"], data_type=DataType.FILE),
+            exposure_detail_data=File(path=scenario[1]["exposure_detail_file_path"], data_type=DataType.FILE),
+            geojson_path=scenario[1]["geojson_file_path"],
+        )
+    )
+    items = PDCTransformer(pdc_data_source, MockGeocoder()).make_items()
+    assert len(items) == 21
+    assert all("category_id" not in item.properties for item in items)

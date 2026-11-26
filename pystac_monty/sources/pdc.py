@@ -314,7 +314,6 @@ class PDCTransformer(MontyDataTransformer):
                 "description": description,
                 "start_datetime": startdate.isoformat(),
                 "end_datetime": enddate.isoformat(),
-                "category_id": pdc_hazard_data.category_ID,
             },
         )
 
