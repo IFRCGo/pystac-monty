@@ -17,25 +17,6 @@ To install the library, use pip:
 pip install pystac_monty
 ```
 
-To install the tool `jq`, use the following:
-
-Debian/Ubuntu/Mint environment
-```sh
-sudo apt-get update
-sudo apt-get install jq
-```
-
-MacOS environment
-```sh
-brew install jq
-```
-
-To check if it is install correctly
-
-```sh
-jq --version
-```
-
 ## Usage
 
 ### Batch export (CLI)
