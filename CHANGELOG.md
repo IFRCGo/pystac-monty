@@ -1,5 +1,27 @@
 # Changelog
 
+## [0.4.0](https://github.com/IFRCGo/pystac-monty/compare/v0.3.0...v0.4.0) (2026-11-27)
+
+
+### Features
+
+* **emdat:** add a batch exporter and correct titles, keywords and impact units ([#305](https://github.com/IFRCGo/pystac-monty/issues/305)) ([85084eb](https://github.com/IFRCGo/pystac-monty/commit/85084eb533a951497f0e4919756528e40ab244e7))
+* **pdc:** add a batch exporter; mark impacts as modelled exposure with their own title and keywords ([#306](https://github.com/IFRCGo/pystac-monty/issues/306)) ([1bb2c70](https://github.com/IFRCGo/pystac-monty/commit/1bb2c70b5861fdb2ee558ba5bef2712c969069b4))
+* **pdc:** make items only for observed hazards (temporary rule) ([#307](https://github.com/IFRCGo/pystac-monty/issues/307)) ([513e044](https://github.com/IFRCGo/pystac-monty/commit/513e044e89dfb81a3eda358abdd45ad4e654d56e))
+* **usgs:** expose the documented ShakeMap files as STAC assets ([#246](https://github.com/IFRCGo/pystac-monty/issues/246)) ([165afb7](https://github.com/IFRCGo/pystac-monty/commit/165afb74521f7c212175aca07c5374c5a50c5631)), closes [#241](https://github.com/IFRCGo/pystac-monty/issues/241)
+
+
+### Bug Fixes
+
+* **charter:** use the full dataset id in eo-dat response ids ([#290](https://github.com/IFRCGo/pystac-monty/issues/290)) ([5e89fbd](https://github.com/IFRCGo/pystac-monty/commit/5e89fbd8366b3a6a6fd8f42e6809df3de0842b1c))
+* **doc:** remove obsolete information ([824a1e7](https://github.com/IFRCGo/pystac-monty/commit/824a1e749fc8c3cfcb9884dba00254d38e101f14))
+* **exporter:** drop items with a duplicate id before writing a batch ([#257](https://github.com/IFRCGo/pystac-monty/issues/257)) ([fb34147](https://github.com/IFRCGo/pystac-monty/commit/fb341476e4e034f2e03f34189bd3f8e4c64819d9))
+* **gfd:** read the source epoch times as UTC ([d4241d5](https://github.com/IFRCGo/pystac-monty/commit/d4241d5808cbbd2380ca430961fff06610482c95))
+* **glide:** use the country geometry when a record has no coordinates ([#292](https://github.com/IFRCGo/pystac-monty/issues/292)) ([b3477b6](https://github.com/IFRCGo/pystac-monty/commit/b3477b68ab177d12ac5d3f1b87ad9597ec888c2c))
+* **hazard-codes:** replace the 2020 codes in the DesInventar and GDACS mappings ([#299](https://github.com/IFRCGo/pystac-monty/issues/299)) ([cfc8c0b](https://github.com/IFRCGo/pystac-monty/commit/cfc8c0b7aadb2cc85edff3cda5a673f84119a4a1))
+* **keywords:** skip ambiguous keywords for generic hazard codes ([#295](https://github.com/IFRCGo/pystac-monty/issues/295)) ([1567d08](https://github.com/IFRCGo/pystac-monty/commit/1567d08cbd42821f34344cd21dbe9404a44af989))
+* **pdc:** correct the hazard codes and make no item for types with no 2025 code ([#301](https://github.com/IFRCGo/pystac-monty/issues/301)) ([d11226e](https://github.com/IFRCGo/pystac-monty/commit/d11226e5e469ffada4dd29a35f2a5c76215536fc))
+
 ## [0.3.0](https://github.com/IFRCGo/pystac-monty/compare/v0.2.8...v0.3.0) (2026-11-24)
 
 
