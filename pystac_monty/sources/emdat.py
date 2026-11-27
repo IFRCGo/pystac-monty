@@ -469,13 +469,12 @@ class EMDATTransformer(MontyDataTransformer[EMDATDataSource]):
         """Give the start of the disaster as text: 'October 2024', or '2024' when EM-DAT gives no month."""
         if not row.start_year:
             return None
-        year = str(int(row.start_year))
         if row.start_month:
             try:
-                return f"{datetime(2000, int(row.start_month), 1).strftime('%B')} {year}"
+                return datetime(int(row.start_year), int(row.start_month), 1).strftime("%B %Y")
             except ValueError:
                 pass
-        return year
+        return str(int(row.start_year))
 
     def _create_description_from_row(self, row: EmdatDataValidator) -> str:
         """Create a description from row data"""
@@ -498,21 +497,7 @@ class EMDATTransformer(MontyDataTransformer[EMDATDataSource]):
             components.append(", ".join(locations))
 
         # Add date
-        date_str = None
-        if row.start_year:
-            date_components = []
-            # Add month if available
-            if row.start_month:
-                try:
-                    month_name = datetime(2000, row.start_month, 1).strftime("%B")
-                    date_components.append(month_name)
-                except ValueError:
-                    pass
-            # Add year
-            date_components.append(str(int(row.start_year)))
-            if date_components:
-                date_str = " ".join(date_components)
-
+        date_str = self._create_month_year_text(row)
         if date_str:
             components.extend(["of", date_str])
 
