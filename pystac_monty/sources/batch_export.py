@@ -26,6 +26,7 @@ from pystac_monty.sources.common import (
     GdacsDataSourceType,
     GdacsEpisodes,
     GenericDataSource,
+    Memory,
     MontyDataTransformer,
     PDCDataSourceType,
 )
@@ -215,6 +216,48 @@ def convert_idu(input_path: Path, output_dir: Path) -> None:
     )
 
 
+# The public EM-DAT site. EM-DAT data needs a registered account, so the input is
+# always a local export; a file URI would make the output depend on its place.
+EMDAT_SOURCE_URL = "https://public.emdat.be/"
+_EMDAT_EXCEL_SUFFIXES = {".xlsx", ".xls"}
+
+
+def emdat_data_source_input(input_path: Path) -> File | Memory:
+    """Give the transformer input for an EM-DAT export file.
+
+    A spreadsheet (the custom request export of the EM-DAT site) is read in memory,
+    as the transformer does for Excel content. All other files are read as the JSON
+    response of the EM-DAT GraphQL API (``data.public_emdat.data``).
+    """
+    path = input_path.resolve()
+    if path.suffix.lower() in _EMDAT_EXCEL_SUFFIXES:
+        return Memory(content=str(path), data_type=DataType.MEMORY)
+    return File(path=str(path), data_type=DataType.FILE)
+
+
+def iter_emdat_stac_items(input_path: Path) -> list[Item]:
+    from pystac_monty.sources.emdat import EMDATDataSource, EMDATTransformer
+
+    data_source = EMDATDataSource(
+        data=GenericDataSource(source_url=EMDAT_SOURCE_URL, input_data=emdat_data_source_input(input_path))
+    )
+    return collect_transformer_items(EMDATTransformer(data_source, default_batch_geocoder()))
+
+
+def convert_emdat(input_path: Path, output_dir: Path) -> None:
+    """Export EM-DAT data.
+
+    *input_path*: an EM-DAT custom request spreadsheet (``.xlsx``), or the JSON
+    response of the EM-DAT GraphQL API.
+    """
+    export_transformer_items(
+        items=iter_emdat_stac_items(input_path),
+        source_slug="emdat",
+        provider=Provider(name="EM-DAT", roles=[ProviderRole.PRODUCER], url="https://www.emdat.be/"),
+        output_dir=output_dir,
+    )
+
+
 def iter_gdacs_stac_items(input_path: Path) -> list[Item]:
     from pystac_monty.sources.gdacs import GDACSTransformer
 
@@ -313,6 +356,7 @@ BATCH_EXPORTS: dict[str, BatchExportFn] = {
     "gdacs": convert_gdacs,
     "charter": convert_charter,
     "cems": convert_cems,
+    "emdat": convert_emdat,
     "idmc-gidd": convert_gidd,
     "idmc-idu": convert_idu,
     "pdc": convert_pdc,

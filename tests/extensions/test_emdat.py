@@ -554,3 +554,123 @@ class TestEmdatHazardCodeMappingDrift(unittest.TestCase):
         ]
         hazard_codes = {key: self.transformer.map_emdat_to_hazard_codes(key) for key in classification_keys}
         assert_hazard_code_dict_valid(hazard_codes, label="EMDAT_HAZARD_CODES")
+
+
+def _event_item_for(**overrides):
+    """Transform the first mock record with *overrides* and give its event item."""
+    row = {**json_mock_data["data"]["public_emdat"]["data"][0], **overrides}
+    data = {"data": {"public_emdat": {"data": [row]}}}
+    data_source = EMDATDataSource(
+        data=GenericDataSource(
+            source_url="https://public.emdat.be/",
+            input_data=Memory(content=data, data_type=DataType.MEMORY),
+        )
+    )
+    items = EMDATTransformer(data_source, MockGeocoder()).make_items()
+    return next(item for item in items if MontyExtension.ext(item).is_source_event())
+
+
+def test_title_is_the_event_name_when_emdat_gives_one() -> None:
+    item = _event_item_for(name="Hurricane 'Milton'")
+    assert item.properties["title"] == "Hurricane 'Milton' of February 2025"
+
+
+def test_impact_title_starts_with_the_event_name() -> None:
+    row = {**json_mock_data["data"]["public_emdat"]["data"][0], "name": "Hurricane 'Milton'"}
+    data_source = EMDATDataSource(
+        data=GenericDataSource(
+            source_url="https://public.emdat.be/",
+            input_data=Memory(content={"data": {"public_emdat": {"data": [row]}}}, data_type=DataType.MEMORY),
+        )
+    )
+    items = EMDATTransformer(data_source, MockGeocoder()).make_items()
+    impact_titles = [item.properties["title"] for item in items if MontyExtension.ext(item).is_source_impact()]
+    assert impact_titles
+    assert impact_titles == ["Hurricane 'Milton' of February 2025 - Total deaths"]
+
+
+def test_title_is_generated_when_emdat_gives_no_name() -> None:
+    assert _event_item_for(name=None).properties["title"] == "Air in United States of America of February 2025"
+    assert _event_item_for(name="  ").properties["title"] == "Air in United States of America of February 2025"
+    assert _event_item_for(name=None, start_month=None).properties["title"] == "Air in United States of America of 2025"
+
+
+def test_generated_title_uses_the_type_when_there_is_no_subtype() -> None:
+    item = _event_item_for(name=None, type="Flood", subtype=None)
+    assert item.properties["title"] == "Flood in United States of America of February 2025"
+
+
+def test_description_shows_the_subtype_only_when_it_differs_from_the_type() -> None:
+    same = _event_item_for(type="Air", subtype="Air").properties["description"]
+    assert same == "Air in Alaska, United States of America of February 2025"
+
+    different = _event_item_for(type="Flood", subtype="Flash flood").properties["description"]
+    assert different == "Flood (Flash flood) in Alaska, United States of America of February 2025"
+
+    missing = _event_item_for(type="Flood", subtype=None).properties["description"]
+    assert missing == "Flood in Alaska, United States of America of February 2025"
+
+
+def _impact_details_for(**overrides) -> dict[str, dict]:
+    """Transform the first mock record with *overrides* and give the impact detail of each impact field."""
+    row = {**json_mock_data["data"]["public_emdat"]["data"][0], **overrides}
+    data_source = EMDATDataSource(
+        data=GenericDataSource(
+            source_url="https://public.emdat.be/",
+            input_data=Memory(content={"data": {"public_emdat": {"data": [row]}}}, data_type=DataType.MEMORY),
+        )
+    )
+    items = EMDATTransformer(data_source, MockGeocoder()).make_items()
+    return {
+        item.id.rsplit("-", 1)[-1]: item.properties["monty:impact_detail"]
+        for item in items
+        if MontyExtension.ext(item).is_source_impact()
+    }
+
+
+def test_total_damage_is_in_us_dollars() -> None:
+    """EM-DAT gives Total Damage in thousands of US dollars."""
+    detail = _impact_details_for(total_dam=11000000)["total_dam"]
+    assert detail["value"] == 11_000_000_000
+    assert detail["unit"] == "USD"
+    assert detail["category"] == "global_currency"
+    assert detail["type"] == "cost"
+
+
+def test_people_impacts_keep_the_count_unit() -> None:
+    details = _impact_details_for(total_deaths=10, no_affected=300, total_affected=450)
+    assert details["total_deaths"]["value"] == 10
+    assert all(details[field]["unit"] == "count" for field in ("total_deaths", "no_affected", "total_affected"))
+
+
+def test_no_affected_and_total_affected_have_different_types() -> None:
+    details = _impact_details_for(no_affected=300, total_affected=450)
+    assert details["no_affected"]["type"] == "affected_direct"
+    assert details["total_affected"]["type"] == "affected_total"
+
+
+def test_impact_items_have_a_readable_title_and_the_impact_keywords() -> None:
+    row = {**json_mock_data["data"]["public_emdat"]["data"][0], "total_deaths": 10, "total_dam": 5000}
+    data_source = EMDATDataSource(
+        data=GenericDataSource(
+            source_url="https://public.emdat.be/",
+            input_data=Memory(content={"data": {"public_emdat": {"data": [row]}}}, data_type=DataType.MEMORY),
+        )
+    )
+    items = EMDATTransformer(data_source, MockGeocoder()).make_items()
+    event = next(item for item in items if MontyExtension.ext(item).is_source_event())
+    impacts = {item.id: item for item in items if MontyExtension.ext(item).is_source_impact()}
+
+    deaths = impacts["emdat-impact-2025-0101-USA-total_deaths"]
+    assert deaths.properties["title"] == "Air in United States of America of February 2025 - Total deaths"
+    assert deaths.properties["keywords"] == event.properties["keywords"] + ["Death", "People (All Demographics)"]
+
+    damage = impacts["emdat-impact-2025-0101-USA-total_dam"]
+    assert damage.properties["title"] == "Air in United States of America of February 2025 - Total damage"
+    assert damage.properties["keywords"] == event.properties["keywords"] + [
+        "Loss (Cost)",
+        "Global/Regional Currency (e.g. USD)",
+    ]
+
+    hazard = next(item for item in items if MontyExtension.ext(item).is_source_hazard())
+    assert hazard.properties["keywords"] == event.properties["keywords"]

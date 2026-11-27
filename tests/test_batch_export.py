@@ -21,7 +21,7 @@ def test_convert_glide_writes_role_collections(tmp_path: Path) -> None:
 def test_cli_lists_registered_sources() -> None:
     from pystac_monty.sources.batch_export import BATCH_EXPORTS
 
-    assert {"glide", "gfd", "gdacs", "charter", "cems", "idmc-gidd", "idmc-idu", "pdc"}.issubset(BATCH_EXPORTS)
+    assert {"glide", "gfd", "gdacs", "charter", "cems", "emdat", "idmc-gidd", "idmc-idu", "pdc"}.issubset(BATCH_EXPORTS)
 
 
 def test_convert_gdacs_writes_role_collections(tmp_path: Path) -> None:
@@ -81,6 +81,69 @@ def test_convert_gidd_writes_events_and_impacts(tmp_path: Path) -> None:
     assert events["idmc-gidd-event-22194"]["assets"]["source"]["href"] == GIDD_SOURCE_URL
     assert _assert_related_links_resolve(output_dir / "idmc-gidd-events") == 2
     assert _assert_related_links_resolve(output_dir / "idmc-gidd-impacts") == 2
+
+
+def test_convert_emdat_from_api_json(tmp_path: Path) -> None:
+    from pystac_monty.sources.batch_export import run_batch
+    from tests.extensions.test_emdat import json_mock_data
+
+    input_path = tmp_path / "emdat.json"
+    input_path.write_text(json.dumps(json_mock_data), encoding="utf-8")
+    output_dir = tmp_path / "out"
+
+    run_batch("emdat", input_path, output_dir)
+
+    events = _items(output_dir / "emdat-events")
+    hazards = _items(output_dir / "emdat-hazards")
+    impacts = _items(output_dir / "emdat-impacts")
+    assert "emdat-event-2025-0101-USA" in events
+    assert "emdat-hazard-2025-0101-USA" in hazards
+    assert "emdat-impact-2025-0101-USA-total_deaths" in impacts
+    via = [link["href"] for link in events["emdat-event-2025-0101-USA"]["links"] if link["rel"] == "via"]
+    assert via == ["https://public.emdat.be/data/2025-0101-USA"]
+    assert _assert_related_links_resolve(output_dir / "emdat-events") > 0
+    assert _assert_related_links_resolve(output_dir / "emdat-impacts") > 0
+
+
+def test_convert_emdat_spreadsheet_gives_the_same_items_as_api_json(tmp_path: Path) -> None:
+    """The custom request spreadsheet and the API JSON are two forms of the same records."""
+    import pandas as pd
+
+    from pystac_monty.sources.batch_export import emdat_data_source_input, run_batch
+    from pystac_monty.sources.common import GenericDataSource
+    from pystac_monty.sources.emdat import EMDATDataSource
+
+    spreadsheets = sorted(
+        (Path(__file__).resolve().parents[1] / "monty-stac-extension" / "docs" / "model" / "sources" / "EM-DAT").glob("*.xlsx")
+    )
+    assert spreadsheets, "the EM-DAT spreadsheet of monty-stac-extension is missing (init the submodule)"
+    spreadsheet = spreadsheets[0]
+
+    # Write the spreadsheet records in the form of the API response.
+    data_source = EMDATDataSource(
+        data=GenericDataSource(source_url="https://public.emdat.be/", input_data=emdat_data_source_input(spreadsheet))
+    )
+    df = data_source.get_data()
+    assert isinstance(df, pd.DataFrame)
+    records = json.loads(df.astype(object).where(pd.notna(df), None).to_json(orient="records", date_format="iso"))
+    api_json = tmp_path / "emdat.json"
+    api_json.write_text(json.dumps({"data": {"public_emdat": {"data": records}}}), encoding="utf-8")
+
+    run_batch("emdat", spreadsheet, tmp_path / "xlsx")
+    run_batch("emdat", api_json, tmp_path / "json")
+
+    def comparable(directory: Path) -> dict[str, dict]:
+        items = {}
+        for collection in ("emdat-events", "emdat-hazards", "emdat-impacts"):
+            for item_id, item in _items(directory / collection).items():
+                for volatile in ("created", "updated"):
+                    item["properties"].pop(volatile, None)
+                items[item_id] = item
+        return items
+
+    from_spreadsheet = comparable(tmp_path / "xlsx")
+    assert from_spreadsheet
+    assert from_spreadsheet == comparable(tmp_path / "json")
 
 
 def _write_pdc_bundle(tmp_path: Path, geojson_path: str, with_exposure: bool = True) -> Path:
