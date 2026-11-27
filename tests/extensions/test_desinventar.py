@@ -31,7 +31,6 @@ CURRENT_SCHEMA_MAPURL = "https://raw.githubusercontent.com/IFRCGo/monty-stac-ext
 # future 2-element entry not accounted for here fails this test instead of
 # silently passing.
 UNDRR_2025_CODES_WITHOUT_EMDAT_CODE = {
-    "BI0027",  # EPIZOOTIC
     "BI0204",  # Cholera
     "BI0219",  # MALARIA
     "BI0221",  # MEASLE
@@ -39,7 +38,7 @@ UNDRR_2025_CODES_WITHOUT_EMDAT_CODE = {
     "BI0224",  # Mpox
     "BI0228",  # PLAGUE
     "BI0241",  # YELLOW FEVER
-    "BI0301",  # ANIMAL DISEASE
+    "BI0301",  # ANIMAL DISEASE, EPIZOOTIC
     "BI0604",  # ANIMAL ATTACK
     "BI0605",  # SNAKE BITE
     "CH0201",  # AFLATOXIN

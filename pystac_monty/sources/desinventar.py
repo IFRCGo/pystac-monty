@@ -571,17 +571,17 @@ hazard_name_mappings = {
 hazard_mapping = {
     "ALLUVION": ["GH0303", "nat-hyd-mmw-mud", "MS"],  # Mud flow
     "AVALANCHE": ["MH0801", "nat-geo-mmd-ava", "AV"],  # Avalanche
-    "ACCIDENT": ["TL0007", "tec-mis-col-col", "AC"],  # Structural Failure
-    "BOAT CAPSIZE": ["TL0050", "tec-tra-wat-wat", "AC"],
+    "ACCIDENT": ["TL0201", "tec-mis-col-col", "AC"],  # Building Collapse
+    "BOAT CAPSIZE": ["TL0403", "tec-tra-wat-wat", "AC"],  # Maritime Accident
     "COASTAL EROSION": ["GH0405", "nat-geo-env-sed", "OT"],  # Coastal erosion
     "COLD WAVE": ["MH0502", "nat-met-ext-col", "CW"],  # Cold wave
     "CYCLONE": ["MH0309", "nat-met-sto-tro", "TC"],  # Tropical cyclone
     "DROUGHT": ["MH0401", "nat-cli-dro-dro", "DR"],  # Drought
     "EARTHQUAKE": ["GH0101", "nat-geo-ear-gro", "EQ"],  # Earthquake
     "EPIDEMIC": ["BI0101", "nat-bio-epi-dis", "EP"],  # Epidemic
-    "EPIZOOTIC": ["BI0027", "nat-bio-ani-ani"],  # Animal Diseases (Not Zoonoses)
+    "EPIZOOTIC": ["BI0301", "OT"],  # Animal Diseases (Not Zoonoses)
     "EROSION": ["GH0403", "nat-geo-env-soi", "OT"],  # Soil erosion
-    "EXPLOSION": ["TL0029", "tec-ind-exp-exp", "AC"],  # Explosion
+    "EXPLOSION": ["TL0304", "tec-ind-exp-exp", "AC"],  # Explosion
     "FAMINE": None,
     "FIRE": ["EN0205", "nat-cli-wil-wil", "WF"],  # Fire
     "FLASH FLOOD": ["MH0603", "nat-hyd-flo-fla", "FF"],  # Flash flood
@@ -593,7 +593,7 @@ hazard_mapping = {
     "HEAT WAVE": ["MH0501", "nat-met-ext-hea", "HT"],  # Heat wave
     "LAHAR": ["GH0204", "nat-geo-vol-lah", "VO"],  # Lahar
     "LANDSLIDE": ["GH0300", "nat-geo-mmd-lan", "LS"],  # Landslide
-    "LEAK": ["TL0030", "tec-ind-che-che", "AC"],  # Chemical leak
+    "LEAK": ["TL0301", "tec-ind-che-che", "AC"],  # Leaks and Spills
     "LIQUEFACTION": ["GH0307", "nat-geo-ear-gro", "EQ"],  # Ground liquefaction
     "OTHER": None,  # Other
     "PANIC": None,
@@ -602,7 +602,7 @@ hazard_mapping = {
     "SNOW STORM": ["MH0406", "OT"],  # Snow Storm
     "STORM": ["MH0103", "nat-met-sto-sto", "ST"],  # Thunderstorm
     "STRONG WIND": ["MH0301", "nat-met-sto-sto", "VW"],  # Strong wind
-    "STRUCT.COLLAPSE": ["TL0005", "tec-mis-col-col", "AC"],  # Structural collapse
+    "STRUCT.COLLAPSE": ["TL0201", "tec-mis-col-col", "AC"],  # Building Collapse
     "SUBSIDENCE": ["GH0309", "nat-geo-ear-gro"],  # Subsidence
     "SURGE": ["MH0703", "nat-met-sto-sur", "SS"],  # Storm surge
     "THUNDERSTORM": ["MH0103", "nat-met-sto-sto", "ST"],  # Thunderstorm

@@ -317,7 +317,7 @@ class GDACSTransformer(MontyDataTransformer[GDACSDataSource]):
             "EP": ["BI0101", "nat-bio-epi-dis", "EP"],
             "EC": ["MH0307", "nat-met-sto-ext", "EC"],
             "ET": ["nat-met-ext-col", "ET"],
-            "FR": ["TL0032", "tec-ind-fir-fir", "FR"],
+            "FR": ["TL0305", "tec-ind-fir-fir", "FR"],
             "FF": ["MH0603", "nat-hyd-flo-fla", "FF"],
             "HT": ["MH0501", "nat-met-ext-hea", "HT"],
             "IN": ["nat-bio-inf-inf", "IN"],
@@ -327,12 +327,12 @@ class GDACSTransformer(MontyDataTransformer[GDACSDataSource]):
             "SL": ["nat-hyd-mmw-lan", "SL"],
             "AV": ["MH0801", "nat-geo-mmd-ava", "AV"],
             "SS": ["MH0703", "nat-met-sto-sur", "SS"],
-            "AC": ["TL0053", "tec-tra-roa-roa", "AC"],
+            "AC": ["TL0405", "tec-tra-roa-roa", "AC"],
             "TO": ["MH0305", "nat-met-sto-tor", "TO"],
             "VW": ["MH0201", "nat-met-sto-san", "VW"],
             "WV": ["nat-hyd-wav-rog", "WV"],
             "OT": ["MH0701", "nat-hyd-wav-rog", "OT"],
-            "CE": ["SO0003", "CE"],
+            "CE": ["SO0103", "CE"],
         }
         if hazard not in hazard_mapping:
             logger.warning("Hazard %s not found.", hazard)
