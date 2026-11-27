@@ -89,6 +89,8 @@ class TransformSummaryInProgressException(Exception): ...
 class TransformSummary:
     total_rows: int = 0
     failed_rows: int = 0
+    # Rows that the transformer leaves out by a rule, not by an error
+    skipped_rows: int = 0
     is_completed: bool = False
 
     def increment_rows(self, increment: int = 1) -> None:
@@ -97,6 +99,9 @@ class TransformSummary:
     def increment_failed_rows(self, increment: int = 1) -> None:
         self.failed_rows += increment
 
+    def increment_skipped_rows(self, increment: int = 1) -> None:
+        self.skipped_rows += increment
+
     def mark_as_complete(self) -> None:
         self.is_completed = True
 
@@ -104,12 +109,13 @@ class TransformSummary:
         self.is_completed = False
         self.total_rows = 0
         self.failed_rows = 0
+        self.skipped_rows = 0
 
     @property
     def success_rows(self) -> int:
         if not self.is_completed:
             raise TransformSummaryInProgressException()
-        return self.total_rows - self.failed_rows
+        return self.total_rows - self.failed_rows - self.skipped_rows
 
 
 class BaseModelWithExtra(BaseModel):

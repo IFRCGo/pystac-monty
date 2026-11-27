@@ -66,6 +66,75 @@ PDC_IMPACT_FIELD_LABELS = {
     ("capital", "hospital"): "Hospital capital",
 }
 
+# --- Observed hazard or warning (temporary rule) -------------------------------------------
+# PDC publishes observed hazards (an earthquake that occurred, a fire that a satellite detected)
+# and warnings (an agency or a model says that a hazard is expected or possible) with the same
+# fields: `severity_ID`, `category_ID` and `status` do not tell them apart. Monty has no field
+# for a forecast yet (IFRCGo/monty-stac-extension Discussion 110). Until it has one, the
+# transformer keeps only the observed hazards.
+#
+# The only signal is the first sentence of `description`, which PDC writes from one template
+# for each product. The patterns below come from 197 real records (floods, wildfires,
+# earthquakes, tropical cyclones, one landslide, one volcano). A record that agrees with no
+# pattern is `unknown`: it is skipped and counted, so a new PDC template shows as a count
+# that rises and not as wrong data.
+PDC_OBSERVED = "observed"
+PDC_WARNING = "warning"
+PDC_UNKNOWN = "unknown"
+
+# Issuers whose records are observations, although the first sentence uses the warning wording.
+PDC_OBSERVED_ISSUERS = ("national bushfire extents",)
+
+PDC_OBSERVED_PATTERNS = (
+    r"\bhas occurred\b",  # An earthquake ... has occurred ... as reported by ...
+    r"\bhas been detected\b",  # A Potential Large and/or Intense Wildfire has been detected
+    r"\breports? \w+ activity\b",  # NIFC reports Wildfire activity
+    r"\b(has|have) been reported\b",  # Volcanic activity has been reported; Flooding has been reported
+)
+
+PDC_WARNING_PATTERNS = (
+    r"\bforecast has been issued\b",  # A tropical cyclone forecast has been issued by ...
+    r"\bhas been indicated by\b",  # A Landslide Warning has been indicated by the ... Model
+    r"\b(has|have) issued\b",  # NWS ... has issued a Flood Watch
+    r"\b(was|were|has been|have been) issued\b",  # A ... Flood Warning was issued
+)
+
+
+def classify_pdc_hazard(
+    description: Optional[str],
+    start_ms: Optional[float] = None,
+    create_ms: Optional[float] = None,
+) -> tuple[str, str]:
+    """Tell if a PDC hazard record is an observed hazard or a warning.
+
+    Returns the status (`observed`, `warning` or `unknown`) and the rule that gave it.
+
+    The status comes from the first sentence of *description*. A start (*start_ms*) after the
+    creation of the record (*create_ms*) is a sure sign of a warning, so it changes an
+    `observed` or `unknown` status to `warning`. The reverse is not true: most warnings start
+    on the day of their creation.
+    """
+    first_sentence = (description or "").strip().split("\n")[0].lower()
+    status, rule = PDC_UNKNOWN, "no pattern"
+
+    if any(issuer in first_sentence for issuer in PDC_OBSERVED_ISSUERS):
+        status, rule = PDC_OBSERVED, "issuer"
+    else:
+        for pattern in PDC_OBSERVED_PATTERNS:
+            if re.search(pattern, first_sentence):
+                status, rule = PDC_OBSERVED, pattern
+                break
+        else:
+            for pattern in PDC_WARNING_PATTERNS:
+                if re.search(pattern, first_sentence):
+                    status, rule = PDC_WARNING, pattern
+                    break
+
+    if status != PDC_WARNING and start_ms is not None and create_ms is not None and start_ms > create_ms:
+        return PDC_WARNING, f"start after creation (the text gave: {status})"
+    return status, rule
+
+
 IMPACT_TYPE_LABELS = MontyImpactTypeLabel()
 IMPACT_CATEGORY_LABELS = MontyImpactExposureCatgoryLabel()
 
@@ -197,6 +266,12 @@ class PDCTransformer(MontyDataTransformer):
         self.episode_number = 1
         self.hazard_data = self._get_hazard_data()
 
+    # Temporary rule: make items only for observed hazards (see `classify_pdc_hazard`).
+    # Set to False to make items for all the hazards, as before.
+    observed_only: bool = True
+    # The status that `classify_pdc_hazard` gave to the hazard of the last run
+    observation_status: Optional[str] = None
+
     def _get_hazard_data(self):
         """Get a single hazard data"""
         for item in self.hazards_data:
@@ -217,6 +292,22 @@ class PDCTransformer(MontyDataTransformer):
             self.transform_summary.increment_rows()
             try:
                 pdc_hazard_data = HazardEventValidator(**hazard_item)
+                self.observation_status, rule = classify_pdc_hazard(
+                    pdc_hazard_data.description,
+                    start_ms=float(pdc_hazard_data.start_Date) if pdc_hazard_data.start_Date else None,
+                    create_ms=float(pdc_hazard_data.create_Date) if pdc_hazard_data.create_Date else None,
+                )
+                if self.observed_only and self.observation_status != PDC_OBSERVED:
+                    log = logger.warning if self.observation_status == PDC_UNKNOWN else logger.info
+                    log(
+                        "PDC hazard %s is not an observed hazard (%s, rule: %s). No item is made.",
+                        pdc_hazard_data.hazard_ID,
+                        self.observation_status,
+                        rule,
+                    )
+                    self.transform_summary.increment_skipped_rows()
+                    self.transform_summary.mark_as_complete()
+                    return
                 exposure_details = self._get_valid_exposure_details()
 
                 # NOTE: Event and hazard items are created once for all the exposure details (snapshots)

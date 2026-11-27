@@ -160,8 +160,12 @@ def _write_pdc_bundle(tmp_path: Path, geojson_path: str, with_exposure: bool = T
     return bundle_path
 
 
-def test_convert_pdc_writes_events_hazards_and_impacts(tmp_path: Path) -> None:
+def test_convert_pdc_writes_events_hazards_and_impacts(tmp_path: Path, monkeypatch) -> None:
     from pystac_monty.sources.batch_export import run_batch
+    from pystac_monty.sources.pdc import PDCTransformer
+
+    # The landslide 313159 is a warning; the test of the bundle needs its items.
+    monkeypatch.setattr(PDCTransformer, "observed_only", False)
 
     maps_url = "https://sentry.pdc.org/hp_srv/services/mags/1/json/get_mags?hazard_id=313159"
     output_dir = tmp_path / "out"
@@ -181,8 +185,37 @@ def test_convert_pdc_writes_events_hazards_and_impacts(tmp_path: Path) -> None:
     assert _assert_related_links_resolve(output_dir / "pdc-impacts") > 0
 
 
-def test_convert_pdc_without_exposure_detail(tmp_path: Path) -> None:
+def test_convert_pdc_keeps_only_observed_hazards(tmp_path: Path) -> None:
+    """By default the exporter makes no item for a warning, and the items of an observed hazard"""
     from pystac_monty.sources.batch_export import run_batch
+
+    data_dir = Path(__file__).resolve().parent / "data" / "pdc"
+    maps_url = "https://sentry.pdc.org/hp_srv/services/mags/1/json/get_mags?hazard_id=352320"
+
+    warning_out = tmp_path / "warning"
+    run_batch("pdc", _write_pdc_bundle(tmp_path, maps_url), warning_out)
+    assert _items(warning_out / "pdc-events") == {}
+
+    bundle = {
+        "source_url": "https://sentry.pdc.org/hp_srv/services/hazards/t/json/get_active_hazards",
+        "uuid": "62006159-a6da-45d8-b739-8d0940876fa1",
+        "hazard_data": {"path": str(data_dir / "volcano_hazard_data.json")},
+        "exposure_detail_data": [{"path": str(data_dir / "volcano_exposure_detail.json")}],
+        "geojson_path": maps_url,
+    }
+    bundle_path = tmp_path / "volcano-bundle.json"
+    bundle_path.write_text(json.dumps(bundle), encoding="utf-8")
+    observed_out = tmp_path / "observed"
+    run_batch("pdc", bundle_path, observed_out)
+    assert set(_items(observed_out / "pdc-events")) == {"pdc-event-62006159-a6da-45d8-b739-8d0940876fa1-352320"}
+    assert len(_items(observed_out / "pdc-impacts")) > 0
+
+
+def test_convert_pdc_without_exposure_detail(tmp_path: Path, monkeypatch) -> None:
+    from pystac_monty.sources.batch_export import run_batch
+    from pystac_monty.sources.pdc import PDCTransformer
+
+    monkeypatch.setattr(PDCTransformer, "observed_only", False)
 
     output_dir = tmp_path / "out"
     run_batch("pdc", _write_pdc_bundle(tmp_path, "hazard_geo.geojson", with_exposure=False), output_dir)

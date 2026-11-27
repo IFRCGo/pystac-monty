@@ -12,13 +12,28 @@ from pystac_monty.extension import MontyExtension
 from pystac_monty.geocoding import MockGeocoder
 from pystac_monty.hazard_profiles import MontyHazardProfiles
 from pystac_monty.sources.common import DataType, File, Memory, PDCDataSourceType
-from pystac_monty.sources.pdc import PDC_TYPES_WITHOUT_UNDRR_2025_CODE, PDCDataSource, PDCTransformer
+from pystac_monty.sources.pdc import (
+    PDC_OBSERVED,
+    PDC_TYPES_WITHOUT_UNDRR_2025_CODE,
+    PDC_UNKNOWN,
+    PDC_WARNING,
+    PDCDataSource,
+    PDCTransformer,
+    classify_pdc_hazard,
+)
 from tests.conftest import get_data_file
 from tests.extensions.test_monty import CustomValidator
 from tests.utils.test_utils import assert_processing_extension_fields, request_for_schema, validate_correlation_id
 
 CURRENT_SCHEMA_URI = "https://ifrcgo.org/monty-stac-extension/v1.3.0/schema.json"
 CURRENT_SCHEMA_MAPURL = "https://raw.githubusercontent.com/IFRCGo/monty-stac-extension/refs/heads/main/json-schema/schema.json"  # noqa
+
+
+@pytest.fixture(autouse=True)
+def all_hazards_by_default(monkeypatch):
+    """The main fixture (landslide 313159) is a model warning. The tests of the mapping need its
+    items, so they run with the observed-only rule off. The tests of the rule turn it on."""
+    monkeypatch.setattr(PDCTransformer, "observed_only", False)
 
 
 def load_scenarios(scenarios: List[dict]) -> List[PDCTransformer]:
@@ -711,3 +726,121 @@ def test_items_do_not_copy_the_pdc_category_id():
     items = PDCTransformer(pdc_data_source, MockGeocoder()).make_items()
     assert len(items) == 21
     assert all("category_id" not in item.properties for item in items)
+
+
+volcano_scenario = {
+    "hazards_file_path": "./tests/data/pdc/volcano_hazard_data.json",
+    "exposure_detail_file_path": "./tests/data/pdc/volcano_exposure_detail.json",
+    "uuid": "62006159-a6da-45d8-b739-8d0940876fa1",
+    "geojson_file_path": "https://sentry.pdc.org/hp_srv/services/mags/1/json/get_mags?hazard_id=352320",
+}
+
+
+def _transformer(scenario_data: dict) -> PDCTransformer:
+    pdc_data_source = PDCDataSource(
+        data=PDCDataSourceType(
+            source_url=scenario[0],
+            uuid=scenario_data["uuid"],
+            hazard_data=File(path=scenario_data["hazards_file_path"], data_type=DataType.FILE),
+            exposure_detail_data=File(path=scenario_data["exposure_detail_file_path"], data_type=DataType.FILE),
+            geojson_path=scenario_data["geojson_file_path"],
+        )
+    )
+    return PDCTransformer(pdc_data_source, MockGeocoder())
+
+
+@pytest.mark.parametrize(
+    "first_sentence, expected",
+    [
+        # Observed: the hazard occurred, was detected or was reported
+        (
+            "An earthquake with a magnitude of 5.5 at a depth of 15 km has occurred at 204 km S of X, as reported by USGS.",
+            PDC_OBSERVED,
+        ),
+        ("A Potential Large and/or Intense Wildfire has been detected for November 24 through November 26 for X.", PDC_OBSERVED),
+        ("National Interagency Fire Center (NIFC) reports Wildfire activity for November 24 through November 26.", PDC_OBSERVED),
+        ("Volcanic activity has been reported for Popocatepetl in Mexico, by the Volcanic Ash Advisory Centre.", PDC_OBSERVED),
+        ("Flooding and severe storm impacts have been reported in X Province by the Red Cross.", PDC_OBSERVED),
+        # The issuer gives observations, although the sentence has the warning wording
+        ("Geoscience Australia National Bushfire Extents (NRT) has issued a Wildfire warning for November 25.", PDC_OBSERVED),
+        # Warning: an agency or a model says that the hazard is expected or possible
+        ("NWS Miami FL has issued a FA Watch for November 25 through November 26 for X County.", PDC_WARNING),
+        ("The NASA Global Flood Model has issued a Flood Watch for November 21 through November 27 for X Basin.", PDC_WARNING),
+        ("A Mekong River Commission (MRC) Riverine Flood Warning was issued for November 26, for X.", PDC_WARNING),
+        ("Flood warnings have been issued in X by the National Service of Meteorology and Hydrology.", PDC_WARNING),
+        ("A tropical cyclone forecast has been issued by National Hurricane Center (NHC) on October 11.", PDC_WARNING),
+        ("A Landslide Warning has been indicated by the Landslide Hazard Assessment Model (LHASA) on February 7.", PDC_WARNING),
+        ("Japan Meteorological Agency has issued a Fire Weather statement for November 25.", PDC_WARNING),
+        # No known template
+        ("Please monitor DisasterAWARE for updates.", PDC_UNKNOWN),
+        ("", PDC_UNKNOWN),
+        (None, PDC_UNKNOWN),
+    ],
+)
+def test_classify_pdc_hazard_from_the_first_sentence(first_sentence, expected):
+    assert classify_pdc_hazard(first_sentence)[0] == expected
+
+
+def test_classify_pdc_hazard_reads_only_the_first_sentence():
+    description = "A Flood Statement was issued for November 21, for X.\n\nEvent Summary: Flood has been reported in X."
+    assert classify_pdc_hazard(description)[0] == PDC_WARNING
+
+
+def test_classify_pdc_hazard_start_after_creation_is_a_warning():
+    observed_text = "An earthquake has occurred at X."
+    assert classify_pdc_hazard(observed_text, start_ms=2_000, create_ms=1_000)[0] == PDC_WARNING
+    assert classify_pdc_hazard("Please monitor.", start_ms=2_000, create_ms=1_000)[0] == PDC_WARNING
+    # The reverse is not a sign of an observed hazard: most warnings start at their creation
+    assert classify_pdc_hazard("NWS X has issued a Flood Watch.", start_ms=1_000, create_ms=2_000)[0] == PDC_WARNING
+    assert classify_pdc_hazard(observed_text, start_ms=1_000, create_ms=2_000)[0] == PDC_OBSERVED
+
+
+def test_observed_only_makes_no_item_for_a_warning(monkeypatch):
+    """The landslide 313159 is a warning from a model (LHASA), not an observed landslide"""
+    monkeypatch.setattr(PDCTransformer, "observed_only", True)
+    transformer = _transformer(scenario[1])
+
+    assert transformer.make_items() == []
+    assert transformer.observation_status == PDC_WARNING
+    summary = transformer.transform_summary
+    assert (summary.total_rows, summary.failed_rows, summary.skipped_rows, summary.success_rows) == (1, 0, 1, 0)
+
+
+def test_observed_only_makes_the_items_of_an_observed_hazard(monkeypatch):
+    """The volcano record says: Volcanic activity has been reported ... based on ... observations"""
+    monkeypatch.setattr(PDCTransformer, "observed_only", True)
+    transformer = _transformer(volcano_scenario)
+
+    items = transformer.make_items()
+
+    assert transformer.observation_status == PDC_OBSERVED
+    roles = [item.properties["roles"][1] for item in items]
+    assert roles.count("event") == 1
+    assert roles.count("hazard") == 1
+    assert roles.count("impact") > 0
+    summary = transformer.transform_summary
+    assert (summary.total_rows, summary.failed_rows, summary.skipped_rows, summary.success_rows) == (1, 0, 0, 1)
+    # The figures of an observed hazard are still exposure from a model
+    impact_details = [item.properties["monty:impact_detail"] for item in items if item.properties["roles"][1] == "impact"]
+    assert all(detail["estimate_type"] == "modelled" for detail in impact_details)
+
+
+def test_observed_only_skips_and_counts_an_unknown_description(monkeypatch):
+    monkeypatch.setattr(PDCTransformer, "observed_only", True)
+    transformer = _transformer(volcano_scenario)
+    hazard_data = {**transformer._get_hazard_data(), "description": "A new PDC template that the patterns do not know."}
+
+    with patch.object(transformer, "_get_hazard_data", return_value=hazard_data):
+        items = transformer.make_items()
+
+    assert items == []
+    assert transformer.observation_status == PDC_UNKNOWN
+    assert transformer.transform_summary.skipped_rows == 1
+
+
+def test_the_rule_can_be_turned_off():
+    """With `observed_only` off (the autouse fixture), a warning gives its items as before"""
+    transformer = _transformer(scenario[1])
+    assert len(transformer.make_items()) == 21
+    assert transformer.observation_status == PDC_WARNING
+    assert transformer.transform_summary.skipped_rows == 0
