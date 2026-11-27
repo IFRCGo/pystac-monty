@@ -18,7 +18,9 @@ from pystac_monty.extension import (
     MontyEstimateType,
     MontyExtension,
     MontyImpactExposureCategory,
+    MontyImpactExposureCatgoryLabel,
     MontyImpactType,
+    MontyImpactTypeLabel,
 )
 from pystac_monty.hazard_profiles import MontyHazardProfiles
 from pystac_monty.sources.common import (
@@ -37,6 +39,22 @@ logger = logging.getLogger(__name__)
 STAC_EVENT_ID_PREFIX = "emdat-event-"
 STAC_HAZARD_ID_PREFIX = "emdat-hazard-"
 STAC_IMPACT_ID_PREFIX = "emdat-impact-"
+
+# Impact fields that EM-DAT gives in thousands of US dollars ("Total Damage ('000 US$)").
+EMDAT_THOUSAND_USD_FIELDS = {"total_dam"}
+
+# The text of each impact field in the title of its impact item.
+EMDAT_IMPACT_FIELD_LABELS = {
+    "total_deaths": "Total deaths",
+    "no_injured": "Injured",
+    "no_affected": "Affected",
+    "no_homeless": "Homeless",
+    "total_affected": "Total affected",
+    "total_dam": "Total damage",
+}
+
+IMPACT_TYPE_LABELS = MontyImpactTypeLabel()
+IMPACT_CATEGORY_LABELS = MontyImpactExposureCatgoryLabel()
 
 
 @dataclass
@@ -327,10 +345,12 @@ class EMDATTransformer(MontyDataTransformer[EMDATDataSource]):
         impact_fields = {
             "total_deaths": (MontyImpactExposureCategory.ALL_PEOPLE, MontyImpactType.DEATH),
             "no_injured": (MontyImpactExposureCategory.ALL_PEOPLE, MontyImpactType.INJURED),
-            "no_affected": (MontyImpactExposureCategory.ALL_PEOPLE, MontyImpactType.TOTAL_AFFECTED),
+            # NOTE: EM-DAT "No. Affected" is the people who need immediate assistance. "Total Affected"
+            # is the sum of "No. Injured", "No. Affected" and "No. Homeless".
+            "no_affected": (MontyImpactExposureCategory.ALL_PEOPLE, MontyImpactType.DIRECTLY_AFFECTED),
             "no_homeless": (MontyImpactExposureCategory.ALL_PEOPLE, MontyImpactType.TOTAL_DISPLACED_PERSONS),
             "total_affected": (MontyImpactExposureCategory.ALL_PEOPLE, MontyImpactType.TOTAL_AFFECTED),
-            "total_dam": (MontyImpactExposureCategory.TOTAL_AFFECTED, MontyImpactType.LOSS_COST),
+            "total_dam": (MontyImpactExposureCategory.GLOBAL_CURRENCY, MontyImpactType.LOSS_COST),
         }
 
         for field, (category, impact_type) in impact_fields.items():
@@ -358,8 +378,11 @@ class EMDATTransformer(MontyDataTransformer[EMDATDataSource]):
                 return None
 
             impact_item = base_item.clone()
-            # add in title
-            impact_item.properties["title"] = f"{base_item.properties['title']} - {field}"
+            impact_item.properties["title"] = f"{base_item.properties['title']} - {EMDAT_IMPACT_FIELD_LABELS[field]}"
+            # The keywords of the event, then the labels of the impact type and of the exposure category
+            impact_item.properties["keywords"] = unique_in_order(
+                base_item.properties.get("keywords", []) + [IMPACT_TYPE_LABELS[impact_type], IMPACT_CATEGORY_LABELS[category]]
+            )
             impact_item.id = f"{STAC_IMPACT_ID_PREFIX}{row.disno}-{field.lower().replace(' ', '-')}"
             impact_item.set_collection(self.get_impact_collection())
             impact_item.properties["roles"] = ["source", "impact"]
@@ -370,11 +393,17 @@ class EMDATTransformer(MontyDataTransformer[EMDATDataSource]):
             if not value:
                 return None
 
+            unit = "count"
+            if field in EMDAT_THOUSAND_USD_FIELDS:
+                # NOTE: EM-DAT gives these columns in thousands of US dollars
+                value = float(value) * 1000
+                unit = "USD"
+
             monty.impact_detail = ImpactDetail(
                 category=category,
                 type=impact_type,
                 value=value,
-                unit="USD" if "Damages" in field else "count",
+                unit=unit,
                 estimate_type=MontyEstimateType.PRIMARY,
             )
 
@@ -415,46 +444,37 @@ class EMDATTransformer(MontyDataTransformer[EMDATDataSource]):
         )
 
     def _create_title_from_row(self, row: EmdatDataValidator) -> Optional[str]:
-        """Create a descriptive title from row data when Event Name is missing"""
-        if not row.name:
-            return f"{row.subtype} in {row.country}" if row.subtype else "N/A"
+        """Give the title of the event: the EM-DAT Event Name, or a generated text, then the date.
 
-        components = []
+        Most EM-DAT records have no Event Name. The generated text is the disaster
+        subtype (or the type when there is no subtype) and the country. The title
+        ends with the month and year of the start, in the same form as the
+        description: "Flood (General) in Spain of October 2024",
+        "Hurricane 'Milton' of October 2024".
+        """
+        name = row.name.strip() if isinstance(row.name, str) else ""
+        hazard = row.subtype or row.type
+        if name:
+            title = name
+        elif hazard:
+            title = f"{hazard} in {row.country}" if row.country else hazard
+        else:
+            return "N/A"
 
-        # Add disaster type
-        if row.type:
-            components.append(row.type)
-            if row.subtype and row.type != row.subtype:
-                components.append(f"({row.subtype})")
+        date = self._create_month_year_text(row)
+        return f"{title} of {date}" if date else title
 
-        # Add location info
-        locations = []
-        if row.country:
-            locations.append(row.country)
-        if locations:
-            components.append("in")
-            components.append(", ".join(locations))
-
-        # Add date
-        date_str = None
-        if row.start_year:
-            date_components = []
-            # Add month if available
-            if row.start_year:
-                try:
-                    month_name = datetime(2000, row.start_month or 1, 1).strftime("%B")
-                    date_components.append(month_name)
-                except ValueError:
-                    pass
-            # Add year
-            date_components.append(str(row.start_year))
-            if date_components:
-                date_str = " ".join(date_components)
-
-        if date_str:
-            components.extend(["of", date_str])
-
-        return " ".join(components) if components else None
+    @staticmethod
+    def _create_month_year_text(row: EmdatDataValidator) -> Optional[str]:
+        """Give the start of the disaster as text: 'October 2024', or '2024' when EM-DAT gives no month."""
+        if not row.start_year:
+            return None
+        if row.start_month:
+            try:
+                return datetime(int(row.start_year), int(row.start_month), 1).strftime("%B %Y")
+            except ValueError:
+                pass
+        return str(int(row.start_year))
 
     def _create_description_from_row(self, row: EmdatDataValidator) -> str:
         """Create a description from row data"""
@@ -463,7 +483,7 @@ class EMDATTransformer(MontyDataTransformer[EMDATDataSource]):
         # Add disaster type
         if row.type:
             components.append(row.type)
-            if not row.subtype and row.type != row.subtype:
+            if row.subtype and row.type != row.subtype:
                 components.append(f"({row.subtype})")
 
         # Add location info
@@ -477,21 +497,7 @@ class EMDATTransformer(MontyDataTransformer[EMDATDataSource]):
             components.append(", ".join(locations))
 
         # Add date
-        date_str = None
-        if row.start_year:
-            date_components = []
-            # Add month if available
-            if row.start_month:
-                try:
-                    month_name = datetime(2000, row.start_month, 1).strftime("%B")
-                    date_components.append(month_name)
-                except ValueError:
-                    pass
-            # Add year
-            date_components.append(str(int(row.start_year)))
-            if date_components:
-                date_str = " ".join(date_components)
-
+        date_str = self._create_month_year_text(row)
         if date_str:
             components.extend(["of", date_str])
 
