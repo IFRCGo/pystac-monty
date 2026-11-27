@@ -692,6 +692,9 @@ def test_impact_items_are_modelled_exposure_not_observed_impact():
     assert details["capital-school-PER-0"]["type"] == "potentially_affected"
     # The capital in the area stays a cost, with the modelled estimate type
     assert details["capital-total-PER-0"]["type"] == "cost"
+    # The 18 people and asset figures are counts; the payload gives no currency for the capital
+    assert [key for key, detail in details.items() if detail.get("unit") != "count"] == ["capital-total-PER-0"]
+    assert details["capital-total-PER-0"].get("unit") is None
 
 
 def test_items_do_not_copy_the_pdc_category_id():

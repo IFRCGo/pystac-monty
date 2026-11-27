@@ -600,5 +600,10 @@ class PDCTransformer(MontyDataTransformer):
         return id_parts
 
     def get_impact_detail(self, category: MontyImpactExposureCategory, impact_type: MontyImpactType, value: float):
-        """Create an Impact detail object"""
-        return ImpactDetail(category=category, type=impact_type, value=value, unit=None, estimate_type=MontyEstimateType.MODELLED)
+        """Create an Impact detail object
+
+        The people and asset figures are counts. The capital figure is an amount of money, and the PDC payload
+        does not give its currency, so it has no unit.
+        """
+        unit = None if impact_type == MontyImpactType.LOSS_COST else "count"
+        return ImpactDetail(category=category, type=impact_type, value=value, unit=unit, estimate_type=MontyEstimateType.MODELLED)
