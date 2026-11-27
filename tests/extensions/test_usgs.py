@@ -255,6 +255,52 @@ class USGSTest(unittest.TestCase):
         self.assertTrue(found_event)
         self.assertTrue(found_hazard)
 
+    def test_product_content_files_are_attached_as_assets(self) -> None:
+        """The documented USGS product files should survive validation and become STAC assets."""
+        data_source = USGSDataSource(
+            data=USGSDataSourceType(
+                source_url=tibetan_plateau_eq[1],
+                event_data=File(path=tibetan_plateau_eq[1], data_type=DataType.FILE),
+                loss_data=File(path=tibetan_plateau_eq[2], data_type=DataType.FILE),
+            )
+        )
+        items = USGSTransformer(data_source, geocoder).make_items()
+
+        event_item = next(item for item in items if MontyExtension.ext(item).is_source_event())
+        hazard_item = next(item for item in items if MontyExtension.ext(item).is_source_hazard())
+        impact_items = [item for item in items if MontyExtension.ext(item).is_source_impact()]
+
+        # The hazard item has the ShakeMap assets of the source doc, with the documented keys and files.
+        expected_shakemap_assets = {
+            "intensity_map": ("download/intensity.jpg", "image/jpeg"),
+            "intensity_overlay": ("download/intensity_overlay.png", "image/png"),
+            "pga_map": ("download/pga.jpg", "image/jpeg"),
+            "pgv_map": ("download/pgv.jpg", "image/jpeg"),
+            "mmi_contours": ("download/cont_mi.json", "application/geo+json"),
+            "grid": ("download/grid.xml", "application/xml"),
+            "uncertainty": ("download/uncertainty.xml", "application/xml"),
+            "stations": ("download/stationlist.json", "application/json"),
+            "rupture": ("download/rupture.json", "application/json"),
+        }
+        self.assertEqual(set(hazard_item.assets), {"source", *expected_shakemap_assets})
+        for key, (file, media_type) in expected_shakemap_assets.items():
+            asset = hazard_item.assets[key]
+            self.assertTrue(asset.href.startswith("https://earthquake.usgs.gov/realtime/product/shakemap/"), asset.href)
+            self.assertTrue(asset.href.endswith(file), asset.href)
+            self.assertEqual(asset.media_type, media_type)
+
+        # The event item has no product files.
+        self.assertEqual(set(event_item.assets), {"source"})
+
+        # PAGER files stay on the impact items as the curated pager_* assets (#264), without duplicates.
+        self.assertTrue(impact_items)
+        for impact_item in impact_items:
+            self.assertIn("pager_onepager", impact_item.assets)
+            self.assertFalse([key for key in impact_item.assets if key.startswith("losspager_")])
+            self.assertTrue(
+                impact_item.assets["pager_onepager"].href.startswith("https://earthquake.usgs.gov/realtime/product/losspager/")
+            )
+
     def test_event_hazard_impact_country_codes_are_consistent(self) -> None:
         """Regression test for https://github.com/IFRCGo/pystac-monty/issues/167
 

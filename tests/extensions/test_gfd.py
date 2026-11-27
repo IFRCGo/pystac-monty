@@ -294,3 +294,27 @@ class GFDTest(unittest.TestCase):
             if monty_item_ext.is_source_hazard() and monty_item_ext.hazard_codes:
                 # Should contain only the first code (UNDRR-ISC 2025)
                 assert len(monty_item_ext.hazard_codes) == 1
+
+    def test_dates_do_not_depend_on_the_local_time_zone(self) -> None:
+        """The epoch times of the source are UTC. The machine time zone must not shift them."""
+        import os
+        import time
+        from datetime import datetime, timezone
+
+        previous = os.environ.get("TZ")
+        os.environ["TZ"] = "Pacific/Auckland"
+        time.tzset()
+        try:
+            items = list(load_scenarios(data)[0].get_stac_items())
+        finally:
+            if previous is None:
+                os.environ.pop("TZ", None)
+            else:
+                os.environ["TZ"] = previous
+            time.tzset()
+
+        self.assertTrue(items)
+        for item in items:
+            self.assertEqual(item.datetime, datetime(2000, 2, 18, tzinfo=timezone.utc), item.id)
+            self.assertEqual(item.properties["start_datetime"], "2000-02-18T00:00:00+00:00", item.id)
+            self.assertEqual(item.properties["end_datetime"], "2000-03-01T00:00:00+00:00", item.id)
