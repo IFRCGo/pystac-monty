@@ -657,15 +657,16 @@ class CharterTransformer(MontyDataTransformer[CharterDataSource]):
 
     @staticmethod
     def _dataset_response_id(dataset: dict[str, Any]) -> Optional[str]:
+        """Id part for a calibrated dataset response: the full source id, lowercased.
+
+        The full id is kept on purpose. A shortened form (instrument + last two
+        tokens) dropped the acquisition time and tile of Pleiades ids, so two
+        different datasets could get the same item id (pystac-monty#256).
+        """
         source_id = CharterTransformer._dataset_source_id(dataset)
         if not source_id:
             return None
-        match = re.match(r"DS_([A-Za-z0-9]+)_.*_([^_]+)_([^_]+)-calibrated$", source_id)
-        if match:
-            instrument, strip_id, scene_id = match.groups()
-            return f"{sanitize_stac_item_id(instrument.lower())}-{strip_id.lower()}-{scene_id.lower()}"
-        fallback = source_id.removesuffix("-calibrated")
-        return sanitize_stac_item_id(fallback.lower())
+        return sanitize_stac_item_id(source_id.removesuffix("-calibrated").lower())
 
     @staticmethod
     def _dataset_producer(dataset: dict[str, Any]) -> Optional[str]:
@@ -792,6 +793,7 @@ class CharterTransformer(MontyDataTransformer[CharterDataSource]):
         event_href = self._relative_item_href("charter-events", event_item.id)
         web_href = self._activation_web_href(activation)
         response_items: List[Item] = []
+        seen_item_ids: set[str] = set()
 
         for dataset in datasets:
             source_id = self._dataset_source_id(dataset)
@@ -799,6 +801,11 @@ class CharterTransformer(MontyDataTransformer[CharterDataSource]):
             matched_call_id = self._matched_activation_call_id(dataset, call_ids)
             if not source_id or not response_id or not matched_call_id:
                 continue
+            item_id = f"charter-response-{matched_call_id}-{response_id}"
+            if item_id in seen_item_ids:
+                logger.warning("Skipping calibrated dataset %s: item id %s already used in this activation", source_id, item_id)
+                continue
+            seen_item_ids.add(item_id)
 
             dataset_doc = deepcopy(dataset)
             props = self._clean_response_properties(dataset_doc.setdefault("properties", {}))
@@ -817,7 +824,7 @@ class CharterTransformer(MontyDataTransformer[CharterDataSource]):
                 logger.warning("Calibrated dataset %s has no datetime, using the event datetime", source_id)
 
             item = build_response_item(
-                id=f"charter-response-{matched_call_id}-{response_id}",
+                id=item_id,
                 geometry=dataset_doc.get("geometry"),
                 bbox=self._stac_bbox(dataset_doc, dataset_doc.get("geometry")),
                 datetime=self._parse_datetime(raw_datetime),

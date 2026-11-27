@@ -402,11 +402,11 @@ class CharterTest(unittest.TestCase):
 
         self.assertIn("charter-response-1000-1144-1", response_ids)
         self.assertIn("charter-response-1019-1166-19", response_ids)
-        self.assertIn("charter-response-1166-phr1a-0907-00777", response_ids)
+        self.assertIn("charter-response-1166-ds_phr1a_202603021304008_fr1_px_w044s22_0907_00777", response_ids)
         self.assertIn("charter-response-1166-s2b_msil2a_20251228t130249_n0511_r095_t23kqs_20251228t162706", response_ids)
         self.assertIn("charter-response-1166-lc08_l1gt_098169_20260226_20260226_02_rt", response_ids)
         self.assertIn("charter-response-1166-tsx1_sar__eec_re___sl_s_sra_20260228t082140_20260228t082141", response_ids)
-        self.assertNotIn("charter-response-1144-phr1a-0907-00777", response_ids)
+        self.assertNotIn("charter-response-1144-ds_phr1a_202603021304008_fr1_px_w044s22_0907_00777", response_ids)
         self.assertEqual(counts, {"event": 2, "hazard": 9, "response": 7})
 
         event_1019 = next(item for item in items if item.id == "charter-event-1019")
@@ -504,7 +504,11 @@ class CharterTest(unittest.TestCase):
         if not list(charter_dir.glob("act-*-activation.json")):
             self.skipTest("monty-stac-extension submodule not initialized")
 
-        item = next(item for item in iter_charter_stac_items(charter_dir) if item.id == "charter-response-1166-phr1a-0907-00777")
+        item = next(
+            item
+            for item in iter_charter_stac_items(charter_dir)
+            if item.id == "charter-response-1166-ds_phr1a_202603021304008_fr1_px_w044s22_0907_00777"
+        )
 
         detail = item.properties["monty:response_detail"]
         self.assertEqual(detail["type"], "eo-dat")
@@ -549,12 +553,12 @@ class CharterTest(unittest.TestCase):
 
         items = {item.id: item for item in iter_charter_stac_items(charter_dir)}
         vap = items["charter-response-1019-1166-19"]
-        eodat = items["charter-response-1166-phr1a-0907-00777"]
+        eodat = items["charter-response-1166-ds_phr1a_202603021304008_fr1_px_w044s22_0907_00777"]
 
         vap_response_links = [link.get_href() for link in vap.links if link.extra_fields.get("roles") == ["response"]]
         eodat_response_links = [link.get_href() for link in eodat.links if link.extra_fields.get("roles") == ["response"]]
 
-        self.assertIn("./charter-response-1166-phr1a-0907-00777.json", vap_response_links)
+        self.assertIn("./charter-response-1166-ds_phr1a_202603021304008_fr1_px_w044s22_0907_00777.json", vap_response_links)
         self.assertIn("./charter-response-1019-1166-19.json", eodat_response_links)
         derived = [link for link in vap.links if link.rel == "derived_from"]
         self.assertEqual(derived[0].media_type, "text/html")
@@ -582,8 +586,41 @@ class CharterTest(unittest.TestCase):
         response = _responses(_memory_transformer(data).get_stac_items())[0]
         detail = response.properties["monty:response_detail"]
 
-        self.assertEqual(response.id, "charter-response-222-phr1a-0907-00777")
+        self.assertEqual(response.id, "charter-response-222-ds_phr1a_202603021304008_fr1_px_w044s22_0907_00777")
         self.assertNotIn("producer", detail)
+
+    def test_calibrated_datasets_with_same_strip_and_scene_get_different_ids(self) -> None:
+        """Two Pleiades datasets that differ only in time and tile must not share an id (#256)."""
+        data = deepcopy(JSON_MOCK_DATA)
+        data["properties"]["disaster:call_ids"] = [1166]
+        first = _synthetic_dataset(785)
+        second = _synthetic_dataset(785)
+        first["id"] = "DS_PHR1A_202503090938123_FR1_PX_E034S16_0309_00785-calibrated"
+        second["id"] = "DS_PHR1A_202503100931456_FR1_PX_E035S16_0309_00785-calibrated"
+        data["calibrated_datasets"] = [first, second]
+
+        response_ids = [item.id for item in _responses(_memory_transformer(data).get_stac_items())]
+
+        self.assertEqual(
+            response_ids,
+            [
+                "charter-response-1166-ds_phr1a_202503090938123_fr1_px_e034s16_0309_00785",
+                "charter-response-1166-ds_phr1a_202503100931456_fr1_px_e035s16_0309_00785",
+            ],
+        )
+
+    def test_calibrated_dataset_listed_twice_gives_one_item(self) -> None:
+        data = deepcopy(JSON_MOCK_DATA)
+        data["properties"]["disaster:call_ids"] = [1166]
+        data["calibrated_datasets"] = [_synthetic_dataset(1), _synthetic_dataset(1), _synthetic_dataset(2)]
+
+        with self.assertLogs("pystac_monty.sources.charter", level="WARNING") as logs:
+            items = list(_memory_transformer(data).get_stac_items())
+
+        ids = [item.id for item in items]
+        self.assertEqual(len(ids), len(set(ids)))
+        self.assertEqual(len(_responses(items)), 2)
+        self.assertTrue(any("already used in this activation" in line for line in logs.output))
 
     def test_calibrated_dataset_without_datetime_falls_back_to_event_datetime(self) -> None:
         data = deepcopy(JSON_MOCK_DATA)
@@ -607,7 +644,7 @@ class CharterTest(unittest.TestCase):
         event, _ = _partition(items)
         response = _responses(items)[0]
 
-        self.assertEqual(response.id, "charter-response-222-phr1a-0907-00777")
+        self.assertEqual(response.id, "charter-response-222-ds_phr1a_202603021304008_fr1_px_w044s22_0907_00777")
         self.assertEqual(response.datetime, event.datetime)
 
     def test_vap_call_id_is_derived_from_source_identifier(self) -> None:
